@@ -110,7 +110,12 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!, style: AppStyles.bodyMedium),
+            Text(
+              _error!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadStats, child: Text(l10n.retry)),
           ],

@@ -203,7 +203,14 @@ class _ClientListPanelState extends State<ClientListPanel> {
         ),
         title: Row(
           children: [
-            Flexible(child: Text(client.name, style: AppStyles.titleSmall)),
+            Flexible(
+              child: Text(
+                client.name,
+                style: AppStyles.titleSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
             if (client.isVip) ...[
               const SizedBox(width: 6),
               Container(
