@@ -429,6 +429,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          onRideSelected: _openRideDetails,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;

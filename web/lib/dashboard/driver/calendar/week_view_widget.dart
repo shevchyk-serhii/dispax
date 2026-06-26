@@ -23,6 +23,11 @@ class WeekViewWidget extends StatelessWidget {
   /// already scoped to the chosen driver, so [driverIdFilter] is a no-op for it.
   final List<Ride>? ridesOverride;
 
+  /// Called when a ride block is tapped. When null the block is not tappable
+  /// (back-compat). Mirrors DayViewWidget / MultiColumnViewWidget so tapping a
+  /// week block opens the ride details screen.
+  final Function(Ride)? onRideSelected;
+
   const WeekViewWidget({
     super.key,
     required this.selectedDay,
@@ -30,6 +35,7 @@ class WeekViewWidget extends StatelessWidget {
     required this.onWeekChanged,
     this.driverIdFilter,
     this.ridesOverride,
+    this.onRideSelected,
   });
 
   @override
@@ -231,56 +237,63 @@ class WeekViewWidget extends StatelessWidget {
 
     Color color = RideStatusStyles.getStatusColor(ride.status);
 
+    final onTap = onRideSelected;
     return Positioned(
       top: top,
       left: 2,
       right: 2,
       height: height,
-      child: Tooltip(
-        message: RideBadges.tooltip(ride),
-        waitDuration: const Duration(milliseconds: 300),
-        child: Container(
-          decoration: BoxDecoration(
-            color: color.withAlpha(204),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color, width: 1),
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      DateFormat.Hm().format(ride.pickupDateTime),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+      child: GestureDetector(
+        onTap: onTap == null ? null : () => onTap(ride),
+        child: Tooltip(
+          message: RideBadges.tooltip(ride),
+          waitDuration: const Duration(milliseconds: 300),
+          child: Container(
+            decoration: BoxDecoration(
+              color: color.withAlpha(204),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: color, width: 1),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DateFormat.Hm().format(ride.pickupDateTime),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  RideBadges.blockMarkers(ride),
-                ],
-              ),
-              if (height > 30)
-                Flexible(
-                  child: Text(
-                    ride.clientName,
-                    style: const TextStyle(color: Colors.white, fontSize: 9),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    RideBadges.blockMarkers(ride),
+                  ],
                 ),
-              if (height > 50)
-                Flexible(
-                  child: Text(
-                    ride.to.address,
-                    style: const TextStyle(color: Colors.white70, fontSize: 8),
-                    overflow: TextOverflow.ellipsis,
+                if (height > 30)
+                  Flexible(
+                    child: Text(
+                      ride.clientName,
+                      style: const TextStyle(color: Colors.white, fontSize: 9),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-            ],
+                if (height > 50)
+                  Flexible(
+                    child: Text(
+                      ride.to.address,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 8,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
