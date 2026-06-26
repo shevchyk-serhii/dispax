@@ -319,6 +319,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordTooShort => 'Passwort muss mindestens 6 Zeichen lang sein';
 
   @override
+  String get forcePasswordChangeTitle => 'Neues Passwort festlegen';
+
+  @override
+  String get forcePasswordChangeMessage =>
+      'Ihr Konto verwendet ein temporäres Passwort. Bitte legen Sie ein neues Passwort fest, um fortzufahren.';
+
+  @override
+  String get temporaryPassword => 'Temporäres Passwort';
+
+  @override
+  String get temporaryPasswordHint =>
+      'Der Benutzer wird beim ersten Anmelden aufgefordert, es zu ändern.';
+
+  @override
+  String get setNewPassword => 'Neues Passwort festlegen';
+
+  @override
+  String get userCreatedSharePassword =>
+      'Benutzer erstellt. Teilen Sie ihm das temporäre Passwort mit.';
+
+  @override
   String get notifications => 'Benachrichtigungen';
 
   @override

@@ -15,6 +15,7 @@ import 'l10n/app_localizations.dart';
 import 'locale_notifier.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
+import 'screens/force_password_change_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
@@ -254,6 +255,12 @@ class _AppRootState extends State<AppRoot> {
             backgroundColor: AppColors.brand900,
             body: Center(child: CircularProgressIndicator(color: Colors.white)),
           );
+        }
+
+        // Logged in with a temporary password: gate behind the forced
+        // password-change screen until the user sets a new password.
+        if (authState.mustChangePassword && authState.user != null) {
+          return ForcePasswordChangeScreen(user: authState.user!);
         }
 
         if (authState.isAuthenticated) {

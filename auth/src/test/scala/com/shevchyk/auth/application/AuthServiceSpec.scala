@@ -124,7 +124,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
         }.provide(layersWithSessionRepo)
       ),
       suite("createUser")(
-        test("valid request creates user with ACTIVE status") {
+        test("valid request creates user with ACTIVE status, in the given company, must-change-password") {
           for {
             service <- ZIO.service[AuthService]
             user    <- service.createUser(
@@ -133,13 +133,18 @@ object AuthServiceSpec extends ZIOSpecDefault {
                            name = "New User",
                            role = "CLIENT",
                            password = "Secure123"
-                         )
+                         ),
+                         testCompanyA
                        )
           } yield assertTrue(
             user.email == "newuser@example.com" &&
               user.name == "New User" &&
               user.role == "CLIENT" &&
-              user.status.contains("ACTIVE")
+              user.status.contains("ACTIVE") &&
+              // P0 tenant-isolation fix: createUser binds the new user to the creator's company.
+              user.companyId.contains(testCompanyA.value) &&
+              // onboarding: a freshly created user must change the temporary password on first login.
+              user.mustChangePassword
           )
         }.provide(layers),
         test("invalid email returns ValidationError") {
@@ -153,7 +158,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "Test",
                     role = "CLIENT",
                     password = "Secure123"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -176,7 +182,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "Test",
                     role = "CLIENT",
                     password = "12345"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -195,7 +202,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "   ",
                     role = "CLIENT",
                     password = "Secure123"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -218,7 +226,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "Duplicate",
                     role = "CLIENT",
                     password = "Secure123"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -237,7 +246,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "Test",
                     role = "INVALID_ROLE",
                     password = "Secure123"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -259,7 +269,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                            role = "DRIVER",
                            password = "Secure123",
                            phone = Some("+1234567890")
-                         )
+                         ),
+                         testCompanyA
                        )
           } yield assertTrue(
             user.phone.contains("+1234567890") &&
@@ -278,7 +289,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     role = "CLIENT",
                     password = "Secure123",
                     phone = Some("abc")
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -301,7 +313,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "No Upper",
                     role = "CLIENT",
                     password = "secure123"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -320,7 +333,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "No Digit",
                     role = "CLIENT",
                     password = "SecurePass"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -339,7 +353,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     name = "No Dot",
                     role = "CLIENT",
                     password = "Secure123"
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -362,7 +377,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                            role = "DISPATCHER",
                            password = "Secure123",
                            roles = Some(List("DISPATCHER", "DRIVER"))
-                         )
+                         ),
+                         testCompanyA
                        )
           } yield assertTrue(
             user.role == "DISPATCHER",
@@ -382,7 +398,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     role = "DISPATCHER",
                     password = "Secure123",
                     roles = Some(List("DRIVER")) // primary DISPATCHER missing from roles
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -406,7 +423,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                     role = "DISPATCHER",
                     password = "Secure123",
                     roles = Some(List("DISPATCHER", "FLYING_SAUCER"))
-                  )
+                  ),
+                  testCompanyA
                 )
                 .exit
           } yield assertTrue(result match {
@@ -428,7 +446,8 @@ object AuthServiceSpec extends ZIOSpecDefault {
                            role = "DISPATCHER",
                            password = "Secure123"
                            // roles not set
-                         )
+                         ),
+                         testCompanyA
                        )
           } yield assertTrue(
             user.role == "DISPATCHER",
@@ -664,19 +683,16 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("updateUser adding DRIVER role to dispatcher propagates roles") {
           for {
             service <- ZIO.service[AuthService]
-            repo    <- ZIO.service[PersonRepository]
-            // Create a fresh dispatcher to update, then scope it to testCompanyA so the
-            // tenant-guarded updateUser can find it (createUser does not assign a company).
+            // createUser binds the new user to the given company, so the tenant-guarded updateUser can find it.
             created <- service.createUser(
                          CreateUserRequest(
                            email = "tobedriver@example.com",
                            name = "Dispatcher To Drive",
                            role = "DISPATCHER",
                            password = "Secure123"
-                         )
+                         ),
+                         testCompanyA
                        )
-            person  <- repo.findById(PersonId(created.id)).someOrFailException
-            _       <- repo.update(person.copy(companyId = Some(testCompanyA)))
             updated <- service.updateUser(
                          created.id,
                          testCompanyA,
@@ -783,22 +799,44 @@ object AuthServiceSpec extends ZIOSpecDefault {
         test("happy path with correct current password") {
           for {
             service <- ZIO.service[AuthService]
-            repo    <- ZIO.service[PersonRepository]
-            // Create user, scope it to testCompanyA (createUser assigns no company),
-            // then change password, then login with the new password.
+            // createUser binds the user to testCompanyA; then change password and login with the new one.
             user    <- service.createUser(
                          CreateUserRequest(
                            email = "changepw@example.com",
                            name = "Change PW",
                            role = "CLIENT",
                            password = "OldPassword1"
-                         )
+                         ),
+                         testCompanyA
                        )
-            person  <- repo.findById(PersonId(user.id)).someOrFailException
-            _       <- repo.update(person.copy(companyId = Some(testCompanyA)))
             _       <- service.changePassword(user.id, testCompanyA, ChangePasswordRequest("OldPassword1", "NewPassword1"))
             result  <- service.login("changepw@example.com", "NewPassword1")
           } yield assertTrue(result.person.email == "changepw@example.com")
+        }.provide(layersWithRepo),
+        // onboarding: the temporary-password gate is lifted once the user changes the password.
+        test("changePassword clears the mustChangePassword flag") {
+          for {
+            service <- ZIO.service[AuthService]
+            created <- service.createUser(
+                         CreateUserRequest(
+                           email = "mustchange@example.com",
+                           name = "Must Change",
+                           role = "DRIVER",
+                           password = "OldPassword1"
+                         ),
+                         testCompanyA
+                       )
+            _       <- service.changePassword(
+                         created.id,
+                         testCompanyA,
+                         ChangePasswordRequest("OldPassword1", "NewPassword1")
+                       )
+            // login returns the fresh UserDto, which must now report the flag cleared.
+            result  <- service.login("mustchange@example.com", "NewPassword1")
+          } yield assertTrue(
+            created.mustChangePassword,
+            !result.person.mustChangePassword
+          )
         }.provide(layersWithRepo),
         test("wrong current password returns InvalidCredentials") {
           for {

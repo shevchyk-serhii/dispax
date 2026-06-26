@@ -73,6 +73,11 @@ class Person {
   /// follows the user across devices.
   final String? preferredLanguage;
 
+  /// True when the account was created with a temporary password and the user
+  /// must change it before using the app. Set by the backend on creation and
+  /// cleared once the password is changed. Drives the forced-change gate on login.
+  final bool mustChangePassword;
+
   Person({
     required this.id,
     required this.name,
@@ -90,6 +95,7 @@ class Person {
     this.hasAvatar = false,
     this.companyName,
     this.preferredLanguage,
+    this.mustChangePassword = false,
   }) : roles = roles != null ? {...roles, role} : {role};
 
   /// Returns true when the person carries [r] as one of their roles.
@@ -137,6 +143,7 @@ class Person {
       hasAvatar: json['hasAvatar'] as bool? ?? false,
       companyName: json['companyName']?.toString(),
       preferredLanguage: json['preferredLanguage']?.toString(),
+      mustChangePassword: json['mustChangePassword'] as bool? ?? false,
     );
   }
 
@@ -157,6 +164,7 @@ class Person {
       'hasAvatar': hasAvatar,
       'companyName': companyName,
       'preferredLanguage': preferredLanguage,
+      'mustChangePassword': mustChangePassword,
     };
   }
 

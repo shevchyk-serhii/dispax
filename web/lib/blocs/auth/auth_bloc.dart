@@ -103,6 +103,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     on<AuthInitializeRequested>(_onInitializeRequested);
     on<AuthLoginRequested>(_onLoginRequested);
+    on<AuthPasswordChangeRequested>(_onPasswordChangeRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthSessionExpired>(_onSessionExpired);
     on<AuthErrorCleared>(_onErrorCleared);
@@ -169,12 +170,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         /// Connect WebSocket for real-time updates
         _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
+        // Restore into the forced-change gate too, so a session restored while a
+        // temporary password is still pending cannot bypass the change screen.
         emit(
-          AuthState.authenticated(
-            user,
-            biometricEnabled: biometricEnabled,
-            biometricAvailable: biometricAvailable,
-          ),
+          user.mustChangePassword
+              ? AuthState.mustChangePassword(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                )
+              : AuthState.authenticated(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                ),
         );
       } else {
         emit(
@@ -250,12 +259,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           // Biometric not available on this platform
         }
 
+        // A user created with a temporary password must change it before using
+        // the app — gate behind the forced password-change screen.
         emit(
-          AuthState.authenticated(
-            user,
-            biometricEnabled: biometricEnabled,
-            biometricAvailable: biometricAvailable,
-          ),
+          user.mustChangePassword
+              ? AuthState.mustChangePassword(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                )
+              : AuthState.authenticated(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                ),
         );
       } else {
         emit(AuthState.error('Invalid email or password'));
@@ -263,6 +280,45 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthState.error('Login error: $e'));
     }
+  }
+
+  /// Forced password change for a temporary-password user. Changes the password
+  /// via the API, then re-logs in with the new password so the session carries a
+  /// fresh token (the backend invalidates the old token on change) and the
+  /// updated user (mustChangePassword now false) — landing the user in the app.
+  Future<void> _onPasswordChangeRequested(
+    AuthPasswordChangeRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final email = state.user?.email;
+    if (email == null) {
+      emit(AuthState.error('No user to change password for'));
+      return;
+    }
+    emit(AuthState.loading());
+    try {
+      await privateApiClient.put('/users/change-password', {
+        'currentPassword': event.currentPassword,
+        'newPassword': event.newPassword,
+      });
+    } catch (e) {
+      // Surface the failure but keep the user on the forced-change gate so they
+      // can retry (e.g. wrong temporary password, weak new password).
+      emit(
+        AuthState(
+          status: AuthStatus.mustChangePassword,
+          user: state.user,
+          errorMessage: 'Failed to change password: $e',
+        ),
+      );
+      return;
+    }
+    // Re-authenticate with the new password; reuses the full login path
+    // (token persist, WS connect, biometric flags, mustChangePassword re-check).
+    await _onLoginRequested(
+      AuthLoginRequested(email: email, password: event.newPassword),
+      emit,
+    );
   }
 
   Future<void> _onLogoutRequested(

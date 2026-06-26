@@ -60,6 +60,28 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get.companyId.contains(testCompanyId)
         )
       },
+      test("must_change_password round-trips and defaults to false") {
+        for {
+          xa           <- ZIO.service[Transactor[Task]]
+          _            <- seedCompany(xa)
+          _            <- cleanPersons(xa)
+          repo          = PostgresPersonRepository(xa)
+          // default false on a plainly-created person
+          plain         = makePerson(email = "plain@test.com")
+          _            <- repo.create(plain)
+          plainFound   <- repo.findById(plain.id)
+          // explicitly flagged person persists the flag, and clearing it via update persists too
+          flagged       = makePerson(email = "flagged@test.com").copy(mustChangePassword = true)
+          _            <- repo.create(flagged)
+          flaggedFound <- repo.findById(flagged.id)
+          _            <- repo.update(flagged.copy(mustChangePassword = false))
+          clearedFound <- repo.findById(flagged.id)
+        } yield assertTrue(
+          plainFound.exists(!_.mustChangePassword),
+          flaggedFound.exists(_.mustChangePassword),
+          clearedFound.exists(!_.mustChangePassword)
+        )
+      },
       test("findByEmail") {
         for {
           xa     <- ZIO.service[Transactor[Task]]
