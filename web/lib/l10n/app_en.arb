@@ -194,6 +194,25 @@
   "checkpointTerminalExit": "Terminal Exit",
   "markCheckpointButton": "I'm here",
   "airportCheckpointPanelTitle": "My location in terminal",
+  "airportEntryTitle": "Airport Entry Time",
+  "airportDepartIn": "Depart in:",
+  "airportEntryLabel": "Airport entry:",
+  "airportTravelTime": "Travel time:",
+  "airportParkingSavings": "Parking savings: {amount}",
+  "@airportParkingSavings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "airportDepartNow": "Depart now!",
+  "airportFlightDelayed": "Flight delayed. Entry time recalculated.",
+  "airportTimingError": "Error loading data: {error}",
+  "@airportTimingError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "airportLoadingTiming": "Loading entry time data...",
   "checkpointNotifTitle": "Client reached {checkpoint}",
   "@checkpointNotifTitle": {
     "placeholders": {

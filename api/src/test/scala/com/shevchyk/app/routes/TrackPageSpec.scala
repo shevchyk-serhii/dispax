@@ -49,6 +49,32 @@ object TrackPageSpec extends ZIOSpecDefault:
             xx.contains("<html lang=\"de\">")
           )
         },
+        test("driver caption is localized") {
+          assertTrue(
+            GuestTrackingPage.render("t", "de", "").contains("Ihr Fahrer"),
+            GuestTrackingPage.render("t", "en", "").contains("Your driver"),
+            GuestTrackingPage.render("t", "uk", "").contains("Ваш водій")
+          )
+        },
+        test("driver car icon + pulsing halo + shimmer are present") {
+          val html = GuestTrackingPage.render("t", "en", "pk.test")
+          assertTrue(
+            html.contains("driver-marker"), // themed driver marker class
+            html.contains("pulse-halo"),    // radar halo keyframes
+            html.contains("shimmer"),       // gentle icon shimmer keyframes
+            html.contains("SVG_CAR"),       // inline car icon
+            html.contains("makeMarkerEl(SVG_CAR")
+          )
+        },
+        test("pickup and dropoff are labeled icon markers") {
+          val html = GuestTrackingPage.render("t", "en", "pk.test")
+          assertTrue(
+            html.contains("pickup-marker"),
+            html.contains("dropoff-marker"),
+            html.contains("makeMarkerEl(SVG_PERSON, 'pickup-marker', I.pickup"),
+            html.contains("makeMarkerEl(SVG_FLAG, 'dropoff-marker', I.dropoff")
+          )
+        },
         test("a hostile token cannot break out of the JS string literal") {
           // The </script> and quote chars must be neutralized so they can't terminate the inline script.
           val html = GuestTrackingPage.render("a'</script><b>", "en", "")

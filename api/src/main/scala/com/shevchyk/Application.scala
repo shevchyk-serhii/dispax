@@ -6,11 +6,12 @@ import com.shevchyk.ride.application.service.{
   ClientLocationService,
   AirportCheckpointService,
   AirportConfigService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   PickupTimeService
 }
-import com.shevchyk.core.config.AirportPickupConfig
+import com.shevchyk.core.config.{AirportArrivalTimingConfig, AirportPickupConfig}
 import com.shevchyk.app.HereTravelTimeAdapter
 import com.shevchyk.ride.repository.{
   RideRepository,
@@ -278,10 +279,12 @@ object Application extends ZIOAppDefault:
       MapboxConfig.liveLayer,
       PublicLinkConfig.liveLayer,
       AirportPickupConfig.liveLayer,
+      AirportArrivalTimingConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,
       HereTravelTimeAdapter.layer,
       PickupTimeService.layer,
+      AirportTimingService.layer,
       EtaService.layer,
       Client.default,
       JwtConfig.live,

@@ -287,6 +287,19 @@ case class EstimateRideResponse(
     currency: String
 ) derives JsonCodec
 
+// -- Airport timing DTOs -------------------------------------------------------
+
+/**
+ * Request body for `POST /api/rides/{rideId}/airport-timing`. The driver app sends its live GPS so the backend can
+ * estimate the travel time to the terminal. The coordinates are optional (the backend also reads the driver's stored
+ * live location) and are used for the travel estimate only — never for authorization (the ride's company is verified
+ * against the JWT).
+ */
+case class AirportTimingRequest(
+    driverLatitude: Option[Double] = None,
+    driverLongitude: Option[Double] = None
+) derives JsonCodec
+
 // -- Airport checkpoint DTOs ---------------------------------------------------
 
 case class MarkCheckpointRequest(
@@ -316,6 +329,7 @@ given sttp.tapir.Schema[ExternalDriverDto]              = sttp.tapir.Schema.deri
 given sttp.tapir.Schema[CreateExternalDriverApiRequest] = sttp.tapir.Schema.derived[CreateExternalDriverApiRequest]
 given sttp.tapir.Schema[UpdateClientLocationRequest]    = sttp.tapir.Schema.derived[UpdateClientLocationRequest]
 given sttp.tapir.Schema[SendChatMessageRequest]         = sttp.tapir.Schema.derived[SendChatMessageRequest]
+given sttp.tapir.Schema[AirportTimingRequest]           = sttp.tapir.Schema.derived[AirportTimingRequest]
 given sttp.tapir.Schema[MarkCheckpointRequest]          = sttp.tapir.Schema.derived[MarkCheckpointRequest]
 given sttp.tapir.Schema[CheckpointStateResponse]        = sttp.tapir.Schema.derived[CheckpointStateResponse]
 given sttp.tapir.Schema[SetRidePriceRequest]            = sttp.tapir.Schema.derived[SetRidePriceRequest]
