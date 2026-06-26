@@ -179,6 +179,27 @@ class NotesToggled extends CreateRideFormEvent {
   const NotesToggled();
 }
 
+/// Adds a free-form tag. The bloc normalizes (trim/collapse) and ignores blanks
+/// and case-insensitive duplicates so the UI matches the backend's de-dup.
+class TagAdded extends CreateRideFormEvent {
+  final String tag;
+
+  const TagAdded(this.tag);
+
+  @override
+  List<Object?> get props => [tag];
+}
+
+/// Removes a tag (exact match against the stored, normalized value).
+class TagRemoved extends CreateRideFormEvent {
+  final String tag;
+
+  const TagRemoved(this.tag);
+
+  @override
+  List<Object?> get props => [tag];
+}
+
 class FormCleared extends CreateRideFormEvent {
   const FormCleared();
 }

@@ -21,6 +21,25 @@ object RidePolicy:
     now.minusSeconds(ClockSkewToleranceSeconds)
   )
 
+/**
+ * Single source of truth for normalizing free-form ride tags so the dispatcher's tag filter never splits "Urgent" from
+ * "urgent". Applied in BOTH the create and update DTO `toDomain` paths.
+ *
+ * Each tag is trimmed, internal whitespace is collapsed to single spaces, blanks are dropped, and the list is
+ * de-duplicated case-insensitively while preserving the first-seen original casing and order.
+ */
+object TagNormalizer:
+
+  def normalize(tags: List[String]): List[String] =
+    val seen = scala.collection.mutable.LinkedHashMap.empty[String, String]
+    tags.foreach { raw =>
+      val cleaned = raw.trim.replaceAll("\\s+", " ")
+      if cleaned.nonEmpty then
+        val key = cleaned.toLowerCase
+        if !seen.contains(key) then seen.update(key, cleaned)
+    }
+    seen.values.toList
+
 enum AirportCheckpoint:
   case Landed, ArrivalsHall, TerminalExit
 
@@ -264,7 +283,9 @@ final case class Ride(
     confirmedAt: Option[java.time.Instant] = None,
     rejectionReason: Option[String] = None,
     rejectedBy: Option[PersonId] = None,
-    rejectedAt: Option[java.time.Instant] = None
+    rejectedAt: Option[java.time.Instant] = None,
+    // Free-form operator labels (e.g. "Urgent", "Cash"). Normalized via TagNormalizer; empty by default.
+    tags: List[String] = Nil
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -308,7 +329,9 @@ final case class CreateRideRequest(
     pickupDateTime: Option[Instant] = None,
     // clientCompanyId is resolved from the client Person and used by PickupTimeService to apply
     // client-level airport timing overrides. May be None when the client has no company affiliation.
-    clientCompanyId: Option[ClientCompanyId] = None
+    clientCompanyId: Option[ClientCompanyId] = None,
+    // Free-form operator labels. Already normalized by the DTO layer before reaching the mapper.
+    tags: List[String] = Nil
 )
 
 final case class UpdateRideStatusRequest(
@@ -333,7 +356,9 @@ final case class UpdateRideDetailsRequest(
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
     specifics: Option[RideSpecifics] = None,
-    specialRequirements: Option[String] = None
+    specialRequirements: Option[String] = None,
+    // None = leave the ride's tags unchanged; Some(list) = replace with this (already normalized).
+    tags: Option[List[String]] = None
 )
 
 enum RideError extends Throwable:

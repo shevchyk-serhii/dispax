@@ -25,6 +25,24 @@ private def validateCoordinates(
     )
     .unit
 
+// Free-form ride tags: bound the count and each tag's length, and reject blank-only tags, so a
+// request can't store an unbounded or junk tag set. None (field omitted) is always valid. Shared by
+// the create and update-details validators. Checked on the raw list — normalization only shrinks it.
+private val MaxTags: Int      = 15
+private val MaxTagLength: Int = 30
+
+private def validateTags(tags: Option[List[String]]): IO[RideError, Unit] =
+  tags match
+    case None       => ZIO.unit
+    case Some(list) =>
+      val tooMany    = list.size > MaxTags
+      val anyBlank   = list.exists(_.trim.isEmpty)
+      val anyTooLong = list.exists(_.trim.length > MaxTagLength)
+      if tooMany then ZIO.fail(RideError.ValidationError(s"At most $MaxTags tags are allowed"))
+      else if anyBlank then ZIO.fail(RideError.ValidationError("Tags cannot be blank"))
+      else if anyTooLong then ZIO.fail(RideError.ValidationError(s"Each tag must be at most $MaxTagLength characters"))
+      else ZIO.unit
+
 given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
   type Error = RideError
 
@@ -40,7 +58,8 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
       validatePickupDateTime(request),
       validateClientId(request.clientId),
       validateAirportTransfer(request),
-      validatePrice(request.price)
+      validatePrice(request.price),
+      validateTags(request.tags)
     )
     .mapError(errors => RideError.ValidationError(errors.toChunk.map(messageOf).mkString("; ")))
 
@@ -305,3 +324,12 @@ given markCheckpointRequestValidator: Validator[MarkCheckpointRequest] with
       )
     )
     .as(request)
+
+given updateRideDetailsApiRequestValidator: Validator[UpdateRideDetailsApiRequest] with
+  type Error = RideError
+
+  // Only the tags need bounding today; other detail fields are free text or already coerced by
+  // toDomain. Keep this as the single entry point so future update-field checks have a home.
+  def validate(request: UpdateRideDetailsApiRequest): IO[RideError, UpdateRideDetailsApiRequest] = validateTags(
+    request.tags
+  ).as(request)

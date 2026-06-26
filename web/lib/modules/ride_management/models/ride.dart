@@ -115,6 +115,10 @@ class Ride {
   /// Set when the ride was handed off to a partner company.
   final String? partnerCompanyId;
 
+  /// Free-form operator labels attached to the ride (e.g. "Urgent", "Cash").
+  /// Normalized server-side; empty when none.
+  final List<String> tags;
+
   const Ride({
     required this.id,
     required this.clientId,
@@ -162,6 +166,7 @@ class Ride {
     this.airportCheckpoint,
     this.externalDriverId,
     this.partnerCompanyId,
+    this.tags = const [],
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -224,6 +229,7 @@ class Ride {
       airportCheckpoint: json['airportCheckpoint'],
       externalDriverId: json['externalDriverId']?.toString(),
       partnerCompanyId: json['partnerCompanyId']?.toString(),
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
     );
   }
 
@@ -275,6 +281,7 @@ class Ride {
       'airportCheckpoint': airportCheckpoint,
       'externalDriverId': externalDriverId,
       'partnerCompanyId': partnerCompanyId,
+      'tags': tags,
     };
   }
 
@@ -325,6 +332,7 @@ class Ride {
     Object? airportCheckpoint = _sentinel,
     Object? externalDriverId = _sentinel,
     Object? partnerCompanyId = _sentinel,
+    List<String>? tags,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -385,6 +393,7 @@ class Ride {
       partnerCompanyId: partnerCompanyId == _sentinel
           ? this.partnerCompanyId
           : partnerCompanyId as String?,
+      tags: tags ?? this.tags,
     );
   }
 

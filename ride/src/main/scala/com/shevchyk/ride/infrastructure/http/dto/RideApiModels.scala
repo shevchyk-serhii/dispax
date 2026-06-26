@@ -9,6 +9,7 @@ import com.shevchyk.ride.domain.{
   RideStatus,
   PaymentStatus,
   PaymentMethod,
+  TagNormalizer,
   UpdateRideDetailsRequest,
   VehicleClass
 }
@@ -84,7 +85,9 @@ case class RideDto(
     partnerCompanyId: Option[String] = None,
     confirmed: Boolean = false,
     confirmedAt: Option[String] = None,
-    rejectionReason: Option[String] = None
+    rejectionReason: Option[String] = None,
+    // Free-form operator tags attached to the ride.
+    tags: List[String] = Nil
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -116,7 +119,9 @@ case class CreateRideApiRequest(
     driverId: Option[String] = None,
     vehicleClass: Option[String] = None,
     // Operator-selected payment method (wire enum name, e.g. "Invoice"). Absent leaves it unset.
-    paymentMethod: Option[String] = None
+    paymentMethod: Option[String] = None,
+    // Free-form operator tags. Normalized server-side before persistence.
+    tags: Option[List[String]] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
@@ -146,7 +151,9 @@ case class UpdateRideDetailsApiRequest(
     notes: Option[String] = None,
     flightNumber: Option[String] = None,
     isAirportTransfer: Option[Boolean] = None,
-    specialRequirements: Option[String] = None
+    specialRequirements: Option[String] = None,
+    // None = leave tags unchanged; Some(list) = replace. Normalized server-side in toDomain.
+    tags: Option[List[String]] = None
 ) derives JsonCodec
 
 object UpdateRideDetailsApiRequest:
@@ -171,7 +178,9 @@ object UpdateRideDetailsApiRequest:
       pickupDateTime = request.pickupDateTime.flatMap(parseInstant),
       notes = request.notes,
       specifics = specifics,
-      specialRequirements = request.specialRequirements
+      specialRequirements = request.specialRequirements,
+      // Preserve None (= unchanged); normalize when present so the tag filter never splits casing.
+      tags = request.tags.map(TagNormalizer.normalize)
     )
 
 case class UpdateClientLocationRequest(
@@ -416,7 +425,8 @@ object RideDto:
       partnerCompanyId = ride.partnerCompanyId.map(_.value.toString),
       confirmed = ride.status == RideStatus.Confirmed,
       confirmedAt = ride.confirmedAt.map(_.toString),
-      rejectionReason = ride.rejectionReason
+      rejectionReason = ride.rejectionReason,
+      tags = ride.tags
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
@@ -484,7 +494,9 @@ object CreateRideApiRequest:
         paymentMethod = parsedPaymentMethod,
         // Convert the wire Double price into the domain BigDecimal estimate (None stays None).
         estimatedPrice = request.price.map(BigDecimal(_)),
-        pickupDateTime = parsedPickupDateTime
+        pickupDateTime = parsedPickupDateTime,
+        // Normalize free-form tags once, here, so the rest of the stack sees canonical values.
+        tags = TagNormalizer.normalize(request.tags.getOrElse(Nil))
       )
     }
 

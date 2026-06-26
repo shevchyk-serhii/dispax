@@ -31,6 +31,9 @@ class CreateRideFormState extends Equatable {
   final bool showNotes;
   final String notes;
   final List<String> specialRequirements;
+
+  /// Free-form operator tags attached to the ride at creation.
+  final List<String> tags;
   final bool isNewClient;
   final String newClientPhone;
 
@@ -85,6 +88,7 @@ class CreateRideFormState extends Equatable {
     this.showNotes = false,
     this.notes = '',
     this.specialRequirements = const [],
+    this.tags = const [],
     this.isNewClient = false,
     this.newClientPhone = '',
     this.baselineClientId,
@@ -116,6 +120,7 @@ class CreateRideFormState extends Equatable {
       status: CreateRideFormStatus.initial,
       notes: '',
       specialRequirements: const [],
+      tags: const [],
       isNewClient: false,
       newClientPhone: '',
       selectedPaymentMethod: PaymentMethod.invoice,
@@ -149,6 +154,7 @@ class CreateRideFormState extends Equatable {
     bool? showNotes,
     String? notes,
     List<String>? specialRequirements,
+    List<String>? tags,
     bool? isNewClient,
     String? newClientPhone,
     String? baselineClientId,
@@ -193,6 +199,7 @@ class CreateRideFormState extends Equatable {
       showNotes: showNotes ?? this.showNotes,
       notes: notes ?? this.notes,
       specialRequirements: specialRequirements ?? this.specialRequirements,
+      tags: tags ?? this.tags,
       isNewClient: isNewClient ?? this.isNewClient,
       newClientPhone: newClientPhone ?? this.newClientPhone,
       baselineClientId: clearBaselineClientId
@@ -251,6 +258,7 @@ class CreateRideFormState extends Equatable {
       flightNumber.trim().isNotEmpty ||
       notes.trim().isNotEmpty ||
       specialRequirements.isNotEmpty ||
+      tags.isNotEmpty ||
       price != null;
 
   @override
@@ -272,6 +280,7 @@ class CreateRideFormState extends Equatable {
     showNotes,
     notes,
     specialRequirements,
+    tags,
     isNewClient,
     newClientPhone,
     baselineClientId,

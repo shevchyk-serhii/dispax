@@ -33,6 +33,10 @@ class CreateRideRequest {
 
   final String? notes;
   final List<String>? specialRequirements;
+
+  /// Free-form operator tags. Sent as a JSON array (unlike specialRequirements,
+  /// which is joined into a CSV string). Omitted from the payload when empty.
+  final List<String>? tags;
   final String? driverId;
   final String? newClientPhone;
   final VehicleClass vehicleClass;
@@ -59,6 +63,7 @@ class CreateRideRequest {
     this.manualPickupDateTime,
     this.notes,
     this.specialRequirements,
+    this.tags,
     this.driverId,
     this.newClientPhone,
     this.vehicleClass = VehicleClass.business,
@@ -89,6 +94,7 @@ class CreateRideRequest {
       if (notes != null) 'notes': notes,
       if (specialRequirements != null)
         'specialRequirements': specialRequirements!.join(', '),
+      if (tags != null && tags!.isNotEmpty) 'tags': tags,
       if (driverId != null) 'driverId': driverId,
       if (newClientPhone != null && newClientPhone!.isNotEmpty)
         'clientPhone': newClientPhone,
