@@ -10,6 +10,8 @@ import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
 import '../ride_management/services/ride_service.dart';
+import '../ride_management/helpers/tag_helpers.dart';
+import '../ride_management/widgets/tag_input_field.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../screens/ride_details_screen.dart';
@@ -267,6 +269,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   late final TextEditingController _dateCtrl;
   late final TextEditingController _notesCtrl;
   late final TextEditingController _flightCtrl;
+  late List<String> _tags;
   bool _saving = false;
   String? _error;
 
@@ -280,6 +283,18 @@ class _EditRideDialogState extends State<_EditRideDialog> {
     );
     _notesCtrl = TextEditingController(text: widget.ride.notes ?? '');
     _flightCtrl = TextEditingController(text: widget.ride.flightNumber ?? '');
+    _tags = List<String>.from(widget.ride.tags);
+  }
+
+  void _addTag(String raw) {
+    final tag = normalizeTag(raw);
+    if (tag.isEmpty) return;
+    if (_tags.any((t) => t.toLowerCase() == tag.toLowerCase())) return;
+    setState(() => _tags = [..._tags, tag]);
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _tags = _tags.where((t) => t != tag).toList());
   }
 
   @override
@@ -322,6 +337,9 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       if (_flightCtrl.text.trim().isNotEmpty)
         'flightNumber': _flightCtrl.text.trim(),
+      // Always send tags (even empty) so clearing all tags persists — the
+      // backend treats an absent field as "leave unchanged".
+      'tags': _tags,
     };
 
     try {
@@ -393,6 +411,15 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                   border: const OutlineInputBorder(),
                 ),
                 maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TagInputField(
+                  tags: _tags,
+                  onAdded: _addTag,
+                  onRemoved: _removeTag,
+                ),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),

@@ -9,6 +9,7 @@ import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
 import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
+import '../../../modules/ride_management/helpers/tag_helpers.dart';
 import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
@@ -49,6 +50,9 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   _SortMode _sortMode = _SortMode.timeAsc;
   _FilterMode _filterMode = _FilterMode.all;
   String _searchQuery = '';
+  // Active tag filter (null = no tag filter). Tags are dynamic, so they live
+  // outside _FilterMode (a single enum value can't represent N tags).
+  String? _selectedTag;
   int _tabIndex = 0; // 0 = Pending, 1 = Assigned
   Timer? _searchDebounce;
 
@@ -112,6 +116,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         filtered = filtered.where((r) => r.isAirportTransfer).toList();
       case _FilterMode.all:
         break;
+    }
+
+    final tag = _selectedTag;
+    if (tag != null) {
+      filtered = filtered.where((r) => rideHasTag(r, tag)).toList();
     }
 
     if (_searchQuery.isNotEmpty) {
@@ -644,8 +653,83 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               ),
             ],
           ),
+          _buildTagFilterRow(),
         ],
       ),
+    );
+  }
+
+  /// A horizontally-scrollable row of tag chips built from the distinct tags
+  /// across the currently-loaded rides. Selecting one filters the list; tapping
+  /// the active one clears the filter. Hidden entirely when no ride has a tag.
+  Widget _buildTagFilterRow() {
+    return BlocBuilder<RideBloc, RideState>(
+      buildWhen: (prev, curr) => prev.rides != curr.rides,
+      builder: (context, state) {
+        final tags = distinctTagsFromRides(state.rides);
+        if (tags.isEmpty) {
+          // Drop a stale selection if the tag no longer exists on any ride.
+          if (_selectedTag != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _selectedTag = null);
+            });
+          }
+          return const SizedBox.shrink();
+        }
+        final colorScheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: SizedBox(
+            height: 30,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: tags.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final tag = tags[i];
+                final selected = _selectedTag == tag;
+                return GestureDetector(
+                  onTap: () =>
+                      setState(() => _selectedTag = selected ? null : tag),
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.label_outline,
+                          size: 13,
+                          color: selected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          tag,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: selected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1124,6 +1208,48 @@ class _RideRow extends StatelessWidget {
                 );
               },
             ),
+            // Tags
+            if (ride.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: ride.tags
+                    .map(
+                      (tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.label_outline,
+                              size: 11,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
             // Action buttons
             if (onAction != null || onClose != null || onHandOff != null) ...[
               const SizedBox(height: 14),

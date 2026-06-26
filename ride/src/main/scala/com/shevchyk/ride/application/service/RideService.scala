@@ -834,6 +834,9 @@ class RideServiceImpl(
                       .replace(request.specifics.orElse(ride.specifics))
                       .focus(_.specialRequirements)
                       .replace(request.specialRequirements.orElse(ride.specialRequirements))
+                      // None leaves tags unchanged; Some(list) replaces (already normalized in the DTO layer).
+                      .focus(_.tags)
+                      .replace(request.tags.getOrElse(ride.tags))
 
       persistedRide    <- rideRepository.update(updatedRide).mapDatabaseError
       pickupTimeChanged = request.pickupDateTime.exists(_ != ride.pickupDateTime)

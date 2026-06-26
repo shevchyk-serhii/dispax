@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../modules/ride_management/helpers/tag_helpers.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import 'create_ride_form_event.dart';
 import 'create_ride_form_state.dart';
@@ -26,6 +27,8 @@ class CreateRideFormBloc
     on<NotesChanged>(_onNotesChanged);
     on<RidePriceChanged>(_onRidePriceChanged);
     on<SpecialRequirementToggled>(_onSpecialRequirementToggled);
+    on<TagAdded>(_onTagAdded);
+    on<TagRemoved>(_onTagRemoved);
     on<FormCleared>(_onFormCleared);
     on<FormSubmitted>(_onFormSubmitted);
     on<SubmissionFailed>(_onSubmissionFailed);
@@ -70,6 +73,23 @@ class CreateRideFormBloc
       current.add(event.requirement);
     }
     emit(state.copyWith(specialRequirements: current));
+  }
+
+  void _onTagAdded(TagAdded event, Emitter<CreateRideFormState> emit) {
+    final cleaned = normalizeTag(event.tag);
+    if (cleaned.isEmpty) return;
+    // Case-insensitive de-dup so the UI matches the backend's normalization.
+    final exists = state.tags.any(
+      (t) => t.toLowerCase() == cleaned.toLowerCase(),
+    );
+    if (exists) return;
+    emit(state.copyWith(tags: [...state.tags, cleaned]));
+  }
+
+  void _onTagRemoved(TagRemoved event, Emitter<CreateRideFormState> emit) {
+    emit(
+      state.copyWith(tags: state.tags.where((t) => t != event.tag).toList()),
+    );
   }
 
   void _onClientNameChanged(

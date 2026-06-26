@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
 import '../../../../modules/core/models/person.dart';
+import '../../helpers/tag_helpers.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
 import 'create_ride_basic_info_section.dart';
@@ -116,6 +117,10 @@ class _NotesSectionToggle extends StatelessWidget {
                   child: CreateRideNotesSection(
                     notes: state.notes,
                     specialRequirements: state.specialRequirements,
+                    tags: state.tags,
+                    tagSuggestions: distinctTagsFromRides(
+                      context.read<RideBloc>().state.rides,
+                    ),
                   ),
                 )
               : const SizedBox.shrink(),

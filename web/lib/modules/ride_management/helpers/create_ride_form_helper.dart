@@ -142,6 +142,7 @@ class CreateRideFormHelper {
       specialRequirements: formState.specialRequirements.isNotEmpty
           ? formState.specialRequirements
           : null,
+      tags: formState.tags.isNotEmpty ? formState.tags : null,
       driverId: formState.selectedDriverId,
       vehicleClass: formState.selectedVehicleClass,
       paymentMethod: formState.selectedPaymentMethod,

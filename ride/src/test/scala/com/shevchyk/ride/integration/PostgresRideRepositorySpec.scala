@@ -51,7 +51,8 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
       scheduledTime: Option[Instant] = None,
       notes: Option[String] = None,
       specifics: Option[RideSpecifics] = None,
-      paymentMethod: Option[PaymentMethod] = None
+      paymentMethod: Option[PaymentMethod] = None,
+      tags: List[String] = Nil
   ): Ride = Ride(
     id = id,
     clientId = clientId,
@@ -66,7 +67,8 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     requestTime = Instant.now(),
     notes = notes,
     specifics = specifics,
-    paymentMethod = paymentMethod
+    paymentMethod = paymentMethod,
+    tags = tags
   )
 
   def spec =
@@ -135,6 +137,46 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
         } yield assertTrue(
           found.get.status == RideStatus.Assigned,
           found.get.driverId.contains(driverId)
+        )
+      },
+      test("tags round-trip and other fields stay intact (Read-tuple position guard)") {
+        // A ride carrying non-empty tags must read back with tags AND every neighbouring field
+        // (notes, payment method, airport specifics) intact — a mis-placed tags column in the split
+        // Read tuple would shift other fields and fail here.
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide(
+                     notes = Some("ring the bell"),
+                     specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
+                     paymentMethod = Some(PaymentMethod.Cash),
+                     tags = List("Urgent", "Cash Only")
+                   )
+          _     <- repo.create(ride)
+          found <- repo.findById(ride.id)
+        } yield assertTrue(
+          found.get.tags == List("Urgent", "Cash Only"),
+          found.get.notes.contains("ring the bell"),
+          found.get.paymentMethod.contains(PaymentMethod.Cash),
+          found.get.isAirportTransfer
+        )
+      },
+      test("update replaces tags; a ride created without tags reads back as empty") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanRides(xa)
+          repo     = PostgresRideRepository(xa)
+          ride     = makeRide() // no tags → DB default '{}'
+          _       <- repo.create(ride)
+          created <- repo.findById(ride.id)
+          _       <- repo.update(ride.copy(tags = List("VIP")))
+          updated <- repo.findById(ride.id)
+        } yield assertTrue(
+          created.get.tags == Nil,
+          updated.get.tags == List("VIP")
         )
       },
       test("findByCompanyId returns only matching company rides") {

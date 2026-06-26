@@ -558,12 +558,13 @@ object RideApi:
         _            <- checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY", "CLIENT")
         parsedRideId <- parseRideId(rideId)
         companyId    <- requireCompanyId(user.companyId)
+        validRequest <- apiRequest.validate.mapError(fromRideError)
         service      <- ZIO.service[RideService]
         personRepo   <- ZIO.service[PersonRepository]
         ride         <- service
                           .updateRideDetails(
                             parsedRideId,
-                            UpdateRideDetailsApiRequest.toDomain(apiRequest),
+                            UpdateRideDetailsApiRequest.toDomain(validRequest),
                             PersonId(user.userId),
                             toPersonRole(user.role),
                             Some(companyId)

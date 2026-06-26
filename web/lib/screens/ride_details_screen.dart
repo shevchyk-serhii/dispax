@@ -401,6 +401,36 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           visualDensity: VisualDensity.compact,
                         ),
                       ],
+                      if (_currentRide.tags.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _currentRide.tags
+                              .map(
+                                (tag) => Chip(
+                                  avatar: const Icon(
+                                    Icons.label_outline,
+                                    size: 14,
+                                  ),
+                                  label: Text(
+                                    tag,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
 
                       const SizedBox(height: 16),
 

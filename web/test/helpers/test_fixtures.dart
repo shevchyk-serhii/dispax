@@ -96,6 +96,7 @@ class TestFixtures {
     String? driverName,
     double? price,
     String? paymentMethod,
+    List<String> tags = const [],
   }) {
     return Ride(
       id: id,
@@ -118,6 +119,7 @@ class TestFixtures {
       driverName: driverName,
       price: price,
       paymentMethod: paymentMethod,
+      tags: tags,
     );
   }
 

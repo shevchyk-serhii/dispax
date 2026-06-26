@@ -24,5 +24,7 @@ object RideMapper:
     specialRequirements = request.specialRequirements,
     vehicleClass = request.vehicleClass,
     // Operator-selected payment method carried from the create request (None leaves it unset).
-    paymentMethod = request.paymentMethod
+    paymentMethod = request.paymentMethod,
+    // Free-form operator tags (already normalized by the DTO layer — copied through as-is).
+    tags = request.tags
   )
