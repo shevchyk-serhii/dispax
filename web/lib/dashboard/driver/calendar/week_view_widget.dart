@@ -71,11 +71,39 @@ class WeekViewWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          buildWeekHeader(context, weekDays),
-          Expanded(child: buildWeekTimeline(context, weekDays, rides)),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Fill the available width when all seven columns fit; otherwise fall
+          // back to the minimum width and scroll the whole grid horizontally so
+          // the ride-block text stays readable. The header and the timeline
+          // share one horizontal scroll view so their columns stay aligned and
+          // scroll together.
+          final fitWidth = (constraints.maxWidth - _timeColumnWidth) / 7;
+          final columnWidth = fitWidth > _minDayColumnWidth
+              ? fitWidth
+              : _minDayColumnWidth;
+          final gridWidth = _timeColumnWidth + columnWidth * 7;
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: gridWidth,
+              child: Column(
+                children: [
+                  buildWeekHeader(context, weekDays, columnWidth),
+                  Expanded(
+                    child: buildWeekTimeline(
+                      context,
+                      weekDays,
+                      rides,
+                      columnWidth,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -85,7 +113,11 @@ class WeekViewWidget extends StatelessWidget {
     return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
-  Widget buildWeekHeader(BuildContext context, List<DateTime> weekDays) {
+  Widget buildWeekHeader(
+    BuildContext context,
+    List<DateTime> weekDays,
+    double columnWidth,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
@@ -100,9 +132,10 @@ class WeekViewWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SizedBox(width: 60),
+          const SizedBox(width: _timeColumnWidth),
           ...weekDays.map(
-            (day) => Expanded(
+            (day) => SizedBox(
+              width: columnWidth,
               child: GestureDetector(
                 onTap: () => onDaySelected(day),
                 child: Container(
@@ -152,11 +185,22 @@ class WeekViewWidget extends StatelessWidget {
     );
   }
 
+  /// Width of the left time gutter ("06:00 …") column.
+  static const double _timeColumnWidth = 60;
+
+  /// Minimum width of a single day column. Narrow screens cannot fit all seven
+  /// days at this width, so the week grid scrolls horizontally instead of
+  /// squeezing the ride blocks until their text is unreadable.
+  static const double _minDayColumnWidth = 140;
+
   Widget buildWeekTimeline(
     BuildContext context,
     List<DateTime> weekDays,
     List<Ride> rides,
+    double columnWidth,
   ) {
+    // Vertical scroll only — the enclosing _buildBody owns the shared horizontal
+    // scroll so the header and timeline columns stay aligned.
     return SingleChildScrollView(
       child: SizedBox(
         height: 17 * 40.0,
@@ -164,7 +208,10 @@ class WeekViewWidget extends StatelessWidget {
           children: [
             buildTimeColumn(context),
             ...weekDays.map(
-              (day) => Expanded(child: buildDayColumn(context, day, rides)),
+              (day) => SizedBox(
+                width: columnWidth,
+                child: buildDayColumn(context, day, rides),
+              ),
             ),
           ],
         ),
@@ -175,7 +222,7 @@ class WeekViewWidget extends StatelessWidget {
   Widget buildTimeColumn(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
-      width: 60,
+      width: _timeColumnWidth,
       child: Column(
         children: List.generate(17, (index) {
           final hour = index + 6;
