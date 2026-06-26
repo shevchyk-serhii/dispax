@@ -172,7 +172,10 @@ final case class Person(
     avatar: Option[Array[Byte]] = None,
     avatarContentType: Option[String] = None,
     // User-selected UI language (en, de, uk); None means use the device/system locale.
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    // True when the account was created with a temporary password and the user must change it on first login.
+    // Set on creation by a dispatcher/admin and cleared by changePassword.
+    mustChangePassword: Boolean = false
 ):
 
   /**
@@ -215,7 +218,9 @@ final case class PersonDto(
     // resolved company display name — populated by the profile endpoint only (lookup via CompanyRepository)
     companyName: Option[String] = None,
     // user-selected UI language (en, de, uk); None means use the device/system locale
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    // true when the account still has a temporary password (created but not yet activated by first-login change)
+    mustChangePassword: Boolean = false
 ) derives JsonCodec
 
 object PersonDto:
@@ -237,7 +242,8 @@ object PersonDto:
     reminderMinutes = p.reminderMinutes,
     roles = p.effectiveRoles,
     hasAvatar = p.avatarPresent,
-    preferredLanguage = p.preferredLanguage
+    preferredLanguage = p.preferredLanguage,
+    mustChangePassword = p.mustChangePassword
   )
 
 enum CompanyStatus derives JsonCodec:

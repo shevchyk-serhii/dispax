@@ -624,9 +624,10 @@ object UserApi:
   private val createUserServer: ZServerEndpoint[UserEnv, Any] = createUserEndpoint.serverLogic[UserEnv] { user =>
     { case (createReq, ip) =>
       for {
-        _       <- checkRateLimit(ip)
-        _       <- checkRole(user, "DISPATCHER", "ADMIN")
-        userDto <- ZIO.serviceWithZIO[AuthService](_.createUser(createReq)).mapError(mapAuthError)
+        _         <- checkRateLimit(ip)
+        _         <- checkRole(user, "DISPATCHER", "ADMIN")
+        companyId <- requireCompanyId(user)
+        userDto   <- ZIO.serviceWithZIO[AuthService](_.createUser(createReq, companyId)).mapError(mapAuthError)
       } yield userDto
     }
   }

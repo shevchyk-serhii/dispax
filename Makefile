@@ -128,10 +128,19 @@ test-bdd-port:
 # current HEAD (discarding stray changes) so the shards always match committed
 # code. Run `make test-bdd-parallel-clean` to delete the worktrees.
 #
+# Critical: compilation and the parallel test phase must NOT overlap. Each shard
+# forks its own TestApplication, and if three worktrees are still compiling while
+# the servers try to bind, the machine is so saturated that a server takes minutes
+# to come up — past ANY sane readiness budget (observed >195s even with a 90s
+# budget). So the target compiles each worktree SEQUENTIALLY first (machine not
+# saturated), then runs the three shards in parallel against already-built classes,
+# where the server binds quickly. BDD_SERVER_STARTUP_MS=45s is a safety margin over
+# the 15s default for the still-somewhat-loaded parallel phase.
+#
 # Exit code is the OR of the three shards: any shard failure fails the target.
 BDD_SHARD_BASE := ../dispax-bdd-shard
 test-bdd-parallel:
-	@echo "🧪 Running BDD as 3 parallel shards (persistent worktrees, incremental compile)..."
+	@echo "🧪 Running BDD as 3 parallel shards (persistent worktrees)..."
 	@HEAD=$$(git rev-parse HEAD) ; STATUS=0 ; \
 	for n in 1 2 3; do \
 	  wt=$(BDD_SHARD_BASE)-$$n ; \
@@ -142,10 +151,17 @@ test-bdd-parallel:
 	    git worktree add --detach "$$wt" $$HEAD >/dev/null 2>&1 || { echo "❌ worktree add failed for shard $$n"; exit 1; } ; \
 	  fi ; \
 	done ; \
+	echo "⏳ Compiling shards sequentially (so the parallel test phase isn't starved)..." ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; \
+	  ( cd $$wt && sbt "root/Test/compile" > $$wt/compile.log 2>&1 ) || { echo "❌ compile failed for shard $$n (see $$wt/compile.log)"; exit 1; } ; \
+	  echo "  ✓ shard $$n compiled" ; \
+	done ; \
+	echo "🚀 Running shards in parallel..." ; \
 	pids="" ; \
 	for n in 1 2 3; do \
 	  wt=$(BDD_SHARD_BASE)-$$n ; port=$$((8100 + n)) ; \
-	  ( cd $$wt && PORT=$$port sbt "root/testOnly *CucumberShard$${n}Runner" > $$wt/shard.log 2>&1 ) & \
+	  ( cd $$wt && BDD_SERVER_STARTUP_MS=45000 PORT=$$port sbt "root/testOnly *CucumberShard$${n}Runner" > $$wt/shard.log 2>&1 ) & \
 	  pids="$$pids $$!" ; \
 	done ; \
 	for pid in $$pids; do wait $$pid || STATUS=1 ; done ; \

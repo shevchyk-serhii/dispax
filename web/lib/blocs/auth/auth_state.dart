@@ -1,7 +1,17 @@
 import 'package:equatable/equatable.dart';
 import '../../modules/core/models/person.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  error,
+
+  /// Logged in with a temporary password: the user is identified but gated
+  /// behind the forced password-change screen until they set a new password.
+  mustChangePassword,
+}
 
 class AuthState extends Equatable {
   final AuthStatus status;
@@ -33,6 +43,20 @@ class AuthState extends Equatable {
   }) {
     return AuthState(
       status: AuthStatus.authenticated,
+      user: user,
+      biometricEnabled: biometricEnabled,
+      biometricAvailable: biometricAvailable,
+    );
+  }
+
+  /// Authenticated but holding a temporary password — render the forced-change screen.
+  factory AuthState.mustChangePassword(
+    Person user, {
+    bool biometricEnabled = false,
+    bool biometricAvailable = false,
+  }) {
+    return AuthState(
+      status: AuthStatus.mustChangePassword,
       user: user,
       biometricEnabled: biometricEnabled,
       biometricAvailable: biometricAvailable,
@@ -81,6 +105,7 @@ class AuthState extends Equatable {
 
   bool get isLoading => status == AuthStatus.loading;
   bool get isAuthenticated => status == AuthStatus.authenticated;
+  bool get mustChangePassword => status == AuthStatus.mustChangePassword;
   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
   bool get hasError => status == AuthStatus.error;
 

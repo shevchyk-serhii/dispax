@@ -110,6 +110,12 @@
   "passwordChanged": "Passwort erfolgreich geändert",
   "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
   "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein",
+  "forcePasswordChangeTitle": "Neues Passwort festlegen",
+  "forcePasswordChangeMessage": "Ihr Konto verwendet ein temporäres Passwort. Bitte legen Sie ein neues Passwort fest, um fortzufahren.",
+  "temporaryPassword": "Temporäres Passwort",
+  "temporaryPasswordHint": "Der Benutzer wird beim ersten Anmelden aufgefordert, es zu ändern.",
+  "setNewPassword": "Neues Passwort festlegen",
+  "userCreatedSharePassword": "Benutzer erstellt. Teilen Sie ihm das temporäre Passwort mit.",
 
   "notifications": "Benachrichtigungen",
   "pushNotifications": "Push-Benachrichtigungen",

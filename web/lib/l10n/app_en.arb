@@ -128,6 +128,12 @@
   "passwordChanged": "Password changed successfully",
   "passwordsDoNotMatch": "Passwords do not match",
   "passwordTooShort": "Password must be at least 6 characters",
+  "forcePasswordChangeTitle": "Set a new password",
+  "forcePasswordChangeMessage": "Your account uses a temporary password. Please set a new password to continue.",
+  "temporaryPassword": "Temporary password",
+  "temporaryPasswordHint": "The user will be asked to change it on first login.",
+  "setNewPassword": "Set new password",
+  "userCreatedSharePassword": "User created. Share the temporary password with them.",
 
   "notifications": "Notifications",
   "pushNotifications": "Push Notifications",

@@ -227,7 +227,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   controller: passwordCtrl,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: l10n.password,
+                    labelText: l10n.temporaryPassword,
+                    helperText: l10n.temporaryPasswordHint,
+                    helperMaxLines: 2,
                     border: const OutlineInputBorder(),
                   ),
                 ),
@@ -263,6 +265,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     'role': selectedRole,
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.userCreatedSharePassword)),
+                    );
+                  }
                   _loadUsers();
                 } catch (e) {
                   if (mounted) {

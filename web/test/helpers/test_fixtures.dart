@@ -24,6 +24,7 @@ class TestFixtures {
     String? phone = '+491234567890',
     VehicleInfo? vehicleInfo,
     String? preferredLanguage,
+    bool mustChangePassword = false,
   }) {
     return Person(
       id: id,
@@ -35,6 +36,7 @@ class TestFixtures {
       phone: phone,
       vehicleInfo: vehicleInfo,
       preferredLanguage: preferredLanguage,
+      mustChangePassword: mustChangePassword,
     );
   }
 

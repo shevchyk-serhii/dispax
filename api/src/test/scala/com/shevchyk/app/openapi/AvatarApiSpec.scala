@@ -158,7 +158,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
           deviceInfo: Option[String],
           ipAddress: Option[String]
       ): IO[AuthError, LoginResponse] = notImpl
-      def createUser(req: CreateUserRequest): IO[AuthError, UserDto]                                          = notImpl
+      def createUser(req: CreateUserRequest, companyId: CompanyId): IO[AuthError, UserDto]                    = notImpl
       def getUserById(id: UUID): IO[AuthError, UserDto]                                                       = notImpl
       def getUserByEmail(email: String): IO[AuthError, UserDto]                                               = notImpl
       def updateUser(id: UUID, companyId: CompanyId, req: UpdateUserRequest): IO[AuthError, UserDto]          = notImpl
