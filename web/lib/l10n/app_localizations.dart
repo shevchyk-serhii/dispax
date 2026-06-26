@@ -1048,6 +1048,60 @@ abstract class AppLocalizations {
   /// **'My location in terminal'**
   String get airportCheckpointPanelTitle;
 
+  /// No description provided for @airportEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Entry Time'**
+  String get airportEntryTitle;
+
+  /// No description provided for @airportDepartIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Depart in:'**
+  String get airportDepartIn;
+
+  /// No description provided for @airportEntryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport entry:'**
+  String get airportEntryLabel;
+
+  /// No description provided for @airportTravelTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel time:'**
+  String get airportTravelTime;
+
+  /// No description provided for @airportParkingSavings.
+  ///
+  /// In en, this message translates to:
+  /// **'Parking savings: {amount}'**
+  String airportParkingSavings(String amount);
+
+  /// No description provided for @airportDepartNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Depart now!'**
+  String get airportDepartNow;
+
+  /// No description provided for @airportFlightDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight delayed. Entry time recalculated.'**
+  String get airportFlightDelayed;
+
+  /// No description provided for @airportTimingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading data: {error}'**
+  String airportTimingError(String error);
+
+  /// No description provided for @airportLoadingTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading entry time data...'**
+  String get airportLoadingTiming;
+
   /// No description provided for @checkpointNotifTitle.
   ///
   /// In en, this message translates to:

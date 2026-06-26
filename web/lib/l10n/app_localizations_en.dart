@@ -496,6 +496,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'My location in terminal';
 
   @override
+  String get airportEntryTitle => 'Airport Entry Time';
+
+  @override
+  String get airportDepartIn => 'Depart in:';
+
+  @override
+  String get airportEntryLabel => 'Airport entry:';
+
+  @override
+  String get airportTravelTime => 'Travel time:';
+
+  @override
+  String airportParkingSavings(String amount) {
+    return 'Parking savings: $amount';
+  }
+
+  @override
+  String get airportDepartNow => 'Depart now!';
+
+  @override
+  String get airportFlightDelayed => 'Flight delayed. Entry time recalculated.';
+
+  @override
+  String airportTimingError(String error) {
+    return 'Error loading data: $error';
+  }
+
+  @override
+  String get airportLoadingTiming => 'Loading entry time data...';
+
+  @override
   String checkpointNotifTitle(String checkpoint) {
     return 'Client reached $checkpoint';
   }

@@ -7,6 +7,7 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -313,7 +314,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       stubPersonRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
-      GeocodingService.noop
+      GeocodingService.noop ++
+      AirportTimingService.noopLayer
 
   // ---------------------------------------------------------------------------
   // HTTP runner

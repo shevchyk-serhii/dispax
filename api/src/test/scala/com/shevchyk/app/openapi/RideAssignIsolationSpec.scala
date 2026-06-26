@@ -7,6 +7,7 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -396,7 +397,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       personRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
-      GeocodingService.noop
+      GeocodingService.noop ++
+      AirportTimingService.noopLayer
 
   // ---------------------------------------------------------------------------
   // HTTP runner
@@ -586,7 +588,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       clientPersonRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
-      GeocodingService.noop
+      GeocodingService.noop ++
+      AirportTimingService.noopLayer
 
   private val updateBody: Body = Body.fromString("""{"notes":"updated"}""")
 

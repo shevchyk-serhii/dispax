@@ -176,6 +176,25 @@
   "checkpointTerminalExit": "Вихід з терміналу",
   "markCheckpointButton": "Я тут",
   "airportCheckpointPanelTitle": "Моє місце в терміналі",
+  "airportEntryTitle": "Час в'їзду в термінал",
+  "airportDepartIn": "Виїзд через:",
+  "airportEntryLabel": "В'їзд у термінал:",
+  "airportTravelTime": "Час у дорозі:",
+  "airportParkingSavings": "Економія на паркуванні: {amount}",
+  "@airportParkingSavings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "airportDepartNow": "Виїжджайте зараз!",
+  "airportFlightDelayed": "Рейс затримано. Час в'їзду перераховано.",
+  "airportTimingError": "Помилка завантаження даних: {error}",
+  "@airportTimingError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "airportLoadingTiming": "Завантаження часу в'їзду...",
   "checkpointNotifTitle": "Клієнт досяг {checkpoint}",
   "@checkpointNotifTitle": {
     "placeholders": {

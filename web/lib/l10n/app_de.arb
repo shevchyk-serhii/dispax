@@ -176,6 +176,25 @@
   "checkpointTerminalExit": "Terminalausgang",
   "markCheckpointButton": "Ich bin hier",
   "airportCheckpointPanelTitle": "Mein Standort im Terminal",
+  "airportEntryTitle": "Terminal-Einfahrtszeit",
+  "airportDepartIn": "Losfahren in:",
+  "airportEntryLabel": "Terminal-Einfahrt:",
+  "airportTravelTime": "Fahrzeit:",
+  "airportParkingSavings": "Parkersparnis: {amount}",
+  "@airportParkingSavings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "airportDepartNow": "Jetzt losfahren!",
+  "airportFlightDelayed": "Flug verspätet. Einfahrtszeit neu berechnet.",
+  "airportTimingError": "Fehler beim Laden der Daten: {error}",
+  "@airportTimingError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "airportLoadingTiming": "Einfahrtszeit wird geladen...",
   "checkpointNotifTitle": "Fahrgast hat {checkpoint} erreicht",
   "@checkpointNotifTitle": {
     "placeholders": {

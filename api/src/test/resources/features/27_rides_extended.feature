@@ -80,14 +80,22 @@ Feature: Extended Ride Operations
     Then the response status should be 200
     And the response should contain ride details
 
-  Scenario: Add airport timing to ride
-    Given I am authenticated as a dispatcher
-    When I send a POST request to "/api/rides/11111111-1111-1111-1111-111111111111/airport-timing" with body:
+  Scenario: Add airport timing to an arrival ride
+    Given I am authenticated as client with ID 1
+    When I send a POST request to "/api/rides/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/airport-timing" with body:
       """
-      {"flightNumber":"LH1234","scheduledArrival":"2026-06-01T08:00:00Z"}
+      {"driverLatitude":48.1351,"driverLongitude":11.5820}
       """
     Then the response status should be 200
     And the response should contain ride details
+
+  Scenario: Airport timing rejects a non-airport ride
+    Given I am authenticated as a dispatcher
+    When I send a POST request to "/api/rides/11111111-1111-1111-1111-111111111111/airport-timing" with body:
+      """
+      {"driverLatitude":48.1351,"driverLongitude":11.5820}
+      """
+    Then the response status should be 400
 
   Scenario: Post client location for ride
     Given I am authenticated as a client

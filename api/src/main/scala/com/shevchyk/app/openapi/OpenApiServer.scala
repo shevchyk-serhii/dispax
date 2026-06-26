@@ -33,6 +33,7 @@ import com.shevchyk.notification.repository.NotificationRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
   AirportConfigService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -89,9 +90,10 @@ object OpenApiServer:
       AuditService & SessionRepository & TokenRepository & NotificationPreferenceRepository & BlacklistRepository &
       CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &
       EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
-      AirportCheckpointService & AirportConfigService & ChatService & RideTemplateRepository & DriverLocationService &
-      HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository & TariffRepository &
-      RideEstimateService & RideShareTokenService & EtaService & com.shevchyk.core.config.PublicLinkConfig
+      AirportCheckpointService & AirportConfigService & AirportTimingService & ChatService & RideTemplateRepository &
+      DriverLocationService & HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository &
+      TariffRepository & RideEstimateService & RideShareTokenService & EtaService &
+      com.shevchyk.core.config.PublicLinkConfig
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so

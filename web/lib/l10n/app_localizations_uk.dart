@@ -495,6 +495,38 @@ class AppLocalizationsUk extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'Моє місце в терміналі';
 
   @override
+  String get airportEntryTitle => 'Час в\'їзду в термінал';
+
+  @override
+  String get airportDepartIn => 'Виїзд через:';
+
+  @override
+  String get airportEntryLabel => 'В\'їзд у термінал:';
+
+  @override
+  String get airportTravelTime => 'Час у дорозі:';
+
+  @override
+  String airportParkingSavings(String amount) {
+    return 'Економія на паркуванні: $amount';
+  }
+
+  @override
+  String get airportDepartNow => 'Виїжджайте зараз!';
+
+  @override
+  String get airportFlightDelayed =>
+      'Рейс затримано. Час в\'їзду перераховано.';
+
+  @override
+  String airportTimingError(String error) {
+    return 'Помилка завантаження даних: $error';
+  }
+
+  @override
+  String get airportLoadingTiming => 'Завантаження часу в\'їзду...';
+
+  @override
   String checkpointNotifTitle(String checkpoint) {
     return 'Клієнт досяг $checkpoint';
   }

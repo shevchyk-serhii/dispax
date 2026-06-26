@@ -7,6 +7,7 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -54,17 +55,8 @@ object RideApi:
   // -- Environment ---------------------------------------------------------
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
-      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService
-
-  // NOTE: AirportTimingConfig is used ONLY by the advisory `airport-timing` endpoint.
-  // For the ride creation pickup-time computation, use PickupTimeService (configurable per
-  // company/client, 3-level hierarchy). A follow-up cleanup ticket should remove this config
-  // once the advisory endpoint is also migrated to the configurable approach.
-  private object AirportTimingConfig:
-    val travelTimeMinutes: Int        = 45
-    val bufferTimeMinutes: Int        = 30
-    val optimalParkingCost: Double    = 12.50
-    val earlyEntryParkingCost: Double = 25.00
+      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService &
+      AirportTimingService
 
   // ======================================================================
   // Endpoint descriptions
@@ -124,6 +116,7 @@ object RideApi:
 
   val airportTimingEndpoint = secureEndpoint.post
     .in("api" / "rides" / path[String]("rideId") / "airport-timing")
+    .in(jsonBody[AirportTimingRequest])
     .out(stringBody.and(header(sttp.model.Header.contentType(MediaType.ApplicationJson))))
     .tag(rideTag)
     .summary("Compute optimal airport timing for a ride")
@@ -641,41 +634,42 @@ object RideApi:
     )
   }
 
-  private val airportTimingServer: ZServerEndpoint[RideEnv, Any] = airportTimingEndpoint.serverLogic { user => rideId =>
-    for {
-      _            <- checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
-      parsedRideId <- parseRideId(rideId)
-      service      <- ZIO.service[RideService]
-      ride         <- service.getRideById(parsedRideId).mapError(fromRideError)
-      companyId    <- requireCompanyId(user.companyId)
-      _            <- ZIO
-                        .fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
-                        .when(ride.companyId != companyId)
-                        .mapError(fromRideError)
-      now           = java.time.Instant.now()
-      flightTime    = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
-      travelTime    = AirportTimingConfig.travelTimeMinutes
-      bufferTime    = AirportTimingConfig.bufferTimeMinutes
-      totalTime     = travelTime + bufferTime
-      optimalEntry  = flightTime.minusSeconds(totalTime * 60)
-      latestEntry   = flightTime.minusSeconds(bufferTime * 60)
-      timeToDepart  = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
-      optimalCost   = AirportTimingConfig.optimalParkingCost
-      earlyCost     = AirportTimingConfig.earlyEntryParkingCost
-      savings       = earlyCost - optimalCost
-      body          =
-        s"""{
-          "optimalEntryTime": "${optimalEntry}",
-          "latestEntryTime": "${latestEntry}",
-          "travelTimeMinutes": $travelTime,
-          "bufferTimeMinutes": $bufferTime,
-          "optimalParkingCost": $optimalCost,
-          "earlyEntryParkingCost": $earlyCost,
-          "savings": $savings,
-          "flightStatus": "On time",
-          "timeToDepartMinutes": $timeToDepart
-        }"""
-    } yield body
+  private def fromAirportTimingError(error: AirportTimingService.Error): Err =
+    error match
+      case AirportTimingService.Error.NotFound              => (StatusCode.NotFound, ApiError("Ride not found"))
+      case AirportTimingService.Error.NotAnAirportTransfer  =>
+        (StatusCode.BadRequest, ApiError("Ride is not an airport transfer"))
+      case AirportTimingService.Error.SettingsLoadFailed(_) =>
+        (StatusCode.InternalServerError, ApiError("Internal server error"))
+
+  private val airportTimingServer: ZServerEndpoint[RideEnv, Any] = airportTimingEndpoint.serverLogic {
+    user => (rideId, request) =>
+      for {
+        _             <- checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+        parsedRideId  <- parseRideId(rideId)
+        companyId     <- requireCompanyId(user.companyId)
+        service       <- ZIO.service[AirportTimingService]
+        fallbackCoords =
+          (request.driverLatitude, request.driverLongitude) match
+            case (Some(lat), Some(lng)) => Some((lat, lng))
+            case _                      => None
+        result        <- service
+                           .compute(parsedRideId, companyId, fallbackCoords)
+                           .mapError(fromAirportTimingError)
+        body           =
+          s"""{
+            "optimalEntryTime": "${result.optimalEntryTime}",
+            "latestEntryTime": "${result.latestEntryTime}",
+            "travelTimeMinutes": ${result.travelMinutes},
+            "bufferTimeMinutes": ${result.walkBufferMinutes},
+            "optimalParkingCost": ${result.optimalParkingCost},
+            "earlyEntryParkingCost": ${result.earlyEntryParkingCost},
+            "savings": ${result.savings},
+            "flightStatus": "${result.flightStatus}",
+            "actualArrivalTime": "${result.actualArrivalTime}",
+            "timeToDepartMinutes": ${result.timeToDepartMinutes}
+          }"""
+      } yield body
   }
 
   private val markPaymentServer: ZServerEndpoint[RideEnv, Any] = markPaymentEndpoint.serverLogic {

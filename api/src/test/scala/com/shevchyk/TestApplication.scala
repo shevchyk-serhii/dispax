@@ -57,6 +57,7 @@ import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
   AirportConfigService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -1612,6 +1613,16 @@ object TestApplication extends ZIOAppDefault:
       ClientAddressService.layer,
       inMemoryClientAddressRepositoryLayer,
       PickupTimeService.noopLayer,
+      // Real airport-timing service so the airport-timing endpoint is exercised end-to-end in BDD. A stub
+      // TravelTimeService returns a fixed 20-minute drive (the timing math itself is unit-tested separately).
+      ZLayer.succeed[com.shevchyk.ride.application.TravelTimeService](
+        new com.shevchyk.ride.application.TravelTimeService:
+          def travelMinutes(fromLat: Double, fromLng: Double, toLat: Double, toLng: Double): zio.Task[Option[Int]] = ZIO
+            .some(20)
+      ),
+      com.shevchyk.core.config.AirportArrivalTimingConfig.liveLayer,
+      com.shevchyk.core.config.AirportPickupConfig.liveLayer,
+      AirportTimingService.layer,
       // DriverAvailabilityChecker: noop for tests (no unavailability windows set up by default)
       ZLayer.succeed[DriverAvailabilityChecker](
         new DriverAvailabilityChecker:

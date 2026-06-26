@@ -497,6 +497,38 @@ class AppLocalizationsDe extends AppLocalizations {
   String get airportCheckpointPanelTitle => 'Mein Standort im Terminal';
 
   @override
+  String get airportEntryTitle => 'Terminal-Einfahrtszeit';
+
+  @override
+  String get airportDepartIn => 'Losfahren in:';
+
+  @override
+  String get airportEntryLabel => 'Terminal-Einfahrt:';
+
+  @override
+  String get airportTravelTime => 'Fahrzeit:';
+
+  @override
+  String airportParkingSavings(String amount) {
+    return 'Parkersparnis: $amount';
+  }
+
+  @override
+  String get airportDepartNow => 'Jetzt losfahren!';
+
+  @override
+  String get airportFlightDelayed =>
+      'Flug verspätet. Einfahrtszeit neu berechnet.';
+
+  @override
+  String airportTimingError(String error) {
+    return 'Fehler beim Laden der Daten: $error';
+  }
+
+  @override
+  String get airportLoadingTiming => 'Einfahrtszeit wird geladen...';
+
+  @override
   String checkpointNotifTitle(String checkpoint) {
     return 'Fahrgast hat $checkpoint erreicht';
   }
