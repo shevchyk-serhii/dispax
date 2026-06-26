@@ -8,6 +8,7 @@ import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
+import '../../../modules/ride_management/helpers/airport_detection.dart';
 import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
 import '../../../modules/ride_management/helpers/tag_helpers.dart';
 import '../../../modules/ride_management/models/payment_method.dart';
@@ -113,7 +114,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             )
             .toList();
       case _FilterMode.airport:
-        filtered = filtered.where((r) => r.isAirportTransfer).toList();
+        filtered = filtered.where(isAirportRide).toList();
       case _FilterMode.all:
         break;
     }
