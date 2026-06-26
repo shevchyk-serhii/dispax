@@ -117,6 +117,9 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                = nope(
         "findFlightStatus"
       )
+      def findFlightStatusFor(
+          rideIds: List[RideId]
+      ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = nope("findFlightStatusFor")
 
   // EtaService stub returning a fixed ETA.
   private def etaServiceStub(eta: Option[Int]): EtaService =

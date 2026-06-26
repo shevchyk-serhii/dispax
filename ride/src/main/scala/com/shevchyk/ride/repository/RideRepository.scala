@@ -123,6 +123,11 @@ trait RideRepository {
   // Read just the flight-tracking columns for a ride (the DTO surfaces these; they are not part of the
   // Ride domain object). None when the ride does not exist.
   def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]
+
+  // Bulk read of the flight-tracking columns for many rides at once, keyed by ride id. Used when
+  // serializing a list of rides (dispatcher "My Rides") so flight gate/terminal/status reach the DTO
+  // without an N+1 of findFlightStatus. Rides absent from the map have no flight columns set.
+  def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]]
 }
 
 object RideRepository {

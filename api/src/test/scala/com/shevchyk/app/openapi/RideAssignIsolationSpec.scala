@@ -398,7 +398,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       stubTariffRepo ++
       stubRideEstimateService ++
       GeocodingService.noop ++
-      AirportTimingService.noopLayer
+      AirportTimingService.noopLayer ++
+      StubRideRepository.layer
 
   // ---------------------------------------------------------------------------
   // HTTP runner
@@ -589,7 +590,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       stubTariffRepo ++
       stubRideEstimateService ++
       GeocodingService.noop ++
-      AirportTimingService.noopLayer
+      AirportTimingService.noopLayer ++
+      StubRideRepository.layer
 
   private val updateBody: Body = Body.fromString("""{"notes":"updated"}""")
 

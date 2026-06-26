@@ -129,5 +129,30 @@ void main() {
       final event = WebSocketEvent.fromJson(json);
       expect(event.driverId, 'driver-uuid');
     });
+
+    test('fromJson parses FlightStatusUpdated with gate/terminal/status', () {
+      final json = {
+        'FlightStatusUpdated': {
+          'rideId': 'ride-1',
+          'clientId': 'client-1',
+          'companyId': 'company-1',
+          'flightNumber': 'LH123',
+          'status': 'landed',
+          'gate': 'G35',
+          'terminal': 'T2',
+          'estimatedTime': '2026-06-26T09:00:00Z',
+        },
+      };
+
+      final event = WebSocketEvent.fromJson(json);
+
+      expect(event.isFlightStatusUpdated, isTrue);
+      expect(event.rideId, 'ride-1');
+      expect(event.flightNumber, 'LH123');
+      expect(event.flightStatus, 'landed');
+      expect(event.flightGate, 'G35');
+      expect(event.flightTerminal, 'T2');
+      expect(event.flightEstimatedTime, '2026-06-26T09:00:00Z');
+    });
   });
 }

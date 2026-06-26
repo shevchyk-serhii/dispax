@@ -103,5 +103,35 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           repo = PostgresRideRepository(xa)
           row <- repo.findFlightStatus(RideId(UUID.randomUUID()))
         yield assertTrue(row.isEmpty)
+      },
+      test("findFlightStatusFor bulk-reads only rides that have flight data") {
+        val t = Instant.parse("2026-06-26T09:00:00Z")
+        for
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanRides(xa)
+          repo    = PostgresRideRepository(xa)
+          withFs  = RideId(UUID.randomUUID())
+          without = RideId(UUID.randomUUID())
+          unknown = RideId(UUID.randomUUID())
+          _      <- repo.create(makeRide(withFs))
+          _      <- repo.create(makeRide(without))
+          _      <- repo.updateFlightStatus(withFs, Some("G35"), Some("T2"), Some("landed"), Some(t))
+          map    <- repo.findFlightStatusFor(List(withFs, without, unknown))
+        yield assertTrue(
+          // the ride with persisted flight data is present with the exact row,
+          map.get(withFs).contains(FlightStatusRow(Some("G35"), Some("T2"), Some("landed"), Some(t))),
+          // the ride that never got flight data carries only empty columns,
+          map.get(without).forall(!_.nonEmpty),
+          // and the unknown id is absent entirely.
+          !map.contains(unknown)
+        )
+      },
+      test("findFlightStatusFor of an empty list returns an empty map") {
+        for
+          xa  <- ZIO.service[Transactor[Task]]
+          repo = PostgresRideRepository(xa)
+          map <- repo.findFlightStatusFor(Nil)
+        yield assertTrue(map.isEmpty)
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.tag("integration")

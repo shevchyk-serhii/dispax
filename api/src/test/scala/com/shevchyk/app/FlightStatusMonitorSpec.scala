@@ -47,6 +47,10 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
         Some(m.getOrElse(rideId, FlightStatusRow()))
       )
 
+      def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]] = store.get.map(m =>
+        rideIds.flatMap(id => m.get(id).map(id -> _)).toMap
+      )
+
       def updateFlightStatus(
           rideId: RideId,
           gate: Option[String],
