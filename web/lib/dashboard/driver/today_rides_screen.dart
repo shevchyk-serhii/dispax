@@ -1140,13 +1140,13 @@ class DriverClientPriceRow extends StatelessWidget {
     required this.isDark,
   });
 
-  /// Formats the fare like the active-ride control panel: drop a trailing ".0"
-  /// so a whole-euro fare reads "€45", not "€45.0".
+  /// Formats the fare amount, dropping a trailing ".0" so a whole-euro fare
+  /// reads "45", not "45.0". The euro symbol is rendered by the adjacent
+  /// [Icons.euro], so it must NOT be prefixed here (that produced "€ €100").
   String _formatPrice(double price) {
-    final text = price == price.roundToDouble()
+    return price == price.roundToDouble()
         ? price.toStringAsFixed(0)
         : price.toString();
-    return '€$text';
   }
 
   @override

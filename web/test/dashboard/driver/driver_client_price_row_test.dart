@@ -46,13 +46,18 @@ void main() {
       tester,
     ) async {
       await pumpRow(tester, price: 45.0);
-      expect(find.text('€45'), findsOneWidget);
-      expect(find.text('€45.0'), findsNothing);
+      // The euro symbol is the Icons.euro icon; the text holds only the amount.
+      expect(find.byIcon(Icons.euro), findsOneWidget);
+      expect(find.text('45'), findsOneWidget);
+      expect(find.text('45.0'), findsNothing);
+      // Regression: the amount text must NOT prefix '€' (that produced '€ €100').
+      expect(find.text('€45'), findsNothing);
     });
 
     testWidgets('shows a fractional fare with its decimals', (tester) async {
       await pumpRow(tester, price: 45.5);
-      expect(find.text('€45.5'), findsOneWidget);
+      expect(find.text('45.5'), findsOneWidget);
+      expect(find.text('€45.5'), findsNothing);
     });
 
     testWidgets('renders nothing when there is no name and no price', (
@@ -70,7 +75,8 @@ void main() {
     ) async {
       await pumpRow(tester, clientName: 'Unknown Client', price: 30.0);
       expect(find.text('Unknown Client'), findsNothing);
-      expect(find.text('€30'), findsOneWidget);
+      expect(find.byIcon(Icons.euro), findsOneWidget);
+      expect(find.text('30'), findsOneWidget);
     });
   });
 }
