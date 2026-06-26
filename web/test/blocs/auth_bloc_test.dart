@@ -81,6 +81,87 @@ void main() {
       ],
     );
 
+    // Onboarding: a user logging in with a temporary password must be gated
+    // behind the forced password-change screen, not let into the app.
+    blocTest<AuthBloc, AuthState>(
+      'AuthLoginRequested emits mustChangePassword when the flag is set',
+      build: () {
+        final person = TestFixtures.person(mustChangePassword: true);
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(email: 'temp@test.com', password: 'Temp1234'),
+      ),
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.mustChangePassword)
+            .having((s) => s.user, 'user', isNotNull),
+      ],
+    );
+
+    // Onboarding: changing the temporary password re-logs in with the new
+    // password and lands the (now non-flagged) user in the authenticated state.
+    blocTest<AuthBloc, AuthState>(
+      'AuthPasswordChangeRequested changes password then authenticates',
+      build: () {
+        final flagged = TestFixtures.person(
+          email: 'temp@test.com',
+          mustChangePassword: true,
+        );
+        final activated = TestFixtures.person(email: 'temp@test.com');
+        // First login (temporary) returns the flagged user; the re-login after
+        // the change returns the activated (flag cleared) user.
+        final logins = <Map<String, dynamic>>[
+          {'person': flagged.toJson(), 'token': 'tmp-token'},
+          {'person': activated.toJson(), 'token': 'new-token'},
+        ];
+        var loginCall = 0;
+        when(
+          () => mockApiClient.login(any(), any()),
+        ).thenAnswer((_) async => logins[loginCall++]);
+        when(
+          () => mockApiClient.put(any(), any()),
+        ).thenAnswer((_) async => http.Response('{}', 200));
+        return buildBloc();
+      },
+      act: (bloc) async {
+        bloc.add(
+          const AuthLoginRequested(
+            email: 'temp@test.com',
+            password: 'Temp1234',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(
+          const AuthPasswordChangeRequested(
+            currentPassword: 'Temp1234',
+            newPassword: 'NewPass123',
+          ),
+        );
+      },
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.mustChangePassword,
+        ),
+        AuthState.loading(),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.authenticated)
+            .having((s) => s.user?.mustChangePassword, 'flagCleared', false),
+      ],
+      verify: (_) {
+        verify(
+          () => mockApiClient.put('/users/change-password', any()),
+        ).called(1);
+      },
+    );
+
     // Regression: a password login must carry the biometric flags from
     // BiometricService into the authenticated state. Previously the login
     // handler emitted AuthState.authenticated(user) without them, so they

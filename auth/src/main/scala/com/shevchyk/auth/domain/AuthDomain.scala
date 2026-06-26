@@ -31,7 +31,8 @@ case class UserDto(
     companyId: Option[UUID] = None,
     createdAt: Option[String] = None,
     roles: List[String] = Nil,
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    mustChangePassword: Boolean = false
 ) derives JsonCodec
 
 case class CreateUserRequest(
@@ -155,5 +156,6 @@ object UserDto:
     status = Some(person.status.toString),
     companyId = person.companyId.map(_.value),
     roles = person.effectiveRoles.map(PersonRole.toWire).toList,
-    preferredLanguage = person.preferredLanguage
+    preferredLanguage = person.preferredLanguage,
+    mustChangePassword = person.mustChangePassword
   )

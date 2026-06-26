@@ -110,6 +110,12 @@
   "passwordChanged": "Пароль успішно змінено",
   "passwordsDoNotMatch": "Паролі не збігаються",
   "passwordTooShort": "Пароль повинен містити щонайменше 6 символів",
+  "forcePasswordChangeTitle": "Встановіть новий пароль",
+  "forcePasswordChangeMessage": "Ваш обліковий запис використовує тимчасовий пароль. Будь ласка, встановіть новий пароль, щоб продовжити.",
+  "temporaryPassword": "Тимчасовий пароль",
+  "temporaryPasswordHint": "Користувача попросять змінити його під час першого входу.",
+  "setNewPassword": "Встановити новий пароль",
+  "userCreatedSharePassword": "Користувача створено. Повідомте йому тимчасовий пароль.",
 
   "notifications": "Сповіщення",
   "pushNotifications": "Push-сповіщення",

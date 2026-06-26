@@ -700,6 +700,42 @@ abstract class AppLocalizations {
   /// **'Password must be at least 6 characters'**
   String get passwordTooShort;
 
+  /// No description provided for @forcePasswordChangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new password'**
+  String get forcePasswordChangeTitle;
+
+  /// No description provided for @forcePasswordChangeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account uses a temporary password. Please set a new password to continue.'**
+  String get forcePasswordChangeMessage;
+
+  /// No description provided for @temporaryPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary password'**
+  String get temporaryPassword;
+
+  /// No description provided for @temporaryPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The user will be asked to change it on first login.'**
+  String get temporaryPasswordHint;
+
+  /// No description provided for @setNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set new password'**
+  String get setNewPassword;
+
+  /// No description provided for @userCreatedSharePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'User created. Share the temporary password with them.'**
+  String get userCreatedSharePassword;
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:

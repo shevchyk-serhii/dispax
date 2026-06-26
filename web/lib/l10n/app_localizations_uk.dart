@@ -317,6 +317,27 @@ class AppLocalizationsUk extends AppLocalizations {
   String get passwordTooShort => 'Пароль повинен містити щонайменше 6 символів';
 
   @override
+  String get forcePasswordChangeTitle => 'Встановіть новий пароль';
+
+  @override
+  String get forcePasswordChangeMessage =>
+      'Ваш обліковий запис використовує тимчасовий пароль. Будь ласка, встановіть новий пароль, щоб продовжити.';
+
+  @override
+  String get temporaryPassword => 'Тимчасовий пароль';
+
+  @override
+  String get temporaryPasswordHint =>
+      'Користувача попросять змінити його під час першого входу.';
+
+  @override
+  String get setNewPassword => 'Встановити новий пароль';
+
+  @override
+  String get userCreatedSharePassword =>
+      'Користувача створено. Повідомте йому тимчасовий пароль.';
+
+  @override
   String get notifications => 'Сповіщення';
 
   @override
