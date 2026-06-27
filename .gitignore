@@ -5,6 +5,10 @@ target/
 
 ### IntelliJ IDEA ###
 .idea/
+# Keep shared Flutter run configurations in git
+!web/.idea/
+!web/.idea/runConfigurations/
+!web/.idea/runConfigurations/*.xml
 *.iws
 *.iml
 *.ipr
@@ -92,6 +96,9 @@ web/linux/flutter/
 
 ### Server logs ###
 server.log
+
+### Backup files ###
+*.bak
 
 ### Env files ###
 .env
