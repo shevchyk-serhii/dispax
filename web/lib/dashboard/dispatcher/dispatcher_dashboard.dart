@@ -34,6 +34,7 @@ import '../driver/calendar/calendar_schedule_screen.dart';
 import '../../widgets/common/responsive_scaffold.dart';
 import 'widgets/payroll_screen.dart';
 import 'widgets/pending_rides_panel.dart';
+import 'arrivals_board_screen.dart';
 import 'widgets/eta_alert_card.dart';
 import 'widgets/driver_schedule_panel.dart';
 import 'widgets/live_fleet_panel.dart';
@@ -78,9 +79,9 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // the driver dashboard, where Settings is the final destination).
   static const int _settingsTabIndex = 19;
   // Screen index for driver's own schedule (only when canDrive).
-  // DispatcherDriverSchedulesScreen sits at 29 and Manage Clients at 30, so the
-  // canDrive-gated driver screens shift to 31..33.
-  static const int _myScheduleScreenIndex = 33;
+  // DispatcherDriverSchedulesScreen sits at 29, Manage Clients at 30 and the arrivals
+  // board at 31, so the canDrive-gated driver screens shift to 32..34.
+  static const int _myScheduleScreenIndex = 34;
 
   @override
   void initState() {
@@ -216,10 +217,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // Manage Clients (index 30): always available — added unconditionally before the
   // canDrive-gated driver screens so its index never shifts with canDrive.
   static const int _manageClientsScreenIndex = 30;
+  // Arrivals board (index 31): always available — added unconditionally before the
+  // canDrive-gated driver screens so its index never shifts with canDrive.
+  static const int _arrivalsBoardScreenIndex = 31;
   // Screen indices for driver screens added at the end of the list (only when canDrive).
-  // These must not collide with the hard-coded indices 0..30.
-  static const int _driverMapScreenIndex = 31;
-  static const int _driverMyRidesScreenIndex = 32;
+  // These must not collide with the hard-coded indices 0..31.
+  static const int _driverMapScreenIndex = 32;
+  static const int _driverMyRidesScreenIndex = 33;
 
   // All screens in order
   List<Widget> _buildAllScreens(bool canDrive) {
@@ -285,11 +289,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         )..add(const ClientLoadRequested()),
         child: const ClientListPanel(),
       ), // 30: Manage Clients
-      // Driver screens — only meaningful when canDrive; appended at indices 31..33
+      const ArrivalsBoardScreen(), // 31: MUC arrivals board
+      // Driver screens — only meaningful when canDrive; appended at indices 32..34
       // so existing hard-coded indices are never renumbered.
-      if (canDrive) const DriverMapScreen(), // 31
-      if (canDrive) const TodayRidesScreen(), // 32
-      if (canDrive) const CalendarScheduleScreen(), // 33: My Schedule
+      if (canDrive) const DriverMapScreen(), // 32
+      if (canDrive) const TodayRidesScreen(), // 33
+      if (canDrive) const CalendarScheduleScreen(), // 34: My Schedule
     ];
   }
 
@@ -533,6 +538,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         Icons.people,
         l10n.manageClientsTitle,
         _manageClientsScreenIndex,
+        color,
+      ),
+      _MoreMenuItem(
+        Icons.flight_land,
+        l10n.arrivalsBoardTitle,
+        _arrivalsBoardScreenIndex,
         color,
       ),
       // DriverSchedulePanel — removed from nav when canDrive, accessible here.

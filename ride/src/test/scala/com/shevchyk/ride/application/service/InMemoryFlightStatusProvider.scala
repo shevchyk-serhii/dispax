@@ -15,6 +15,10 @@ final class InMemoryFlightStatusProvider(store: Ref.Synchronized[Map[(String, Bo
     val key = (MucFlightParser.normalizeFlightNumber(flightNumber), isArrival)
     store.get.map(_.get(key))
 
+  override def list(date: LocalDate, isArrival: Boolean): Task[List[FlightInfo]] = store.get.map(
+    _.values.filter(_.isArrival == isArrival).toList
+  )
+
   /**
    * Seed (or overwrite) the flight returned for its (number, direction).
    */

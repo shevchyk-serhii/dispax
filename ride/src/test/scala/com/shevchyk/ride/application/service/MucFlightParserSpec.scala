@@ -50,6 +50,24 @@ object MucFlightParserSpec extends ZIOSpecDefault:
         val info = MucFlightParser.parse(fixture("empty.html"), theDate, isArrival = false)
         assertTrue(info.isEmpty)
       },
+      test("parseAll returns every flight row of the board (not just the first)") {
+        val all = MucFlightParser.parseAll(fixture("departures_list.html"), theDate, isArrival = false)
+        assertTrue(
+          all.size > 1,                    // the whole board, not a single row
+          all.forall(_.flightNumber.nonEmpty),
+          all.head.flightNumber == MucFlightParser
+            .parse(fixture("departures_list.html"), theDate, isArrival = false)
+            .get
+            .flightNumber,                 // first parsed row matches single-parse
+          all.forall(_.isArrival == false) // direction is applied to every row
+        )
+      },
+      test("parseAll returns empty for a zero-result / junk fragment") {
+        assertTrue(
+          MucFlightParser.parseAll(fixture("empty.html"), theDate, isArrival = true).isEmpty,
+          MucFlightParser.parseAll("<div>nothing</div>", theDate, isArrival = true).isEmpty
+        )
+      },
       test("returns None for empty / junk html") {
         assertTrue(
           MucFlightParser.parse("", theDate, isArrival = false).isEmpty,

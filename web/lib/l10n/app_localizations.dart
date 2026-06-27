@@ -6268,6 +6268,12 @@ abstract class AppLocalizations {
   /// **'Arrivals'**
   String get arrivalsTabLabel;
 
+  /// No description provided for @arrivalsBoardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals · Munich Airport'**
+  String get arrivalsBoardTitle;
+
   /// No description provided for @departuresTabLabel.
   ///
   /// In en, this message translates to:

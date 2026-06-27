@@ -143,6 +143,7 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
       def lookup(flightNumber: String, date: LocalDate, isArrival: Boolean): Task[Option[FlightInfo]] = ZIO.succeed(
         result
       )
+      def list(date: LocalDate, isArrival: Boolean): Task[List[FlightInfo]]                           = ZIO.succeed(Nil)
 
   private def eventHubStub(ref: Ref[List[WebSocketEvent]]): EventHub =
     new EventHub:

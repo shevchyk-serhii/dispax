@@ -53,6 +53,26 @@ final class MucFlightStatusProvider(config: MucFlightConfig, client: Client) ext
           ZIO.logWarning(s"MUC flight lookup error for $number: ${err.getMessage}").as(None)
         }
 
+  override def list(date: LocalDate, isArrival: Boolean): Task[List[FlightInfo]] =
+    if !config.enabled then ZIO.logDebug("MUC flight provider disabled").as(Nil)
+    else
+      val path      = if isArrival then "arrivals" else "departures"
+      val dirParam  = if isArrival then "flight_to_muc" else "flight_from_muc"
+      val dateParam = if isArrival then "flight_date_to_muc" else "flight_date_from_muc"
+
+      // Same board query as `lookup` but WITHOUT the flight_number filter, so the whole board comes back.
+      // A larger page size to cover a realistic board; the gate is intentionally not fetched per row (too slow).
+      val q       =
+        s"flight_search_presenter%5B$dirParam%5D=1" +
+          s"&flight_search_presenter%5B$dateParam%5D=$date" +
+          s"&flight_search_presenter%5Blocale%5D=de" +
+          s"&page=0&per_page=100&allow_pagination=1"
+      val listUrl = s"${config.baseUrl}/flightsearch/$path?$q"
+
+      httpGet(listUrl)
+        .map(body => MucFlightParser.parseAll(body, date, isArrival))
+        .catchAll(err => ZIO.logWarning(s"MUC flight board error ($path $date): ${err.getMessage}").as(Nil))
+
   /**
    * Fetch the detail page for `href` and merge its gate (and terminal fallback) into `info`. Detail failures are
    * swallowed — a missing gate must not lose the list data we already have.

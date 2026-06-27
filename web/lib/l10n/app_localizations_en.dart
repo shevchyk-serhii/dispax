@@ -3350,6 +3350,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get arrivalsTabLabel => 'Arrivals';
 
   @override
+  String get arrivalsBoardTitle => 'Arrivals · Munich Airport';
+
+  @override
   String get departuresTabLabel => 'Departures';
 
   @override

@@ -37,6 +37,7 @@ import com.shevchyk.ride.application.service.{
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  FlightStatusProvider,
   RideEstimateService,
   RideService,
   RideShareTokenService
@@ -46,6 +47,7 @@ import com.shevchyk.ride.openapi.{
   ExternalDriverApi,
   ExpenseApi,
   ExportApi,
+  FlightApi,
   PartnerCompanyApi,
   RideApi,
   RideTemplateApi,
@@ -92,7 +94,7 @@ object OpenApiServer:
       EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
       AirportCheckpointService & AirportConfigService & AirportTimingService & ChatService & RideTemplateRepository &
       DriverLocationService & HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository &
-      TariffRepository & RideEstimateService & RideShareTokenService & EtaService &
+      TariffRepository & RideEstimateService & RideShareTokenService & EtaService & FlightStatusProvider &
       com.shevchyk.core.config.PublicLinkConfig & com.shevchyk.core.config.AirportArrivalTimingConfig
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
@@ -112,6 +114,7 @@ object OpenApiServer:
       ExportApi.serverEndpoints.map(_.endpoint) :::
       RideTemplateApi.serverEndpoints.map(_.endpoint) :::
       StatsApi.serverEndpoints.map(_.endpoint) :::
+      FlightApi.serverEndpoints.map(_.endpoint) :::
       ClientAddressApi.serverEndpoints.map(_.endpoint) :::
       DriverApi.serverEndpoints.map(_.endpoint) :::
       ScheduleApi.serverEndpoints.map(_.endpoint) :::
@@ -152,6 +155,7 @@ object OpenApiServer:
       http(ExportApi.serverEndpoints) ++
       http(RideTemplateApi.serverEndpoints) ++
       http(StatsApi.serverEndpoints) ++
+      http(FlightApi.serverEndpoints) ++
       http(ClientAddressApi.serverEndpoints) ++
       http(DriverApi.serverEndpoints) ++
       http(ScheduleApi.serverEndpoints) ++

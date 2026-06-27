@@ -88,34 +88,49 @@ object MucFlightParser:
    */
   def parse(html: String, date: LocalDate, isArrival: Boolean): Option[FlightInfo] = RowRegex
     .findFirstMatchIn(html)
-    .flatMap { rowMatch =>
-      val row = rowMatch.group(1)
+    .flatMap(rowMatch => parseRow(rowMatch.group(1), date, isArrival))
 
-      flightNumberOf(cell(row, "fp-flight-number").getOrElse("")).map { rawNumber =>
-        val statusLabel = cell(row, "fp-flight-status").getOrElse("")
+  /**
+   * Parse EVERY flight row of `html` — the whole board, in board order. Used by the arrivals/departures board (an
+   * unfiltered query returns many rows). Rows without a parseable flight number are skipped. Gate is not populated (it
+   * lives on each flight's detail page; the board view does not expose it and fetching N detail pages would be far too
+   * slow for a list).
+   */
+  def parseAll(html: String, date: LocalDate, isArrival: Boolean): List[FlightInfo] =
+    RowRegex
+      .findAllMatchIn(html)
+      .flatMap(rowMatch => parseRow(rowMatch.group(1), date, isArrival))
+      .toList
 
-        // The MUC time cell is "planned | expected"; the "other" cell is the time at the other airport.
-        val mucTimeCell = cell(row, "fp-flight-time-muc").getOrElse("")
-        val parts       = mucTimeCell.split("\\|", -1).map(_.trim)
-        val plannedRaw  = parts.lift(0).getOrElse("")
-        val expectedRaw = parts.lift(1).getOrElse("")
+  /**
+   * Parse a single `<tr>` flight row into a [[FlightInfo]] (None when the row has no flight number).
+   */
+  private def parseRow(row: String, date: LocalDate, isArrival: Boolean): Option[FlightInfo] = flightNumberOf(
+    cell(row, "fp-flight-number").getOrElse("")
+  ).map { rawNumber =>
+    val statusLabel = cell(row, "fp-flight-status").getOrElse("")
 
-        val terminal = cell(row, "fp-flight-area").map(_.trim).filter(_.nonEmpty)
-        val airline  = cell(row, "fp-flight-airline").filter(_.nonEmpty)
-        val other    = cell(row, "fp-flight-airport").flatMap(iataOf)
+    // The MUC time cell is "planned | expected"; the "other" cell is the time at the other airport.
+    val mucTimeCell = cell(row, "fp-flight-time-muc").getOrElse("")
+    val parts       = mucTimeCell.split("\\|", -1).map(_.trim)
+    val plannedRaw  = parts.lift(0).getOrElse("")
+    val expectedRaw = parts.lift(1).getOrElse("")
 
-        FlightInfo(
-          flightNumber = normalizeFlightNumber(rawNumber),
-          isArrival = isArrival,
-          status = FlightStatus.fromMuc(statusLabel),
-          scheduledTime = timeOf(plannedRaw, date),
-          estimatedTime = timeOf(expectedRaw, date),
-          terminal = terminal,
-          airline = airline,
-          otherAirport = other
-        )
-      }
-    }
+    val terminal = cell(row, "fp-flight-area").map(_.trim).filter(_.nonEmpty)
+    val airline  = cell(row, "fp-flight-airline").filter(_.nonEmpty)
+    val other    = cell(row, "fp-flight-airport").flatMap(iataOf)
+
+    FlightInfo(
+      flightNumber = normalizeFlightNumber(rawNumber),
+      isArrival = isArrival,
+      status = FlightStatus.fromMuc(statusLabel),
+      scheduledTime = timeOf(plannedRaw, date),
+      estimatedTime = timeOf(expectedRaw, date),
+      terminal = terminal,
+      airline = airline,
+      otherAirport = other
+    )
+  }
 
   /**
    * The relative URL of the first flight's detail page, taken from the list fragment's first `href`

@@ -12,6 +12,7 @@ import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/push_notification_service.dart';
 import '../../modules/auth/services/biometric_service.dart';
 import '../../modules/flight_management/services/airport_timing_service.dart';
+import '../../modules/flight_management/services/arrivals_board_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -162,6 +163,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
+        ArrivalsBoardService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
         PushNotificationService.instance.registerTokenWithClient(
           privateApiClient,
@@ -221,6 +223,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
+        ArrivalsBoardService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
         PushNotificationService.instance.registerTokenWithClient(
           privateApiClient,

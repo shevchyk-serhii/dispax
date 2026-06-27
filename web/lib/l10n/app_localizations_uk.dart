@@ -3360,6 +3360,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get arrivalsTabLabel => 'Прильоти';
 
   @override
+  String get arrivalsBoardTitle => 'Прильоти · Аеропорт Мюнхен';
+
+  @override
   String get departuresTabLabel => 'Відльоти';
 
   @override

@@ -9,6 +9,7 @@ import com.shevchyk.ride.infrastructure.http.{
   ClientValueEntry,
   DriverPerformanceEntry,
   DriverRatingEntry,
+  FlightDto,
   PayrollSummary,
   PeakHourEntry
 }
@@ -64,3 +65,6 @@ object RideSchemas:
   given Schema[DriverPerformanceEntry] = Schema.derived
   given Schema[DriverRatingEntry]      = Schema.derived
   given Schema[CancellationStatsEntry] = Schema.derived
+
+  // Arrivals board response
+  given Schema[FlightDto] = Schema.derived

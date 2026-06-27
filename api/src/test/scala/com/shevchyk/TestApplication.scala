@@ -1291,6 +1291,20 @@ object TestApplication extends ZIOAppDefault:
     InMemoryTariffRepository.withDefaults(testCompanyId1)
   )
 
+  // Empty in-memory flight provider — the dispatcher arrivals board (FlightApi) needs a FlightStatusProvider,
+  // but the test app does not exercise it, so an empty board (graceful-degradation contract) is enough.
+  private val inMemoryFlightStatusProviderLayer
+      : ZLayer[Any, Nothing, com.shevchyk.ride.application.service.FlightStatusProvider] = ZLayer.succeed(
+    new com.shevchyk.ride.application.service.FlightStatusProvider:
+      def lookup(
+          flightNumber: String,
+          date: java.time.LocalDate,
+          isArrival: Boolean
+      ): Task[Option[com.shevchyk.ride.domain.FlightInfo]] = ZIO.none
+      def list(date: java.time.LocalDate, isArrival: Boolean): Task[List[com.shevchyk.ride.domain.FlightInfo]] = ZIO
+        .succeed(Nil)
+  )
+
   // ─── Seeded test Geofence ─────────────────────────────────────────────────
 
   private val testGeofenceId = GeofenceId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
@@ -1860,6 +1874,8 @@ object TestApplication extends ZIOAppDefault:
       ChatService.layer,
       inMemoryRideTemplateRepositoryLayer,
       inMemoryTariffRepositoryLayer,
+      // Flights (dispatcher arrivals board)
+      inMemoryFlightStatusProviderLayer,
       // Avatar
       AvatarService.layer
     )
