@@ -8,6 +8,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/ride_management/helpers/flight_status_l10n.dart';
 
 // ─── Driver candidate model ──────────────────────────────────────────────────
 
@@ -466,7 +467,14 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                 // airport transfers apart when bulk-reassigning.
                 if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty)
                   Text(
-                    ride.fullFlightInfo,
+                    () {
+                      final statusText = l10n.localizedFlightStatus(
+                        ride.flightStatus,
+                      );
+                      return statusText.isEmpty
+                          ? ride.fullFlightInfo
+                          : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+                    }(),
                     style: TextStyle(
                       fontSize: 11,
                       color: isDark

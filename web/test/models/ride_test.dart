@@ -403,8 +403,13 @@ void main() {
         '❌',
       );
       expect(
-        TestFixtures.airportRide(flightStatus: 'Other').flightStatusIcon,
-        '❓',
+        TestFixtures.airportRide(flightStatus: 'landed').flightStatusIcon,
+        '🛬',
+      );
+      // Unknown/unmapped → neutral info icon, NOT the alarming "❓".
+      expect(
+        TestFixtures.airportRide(flightStatus: 'unknown').flightStatusIcon,
+        'ℹ️',
       );
     });
 
@@ -413,21 +418,25 @@ void main() {
       expect(ride.flightStatusIcon, '');
     });
 
-    test('fullFlightInfo includes flight number, gate, terminal, status', () {
-      final ride = TestFixtures.airportRide(
-        flightNumber: 'LH1234',
-        gate: 'G12',
-        terminal: 'T2',
-        flightStatus: 'On Time',
-        isArrival: true,
-      );
+    test(
+      'fullFlightInfo includes flight number, gate, terminal — but NOT the raw status',
+      () {
+        final ride = TestFixtures.airportRide(
+          flightNumber: 'LH1234',
+          gate: 'G12',
+          terminal: 'T2',
+          flightStatus: 'On Time',
+          isArrival: true,
+        );
 
-      final info = ride.fullFlightInfo;
-      expect(info, contains('LH1234'));
-      expect(info, contains('Gate G12'));
-      expect(info, contains('Terminal T2'));
-      expect(info, contains('On Time'));
-    });
+        final info = ride.fullFlightInfo;
+        expect(info, contains('LH1234'));
+        expect(info, contains('Gate G12'));
+        expect(info, contains('Terminal T2'));
+        // The status is localized at the call site, so it is no longer baked into fullFlightInfo.
+        expect(info, isNot(contains('On Time')));
+      },
+    );
 
     test('fullFlightInfo shows only gate when no terminal', () {
       final ride = TestFixtures.airportRide(gate: 'G5', terminal: null);

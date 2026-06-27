@@ -3394,6 +3394,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightStatusUnknown => 'Unknown';
 
   @override
+  String get flightStatusScheduled => 'Scheduled';
+
+  @override
+  String get flightStatusDeparted => 'Departed';
+
+  @override
+  String get flightStatusEnRoute => 'En route';
+
+  @override
+  String get flightStatusLanded => 'Landed';
+
+  @override
+  String get flightStatusDiverted => 'Diverted';
+
+  @override
   String get flightNotLinked => '— not linked';
 
   @override

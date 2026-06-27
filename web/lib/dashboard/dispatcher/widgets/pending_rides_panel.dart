@@ -20,6 +20,7 @@ import '../../../screens/ride_details_screen.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../utils/conflict_detector.dart';
 import '../../../widgets/common/cancel_ride_dialog.dart';
@@ -1180,7 +1181,14 @@ class _RideRow extends StatelessWidget {
                   ],
                   Expanded(
                     child: Text(
-                      ride.fullFlightInfo,
+                      () {
+                        final statusText = AppLocalizations.of(
+                          context,
+                        )!.localizedFlightStatus(ride.flightStatus);
+                        return statusText.isEmpty
+                            ? ride.fullFlightInfo
+                            : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+                      }(),
                       style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.onSurfaceVariant,

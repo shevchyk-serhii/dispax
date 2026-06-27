@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_styles.dart';
@@ -186,10 +187,14 @@ class RideControlPanel extends StatelessWidget {
                   size: AppDimensions.iconSmall,
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  ride.fullFlightInfo,
-                  style: AppStyles.bodyMedium.copyWith(color: onSurface),
-                ),
+                Text(() {
+                  final statusText = l10n.localizedFlightStatus(
+                    ride.flightStatus,
+                  );
+                  return statusText.isEmpty
+                      ? ride.fullFlightInfo
+                      : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+                }(), style: AppStyles.bodyMedium.copyWith(color: onSurface)),
               ],
             ),
           ],

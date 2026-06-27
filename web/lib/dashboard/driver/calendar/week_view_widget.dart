@@ -268,13 +268,13 @@ class WeekViewWidget extends StatelessWidget {
             ),
           ),
 
-          ...dayRides.map((ride) => buildRideBlock(ride)),
+          ...dayRides.map((ride) => buildRideBlock(context, ride)),
         ],
       ),
     );
   }
 
-  Widget buildRideBlock(Ride ride) {
+  Widget buildRideBlock(BuildContext context, Ride ride) {
     final startHour = ride.pickupDateTime.hour;
     final startMinute = ride.pickupDateTime.minute;
     final duration = 1.5;
@@ -293,7 +293,7 @@ class WeekViewWidget extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap == null ? null : () => onTap(ride),
         child: Tooltip(
-          message: RideBadges.tooltip(ride),
+          message: RideBadges.tooltip(context, ride),
           waitDuration: const Duration(milliseconds: 300),
           child: Container(
             decoration: BoxDecoration(

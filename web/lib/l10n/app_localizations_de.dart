@@ -3412,6 +3412,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get flightStatusUnknown => 'Unbekannt';
 
   @override
+  String get flightStatusScheduled => 'Planmäßig';
+
+  @override
+  String get flightStatusDeparted => 'Gestartet';
+
+  @override
+  String get flightStatusEnRoute => 'Im Flug';
+
+  @override
+  String get flightStatusLanded => 'Gelandet';
+
+  @override
+  String get flightStatusDiverted => 'Umgeleitet';
+
+  @override
   String get flightNotLinked => '— nicht verknüpft';
 
   @override

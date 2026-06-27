@@ -45,10 +45,7 @@ void main() {
       // "Delayed" appears in both the flight line and the (new) landing line, so assert it
       // specifically on the flight line.
       expect(find.textContaining('LH1234'), findsOneWidget);
-      expect(
-        find.textContaining('Terminal T2) • ⏰ Delayed'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Terminal T2) • ⏰ Delayed'), findsOneWidget);
     },
   );
 
@@ -79,18 +76,17 @@ void main() {
     },
   );
 
-  testWidgets(
-    'shows no terminal-entry line when optimalEntryTime is absent',
-    (tester) async {
-      // Arrival airport ride but the backend did not compute an entry time.
-      final ride = TestFixtures.airportRide(isArrival: true);
+  testWidgets('shows no terminal-entry line when optimalEntryTime is absent', (
+    tester,
+  ) async {
+    // Arrival airport ride but the backend did not compute an entry time.
+    final ride = TestFixtures.airportRide(isArrival: true);
 
-      await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
-      await tester.pump();
+    await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
+    await tester.pump();
 
-      expect(find.byIcon(Icons.login), findsNothing);
-    },
-  );
+    expect(find.byIcon(Icons.login), findsNothing);
+  });
 
   testWidgets(
     'shows no terminal-entry line for a departure even with optimalEntryTime',

@@ -6352,6 +6352,36 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get flightStatusUnknown;
 
+  /// No description provided for @flightStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get flightStatusScheduled;
+
+  /// No description provided for @flightStatusDeparted.
+  ///
+  /// In en, this message translates to:
+  /// **'Departed'**
+  String get flightStatusDeparted;
+
+  /// No description provided for @flightStatusEnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'En route'**
+  String get flightStatusEnRoute;
+
+  /// No description provided for @flightStatusLanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed'**
+  String get flightStatusLanded;
+
+  /// No description provided for @flightStatusDiverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Diverted'**
+  String get flightStatusDiverted;
+
   /// No description provided for @flightNotLinked.
   ///
   /// In en, this message translates to:

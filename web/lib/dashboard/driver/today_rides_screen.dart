@@ -20,6 +20,7 @@ import '../../modules/core/services/location_service.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
@@ -1282,6 +1283,13 @@ class DriverFlightInfoRow extends StatelessWidget {
         ? AppColors.textSecondaryDark
         : AppColors.textSecondary;
 
+    final statusText = AppLocalizations.of(
+      context,
+    )!.localizedFlightStatus(ride.flightStatus);
+    final flightLine = statusText.isEmpty
+        ? ride.fullFlightInfo
+        : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Row(
@@ -1293,7 +1301,7 @@ class DriverFlightInfoRow extends StatelessWidget {
           ],
           Expanded(
             child: Text(
-              ride.fullFlightInfo,
+              flightLine,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 12.5, color: secondary),

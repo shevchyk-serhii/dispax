@@ -3404,6 +3404,21 @@ class AppLocalizationsUk extends AppLocalizations {
   String get flightStatusUnknown => 'Невідомо';
 
   @override
+  String get flightStatusScheduled => 'За розкладом';
+
+  @override
+  String get flightStatusDeparted => 'Вилетів';
+
+  @override
+  String get flightStatusEnRoute => 'У польоті';
+
+  @override
+  String get flightStatusLanded => 'Приземлився';
+
+  @override
+  String get flightStatusDiverted => 'Перенаправлено';
+
+  @override
   String get flightNotLinked => '— не пов\'язано';
 
   @override

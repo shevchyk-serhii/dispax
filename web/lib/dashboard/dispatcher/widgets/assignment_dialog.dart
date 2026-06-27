@@ -7,6 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/ride_management/helpers/flight_status_l10n.dart';
 
 class AssignmentDialog extends StatelessWidget {
   final Ride ride;
@@ -139,7 +140,7 @@ class AssignmentDialog extends StatelessWidget {
                               // Show gate/terminal/status next to the number so
                               // the dispatcher sees where the ride is going
                               // before picking a driver, not just the flight no.
-                              value: _flightDetails(ride),
+                              value: _flightDetails(l10n, ride),
                               isDark: isDark,
                             ),
                           if (ride.price != null)
@@ -368,7 +369,7 @@ class AssignmentDialog extends StatelessWidget {
   /// [Ride.fullFlightInfo] but drops its leading ✈ glyph because this row
   /// already renders a flight icon, and skips the 🛬/🛫 status glyph to keep
   /// the value plain text inside [_infoRow].
-  String _flightDetails(Ride ride) {
+  String _flightDetails(AppLocalizations l10n, Ride ride) {
     final parts = <String>[ride.flightNumber!];
     if (ride.gate != null && ride.terminal != null) {
       parts.add('Gate ${ride.gate} (Terminal ${ride.terminal})');
@@ -377,8 +378,9 @@ class AssignmentDialog extends StatelessWidget {
     } else if (ride.terminal != null) {
       parts.add('Terminal ${ride.terminal}');
     }
-    if (ride.flightStatus != null) {
-      parts.add(ride.flightStatus!);
+    final statusText = l10n.localizedFlightStatus(ride.flightStatus);
+    if (statusText.isNotEmpty) {
+      parts.add(statusText);
     }
     return parts.join(' • ');
   }

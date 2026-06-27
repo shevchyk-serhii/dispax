@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/dashboard/driver/calendar/widgets/ride_badges.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/core/models/location.dart';
 
@@ -46,7 +47,13 @@ Ride _ride({
 }
 
 Future<void> _pump(WidgetTester tester, Widget child) {
-  return tester.pumpWidget(MaterialApp(home: Scaffold(body: child)));
+  return tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child),
+    ),
+  );
 }
 
 void main() {
@@ -134,22 +141,36 @@ void main() {
   });
 
   group('RideBadges.tooltip', () {
-    test('summarises client, flight, VIP, price and destination', () {
+    testWidgets('summarises client, flight, VIP, price and destination', (
+      tester,
+    ) async {
       final ride = _ride(
         isAirportTransfer: true,
         isArrival: true,
         flightNumber: 'LH123',
         terminal: '2',
+        flightStatus: 'Delayed',
         isVipRide: true,
         price: 42.5,
       );
 
-      final text = RideBadges.tooltip(ride);
+      late String text;
+      await _pump(
+        tester,
+        Builder(
+          builder: (ctx) {
+            text = RideBadges.tooltip(ctx, ride);
+            return const SizedBox.shrink();
+          },
+        ),
+      );
 
       expect(text, contains('Client'));
       expect(text, contains('LH123'));
       expect(text, contains('VIP'));
       expect(text, contains('42.50'));
+      // The localized flight status is appended to the flight line (en locale).
+      expect(text, contains('Delayed'));
     });
   });
 

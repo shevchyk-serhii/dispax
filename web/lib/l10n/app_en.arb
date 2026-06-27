@@ -1685,6 +1685,11 @@
   "flightStatusBoarding": "Boarding",
   "flightStatusCancelled": "Cancelled",
   "flightStatusUnknown": "Unknown",
+  "flightStatusScheduled": "Scheduled",
+  "flightStatusDeparted": "Departed",
+  "flightStatusEnRoute": "En route",
+  "flightStatusLanded": "Landed",
+  "flightStatusDiverted": "Diverted",
   "flightNotLinked": "— not linked",
 
   "whoCanSeeWhomTitle": "Who can see whom",

@@ -1603,6 +1603,11 @@
   "flightStatusBoarding": "Посадка",
   "flightStatusCancelled": "Скасовано",
   "flightStatusUnknown": "Невідомо",
+  "flightStatusScheduled": "За розкладом",
+  "flightStatusDeparted": "Вилетів",
+  "flightStatusEnRoute": "У польоті",
+  "flightStatusLanded": "Приземлився",
+  "flightStatusDiverted": "Перенаправлено",
   "flightNotLinked": "— не пов'язано",
 
   "whoCanSeeWhomTitle": "Хто може бачити кого",

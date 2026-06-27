@@ -6,6 +6,7 @@ import '../../../screens/ride_details_screen.dart';
 import '../../core/widgets/ride_info_row.dart';
 import 'ride_quick_actions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../ride_management/helpers/flight_status_l10n.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
@@ -39,7 +40,9 @@ class TodayRideCard extends StatelessWidget {
   /// "Landung um HH:mm", with a delay suffix ("• +N Min Verspätung") when the flight is late.
   static String _landingText(BuildContext context, Ride ride) {
     final l10n = AppLocalizations.of(context)!;
-    final base = l10n.airportLandingAt(DateFormat.Hm().format(ride.flightTime!));
+    final base = l10n.airportLandingAt(
+      DateFormat.Hm().format(ride.flightTime!),
+    );
     if (!ride.isFlightDelayed) return base;
     final delay = ride.flightDelayMinutes;
     final suffix = delay != null && delay > 0
@@ -300,7 +303,14 @@ class TodayRideCard extends StatelessWidget {
             const SizedBox(height: 12),
             RideInfoRow(
               icon: Icons.flight,
-              text: ride.fullFlightInfo,
+              text: () {
+                final statusText = AppLocalizations.of(
+                  context,
+                )!.localizedFlightStatus(ride.flightStatus);
+                return statusText.isEmpty
+                    ? ride.fullFlightInfo
+                    : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+              }(),
               label: 'Flight',
             ),
           ],
@@ -316,13 +326,14 @@ class TodayRideCard extends StatelessWidget {
           ],
           // Recommended terminal-entry time for an arrival pickup ("Einfahrt um HH:mm").
           // Backend-computed (terminal-aware walk buffer), GPS-free, so it shows on the static card.
-          if (ride.isArrivalAirportTransfer && ride.optimalEntryTime != null) ...[
+          if (ride.isArrivalAirportTransfer &&
+              ride.optimalEntryTime != null) ...[
             const SizedBox(height: 12),
             RideInfoRow(
               icon: Icons.login,
-              text: AppLocalizations.of(context)!.airportEntryAt(
-                DateFormat.Hm().format(ride.optimalEntryTime!),
-              ),
+              text: AppLocalizations.of(
+                context,
+              )!.airportEntryAt(DateFormat.Hm().format(ride.optimalEntryTime!)),
               label: AppLocalizations.of(context)!.airportEntryLabel,
             ),
           ],

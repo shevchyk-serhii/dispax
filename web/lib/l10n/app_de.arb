@@ -1603,6 +1603,11 @@
   "flightStatusBoarding": "Boarding",
   "flightStatusCancelled": "Gestrichen",
   "flightStatusUnknown": "Unbekannt",
+  "flightStatusScheduled": "Planmäßig",
+  "flightStatusDeparted": "Gestartet",
+  "flightStatusEnRoute": "Im Flug",
+  "flightStatusLanded": "Gelandet",
+  "flightStatusDiverted": "Umgeleitet",
   "flightNotLinked": "— nicht verknüpft",
 
   "whoCanSeeWhomTitle": "Wer sieht wen",

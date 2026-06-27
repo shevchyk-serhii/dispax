@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../l10n/app_localizations.dart';
+import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
@@ -274,12 +275,16 @@ class MyRidesTab extends StatelessWidget {
                         (ride) => AirportEntryTimer(
                           ride: ride,
                           onEntryTimeReached: () {
+                            final statusText = l10n.localizedFlightStatus(
+                              ride.flightStatus,
+                            );
+                            final flightLine = statusText.isEmpty
+                                ? ride.fullFlightInfo
+                                : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  l10n.departureTimeReachedFlight(
-                                    ride.fullFlightInfo,
-                                  ),
+                                  l10n.departureTimeReachedFlight(flightLine),
                                 ),
                               ),
                             );

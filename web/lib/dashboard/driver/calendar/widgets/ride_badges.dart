@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../../../modules/ride_management/models/ride.dart';
 import '../../../../constants/app_colors.dart';
 
@@ -45,11 +47,19 @@ class RideBadges {
         color = AppColors.error;
     }
 
+    final base = ride.fullFlightInfo.isNotEmpty
+        ? ride.fullFlightInfo
+        : '${ride.flightTypeText} ${ride.flightNumber}';
+    final statusText = AppLocalizations.of(
+      context,
+    )!.localizedFlightStatus(ride.flightStatus);
+    final label = statusText.isEmpty
+        ? base
+        : '$base • ${ride.flightStatusIcon} $statusText';
+
     return _Badge(
       icon: ride.flightIconData ?? Icons.flight,
-      label: ride.fullFlightInfo.isNotEmpty
-          ? ride.fullFlightInfo
-          : '${ride.flightTypeText} ${ride.flightNumber}',
+      label: label,
       color: color,
     );
   }
@@ -147,11 +157,16 @@ class RideBadges {
   }
 
   /// One-line plain-text summary of a ride for tooltips/hover (week view).
-  static String tooltip(Ride ride) {
+  static String tooltip(BuildContext context, Ride ride) {
+    final statusText = AppLocalizations.of(
+      context,
+    )!.localizedFlightStatus(ride.flightStatus);
+    final flightLine = statusText.isEmpty
+        ? ride.fullFlightInfo
+        : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
     final parts = <String>[
       ride.clientName,
-      if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty)
-        ride.fullFlightInfo,
+      if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) flightLine,
       if (ride.isVipRide) 'VIP',
       if (ride.price != null) '€${ride.price!.toStringAsFixed(2)}',
       if (ride.specialRequirements != null &&

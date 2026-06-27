@@ -516,20 +516,33 @@ class Ride {
     return isArrival ? 'Arrival' : 'Departure';
   }
 
+  /// Status emoji. Neutral (info) for unknown/unmapped so it does not read as an error.
   String get flightStatusIcon {
     if (flightStatus == null) return '';
     switch (flightStatus!.toLowerCase()) {
       case 'on time':
+      case 'scheduled':
         return '✅';
+      case 'boarding':
+      case 'departed':
+      case 'en_route':
+        return '🛫';
+      case 'landed':
+        return '🛬';
       case 'delayed':
         return '⏰';
       case 'cancelled':
         return '❌';
+      case 'diverted':
+        return '↪️';
       default:
-        return '❓';
+        return 'ℹ️';
     }
   }
 
+  /// Flight line WITHOUT the status (flight number + gate/terminal). The status is rendered
+  /// separately and localized at the call site (a getter has no BuildContext / AppLocalizations),
+  /// via [RideFlightStatusL10n.localizedFlightStatus].
   String get fullFlightInfo {
     if (!isAirportTransfer || flightNumber == null) return '';
 
@@ -542,10 +555,6 @@ class Ride {
       parts.add('Gate $gate');
     } else if (terminal != null) {
       parts.add('Terminal $terminal');
-    }
-
-    if (flightStatus != null) {
-      parts.add('$flightStatusIcon $flightStatus');
     }
 
     return parts.join(' • ');
