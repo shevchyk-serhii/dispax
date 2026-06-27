@@ -56,9 +56,12 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
           gate: Option[String],
           terminal: Option[String],
           flightStatus: Option[String],
-          flightTime: Option[Instant]
+          flightTime: Option[Instant],
+          scheduledTime: Option[Instant]
       ): Task[Boolean] = store
-        .update(_.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime)))
+        .update(
+          _.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime))
+        )
         .as(true)
 
       def create(ride: Ride): Task[Ride]                                                                = nope("create")

@@ -42,7 +42,13 @@ void main() {
       final flightText = find.textContaining('LH1234');
       expect(flightText, findsOneWidget);
       expect(find.textContaining('Gate G12'), findsOneWidget);
-      expect(find.textContaining('Delayed'), findsOneWidget);
+      // "Delayed" appears in both the flight line and the (new) landing line, so assert it
+      // specifically on the flight line.
+      expect(find.textContaining('LH1234'), findsOneWidget);
+      expect(
+        find.textContaining('Terminal T2) • ⏰ Delayed'),
+        findsOneWidget,
+      );
     },
   );
 

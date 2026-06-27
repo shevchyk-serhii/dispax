@@ -203,6 +203,18 @@
       "time": {"type": "String"}
     }
   },
+  "airportLandingAt": "Landing at {time}",
+  "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportFlightDelay": "+{minutes} min delay",
+  "@airportFlightDelay": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
   "airportTravelTime": "Travel time:",
   "airportParkingSavings": "Parking savings: {amount}",
   "@airportParkingSavings": {

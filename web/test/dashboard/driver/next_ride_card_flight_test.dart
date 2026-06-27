@@ -103,4 +103,45 @@ void main() {
       expect(find.byIcon(Icons.login), findsNothing);
     });
   });
+
+  group('DriverArrivalTimeRow', () {
+    testWidgets('shows the landing time for an airport ride', (tester) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightTime: DateTime(2026, 6, 27, 14, 5),
+      );
+
+      await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+      // en default → "Landing at 14:05".
+      expect(find.textContaining('14:05'), findsOneWidget);
+      expect(find.byIcon(Icons.flight_land), findsOneWidget);
+    });
+
+    testWidgets('shows the delay in minutes when the flight is late', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightScheduledTime: DateTime(2026, 6, 27, 14, 0),
+        flightTime: DateTime(2026, 6, 27, 14, 30),
+      );
+
+      await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+      // "Landing at 14:30 • +30 min delay" (en).
+      expect(find.textContaining('30'), findsWidgets);
+      expect(find.textContaining('delay'), findsOneWidget);
+    });
+
+    testWidgets('self-hides without a flight time', (tester) async {
+      final ride = TestFixtures.ride(isAirportTransfer: true, isArrival: true);
+
+      await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+      expect(find.byIcon(Icons.flight_land), findsNothing);
+    });
+  });
 }

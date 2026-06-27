@@ -1072,6 +1072,18 @@ abstract class AppLocalizations {
   /// **'Entry at {time}'**
   String airportEntryAt(String time);
 
+  /// No description provided for @airportLandingAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing at {time}'**
+  String airportLandingAt(String time);
+
+  /// No description provided for @airportFlightDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'+{minutes} min delay'**
+  String airportFlightDelay(int minutes);
+
   /// No description provided for @airportTravelTime.
   ///
   /// In en, this message translates to:

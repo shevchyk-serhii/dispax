@@ -36,6 +36,18 @@ class TodayRideCard extends StatelessWidget {
     this.onViewDetails,
   });
 
+  /// "Landung um HH:mm", with a delay suffix ("• +N Min Verspätung") when the flight is late.
+  static String _landingText(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
+    final base = l10n.airportLandingAt(DateFormat.Hm().format(ride.flightTime!));
+    if (!ride.isFlightDelayed) return base;
+    final delay = ride.flightDelayMinutes;
+    final suffix = delay != null && delay > 0
+        ? l10n.airportFlightDelay(delay)
+        : l10n.flightStatusDelayed;
+    return '$base  •  $suffix';
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
@@ -289,6 +301,16 @@ class TodayRideCard extends StatelessWidget {
             RideInfoRow(
               icon: Icons.flight,
               text: ride.fullFlightInfo,
+              label: 'Flight',
+            ),
+          ],
+          // Flight arrival/landing time ("Landung um HH:mm"), with a delay suffix when late.
+          // The live flight time comes from the airport board on the ride DTO.
+          if (ride.isAirportTransfer && ride.flightTime != null) ...[
+            const SizedBox(height: 12),
+            RideInfoRow(
+              icon: Icons.flight_land,
+              text: _landingText(context, ride),
               label: 'Flight',
             ),
           ],

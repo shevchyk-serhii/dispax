@@ -335,7 +335,7 @@ object DriverRidesFlightPostgresSpec extends ZIOSpecDefault:
           _     <- cleanRides(xa)
           repo   = PostgresRideRepository(xa)
           _     <- repo.create(airportRide(rideId))
-          ok    <- repo.updateFlightStatus(rideId, Some("G12"), Some("2"), Some("Landed"), Some(flightTime))
+          ok    <- repo.updateFlightStatus(rideId, Some("G12"), Some("2"), Some("Landed"), Some(flightTime), None)
           token <- driverToken
           req    = Request
                      .get(URL.decode(s"/api/rides/driver/${driverId.value}").toOption.get)

@@ -509,6 +509,16 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String airportLandingAt(String time) {
+    return 'Приліт о $time';
+  }
+
+  @override
+  String airportFlightDelay(int minutes) {
+    return '+$minutes хв затримки';
+  }
+
+  @override
   String get airportTravelTime => 'Час у дорозі:';
 
   @override

@@ -79,7 +79,7 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           repo = PostgresRideRepository(xa)
           id   = RideId(UUID.randomUUID())
           _   <- repo.create(makeRide(id))
-          ok  <- repo.updateFlightStatus(id, Some("A12"), Some("T2"), Some("delayed"), Some(t))
+          ok  <- repo.updateFlightStatus(id, Some("A12"), Some("T2"), Some("delayed"), Some(t), None)
           row <- repo.findFlightStatus(id)
         yield assertTrue(
           ok,
@@ -92,7 +92,7 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           _   <- seedTestData(xa)
           _   <- cleanRides(xa)
           repo = PostgresRideRepository(xa)
-          ok  <- repo.updateFlightStatus(RideId(UUID.randomUUID()), None, Some("T1"), Some("landed"), None)
+          ok  <- repo.updateFlightStatus(RideId(UUID.randomUUID()), None, Some("T1"), Some("landed"), None, None)
         yield assertTrue(!ok)
       },
       test("findFlightStatus is None for an unknown ride") {
@@ -116,7 +116,7 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           unknown = RideId(UUID.randomUUID())
           _      <- repo.create(makeRide(withFs))
           _      <- repo.create(makeRide(without))
-          _      <- repo.updateFlightStatus(withFs, Some("G35"), Some("T2"), Some("landed"), Some(t))
+          _      <- repo.updateFlightStatus(withFs, Some("G35"), Some("T2"), Some("landed"), Some(t), None)
           map    <- repo.findFlightStatusFor(List(withFs, without, unknown))
         yield assertTrue(
           // the ride with persisted flight data is present with the exact row,

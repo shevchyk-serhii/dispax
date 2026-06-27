@@ -100,9 +100,15 @@ final case class FlightStatusRow(
     gate: Option[String] = None,
     terminal: Option[String] = None,
     flightStatus: Option[String] = None,
-    flightTime: Option[Instant] = None
+    flightTime: Option[Instant] = None,
+    // The scheduled (on-time) arrival/departure instant, tracked separately from `flightTime` (the latest
+    // known, i.e. estimated) so a delay can be shown as `flightTime - scheduledTime`. None until the monitor
+    // has fetched flight data.
+    scheduledTime: Option[Instant] = None
 ):
+
   /**
    * True when at least one flight column carries data (nothing to surface otherwise).
    */
-  def nonEmpty: Boolean = gate.isDefined || terminal.isDefined || flightStatus.isDefined || flightTime.isDefined
+  def nonEmpty: Boolean =
+    gate.isDefined || terminal.isDefined || flightStatus.isDefined || flightTime.isDefined || scheduledTime.isDefined

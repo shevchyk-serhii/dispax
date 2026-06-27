@@ -55,7 +55,11 @@ case class RideDto(
     // Derived from the client Person already loaded for clientName; defaults false for backward compatibility.
     clientHasAvatar: Boolean = false,
     flightNumber: Option[String] = None,
+    // The latest known flight instant (estimated/live, else scheduled) — what the card shows as the arrival.
     flightTime: Option[String] = None,
+    // The scheduled (on-time) flight instant, tracked separately so the card can show the delay
+    // (flightTime − flightScheduledTime). None until the flight monitor has fetched data.
+    flightScheduledTime: Option[String] = None,
     isAirportTransfer: Boolean = false,
     isArrival: Boolean = false,
     gate: Option[String] = None,
@@ -428,6 +432,8 @@ object RideDto:
       flightNumber = flightNumber,
       // Prefer the live flight time (when the monitor has fetched one) over the booking's scheduledTime.
       flightTime = flight.flatMap(_.flightTime).map(_.toString).orElse(ride.scheduledTime.map(_.toString)),
+      // The on-time scheduled instant (from the flight monitor), surfaced so the card can show the delay.
+      flightScheduledTime = flight.flatMap(_.scheduledTime).map(_.toString),
       isAirportTransfer = isAirportTransfer,
       isArrival = isArrival,
       gate = flight.flatMap(_.gate),

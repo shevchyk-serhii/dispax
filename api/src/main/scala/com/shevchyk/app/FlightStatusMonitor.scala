@@ -71,7 +71,8 @@ object FlightStatusMonitor:
                   gate = newRow.gate,
                   terminal = newRow.terminal,
                   flightStatus = newRow.flightStatus,
-                  flightTime = newRow.flightTime
+                  flightTime = newRow.flightTime,
+                  scheduledTime = newRow.scheduledTime
                 ) *>
                   eventHub.publish(
                     WebSocketEvent.FlightStatusUpdated(
@@ -99,5 +100,8 @@ object FlightStatusMonitor:
     gate = info.gate,
     terminal = info.terminal,
     flightStatus = Some(FlightStatus.toWire(info.status)),
-    flightTime = info.estimatedTime.orElse(info.scheduledTime)
+    // flightTime is the latest known (estimated, else scheduled); scheduledTime keeps the on-time instant
+    // separately so the card can show the delay = flightTime - scheduledTime.
+    flightTime = info.estimatedTime.orElse(info.scheduledTime),
+    scheduledTime = info.scheduledTime
   )

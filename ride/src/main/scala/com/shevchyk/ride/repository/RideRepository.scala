@@ -110,14 +110,17 @@ trait RideRepository {
   def updateCheckpoint(rideId: RideId, checkpoint: AirportCheckpoint): Task[Boolean]
 
   // Atomic, targeted write of the flight-tracking columns (flight_gate, flight_terminal, flight_status,
-  // flight_time) on a single ride. Used by the background FlightStatusMonitor; kept narrow (like
-  // updateCheckpoint) so it never touches the rest of the row. Returns true if a row was updated.
+  // flight_time, flight_scheduled_time) on a single ride. Used by the background FlightStatusMonitor; kept
+  // narrow (like updateCheckpoint) so it never touches the rest of the row. `flightTime` is the latest known
+  // (estimated) instant; `scheduledTime` is the on-time instant — their difference is the delay. Returns true
+  // if a row was updated.
   def updateFlightStatus(
       rideId: RideId,
       gate: Option[String],
       terminal: Option[String],
       flightStatus: Option[String],
-      flightTime: Option[Instant]
+      flightTime: Option[Instant],
+      scheduledTime: Option[Instant]
   ): Task[Boolean]
 
   // Read just the flight-tracking columns for a ride (the DTO surfaces these; they are not part of the

@@ -59,5 +59,21 @@ object RideDtoFlightSpec extends ZIOSpecDefault:
         val entry = Instant.parse("2026-06-26T09:08:00Z")
         val dto   = RideDto.fromDomain(airportRide, optimalEntryTime = Some(entry))
         assertTrue(dto.optimalEntryTime.contains(entry.toString))
+      },
+      test("surfaces both the live and scheduled flight time so the card can show a delay") {
+        val scheduled = Instant.parse("2026-06-26T09:00:00Z")
+        val live      = Instant.parse("2026-06-26T09:30:00Z") // 30-min delay
+        val row       = FlightStatusRow(
+          gate = Some("G35"),
+          terminal = Some("T2"),
+          flightStatus = Some("delayed"),
+          flightTime = Some(live),
+          scheduledTime = Some(scheduled)
+        )
+        val dto       = RideDto.fromDomain(airportRide, flight = Some(row))
+        assertTrue(
+          dto.flightTime.contains(live.toString),
+          dto.flightScheduledTime.contains(scheduled.toString)
+        )
       }
     )

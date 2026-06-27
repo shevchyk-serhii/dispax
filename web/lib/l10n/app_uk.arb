@@ -185,6 +185,18 @@
       "time": {"type": "String"}
     }
   },
+  "airportLandingAt": "Приліт о {time}",
+  "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportFlightDelay": "+{minutes} хв затримки",
+  "@airportFlightDelay": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
   "airportTravelTime": "Час у дорозі:",
   "airportParkingSavings": "Економія на паркуванні: {amount}",
   "@airportParkingSavings": {

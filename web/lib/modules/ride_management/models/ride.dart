@@ -74,6 +74,9 @@ class Ride {
   final bool clientHasAvatar;
   final String? flightNumber;
   final DateTime? flightTime;
+  // Scheduled (on-time) flight instant, tracked separately from flightTime (latest known/estimated)
+  // so the card can show the delay = flightTime − flightScheduledTime.
+  final DateTime? flightScheduledTime;
   final bool isAirportTransfer;
   final bool isArrival;
   final String? gate;
@@ -140,6 +143,7 @@ class Ride {
     this.clientHasAvatar = false,
     this.flightNumber,
     this.flightTime,
+    this.flightScheduledTime,
     this.isAirportTransfer = false,
     this.isArrival = false,
     this.gate,
@@ -198,6 +202,10 @@ class Ride {
       // Convert to local like pickupDateTime, so airport flight times are not
       // shown in UTC while every other time on the ride is local.
       flightTime: JsonParse.optionalDateTime(json, 'flightTime')?.toLocal(),
+      flightScheduledTime: JsonParse.optionalDateTime(
+        json,
+        'flightScheduledTime',
+      )?.toLocal(),
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
       optimalEntryTime: JsonParse.optionalDateTime(
@@ -262,6 +270,7 @@ class Ride {
       'clientHasAvatar': clientHasAvatar,
       'flightNumber': flightNumber,
       'flightTime': flightTime?.toUtc().toIso8601String(),
+      'flightScheduledTime': flightScheduledTime?.toUtc().toIso8601String(),
       'isAirportTransfer': isAirportTransfer,
       'isArrival': isArrival,
       'optimalEntryTime': optimalEntryTime?.toUtc().toIso8601String(),
@@ -315,6 +324,7 @@ class Ride {
     bool? clientHasAvatar,
     String? flightNumber,
     Object? flightTime = _sentinel,
+    Object? flightScheduledTime = _sentinel,
     bool? isAirportTransfer,
     bool? isArrival,
     String? gate,
@@ -368,6 +378,9 @@ class Ride {
       flightTime: flightTime == _sentinel
           ? this.flightTime
           : flightTime as DateTime?,
+      flightScheduledTime: flightScheduledTime == _sentinel
+          ? this.flightScheduledTime
+          : flightScheduledTime as DateTime?,
       isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
       isArrival: isArrival ?? this.isArrival,
       optimalEntryTime: optimalEntryTime == _sentinel
@@ -456,6 +469,23 @@ class Ride {
   /// True for an airport pickup where the passenger is arriving (landing) — the
   /// case that has a recommended terminal-entry time ("Einfahrt um").
   bool get isArrivalAirportTransfer => isAirportTransfer && isArrival;
+
+  /// Flight delay in minutes (latest known minus scheduled), or null when either
+  /// time is missing. Only positive when the flight is actually late.
+  int? get flightDelayMinutes {
+    final actual = flightTime;
+    final scheduled = flightScheduledTime;
+    if (actual == null || scheduled == null) return null;
+    return actual.difference(scheduled).inMinutes;
+  }
+
+  /// True when the flight is delayed — either the computed delay is positive, or
+  /// the airport board explicitly reports a "delayed" status.
+  bool get isFlightDelayed {
+    final delay = flightDelayMinutes;
+    if (delay != null && delay > 0) return true;
+    return flightStatus?.toLowerCase() == 'delayed';
+  }
 
   /// True when the ride is in a state worth showing on the live map: a driver
   /// has been assigned (or confirmed / handed off to a partner) and the ride is

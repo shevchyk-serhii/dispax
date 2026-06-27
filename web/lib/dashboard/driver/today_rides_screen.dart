@@ -1091,6 +1091,7 @@ class _LiveRideCard extends StatelessWidget {
 
               // Full flight info for airport rides (number + gate/terminal + status).
               DriverFlightInfoRow(ride: ride, isDark: isDark),
+              DriverArrivalTimeRow(ride: ride, isDark: isDark),
               DriverEntryTimeRow(ride: ride, isDark: isDark),
 
               const SizedBox(height: 14),
@@ -1340,6 +1341,72 @@ class DriverEntryTimeRow extends StatelessWidget {
               AppLocalizations.of(
                 context,
               )!.airportEntryAt(DateFormat.Hm().format(ride.optimalEntryTime!)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5, color: secondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Flight arrival/landing time ("Landung um HH:mm") for an airport ride, with a red delay
+/// suffix ("+N Min Verspätung") when the flight is late. The live flight time comes from the
+/// airport board (FlightStatusMonitor) on the ride DTO. Renders nothing without a flight time.
+/// Shared by the live, next and compact ride cards.
+class DriverArrivalTimeRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverArrivalTimeRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ride.isAirportTransfer || ride.flightTime == null) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+    final delay = ride.flightDelayMinutes;
+    final showDelay = ride.isFlightDelayed;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.flight_land, size: 15, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: l10n.airportLandingAt(
+                      DateFormat.Hm().format(ride.flightTime!),
+                    ),
+                  ),
+                  if (showDelay)
+                    TextSpan(
+                      text: delay != null && delay > 0
+                          ? '  •  ${l10n.airportFlightDelay(delay)}'
+                          : '  •  ${l10n.flightStatusDelayed}',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 12.5, color: secondary),
@@ -1688,6 +1755,7 @@ class NextRideCard extends StatelessWidget {
               // status). Mirrors the live card so a later ride of the day still
               // surfaces its flight; the row hides itself for non-airport rides.
               DriverFlightInfoRow(ride: ride, isDark: isDark),
+              DriverArrivalTimeRow(ride: ride, isDark: isDark),
               DriverEntryTimeRow(ride: ride, isDark: isDark),
             ],
           ),

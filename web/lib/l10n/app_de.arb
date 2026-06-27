@@ -185,6 +185,18 @@
       "time": {"type": "String"}
     }
   },
+  "airportLandingAt": "Landung um {time}",
+  "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportFlightDelay": "+{minutes} Min Verspätung",
+  "@airportFlightDelay": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
   "airportTravelTime": "Fahrzeit:",
   "airportParkingSavings": "Parkersparnis: {amount}",
   "@airportParkingSavings": {
