@@ -337,9 +337,9 @@ class MyRidesTab extends StatelessWidget {
                                 child: OutlinedButton.icon(
                                   onPressed: () {
                                     Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            ClientMapScreen(rideId: ride.id),
+                                      ClientMapScreen.route(
+                                        context,
+                                        rideId: ride.id,
                                       ),
                                     );
                                   },
