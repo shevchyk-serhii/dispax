@@ -27,7 +27,9 @@ object FlightStatus:
       case s if s.contains("boarding") || s.contains("einstieg")                                                      => Boarding
       case s if s.contains("gestartet") || s.contains("abgeflogen")                                                   => Departed
       case s if s.contains("unterwegs") || s.contains("en route")                                                     => EnRoute
-      case s if s.contains("gelandet") || s.contains("angekommen")                                                    => Landed
+      // "beendet" = the arrival is finished/processed (the plane has landed) — MUC's wording for a completed arrival.
+      // "beendet" = the arrival is finished/processed (the plane has landed) — MUC's wording for a completed arrival.
+      case s if s.contains("gelandet") || s.contains("angekommen") || s.contains("beendet")                           => Landed
       case s if s.contains("verspätet") || s.contains("verspaetet") || s.contains("verspatet") || s.contains("delay") =>
         Delayed
       case s if s.contains("gestrichen") || s.contains("annulliert") || s.contains("cancel")                          => Cancelled
