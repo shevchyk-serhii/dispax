@@ -164,6 +164,20 @@ class CreateRideAirportSection extends StatelessWidget {
             ),
           ),
         ],
+        // For airport ARRIVAL rides the pickup is set in the schedule section above;
+        // this optional picker captures the flight ARRIVAL time, which the backend uses
+        // to compute the recommended terminal-entry time ("Einfahrt um"). Reuses the same
+        // flightDepartureTime field (sent as flightTime → scheduledTime); it never touches pickup.
+        if (isAirportTransfer && isArrival) ...[
+          const SizedBox(height: AppDimensions.paddingMedium),
+          _ArrivalFlightTimePicker(
+            flightArrivalTime: flightDepartureTime,
+            onSelectFlightArrival: () => _selectFlightDepartureTime(context),
+            onClearFlightArrival: () => context.read<CreateRideFormBloc>().add(
+              const FlightDepartureTimeChanged(null),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -348,6 +362,131 @@ class _DeparturePickers extends StatelessWidget {
                         ),
                         tooltip: 'Clear — revert to automatic computation',
                         onPressed: onClearManualPickup,
+                      )
+                    else
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Arrival flight-time picker (optional) ─────────────────────────────────────
+//
+// For an airport ARRIVAL the pickup time is set in the schedule section; this captures
+// the flight ARRIVAL time so the backend can compute the recommended terminal-entry
+// time. Optional — if blank, the card simply omits the "Einfahrt um" line.
+
+class _ArrivalFlightTimePicker extends StatelessWidget {
+  final DateTime? flightArrivalTime;
+  final VoidCallback onSelectFlightArrival;
+  final VoidCallback onClearFlightArrival;
+
+  const _ArrivalFlightTimePicker({
+    required this.flightArrivalTime,
+    required this.onSelectFlightArrival,
+    required this.onClearFlightArrival,
+  });
+
+  String _formatDateTime(DateTime dt) {
+    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} '
+        'at ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      elevation: 2,
+      shadowColor: AppColors.shadowMedium,
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.formCardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.flight_land, color: AppColors.info, size: 24),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                const Text(
+                  'Arrival Schedule',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.paddingMedium),
+            InkWell(
+              onTap: onSelectFlightArrival,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+              child: Container(
+                padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusSmall,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: flightArrivalTime != null
+                          ? AppColors.info
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppDimensions.paddingMedium),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Flight arrival time (optional)',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            flightArrivalTime != null
+                                ? _formatDateTime(flightArrivalTime!)
+                                : 'Tap to set — enables the terminal-entry time',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: flightArrivalTime == null
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (flightArrivalTime != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        tooltip: 'Clear flight arrival time',
+                        onPressed: onClearFlightArrival,
                       )
                     else
                       Icon(
