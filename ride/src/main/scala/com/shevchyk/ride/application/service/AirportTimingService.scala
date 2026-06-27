@@ -13,8 +13,8 @@ import java.time.Instant
  * Result of a successful terminal-entry timing computation for an airport arrival ride.
  *
  * @param optimalEntryTime
- *   The recommended instant to enter the terminal parking: `(arrival + walkBuffer) − freeWindow`. Entering at this
- *   moment keeps the driver within the free-parking window while the passenger is on the way out.
+ *   The recommended instant to enter the terminal: `arrival + walkBuffer` — exactly when the passenger reaches the
+ *   curb. (Equal to `latestEntryTime`; the free-parking window is not subtracted.)
  * @param latestEntryTime
  *   The latest instant to enter without making the passenger wait: `arrival + walkBuffer` (passenger at curbside).
  * @param travelMinutes
@@ -47,12 +47,13 @@ final case class AirportTimingResult(
 /**
  * Computes the recommended terminal-entry time for airport rides. Behaviour depends on the flight direction:
  *
- *   - ARRIVAL (the driver's terminal-parking saver): pull the entry time FORWARD from the flight arrival, so the driver
- *     enters the (paid) parking late enough to use the free window but early enough that the passenger does not wait.
+ *   - ARRIVAL (the driver's terminal pickup): pull the entry time FORWARD from the flight arrival to the moment the
+ *     passenger reaches the curb. The walk buffer is chosen by the gate pier (K/L satellite, else main), falling back
+ *     to the terminal code when the gate is unknown.
  *     {{{
  *       passengerAtCurbside = arrivalTime + walkBuffer
  *       latestEntryTime     = passengerAtCurbside
- *       optimalEntryTime    = passengerAtCurbside − freeWindow
+ *       optimalEntryTime    = passengerAtCurbside   // free-parking window not subtracted
  *     }}}
  *   - DEPARTURE (the client's "don't miss the flight" reminder, served to the client card): the "be at the airport by"
  *     instant, pulled BACK from the flight departure by the airline check-in-close + safety margin.
@@ -118,12 +119,27 @@ object AirportTimingService:
     (flightTime, terminalCode, "On time")
 
   /**
-   * Pure resolution: the walk-out buffer for the (possibly unknown) terminal. A satellite terminal needs the longer
-   * buffer; an unknown terminal defaults to the normal buffer.
+   * Pure resolution: the passenger walk-out buffer (deplane → reach the curb). A satellite zone needs the longer
+   * buffer. The zone is read primarily from the GATE letter (MUC encodes the pier in it: K/L = satellite, G/H/etc =
+   * main); only when the gate is unknown does it fall back to the terminal code, then to the normal buffer.
+   *
+   * @param gate
+   *   the live gate (e.g. "K12", "G35") — its leading letter selects the pier
+   * @param terminalCode
+   *   the terminal label (e.g. "T2") — used only when the gate is unknown
    */
-  def walkBuffer(terminalCode: Option[String], config: AirportArrivalTimingConfig): Int =
-    val isSatellite = terminalCode.exists(t => config.satelliteTerminalCodes.contains(t.trim.toUpperCase))
-    if isSatellite then config.satelliteWalkMinutes else config.normalWalkMinutes
+  def walkBuffer(
+      gate: Option[String],
+      terminalCode: Option[String],
+      config: AirportArrivalTimingConfig
+  ): Int =
+    val gateLetter  = gate.map(_.trim.toUpperCase).filter(_.nonEmpty).map(_.take(1))
+    val bySatellite =
+      gateLetter match
+        case Some(letter) => Some(config.satelliteGateLetters.contains(letter))
+        // No gate yet → fall back to the terminal code (e.g. "T2K"/"K" satellite terminals).
+        case None         => terminalCode.map(t => config.satelliteTerminalCodes.contains(t.trim.toUpperCase))
+    if bySatellite.contains(true) then config.satelliteWalkMinutes else config.normalWalkMinutes
 
   /**
    * Pure arithmetic: latest entry instant = arrival + walk buffer (passenger at curbside).
@@ -133,16 +149,13 @@ object AirportTimingService:
   )
 
   /**
-   * Pure arithmetic: optimal entry instant = latest entry − free-parking window.
-   */
-  def computeOptimalEntry(latestEntry: Instant, freeWindowMin: Int): Instant = latestEntry.minusSeconds(
-    freeWindowMin.toLong * 60L
-  )
-
-  /**
    * Pure, GPS-free recommended terminal-entry instant ("Einfahrt um") for an airport arrival ride, for list contexts
    * (driver "Today" / dispatcher "My Rides" cards) where there is no driver position and so no travel time. This is the
    * same `(arrival + walkBuffer) − freeWindow` the live [[compute]] uses, minus the travel-aware "depart now" part.
+   *
+   * The entry instant is `arrival + walkBuffer` — the moment the passenger reaches the curb, which is exactly when the
+   * driver should be at the terminal. (The free-parking window is NOT subtracted here: it only affects the parking-cost
+   * fields, not when to drive in.)
    *
    * The arrival instant is taken from the live flight time when the monitor has fetched one, else the booking's
    * scheduled time. Returns [[None]] when no arrival time is known (so the card simply omits the line) — never the `now
@@ -150,16 +163,18 @@ object AirportTimingService:
    *
    * @param arrivalTime
    *   the flight arrival instant (`flight.flightTime` or `ride.scheduledTime`), if known
+   * @param gate
+   *   the live gate (its leading letter selects the pier walk buffer), if known
    * @param terminalCode
-   *   the live terminal code (drives the satellite vs normal walk buffer), if known
+   *   the terminal code, used only when the gate is unknown
    */
   def arrivalOptimalEntry(
       arrivalTime: Option[Instant],
+      gate: Option[String],
       terminalCode: Option[String],
       config: AirportArrivalTimingConfig
   ): Option[Instant] = arrivalTime.map { arrival =>
-    val latest = computeLatestEntry(arrival, walkBuffer(terminalCode, config))
-    computeOptimalEntry(latest, config.freeParkingMinutes)
+    computeLatestEntry(arrival, walkBuffer(gate, terminalCode, config))
   }
 
   /**
@@ -212,23 +227,23 @@ object AirportTimingService:
         seam                                     = estimatedFlightTime(ride, flightStatusRow, now)
         (flightTime, terminalCode, flightStatus) = seam
         isArrival                                = ride.isArrivalAirportTransfer
-        // Arrival uses the terminal walk-out buffer; departure uses the airline check-in-close window plus a safety
-        // buffer (the same departure margin PickupTimeService applies), NOT a terminal walk.
+        // Arrival uses the passenger walk-out buffer (by gate pier, else terminal); departure uses the airline
+        // check-in-close window plus a safety buffer (the same departure margin PickupTimeService applies).
         bufferMin                                =
-          if isArrival then walkBuffer(terminalCode, config)
+          if isArrival then walkBuffer(flightStatusRow.flatMap(_.gate), terminalCode, config)
           else departureConfig.defaultCheckInCloseMinutes + departureConfig.defaultBufferMinutes
         destCoords                              <- terminalCoords(ride)
         origin                                  <- resolveOrigin(ride, fallbackCoords)
         travel                                  <- travelTime(origin, destCoords)
         (travelMin, fallback)                    = travel
-        // Arrival: pull the entry time FORWARD from the flight arrival (walk-out buffer, then back into the free
-        // window). Departure: pull it BACK from the flight departure (the client "don't miss the flight" reminder) —
-        // optimal == latest == "be at the airport by". In both cases `optimalEntry` is the travel-free target instant,
-        // so `computeTimeToDepart` subtracts the drive exactly once.
+        // Arrival: entry == arrival + walk-out buffer (the moment the passenger reaches the curb). Departure: pull it
+        // BACK from the flight departure (the client "don't miss the flight" reminder). In both cases `optimalEntry` is
+        // the travel-free target instant, so `computeTimeToDepart` subtracts the drive exactly once. (The free-parking
+        // window is not subtracted from the arrival entry — it only feeds the parking-cost fields.)
         (latestEntry, optimalEntry)              =
           if isArrival then
             val latest = computeLatestEntry(flightTime, bufferMin)
-            (latest, computeOptimalEntry(latest, config.freeParkingMinutes))
+            (latest, latest)
           else
             val latest = computeDepartureLatestEntry(flightTime, bufferMin)
             (latest, latest)

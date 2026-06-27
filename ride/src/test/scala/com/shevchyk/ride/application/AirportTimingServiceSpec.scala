@@ -22,19 +22,19 @@ import java.util.UUID
 /**
  * Unit tests for AirportTimingService — the recommended terminal-entry timing for airport arrival rides.
  *
- * The arrival formula (note the walk buffer is ADDED to the arrival, unlike the departure pickup formula): latestEntry
- * \= arrival + walkBuffer optimalEntry = latestEntry − freeWindow timeToDepart = minutesBetween(now, optimalEntry −
- * travel)
+ * The arrival formula (the walk buffer is ADDED to the arrival; the free-parking window is NOT subtracted — entry is
+ * exactly when the passenger reaches the curb): entry = latestEntry = arrival + walkBuffer; timeToDepart =
+ * minutesBetween(now, entry − travel). The walk buffer is chosen by the GATE pier letter (K/L = satellite 18, G/H =
+ * main 10), falling back to the terminal code when no gate is known.
  *
  * Mutation-verified branches:
- *   - walk buffer ADDED (not subtracted): "normal terminal" asserts latestEntry = arrival + 10. A sign flip → 07:50.
- *   - free-window subtraction: "free-window clamp" asserts optimalEntry = latestEntry − freeWindow exactly.
- *   - satellite classification: "satellite terminal" asserts the larger buffer and optimal > normal-optimal.
+ *   - walk buffer ADDED (not subtracted): "normal terminal" asserts entry = arrival + 10. A sign flip → 07:50.
+ *   - no free-window subtraction: "entry == latestEntry" — entry is arrival+walk, not arrival+walk−free.
+ *   - gate pier classification: satellite gate K → 18, main gate G → 10; gate wins over terminal; terminal fallback.
  *   - travel only affects timeToDepart: two travel values → identical entry/latest, different timeToDepart.
  *   - Haversine fallback: TravelTime None → travelTimeFallback = true.
  *   - tenant isolation: ride of company B, caller A → Error.NotFound (404, not 403).
  *   - not-an-arrival guard: departure ride → Error.NotAnArrival.
- *   - unknown terminal → normal buffer; live flight status with satellite terminal (K) → 18-min walk buffer.
  */
 object AirportTimingServiceSpec extends ZIOSpecDefault:
 
@@ -54,6 +54,7 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
     satelliteWalkMinutes = 18,
     freeParkingMinutes = 10,
     satelliteTerminalCodes = Set("K", "T2K"),
+    satelliteGateLetters = Set("K", "L"),
     optimalParkingCost = 0.0,
     earlyEntryParkingCost = 28.0
   )
@@ -267,33 +268,29 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
 
   def spec =
     suite("AirportTimingService")(
-      test("normal terminal: latestEntry = arrival + walk(10), optimalEntry = latest − free(10)") {
+      test("normal terminal: entry = arrival + walk(10), no free-window subtraction") {
         for result <- compute(Some(arrivalRide()))
         yield assertTrue(
-          result.latestEntryTime == arrival.plusSeconds(10 * 60L), // 08:10
-          result.optimalEntryTime == arrival,                      // 08:00 (08:10 − 10)
+          result.latestEntryTime == arrival.plusSeconds(10 * 60L),  // 08:10
+          result.optimalEntryTime == arrival.plusSeconds(10 * 60L), // == latest, NOT arrival
           result.walkBufferMinutes == 10
         )
       },
-      test("satellite terminal (K): larger walk buffer → later optimal than normal") {
-        // Pure-helper classification check (the end-to-end path is covered by the "live flight status" tests below).
-        val normalBuf    = AirportTimingService.walkBuffer(None, config)
-        val satelliteBuf = AirportTimingService.walkBuffer(Some("K"), config)
-        val latestNormal = AirportTimingService.computeLatestEntry(arrival, normalBuf)
-        val latestSat    = AirportTimingService.computeLatestEntry(arrival, satelliteBuf)
+      test("satellite gate (K): larger walk buffer than a main gate (G)") {
+        // The gate letter selects the pier: K = satellite (18), G = main (10).
+        val mainBuf      = AirportTimingService.walkBuffer(Some("G35"), None, config)
+        val satelliteBuf = AirportTimingService.walkBuffer(Some("K12"), None, config)
         assertTrue(
-          normalBuf == 10,
+          mainBuf == 10,
           satelliteBuf == 18,
           AirportTimingService
-            .computeOptimalEntry(latestSat, config.freeParkingMinutes)
-            .isAfter(AirportTimingService.computeOptimalEntry(latestNormal, config.freeParkingMinutes))
+            .computeLatestEntry(arrival, satelliteBuf)
+            .isAfter(AirportTimingService.computeLatestEntry(arrival, mainBuf))
         )
       },
-      test("free-window clamp: optimalEntry == latestEntry − freeWindow exactly") {
+      test("entry == latestEntry (free-parking window is not subtracted)") {
         for result <- compute(Some(arrivalRide()))
-        yield assertTrue(
-          result.optimalEntryTime == result.latestEntryTime.minusSeconds(config.freeParkingMinutes * 60L)
-        )
+        yield assertTrue(result.optimalEntryTime == result.latestEntryTime)
       },
       test("travel time affects only timeToDepart, not entry/latest instants") {
         for
@@ -348,43 +345,55 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
         for exit <- compute(None).exit
         yield assertTrue(exit == Exit.fail(AirportTimingService.Error.NotFound))
       },
-      test("unknown terminal → normal buffer used") {
+      test("unknown gate and terminal → normal buffer used") {
         for result <- compute(Some(arrivalRide()))
         yield assertTrue(result.walkBufferMinutes == config.normalWalkMinutes)
       },
-      test("live flight status with satellite terminal (K) → satellite walk buffer, later entry") {
-        // The flight-status monitor records the real terminal; an arrival in satellite K must use the longer 18-min
-        // walk-out buffer instead of the default 10. latestEntry = arrival + 18 (later than the 08:10 of a normal one).
-        val satellite = FlightStatusRow(terminal = Some("K"))
+      test("live flight status with satellite gate (K12) → satellite walk buffer, later entry") {
+        // The flight-status monitor records the real gate; an arrival at a K gate (satellite pier) must use the longer
+        // 18-min walk-out buffer instead of 10. latestEntry = arrival + 18 (later than the 08:10 of a main gate).
+        val satellite = FlightStatusRow(gate = Some("K12"), terminal = Some("T2"))
         for result <- compute(Some(arrivalRide()), flightStatus = Some(satellite))
         yield assertTrue(
           result.walkBufferMinutes == config.satelliteWalkMinutes, // 18, not 10
-          result.latestEntryTime == arrival.plusSeconds(18 * 60L)  // 08:18, not 08:10
+          result.latestEntryTime == arrival.plusSeconds(18 * 60L), // 08:18
+          result.optimalEntryTime == arrival.plusSeconds(18 * 60L) // entry == latest (no free subtraction)
         )
       },
-      test("live flight status with normal terminal (T2) → normal walk buffer") {
-        val normalTerminal = FlightStatusRow(terminal = Some("T2"))
-        for result <- compute(Some(arrivalRide()), flightStatus = Some(normalTerminal))
+      test("live flight status with a main gate (G35 in T2) → normal walk buffer") {
+        // Gate letter G is a main-terminal pier → normal buffer, even though the terminal is T2.
+        val mainGate = FlightStatusRow(gate = Some("G35"), terminal = Some("T2"))
+        for result <- compute(Some(arrivalRide()), flightStatus = Some(mainGate))
         yield assertTrue(result.walkBufferMinutes == config.normalWalkMinutes) // 10
+      },
+      test("no gate yet → falls back to the satellite terminal code (K)") {
+        // Until the gate is scraped, the satellite terminal code still classifies the pier.
+        val noGateSatTerminal = FlightStatusRow(terminal = Some("K"))
+        for result <- compute(Some(arrivalRide()), flightStatus = Some(noGateSatTerminal))
+        yield assertTrue(result.walkBufferMinutes == config.satelliteWalkMinutes) // 18 via terminal fallback
       },
       test("savings = early − optimal parking cost") {
         for result <- compute(Some(arrivalRide()))
         yield assertTrue(result.savings == 28.0, result.actualArrivalTime == arrival)
       },
       // ── arrivalOptimalEntry: the GPS-free "Einfahrt um" used by the list cards ───────────────
-      test("arrivalOptimalEntry: normal terminal → arrival + 10 walk − 10 free = arrival") {
-        val entry = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("T2"), config)
-        assertTrue(entry.contains(arrival)) // 08:00 + 10 − 10 = 08:00
+      test("arrivalOptimalEntry: main gate → arrival + 10 walk (no free subtraction)") {
+        val entry = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("G35"), Some("T2"), config)
+        assertTrue(entry.contains(arrival.plusSeconds(10 * 60L))) // 08:10
       },
-      test("arrivalOptimalEntry: satellite terminal (K) → later entry than normal (18 vs 10 walk)") {
-        val sat    = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("K"), config)
-        val normal = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("T2"), config)
+      test("arrivalOptimalEntry: satellite gate (K) → arrival + 18, later than a main gate") {
+        val sat    = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("K12"), Some("T2"), config)
+        val normal = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("G35"), Some("T2"), config)
         assertTrue(
-          sat.contains(arrival.plusSeconds(8 * 60L)), // (08:00 + 18) − 10 = 08:08
+          sat.contains(arrival.plusSeconds(18 * 60L)), // 08:18
           sat.exists(s => normal.exists(s.isAfter))
         )
       },
+      test("arrivalOptimalEntry: gate wins over terminal (K gate in a T2 terminal → satellite)") {
+        val entry = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("K12"), Some("T2"), config)
+        assertTrue(entry.contains(arrival.plusSeconds(18 * 60L)))
+      },
       test("arrivalOptimalEntry: no arrival time → None (no now+2h placeholder)") {
-        assertTrue(AirportTimingService.arrivalOptimalEntry(None, Some("K"), config).isEmpty)
+        assertTrue(AirportTimingService.arrivalOptimalEntry(None, Some("K12"), Some("T2"), config).isEmpty)
       }
     )

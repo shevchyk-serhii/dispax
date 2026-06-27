@@ -27,6 +27,9 @@ final case class AirportArrivalTimingConfig(
     satelliteWalkMinutes: Int,
     freeParkingMinutes: Int,
     satelliteTerminalCodes: Set[String],
+    // Gate leading letters that mark a satellite pier (longer walk-out). At MUC the gate encodes the pier:
+    // K/L are the T2 satellite, G/H/etc are the main terminal. Preferred over the terminal code when a gate is known.
+    satelliteGateLetters: Set[String],
     optimalParkingCost: Double,
     earlyEntryParkingCost: Double
 )
@@ -52,6 +55,7 @@ object AirportArrivalTimingConfig:
       satelliteWalkMinutes = envInt("AIRPORT_ARRIVAL_SATELLITE_WALK_MINUTES", 18),
       freeParkingMinutes = envInt("AIRPORT_FREE_PARKING_MINUTES", 10),
       satelliteTerminalCodes = envTerminals("AIRPORT_SATELLITE_TERMINALS", Set("K", "T2K")),
+      satelliteGateLetters = envTerminals("AIRPORT_SATELLITE_GATE_LETTERS", Set("K", "L")),
       optimalParkingCost = envDouble("AIRPORT_OPTIMAL_PARKING_COST", 0.0),
       earlyEntryParkingCost = envDouble("AIRPORT_EARLY_PARKING_COST", 28.0)
     )

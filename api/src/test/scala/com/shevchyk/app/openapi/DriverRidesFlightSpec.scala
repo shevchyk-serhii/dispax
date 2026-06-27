@@ -409,8 +409,8 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       )
     },
     test("driver ride card response carries the recommended terminal-entry time for an arrival") {
-      // Arrival 10:00Z, terminal "2" (normal → 10-min walk), free window 10 → optimalEntry = 10:00 + 10 − 10 = 10:00Z.
-      // This is the GPS-free "Einfahrt um" value the card shows; the endpoint computes it from the live flight time.
+      // Arrival 10:00Z, gate G12 (main pier → 10-min walk) → optimalEntry = 10:00 + 10 = 10:10Z (the free-parking
+      // window is not subtracted). This is the GPS-free "Einfahrt um" value the card shows.
       for {
         token <- driverToken
         req    = Request
@@ -420,7 +420,7 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
         body  <- resp.body.asString
       } yield assertTrue(
         resp.status == Status.Ok,
-        body.contains("\"optimalEntryTime\":\"2090-01-01T10:00:00Z\"")
+        body.contains("\"optimalEntryTime\":\"2090-01-01T10:10:00Z\"")
       )
     }
   ).provideLayer(testJwtService)

@@ -648,7 +648,7 @@ object RideApi:
   /**
    * GPS-free recommended terminal-entry instant ("Einfahrt um") for a ride, for list cards. Only airport ARRIVAL rides
    * get a value; everything else is None. The arrival time prefers the live flight time over the booking's scheduled
-   * time, and the terminal (from the live flight row) selects the satellite vs normal walk buffer.
+   * time; the gate (else terminal) from the live flight row selects the satellite vs normal walk buffer.
    */
   private def optimalEntryFor(
       ride: Ride,
@@ -658,7 +658,7 @@ object RideApi:
     if !ride.isArrivalAirportTransfer then None
     else
       val arrivalTime = flight.flatMap(_.flightTime).orElse(ride.scheduledTime)
-      AirportTimingService.arrivalOptimalEntry(arrivalTime, flight.flatMap(_.terminal), config)
+      AirportTimingService.arrivalOptimalEntry(arrivalTime, flight.flatMap(_.gate), flight.flatMap(_.terminal), config)
 
   private def fromAirportTimingError(error: AirportTimingService.Error): Err =
     error match
