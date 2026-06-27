@@ -259,32 +259,40 @@ class RideCalendarCard extends StatelessWidget {
                         ],
                         if (ride.price != null || onPriceEdited != null) ...[
                           const Spacer(),
-                          GestureDetector(
-                            onTap: onPriceEdited != null
-                                ? () => _showPriceDialog(context)
-                                : null,
-                            child: ride.price != null
-                                ? Text(
-                                    '€${ride.price!.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurfaceVariant,
-                                      decoration: onPriceEdited != null
-                                          ? TextDecoration.underline
-                                          : null,
+                          // Flexible + ellipsis so a long price/"Set price" label
+                          // can never push the row past the narrow column width.
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: onPriceEdited != null
+                                  ? () => _showPriceDialog(context)
+                                  : null,
+                              child: ride.price != null
+                                  ? Text(
+                                      '€${ride.price!.toStringAsFixed(2)}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurfaceVariant,
+                                        decoration: onPriceEdited != null
+                                            ? TextDecoration.underline
+                                            : null,
+                                      ),
+                                    )
+                                  : Text(
+                                      l10n.setPrice,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontStyle: FontStyle.italic,
+                                        color: colorScheme.onSurfaceVariant
+                                            .withAlpha(153),
+                                        decoration: TextDecoration.underline,
+                                      ),
                                     ),
-                                  )
-                                : Text(
-                                    l10n.setPrice,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontStyle: FontStyle.italic,
-                                      color: colorScheme.onSurfaceVariant
-                                          .withAlpha(153),
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
+                            ),
                           ),
                         ],
                       ],
