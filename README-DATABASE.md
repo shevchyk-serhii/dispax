@@ -33,8 +33,8 @@ Flyway migrations run automatically on startup.
 
 Managed by Flyway in `api/src/main/resources/db/migration/`:
 
-| Migration | Description |
-|-----------|-------------|
+| Migration             | Description                                                                                                                                                                                                                         |
+|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | V1__Create_schema.sql | Full consolidated schema: persons (incl. `reminder_minutes`), companies, rides, `sent_reminders`, drivers, tariffs, schedules, notifications, chat, ratings, expenses, geofences, blacklist, GDPR, audit, sessions, pools, invoices |
 
 Development data: `api/src/main/resources/db/migration-dev/V1001__Insert_dev_data.sql` (loaded only in development profile).

@@ -46,17 +46,17 @@ assembled in `api/.../Application.scala`.
 
 **File naming (follow exactly):**
 
-| Kind                | File                          | Example                       |
-|---------------------|-------------------------------|-------------------------------|
-| Domain trait/enum   | `<Domain>.scala`              | `RideDomain.scala`            |
-| Service             | `<Name>Service.scala`         | `RideService.scala` (trait + `RideServiceImpl`) |
-| Repository trait    | `<Name>Repository.scala`      | `RideRepository.scala`        |
-| Postgres impl       | `Postgres<Name>Repository.scala` | `PostgresRideRepository.scala` |
-| DTOs                | `<Name>ApiModels.scala`       | `RideApiModels.scala`         |
-| Mapper              | `<Name>Mapper.scala`          | `RideMapper.scala`            |
-| Tapir endpoints     | `<Name>Api.scala`             | `RideApi.scala`               |
-| Test spec           | `<Name>Spec.scala`            | `AvatarApiSpec.scala`         |
-| In-memory double    | `InMemory<Name>.scala`        | `InMemoryPersonRepository.scala` |
+| Kind              | File                             | Example                                         |
+|-------------------|----------------------------------|-------------------------------------------------|
+| Domain trait/enum | `<Domain>.scala`                 | `RideDomain.scala`                              |
+| Service           | `<Name>Service.scala`            | `RideService.scala` (trait + `RideServiceImpl`) |
+| Repository trait  | `<Name>Repository.scala`         | `RideRepository.scala`                          |
+| Postgres impl     | `Postgres<Name>Repository.scala` | `PostgresRideRepository.scala`                  |
+| DTOs              | `<Name>ApiModels.scala`          | `RideApiModels.scala`                           |
+| Mapper            | `<Name>Mapper.scala`             | `RideMapper.scala`                              |
+| Tapir endpoints   | `<Name>Api.scala`                | `RideApi.scala`                                 |
+| Test spec         | `<Name>Spec.scala`               | `AvatarApiSpec.scala`                           |
+| In-memory double  | `InMemory<Name>.scala`           | `InMemoryPersonRepository.scala`                |
 
 ---
 

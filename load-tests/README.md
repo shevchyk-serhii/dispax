@@ -54,11 +54,11 @@ k6 run -e BASE_URL=http://localhost:8080 load-tests/smoke-ride-lifecycle.js
 
 ## Thresholds explained
 
-| Metric | Threshold | Meaning |
-|--------|-----------|---------|
-| `http_req_duration p(95)` | < 500 ms | 95% of all ride-lifecycle requests complete in under 500 ms — the latency baseline expected from a local Postgres + ZIO-HTTP stack |
-| `http_req_duration p(99)` | < 1 000 ms | No more than 1 in 100 requests exceeds 1 second, accounting for occasional GC pauses or HikariCP pool contention |
-| `http_req_failed` | < 1% | Fewer than 1 in 100 requests return a non-2xx/3xx status or a network error |
+| Metric                    | Threshold  | Meaning                                                                                                                            |
+|---------------------------|------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `http_req_duration p(95)` | < 500 ms   | 95% of all ride-lifecycle requests complete in under 500 ms — the latency baseline expected from a local Postgres + ZIO-HTTP stack |
+| `http_req_duration p(99)` | < 1 000 ms | No more than 1 in 100 requests exceeds 1 second, accounting for occasional GC pauses or HikariCP pool contention                   |
+| `http_req_failed`         | < 1%       | Fewer than 1 in 100 requests return a non-2xx/3xx status or a network error                                                        |
 
 k6 exits non-zero and prints `FAILED` next to any breached threshold.
 
@@ -66,11 +66,11 @@ k6 exits non-zero and prints `FAILED` next to any breached threshold.
 
 ## What is tested
 
-| Step | Endpoint | Expected status |
-|------|----------|-----------------|
-| Login (setup, once) | `POST /api/auth/login` | 200 |
-| List rides | `GET /api/rides?limit=20&offset=0` | 200 |
-| Create ride | `POST /api/rides` | 201 |
+| Step                | Endpoint                           | Expected status |
+|---------------------|------------------------------------|-----------------|
+| Login (setup, once) | `POST /api/auth/login`             | 200             |
+| List rides          | `GET /api/rides?limit=20&offset=0` | 200             |
+| Create ride         | `POST /api/rides`                  | 201             |
 
 The script uses a **single login** in `setup()` (runs once before VUs start) to avoid
 triggering the per-IP auth rate limiter when all 10 VUs ramp up from one machine.

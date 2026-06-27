@@ -47,16 +47,16 @@ Flutter analyze+test). Деплой делается вручную: `make deplo
 
 **Scala unit-тесты** (`make test-unit`, ~800 кейсов):
 
-| Модуль | ~unit-кейсов |
-|--------|-------------|
-| ride | ~275 |
-| core | ~144 |
-| auth | ~110 |
-| api (проект `root`, `api/src/test`) | ~110 |
-| schedule | ~85 |
-| notification | ~53 |
-| driver | ~33 |
-| billing | ~18 |
+| Модуль                              | ~unit-кейсов |
+|-------------------------------------|--------------|
+| ride                                | ~275         |
+| core                                | ~144         |
+| auth                                | ~110         |
+| api (проект `root`, `api/src/test`) | ~110         |
+| schedule                            | ~85          |
+| notification                        | ~53          |
+| driver                              | ~33          |
+| billing                             | ~18          |
 
 > Модуль `api` физически не отдельный sbt-проект — он живёт в `root`
 > (`api/src/test`), поэтому в `make test-unit` подключён как

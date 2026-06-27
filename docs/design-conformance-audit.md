@@ -30,22 +30,22 @@ predictive ETA, templates, chat, DATEV) — на месте.
   `AppColors.primary`→`colorScheme.primary`; визуальная сверка экранов в dark.
 
 ### 2. Экраны-заглушки, ждущие backend (дизайн рисует, бэка нет)
-| Экран | Файл | Чего не хватает на бэке |
-|---|---|---|
-| SuperAdmin → Users & Roles | `dashboard/superadmin/superadmin_dashboard.dart:90` | `GET /superadmin/users` |
-| SuperAdmin → Audit Log | `dashboard/superadmin/superadmin_dashboard.dart:184` | `GET /superadmin/audit` |
-| SuperAdmin → Analytics «Avg slack» | `screens/superadmin_analytics_screen.dart:369` | поле в `PlatformRideStats` |
-| SuperAdmin → Companies «Drivers»/«Rides/mo» | `screens/superadmin_companies_screen.dart:552,561` | поля в `CompanyResponse` |
+| Экран                                       | Файл                                                 | Чего не хватает на бэке    |
+|---------------------------------------------|------------------------------------------------------|----------------------------|
+| SuperAdmin → Users & Roles                  | `dashboard/superadmin/superadmin_dashboard.dart:90`  | `GET /superadmin/users`    |
+| SuperAdmin → Audit Log                      | `dashboard/superadmin/superadmin_dashboard.dart:184` | `GET /superadmin/audit`    |
+| SuperAdmin → Analytics «Avg slack»          | `screens/superadmin_analytics_screen.dart:369`       | поле в `PlatformRideStats` |
+| SuperAdmin → Companies «Drivers»/«Rides/mo» | `screens/superadmin_companies_screen.dart:552,561`   | поля в `CompanyResponse`   |
 
 Деградируют gracefully (показывают `—`/placeholder), но дизайн предполагает реальные данные.
 
 ### 3. Незавершённый client-функционал из HANDOFF
-| Что | Файл | Статус |
-|---|---|---|
-| Payment screen | `screens/client_payment_screen.dart:3,356` | UI-заглушка, не подключена в flow; add-method не реализован |
-| Call driver (tel:) | `screens/client_map_screen.dart` | TODO, кнопка без действия |
-| Chat с driver | `screens/client_map_screen.dart` | TODO, переход на chat не реализован |
-| Geofence toggle | `screens/geofence_screen.dart:132` | мок POST вместо реального PATCH |
+| Что                | Файл                                       | Статус                                                      |
+|--------------------|--------------------------------------------|-------------------------------------------------------------|
+| Payment screen     | `screens/client_payment_screen.dart:3,356` | UI-заглушка, не подключена в flow; add-method не реализован |
+| Call driver (tel:) | `screens/client_map_screen.dart`           | TODO, кнопка без действия                                   |
+| Chat с driver      | `screens/client_map_screen.dart`           | TODO, переход на chat не реализован                         |
+| Geofence toggle    | `screens/geofence_screen.dart:132`         | мок POST вместо реального PATCH                             |
 
 ## Что подтверждено как соответствующее дизайну
 - Inter (4 TTF в pubspec) + lucide_icons 0.257 — ✅
