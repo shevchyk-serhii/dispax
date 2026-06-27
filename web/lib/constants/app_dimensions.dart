@@ -48,6 +48,11 @@ class AppDimensions {
   static const double inputBorderWidth = 1.0;
   static const double inputFocusedBorderWidth = 2.0;
 
+  // Compact spacing for the Create New Ride form so more fields fit on a phone
+  // screen without scrolling. Tune these two to adjust the whole form's density.
+  static const double formSectionGap = 12.0; // gap between form sections
+  static const double formCardPadding = 16.0; // inner padding of form cards
+
   static const double bottomNavHeight = 80.0;
   static const double bottomNavIconSize = 24.0;
 

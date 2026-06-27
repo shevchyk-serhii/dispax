@@ -89,7 +89,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+            padding: const EdgeInsets.all(AppDimensions.formCardPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -110,7 +110,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppDimensions.paddingMedium),
+                const SizedBox(height: AppDimensions.formSectionGap),
                 AddressAutocompleteField(
                   labelText: 'From',
                   hintText: 'Pick-up location',

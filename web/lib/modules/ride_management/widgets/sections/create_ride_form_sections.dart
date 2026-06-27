@@ -31,13 +31,13 @@ class CreateRideFormSections extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const CreateRideBasicInfoSection(),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             const CreateRideLocationSection(),
             if (isDriver) ...[
-              const SizedBox(height: AppDimensions.paddingMedium),
+              const SizedBox(height: AppDimensions.formSectionGap),
               const CreateRideDriverSection(),
             ],
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             // For departure rides the pickup time is computed from the flight
             // departure; a separate picker is shown inside the airport section.
             // For all other rides the operator must set the pickup time manually.
@@ -47,7 +47,7 @@ class CreateRideFormSections extends StatelessWidget {
                     state.manualPickupDateTime ??
                     DateTime.now().add(const Duration(hours: 1)),
               ),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             CreateRideAirportSection(
               isAirportTransfer: state.isAirportTransfer,
               isArrival: state.isArrival,
@@ -58,13 +58,13 @@ class CreateRideFormSections extends StatelessWidget {
               flightDepartureTime: state.flightDepartureTime,
               manualPickupDateTime: state.manualPickupDateTime,
             ),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             CreateRidePriceSection(price: state.price),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             CreateRidePaymentMethodSection(
               selectedPaymentMethod: state.selectedPaymentMethod,
             ),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             _NotesSectionToggle(state: state),
             const SizedBox(height: AppDimensions.paddingLarge),
             CreateRideActionsSection(formKey: formKey),

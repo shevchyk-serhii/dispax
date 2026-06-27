@@ -199,7 +199,7 @@ class _DeparturePickers extends StatelessWidget {
       elevation: 2,
       shadowColor: AppColors.shadowMedium,
       child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+        padding: const EdgeInsets.all(AppDimensions.formCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

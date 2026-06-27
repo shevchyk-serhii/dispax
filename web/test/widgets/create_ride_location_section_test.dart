@@ -4,6 +4,7 @@ import 'package:dispax/blocs/auth/auth_event.dart';
 import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_bloc.dart';
 import 'package:dispax/constants/app_colors.dart';
+import 'package:dispax/constants/app_dimensions.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/ride_management/widgets/sections/create_ride_location_section.dart';
@@ -134,5 +135,56 @@ void main() {
     expect(resolved, AppColors.textSecondaryDark); // onSurfaceVariant (dark)
     expect(resolved, isNot(AppColors.surfaceDark));
     expect(resolved, isNot(AppColors.primary));
+  });
+
+  // Compact-spacing regression: the gap between the "Ride Locations" title and
+  // the From field must use the tight formSectionGap, not the looser 16dp gap
+  // the form started with. A revert to paddingMedium would re-add the
+  // whitespace the user asked to remove.
+  testWidgets('title→field gap uses the compact formSectionGap', (
+    tester,
+  ) async {
+    final authBloc = _MockAuthBloc();
+    final formBloc = CreateRideFormBloc();
+    when(() => authBloc.apiClient).thenReturn(_MockApiClient());
+    when(
+      () => authBloc.state,
+    ).thenReturn(AuthState.authenticated(_dispatcher()));
+    addTearDown(formBloc.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider<AuthBloc>.value(value: authBloc),
+              BlocProvider<CreateRideFormBloc>.value(value: formBloc),
+            ],
+            child: const CreateRideLocationSection(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // The section's fixed-height SizedBoxes are the title→field gap
+    // (formSectionGap) and the two swap-button gaps (paddingSmall). Exactly one
+    // must be the compact section gap, and none may be the old 16dp gap.
+    final heights = tester
+        .widgetList<SizedBox>(find.byType(SizedBox))
+        .map((b) => b.height)
+        .whereType<double>()
+        .toList();
+
+    expect(
+      heights.where((h) => h == AppDimensions.formSectionGap).length,
+      1,
+      reason: 'title→field gap should be the compact formSectionGap',
+    );
+    expect(
+      heights.contains(AppDimensions.paddingMedium),
+      isFalse,
+      reason: 'no 16dp gap should remain in the compacted section',
+    );
   });
 }

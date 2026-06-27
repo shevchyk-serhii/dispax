@@ -90,7 +90,7 @@ class _DriverClientSection extends StatelessWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+          padding: const EdgeInsets.all(AppDimensions.formCardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -133,7 +133,7 @@ class _DriverClientSection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: AppDimensions.paddingMedium),
+              const SizedBox(height: AppDimensions.formSectionGap),
               if (state.isNewClient)
                 _NewClientFields()
               else
@@ -164,7 +164,7 @@ class _NewClientFields extends StatelessWidget {
               onChanged: (v) =>
                   context.read<CreateRideFormBloc>().add(ClientNameChanged(v)),
             ),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             ClearableTextField(
               value: state.newClientPhone,
               keyboardType: TextInputType.phone,

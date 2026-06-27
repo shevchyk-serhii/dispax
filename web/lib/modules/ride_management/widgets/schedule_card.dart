@@ -27,7 +27,7 @@ class ScheduleCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+        padding: const EdgeInsets.all(AppDimensions.formCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

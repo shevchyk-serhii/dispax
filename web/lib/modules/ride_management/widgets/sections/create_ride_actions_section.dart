@@ -31,7 +31,7 @@ class CreateRideActionsSection extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+      padding: const EdgeInsets.all(AppDimensions.formCardPadding),
       child: CreateRideActionButtons(
         onCreateRide: () {
           if (formKey.currentState!.validate()) {

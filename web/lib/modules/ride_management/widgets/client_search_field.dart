@@ -75,7 +75,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+        padding: const EdgeInsets.all(AppDimensions.formCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,7 +97,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                 ],
               ],
             ),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
