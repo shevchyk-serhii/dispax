@@ -24,6 +24,29 @@ class ClientMapScreen extends StatefulWidget {
 
   const ClientMapScreen({super.key, this.rideId});
 
+  /// Builds a [MaterialPageRoute] for [ClientMapScreen] that keeps the existing
+  /// [RideBloc] reachable inside the pushed route.
+  ///
+  /// [ClientMapScreen] reads [RideBloc] (in `didChangeDependencies` and via a
+  /// `BlocListener`) for live ride/driver updates. The app's [RideBloc] is
+  /// provided below the root [Navigator] (in `AppRoot`), so a plain
+  /// `MaterialPageRoute(builder: (_) => ClientMapScreen(...))` builds the screen
+  /// in a context above the provider and crashes with
+  /// "Could not find the correct `Provider<RideBloc>`". Re-exposing the same bloc
+  /// instance via [BlocProvider.value] fixes it without spawning a second bloc
+  /// (a fresh bloc would silently break live tracking).
+  ///
+  /// [context] must be a descendant of the app's `BlocProvider<RideBloc>`.
+  static Route<void> route(BuildContext context, {String? rideId}) {
+    final rideBloc = context.read<RideBloc>();
+    return MaterialPageRoute<void>(
+      builder: (_) => BlocProvider<RideBloc>.value(
+        value: rideBloc,
+        child: ClientMapScreen(rideId: rideId),
+      ),
+    );
+  }
+
   /// Client-facing wording for the ride status shown on the map pill.
   ///
   /// Friendlier than the raw status label. For the [RideStatus.assigned] case,

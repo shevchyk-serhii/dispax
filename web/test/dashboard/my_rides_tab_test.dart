@@ -211,8 +211,12 @@ void main() {
         final built = (pushedRoute as MaterialPageRoute).builder(
           tester.element(find.byType(Scaffold).first),
         );
-        expect(built, isA<ClientMapScreen>());
-        expect((built as ClientMapScreen).rideId, targetRideId);
+        // The route re-exposes RideBloc via BlocProvider so ClientMapScreen can
+        // read it after navigation (root Navigator is above the app's provider).
+        expect(built, isA<BlocProvider<RideBloc>>());
+        final screen = (built as BlocProvider<RideBloc>).child;
+        expect(screen, isA<ClientMapScreen>());
+        expect((screen as ClientMapScreen).rideId, targetRideId);
       },
     );
 
@@ -256,7 +260,8 @@ void main() {
         final built = pushedRoute.builder(
           tester.element(find.byType(Scaffold).first),
         );
-        expect((built as ClientMapScreen).rideId, secondRideId);
+        final screen = (built as BlocProvider<RideBloc>).child;
+        expect((screen as ClientMapScreen).rideId, secondRideId);
       },
     );
   });
