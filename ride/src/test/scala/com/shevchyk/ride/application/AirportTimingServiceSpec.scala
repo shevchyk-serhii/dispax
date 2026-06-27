@@ -7,6 +7,7 @@ import com.shevchyk.ride.domain.{
   Airport,
   AirportCheckpoint,
   AirportCheckpointZone,
+  FlightStatusRow,
   Ride,
   RideError,
   RideSpecifics,
@@ -33,7 +34,7 @@ import java.util.UUID
  *   - Haversine fallback: TravelTime None → travelTimeFallback = true.
  *   - tenant isolation: ride of company B, caller A → Error.NotFound (404, not 403).
  *   - not-an-arrival guard: departure ride → Error.NotAnArrival.
- *   - unknown terminal → normal buffer (terminal seam returns None today).
+ *   - unknown terminal → normal buffer; live flight status with satellite terminal (K) → 18-min walk buffer.
  */
 object AirportTimingServiceSpec extends ZIOSpecDefault:
 
@@ -102,104 +103,112 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
 
   // ── Test doubles ─────────────────────────────────────────────────────────
 
-  // The RideService trait is large; only getRideById is exercised, the rest die if called.
-  private def rideServiceLayer(ride: Option[Ride]): ULayer[RideService] = ZLayer.succeed(
-    new RideService:
-      import com.shevchyk.ride.domain.*
-      private def notImpl = ZIO.die(new NotImplementedError("AirportTimingServiceSpec RideService stub"))
+  // The RideService trait is large; only getRideById and getFlightStatus are exercised, the rest die if called.
+  private def rideServiceLayer(ride: Option[Ride], flightStatus: Option[FlightStatusRow]): ULayer[RideService] = ZLayer
+    .succeed(
+      new RideService:
+        import com.shevchyk.ride.domain.*
+        private def notImpl = ZIO.die(new NotImplementedError("AirportTimingServiceSpec RideService stub"))
 
-      def getRideById(id: RideId): IO[RideError, Ride] =
-        ride match
-          case Some(r) => ZIO.succeed(r)
-          case None    => ZIO.fail(RideError.RideNotFound(id))
+        def getRideById(id: RideId): IO[RideError, Ride] =
+          ride match
+            case Some(r) => ZIO.succeed(r)
+            case None    => ZIO.fail(RideError.RideNotFound(id))
 
-      def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                     = notImpl
-      def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                                = notImpl
-      def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                          = notImpl
-      def completeRide(rideId: RideId): IO[RideError, Ride]                                                           = notImpl
-      def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride]                     = notImpl
-      def cancelRideWithReason(
-          rideId: RideId,
-          userId: PersonId,
-          userRole: PersonRole,
-          req: CancelRideRequest,
-          companyId: CompanyId
-      ): IO[RideError, Ride] = notImpl
-      def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                                 = notImpl
-      def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                        = notImpl
-      def rejectRide(rideId: RideId, driverId: PersonId, reason: String): IO[RideError, Ride]                         = notImpl
-      def handOffToExternal(
-          rideId: RideId,
-          callerCompanyId: CompanyId,
-          callerId: PersonId,
-          req: HandOffRequest
-      ): IO[RideError, Ride] = notImpl
-      def createPartnerCompany(companyId: CompanyId, req: CreatePartnerCompanyRequest): IO[RideError, PartnerCompany] =
-        notImpl
-      def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]                             = notImpl
-      def createExternalDriver(companyId: CompanyId, req: CreateExternalDriverRequest): IO[RideError, ExternalDriver] =
-        notImpl
-      def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]                              = notImpl
-      def updateRideStatus(
-          rideId: RideId,
-          req: UpdateRideStatusRequest,
-          userId: PersonId,
-          userRole: PersonRole
-      ): IO[RideError, Ride] = notImpl
-      def assignDriver(rideId: RideId, driverId: PersonId, overrideScheduleConflict: Boolean): IO[RideError, Ride]    =
-        notImpl
-      def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                             = notImpl
-      def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]             = notImpl
-      def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImpl
-      def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                         = notImpl
-      def getAllRides: IO[RideError, List[Ride]]                                                                      = notImpl
-      def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                          = notImpl
-      def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]        = notImpl
-      def getDriverRidesPaginated(
-          driverId: PersonId,
-          companyId: CompanyId,
-          offset: Int,
-          limit: Int
-      ): IO[RideError, List[Ride]] = notImpl
-      def updateRideDetails(
-          rideId: RideId,
-          req: UpdateRideDetailsRequest,
-          userId: PersonId,
-          userRole: PersonRole,
-          cid: Option[CompanyId]
-      ): IO[RideError, Ride] = notImpl
-      def reassignDriver(
-          rideId: RideId,
-          newDriverId: PersonId,
-          overrideScheduleConflict: Boolean
-      ): IO[RideError, Ride] = notImpl
-      def markPayment(rideId: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]              = notImpl
-      def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                    = notImpl
-      def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                                = notImpl
-      def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = notImpl
-      def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                            = notImpl
-      def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                        = notImpl
-      def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]                = notImpl
-      def getDriverEarnings(
-          driverId: PersonId,
-          companyId: CompanyId,
-          period: EarningsPeriod,
-          anchorDate: java.time.LocalDate
-      ): IO[RideError, DriverEarningsReport] = notImpl
-      def setRidePrice(
-          rideId: RideId,
-          price: Double,
-          userId: PersonId,
-          userRole: PersonRole,
-          companyId: CompanyId
-      ): IO[RideError, Ride] = notImpl
-      def getRidesByDrivers(
-          driverIds: List[PersonId],
-          from: Option[String],
-          to: Option[String],
-          companyId: CompanyId
-      ): IO[RideError, List[Ride]] = notImpl
-  )
+        def getFlightStatus(id: RideId): IO[RideError, Option[FlightStatusRow]] = ZIO.succeed(flightStatus)
+
+        def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                  = notImpl
+        def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                             = notImpl
+        def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                       = notImpl
+        def completeRide(rideId: RideId): IO[RideError, Ride]                                                        = notImpl
+        def cancelRide(rideId: RideId, userId: PersonId, userRole: PersonRole): IO[RideError, Ride]                  = notImpl
+        def cancelRideWithReason(
+            rideId: RideId,
+            userId: PersonId,
+            userRole: PersonRole,
+            req: CancelRideRequest,
+            companyId: CompanyId
+        ): IO[RideError, Ride] = notImpl
+        def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]]                              = notImpl
+        def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                     = notImpl
+        def rejectRide(rideId: RideId, driverId: PersonId, reason: String): IO[RideError, Ride]                      = notImpl
+        def handOffToExternal(
+            rideId: RideId,
+            callerCompanyId: CompanyId,
+            callerId: PersonId,
+            req: HandOffRequest
+        ): IO[RideError, Ride] = notImpl
+        def createPartnerCompany(
+            companyId: CompanyId,
+            req: CreatePartnerCompanyRequest
+        ): IO[RideError, PartnerCompany] = notImpl
+        def listPartnerCompanies(companyId: CompanyId): IO[RideError, List[PartnerCompany]]                          = notImpl
+        def createExternalDriver(
+            companyId: CompanyId,
+            req: CreateExternalDriverRequest
+        ): IO[RideError, ExternalDriver] = notImpl
+        def listExternalDrivers(companyId: CompanyId): IO[RideError, List[ExternalDriver]]                           = notImpl
+        def updateRideStatus(
+            rideId: RideId,
+            req: UpdateRideStatusRequest,
+            userId: PersonId,
+            userRole: PersonRole
+        ): IO[RideError, Ride] = notImpl
+        def assignDriver(rideId: RideId, driverId: PersonId, overrideScheduleConflict: Boolean): IO[RideError, Ride] =
+          notImpl
+        def getRidesByStatus(status: RideStatus): IO[RideError, List[Ride]]                                          = notImpl
+        def getRidesByStatusAndCompany(status: RideStatus, companyId: CompanyId): IO[RideError, List[Ride]]          = notImpl
+        def getDriverRides(driverId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                      = notImpl
+        def getClientRides(clientId: PersonId, companyId: CompanyId): IO[RideError, List[Ride]]                      = notImpl
+        def getAllRides: IO[RideError, List[Ride]]                                                                   = notImpl
+        def getRidesByCompany(companyId: CompanyId): IO[RideError, List[Ride]]                                       = notImpl
+        def getRidesByCompanyPaginated(companyId: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]     =
+          notImpl
+        def getDriverRidesPaginated(
+            driverId: PersonId,
+            companyId: CompanyId,
+            offset: Int,
+            limit: Int
+        ): IO[RideError, List[Ride]] = notImpl
+        def updateRideDetails(
+            rideId: RideId,
+            req: UpdateRideDetailsRequest,
+            userId: PersonId,
+            userRole: PersonRole,
+            cid: Option[CompanyId]
+        ): IO[RideError, Ride] = notImpl
+        def reassignDriver(
+            rideId: RideId,
+            newDriverId: PersonId,
+            overrideScheduleConflict: Boolean
+        ): IO[RideError, Ride] = notImpl
+        def markPayment(rideId: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]           = notImpl
+        def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                 = notImpl
+        def getRideCountsByStatus(companyId: CompanyId): IO[RideError, Map[String, Int]]                             = notImpl
+        def getTotalRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                         = notImpl
+        def getTodayRevenue(companyId: CompanyId): IO[RideError, BigDecimal]                                         = notImpl
+        def getAvgAssignmentMinutes(companyId: CompanyId): IO[RideError, Double]                                     = notImpl
+        def getDailyStats(companyId: CompanyId, days: Int): IO[RideError, List[(String, Int, Int, Int)]]             = notImpl
+        def getDriverEarnings(
+            driverId: PersonId,
+            companyId: CompanyId,
+            period: EarningsPeriod,
+            anchorDate: java.time.LocalDate
+        ): IO[RideError, DriverEarningsReport] = notImpl
+        def setRidePrice(
+            rideId: RideId,
+            price: Double,
+            userId: PersonId,
+            userRole: PersonRole,
+            companyId: CompanyId
+        ): IO[RideError, Ride] = notImpl
+        def getRidesByDrivers(
+            driverIds: List[PersonId],
+            from: Option[String],
+            to: Option[String],
+            companyId: CompanyId
+        ): IO[RideError, List[Ride]] = notImpl
+    )
 
   // AirportConfigService: only getAirport is exercised.
   private def airportConfigLayer(airport: Option[Airport]): ULayer[AirportConfigService] = ZLayer.succeed(
@@ -236,9 +245,10 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
       ride: Option[Ride],
       airport: Option[Airport],
       travel: Option[Int],
-      driverLoc: Option[(Double, Double)]
+      driverLoc: Option[(Double, Double)],
+      flightStatus: Option[FlightStatusRow]
   ): ULayer[AirportTimingService] =
-    (rideServiceLayer(ride) ++ airportConfigLayer(airport) ++ travelTimeLayer(travel) ++
+    (rideServiceLayer(ride, flightStatus) ++ airportConfigLayer(airport) ++ travelTimeLayer(travel) ++
       driverLocationLayer(driverLoc) ++ ZLayer.succeed(config) ++
       ZLayer.succeed(departureConfig)) >>> AirportTimingService.layer
 
@@ -247,10 +257,11 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
       caller: CompanyId = companyA,
       airport: Option[Airport] = Some(mucAirport),
       travel: Option[Int] = Some(20),
-      driverLoc: Option[(Double, Double)] = Some((48.1, 11.6))
+      driverLoc: Option[(Double, Double)] = Some((48.1, 11.6)),
+      flightStatus: Option[FlightStatusRow] = None
   ): IO[AirportTimingService.Error, com.shevchyk.ride.application.service.AirportTimingResult] = ZIO
     .serviceWithZIO[AirportTimingService](_.compute(rideId, caller, Some((48.1, 11.6))))
-    .provide(service(ride, airport, travel, driverLoc))
+    .provide(service(ride, airport, travel, driverLoc, flightStatus))
 
   // ── Tests ────────────────────────────────────────────────────────────────
 
@@ -265,8 +276,7 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
         )
       },
       test("satellite terminal (K): larger walk buffer → later optimal than normal") {
-        // Terminal is not on the ride domain yet; inject it via the pure walkBuffer helper to verify classification,
-        // and confirm the full computation uses the normal buffer when the terminal is unknown.
+        // Pure-helper classification check (the end-to-end path is covered by the "live flight status" tests below).
         val normalBuf    = AirportTimingService.walkBuffer(None, config)
         val satelliteBuf = AirportTimingService.walkBuffer(Some("K"), config)
         val latestNormal = AirportTimingService.computeLatestEntry(arrival, normalBuf)
@@ -341,6 +351,21 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
       test("unknown terminal → normal buffer used") {
         for result <- compute(Some(arrivalRide()))
         yield assertTrue(result.walkBufferMinutes == config.normalWalkMinutes)
+      },
+      test("live flight status with satellite terminal (K) → satellite walk buffer, later entry") {
+        // The flight-status monitor records the real terminal; an arrival in satellite K must use the longer 18-min
+        // walk-out buffer instead of the default 10. latestEntry = arrival + 18 (later than the 08:10 of a normal one).
+        val satellite = FlightStatusRow(terminal = Some("K"))
+        for result <- compute(Some(arrivalRide()), flightStatus = Some(satellite))
+        yield assertTrue(
+          result.walkBufferMinutes == config.satelliteWalkMinutes, // 18, not 10
+          result.latestEntryTime == arrival.plusSeconds(18 * 60L)  // 08:18, not 08:10
+        )
+      },
+      test("live flight status with normal terminal (T2) → normal walk buffer") {
+        val normalTerminal = FlightStatusRow(terminal = Some("T2"))
+        for result <- compute(Some(arrivalRide()), flightStatus = Some(normalTerminal))
+        yield assertTrue(result.walkBufferMinutes == config.normalWalkMinutes) // 10
       },
       test("savings = early − optimal parking cost") {
         for result <- compute(Some(arrivalRide()))

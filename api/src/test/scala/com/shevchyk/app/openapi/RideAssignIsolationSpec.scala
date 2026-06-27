@@ -141,6 +141,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           case Some(r) => ZIO.succeed(r)
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
 
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
+
       def assignDriver(
           rideId: RideId,
           driverId: PersonId,
@@ -462,6 +464,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
   ): ZLayer[Any, Nothing, RideService] = ZLayer.succeed(
     new RideService:
       private def notImplemented = ZIO.die(new NotImplementedError("crossTenantAssignRideService stub"))
+
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
 
       def createRide(req: CreateRideRequest): IO[RideError, Ride] = ZIO.succeed(
         Ride(

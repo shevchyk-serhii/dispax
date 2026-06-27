@@ -176,6 +176,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
     new RideService:
       private def notImpl                                                                                             = ZIO.die(new NotImplementedError("AvatarApiSpec stub"))
       def getRideById(id: RideId): IO[RideError, Ride]                                                                = notImpl
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]                                     = notImpl
       def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                     = notImpl
       def getRidesForUser(id: PersonId): IO[RideError, List[Ride]]                                                    = notImpl
       def startRide(id: RideId, did: PersonId): IO[RideError, Ride]                                                   = notImpl

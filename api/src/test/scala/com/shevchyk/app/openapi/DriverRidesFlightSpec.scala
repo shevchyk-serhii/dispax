@@ -116,6 +116,7 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       def getDriverRides(d: PersonId, c: CompanyId): IO[RideError, List[Ride]] = ZIO.succeed(List(airportRide))
 
       def getRideById(rideId: RideId): IO[RideError, Ride]                                                       = notImpl
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]                                = notImpl
       def assignDriver(rideId: RideId, dId: PersonId, o: Boolean): IO[RideError, Ride]                           = notImpl
       def reassignDriver(rideId: RideId, newDriverId: PersonId, o: Boolean): IO[RideError, Ride]                 = notImpl
       def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                = notImpl

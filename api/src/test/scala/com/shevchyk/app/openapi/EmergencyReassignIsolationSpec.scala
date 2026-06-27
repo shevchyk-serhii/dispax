@@ -109,6 +109,8 @@ object EmergencyReassignIsolationSpec extends ZIOSpecDefault:
           case Some(r) => ZIO.succeed(r)
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
 
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
+
       def reassignDriver(
           rideId: RideId,
           newDriverId: PersonId,

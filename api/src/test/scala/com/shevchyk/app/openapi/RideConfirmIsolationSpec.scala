@@ -114,6 +114,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
           case Some(r) => ZIO.succeed(r)
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
 
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
+
       def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
         confirmCalledRef.set(true) *> {
           rides.get(rideId) match

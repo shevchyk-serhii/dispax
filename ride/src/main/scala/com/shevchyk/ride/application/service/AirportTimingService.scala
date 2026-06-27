@@ -3,7 +3,7 @@ package com.shevchyk.ride.application.service
 import com.shevchyk.core.config.{AirportArrivalTimingConfig, AirportPickupConfig}
 import com.shevchyk.core.domain.{CompanyId, DriverLocationProvider, RideId}
 import com.shevchyk.ride.application.TravelTimeService
-import com.shevchyk.ride.domain.{Ride, RideError, RideSpecifics}
+import com.shevchyk.ride.domain.{FlightStatusRow, Ride, RideError, RideSpecifics}
 import zio.*
 
 import java.time.temporal.ChronoUnit
@@ -95,18 +95,27 @@ object AirportTimingService:
    * Estimated flight time (arrival for arrival rides, departure for departure rides) and terminal code for the ride.
    * This is the single seam where the flight-status integration plugs in.
    *
-   *   - Today: flight time falls back to `ride.scheduledTime` (or now + 2h as a last resort), the terminal is unknown
-   *     (→ normal buffer), status is "On time".
-   *   - Future: the flight-status provider supplies `(estimatedTime, terminalCode, status)`.
+   * The live `flightStatus` row (gate/terminal/status/time) is kept fresh by the flight-status monitor and supplies the
+   * real terminal code, which drives the walk-out buffer (satellite terminals such as MUC K/T2K need the longer walk).
+   * When no flight data has been recorded yet the terminal is unknown (→ normal buffer).
+   *
+   *   - Flight time: falls back to `ride.scheduledTime` (or now + 2h as a last resort) — the estimated-time integration
+   *     still plugs in here later.
+   *   - Status: "On time" for now.
    *
    * @return
    *   (flightTime, terminalCode, flightStatus)
    */
-  def estimatedFlightTime(ride: Ride, now: Instant): (Instant, Option[String], String) =
-    val flightTime = ride.scheduledTime.getOrElse(now.plus(2, ChronoUnit.HOURS))
-    // Terminal is not persisted on the ride yet (RideSpecifics.AirportTransfer carries only airportCode/flightNumber/
-    // isArrival). Until the flight-status integration populates it, the terminal is unknown → normal buffer.
-    (flightTime, None, "On time")
+  def estimatedFlightTime(
+      ride: Ride,
+      flightStatus: Option[FlightStatusRow],
+      now: Instant
+  ): (Instant, Option[String], String) =
+    val flightTime   = ride.scheduledTime.getOrElse(now.plus(2, ChronoUnit.HOURS))
+    // Terminal comes from the live flight-status row (RideSpecifics.AirportTransfer itself carries only
+    // airportCode/flightNumber/isArrival). Unknown terminal → normal buffer via walkBuffer.
+    val terminalCode = flightStatus.flatMap(_.terminal).filter(_.trim.nonEmpty)
+    (flightTime, terminalCode, "On time")
 
   /**
    * Pure resolution: the walk-out buffer for the (possibly unknown) terminal. A satellite terminal needs the longer
@@ -174,8 +183,10 @@ object AirportTimingService:
         // Tenant isolation: never reveal a ride from another company.
         _                                       <- ZIO.fail(Error.NotFound).when(ride.companyId != callerCompanyId)
         _                                       <- ZIO.fail(Error.NotAnAirportTransfer).when(!ride.isAirportTransfer)
+        // Live flight status (kept fresh by the flight-status monitor) supplies the real terminal → walk buffer.
+        flightStatusRow                         <- rideService.getFlightStatus(rideId).mapError(Error.SettingsLoadFailed.apply)
         now                                      = Instant.now()
-        seam                                     = estimatedFlightTime(ride, now)
+        seam                                     = estimatedFlightTime(ride, flightStatusRow, now)
         (flightTime, terminalCode, flightStatus) = seam
         isArrival                                = ride.isArrivalAirportTransfer
         // Arrival uses the terminal walk-out buffer; departure uses the airline check-in-close window plus a safety

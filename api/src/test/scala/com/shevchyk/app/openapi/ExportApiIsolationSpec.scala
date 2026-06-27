@@ -96,6 +96,7 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
       private def notImplemented = ZIO.die(new NotImplementedError("ExportApiIsolationSpec stub"))
 
       def getRideById(rideId: RideId): IO[RideError, Ride]                                                            = notImplemented
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]                                     = notImplemented
       def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                     = notImplemented
       def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]                                                = notImplemented
       def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]                                          = notImplemented

@@ -28,6 +28,12 @@ import scala.annotation.nowarn
 
 trait RideService:
   def getRideById(rideId: RideId): IO[RideError, Ride]
+
+  /**
+   * Live flight status (gate/terminal/status/time) for a ride, kept fresh by the flight-status monitor. The terminal
+   * code drives the airport walk-out buffer. Returns [[None]] when no flight data has been recorded yet.
+   */
+  def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]
   def createRide(request: CreateRideRequest): IO[RideError, Ride]
   def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
@@ -175,6 +181,9 @@ class RideServiceImpl(
       case Some(ride) => ZIO.succeed(ride)
       case None       => ZIO.fail(RideError.RideNotFound(rideId))
     }
+
+  def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] =
+    rideRepository.findFlightStatus(rideId).mapDatabaseError
 
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
