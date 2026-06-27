@@ -165,6 +165,18 @@ object Application extends ZIOAppDefault:
   // Public server-rendered guest tracking page (GET /track/{token}) — plain HTML + Mapbox GL JS, no app/login.
   private val trackPageRoutes = TrackPageRoutes.routes
 
+  // Maximum accepted request body size. zio-http's `Server.Config.default` disables request streaming
+  // with a 100 KB cap, so any larger body is rejected by Netty with a 413 BEFORE reaching the endpoint —
+  // smaller than the 5 MB profile-photo limit enforced in `AvatarService`, which made avatar uploads fail.
+  // Raise it above 5 MB + multipart overhead so the app-level `FileTooLarge` (5 MB) becomes the real limit.
+  val MaxRequestBytes: Int = 10 * 1024 * 1024 // 10 MB
+
+  // Server config with the raised body-size limit. Exposed (package-private) so a test can assert the limit
+  // without booting a server — a service-layer test would never reach Netty's cap.
+  private[shevchyk] def serverConfig(host: String, port: Int): Server.Config = Server.Config.default
+    .binding(host, port)
+    .disableRequestStreaming(MaxRequestBytes)
+
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
       PushNotificationListener.start *>
@@ -212,9 +224,8 @@ object Application extends ZIOAppDefault:
         )
     }
     .provide(
-      ZLayer.service[ServerConfig] >>> ZLayer.fromFunction((config: ServerConfig) =>
-        Server.Config.default.binding(config.host, config.port)
-      ) >>> Server.live,
+      ZLayer.service[ServerConfig] >>> ZLayer
+        .fromFunction((config: ServerConfig) => serverConfig(config.host, config.port)) >>> Server.live,
       ServerConfig.liveLayer,
       PersonRepository.layer,
       AvatarService.layer,
