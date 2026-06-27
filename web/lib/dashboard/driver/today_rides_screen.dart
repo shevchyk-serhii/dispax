@@ -571,7 +571,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: _NextRideCard(ride: nextRide),
+                child: NextRideCard(ride: nextRide),
               ),
             ),
 
@@ -1536,10 +1536,10 @@ class _ApproachingChip extends StatelessWidget {
 // NEXT SCHEDULED RIDE CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _NextRideCard extends StatelessWidget {
+class NextRideCard extends StatelessWidget {
   final Ride ride;
 
-  const _NextRideCard({required this.ride});
+  const NextRideCard({super.key, required this.ride});
 
   @override
   Widget build(BuildContext context) {
@@ -1635,6 +1635,11 @@ class _NextRideCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+
+              // Full flight info for airport rides (number + gate/terminal +
+              // status). Mirrors the live card so a later ride of the day still
+              // surfaces its flight; the row hides itself for non-airport rides.
+              DriverFlightInfoRow(ride: ride, isDark: isDark),
             ],
           ),
         ),
