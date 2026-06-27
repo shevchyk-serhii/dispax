@@ -3,6 +3,7 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
+import com.shevchyk.core.config.AirportArrivalTimingConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
@@ -376,6 +377,7 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       stubRideEstimateService ++
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
       flightRideRepo
 
   private def run(req: Request): ZIO[Any, Throwable, Response] = ZioHttpInterpreter()
@@ -403,6 +405,21 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
         body.contains("\"gate\":\"G12\""),
         body.contains("\"terminal\":\"2\""),
         body.contains("\"flightStatus\":\"Landed\"")
+      )
+    },
+    test("driver ride card response carries the recommended terminal-entry time for an arrival") {
+      // Arrival 10:00Z, terminal "2" (normal → 10-min walk), free window 10 → optimalEntry = 10:00 + 10 − 10 = 10:00Z.
+      // This is the GPS-free "Einfahrt um" value the card shows; the endpoint computes it from the live flight time.
+      for {
+        token <- driverToken
+        req    = Request
+                   .get(URL.decode(s"/api/rides/driver/${driverId.value}").toOption.get)
+                   .addHeader(Header.Authorization.Bearer(token))
+        resp  <- run(req)
+        body  <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        body.contains("\"optimalEntryTime\":\"2090-01-01T10:00:00Z\"")
       )
     }
   ).provideLayer(testJwtService)

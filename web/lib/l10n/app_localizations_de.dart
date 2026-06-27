@@ -506,6 +506,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get airportEntryLabel => 'Terminal-Einfahrt:';
 
   @override
+  String airportEntryAt(String time) {
+    return 'Einfahrt um $time';
+  }
+
+  @override
   String get airportTravelTime => 'Fahrzeit:';
 
   @override

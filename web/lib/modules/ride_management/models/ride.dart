@@ -79,6 +79,8 @@ class Ride {
   final String? gate;
   final String? terminal;
   final String? flightStatus;
+  // For airport ARRIVAL rides: backend-computed recommended terminal-entry time ("Einfahrt um").
+  final DateTime? optimalEntryTime;
   final String? driverName;
 
   /// The assigned driver's average rating across all their rides (0–5), as
@@ -143,6 +145,7 @@ class Ride {
     this.gate,
     this.terminal,
     this.flightStatus,
+    this.optimalEntryTime,
     this.driverName,
     this.driverRating,
     this.driverRatingCount,
@@ -197,6 +200,10 @@ class Ride {
       flightTime: JsonParse.optionalDateTime(json, 'flightTime')?.toLocal(),
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
+      optimalEntryTime: JsonParse.optionalDateTime(
+        json,
+        'optimalEntryTime',
+      )?.toLocal(),
       gate: json['gate'],
       terminal: json['terminal'],
       flightStatus: json['flightStatus'],
@@ -257,6 +264,7 @@ class Ride {
       'flightTime': flightTime?.toUtc().toIso8601String(),
       'isAirportTransfer': isAirportTransfer,
       'isArrival': isArrival,
+      'optimalEntryTime': optimalEntryTime?.toUtc().toIso8601String(),
       'gate': gate,
       'terminal': terminal,
       'flightStatus': flightStatus,
@@ -312,6 +320,7 @@ class Ride {
     String? gate,
     String? terminal,
     String? flightStatus,
+    Object? optimalEntryTime = _sentinel,
     String? driverName,
     double? driverRating,
     int? driverRatingCount,
@@ -361,6 +370,9 @@ class Ride {
           : flightTime as DateTime?,
       isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
       isArrival: isArrival ?? this.isArrival,
+      optimalEntryTime: optimalEntryTime == _sentinel
+          ? this.optimalEntryTime
+          : optimalEntryTime as DateTime?,
       gate: gate ?? this.gate,
       terminal: terminal ?? this.terminal,
       flightStatus: flightStatus ?? this.flightStatus,
@@ -440,6 +452,10 @@ class Ride {
   /// "Driver assigned" label for a future/pre-departure assigned ride.
   bool get driverEnRoute => driverLocation != null;
   bool get isConfirmed => status == RideStatus.confirmed;
+
+  /// True for an airport pickup where the passenger is arriving (landing) — the
+  /// case that has a recommended terminal-entry time ("Einfahrt um").
+  bool get isArrivalAirportTransfer => isAirportTransfer && isArrival;
 
   /// True when the ride is in a state worth showing on the live map: a driver
   /// has been assigned (or confirmed / handed off to a partner) and the ride is

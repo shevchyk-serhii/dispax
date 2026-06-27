@@ -179,6 +179,12 @@
   "airportEntryTitle": "Terminal-Einfahrtszeit",
   "airportDepartIn": "Losfahren in:",
   "airportEntryLabel": "Terminal-Einfahrt:",
+  "airportEntryAt": "Einfahrt um {time}",
+  "@airportEntryAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "airportTravelTime": "Fahrzeit:",
   "airportParkingSavings": "Parkersparnis: {amount}",
   "@airportParkingSavings": {

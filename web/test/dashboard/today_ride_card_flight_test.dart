@@ -55,4 +55,50 @@ void main() {
     expect(find.textContaining('Gate'), findsNothing);
     expect(find.byIcon(Icons.flight), findsNothing);
   });
+
+  testWidgets(
+    'shows the recommended terminal-entry time for an arrival with optimalEntryTime',
+    (tester) async {
+      final ride = TestFixtures.airportRide(
+        isArrival: true,
+        optimalEntryTime: DateTime(2026, 3, 15, 9, 40),
+      );
+
+      await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
+      await tester.pump();
+
+      // Default locale (en): "Entry at 09:40".
+      expect(find.textContaining('09:40'), findsOneWidget);
+      expect(find.byIcon(Icons.login), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows no terminal-entry line when optimalEntryTime is absent',
+    (tester) async {
+      // Arrival airport ride but the backend did not compute an entry time.
+      final ride = TestFixtures.airportRide(isArrival: true);
+
+      await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.login), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows no terminal-entry line for a departure even with optimalEntryTime',
+    (tester) async {
+      // Departure (isArrival=false): the entry-time line is arrival-only.
+      final ride = TestFixtures.airportRide(
+        isArrival: false,
+        optimalEntryTime: DateTime(2026, 3, 15, 9, 40),
+      );
+
+      await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.login), findsNothing);
+    },
+  );
 }

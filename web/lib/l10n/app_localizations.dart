@@ -1066,6 +1066,12 @@ abstract class AppLocalizations {
   /// **'Airport entry:'**
   String get airportEntryLabel;
 
+  /// No description provided for @airportEntryAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry at {time}'**
+  String airportEntryAt(String time);
+
   /// No description provided for @airportTravelTime.
   ///
   /// In en, this message translates to:

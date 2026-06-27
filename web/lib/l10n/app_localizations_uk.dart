@@ -504,6 +504,11 @@ class AppLocalizationsUk extends AppLocalizations {
   String get airportEntryLabel => 'В\'їзд у термінал:';
 
   @override
+  String airportEntryAt(String time) {
+    return 'В\'їзд о $time';
+  }
+
+  @override
   String get airportTravelTime => 'Час у дорозі:';
 
   @override

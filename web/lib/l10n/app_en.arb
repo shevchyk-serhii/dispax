@@ -197,6 +197,12 @@
   "airportEntryTitle": "Airport Entry Time",
   "airportDepartIn": "Depart in:",
   "airportEntryLabel": "Airport entry:",
+  "airportEntryAt": "Entry at {time}",
+  "@airportEntryAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "airportTravelTime": "Travel time:",
   "airportParkingSavings": "Parking savings: {amount}",
   "@airportParkingSavings": {

@@ -179,6 +179,12 @@
   "airportEntryTitle": "Час в'їзду в термінал",
   "airportDepartIn": "Виїзд через:",
   "airportEntryLabel": "В'їзд у термінал:",
+  "airportEntryAt": "В'їзд о {time}",
+  "@airportEntryAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "airportTravelTime": "Час у дорозі:",
   "airportParkingSavings": "Економія на паркуванні: {amount}",
   "@airportParkingSavings": {

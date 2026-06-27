@@ -93,7 +93,7 @@ object OpenApiServer:
       AirportCheckpointService & AirportConfigService & AirportTimingService & ChatService & RideTemplateRepository &
       DriverLocationService & HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository &
       TariffRepository & RideEstimateService & RideShareTokenService & EtaService &
-      com.shevchyk.core.config.PublicLinkConfig
+      com.shevchyk.core.config.PublicLinkConfig & com.shevchyk.core.config.AirportArrivalTimingConfig
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so

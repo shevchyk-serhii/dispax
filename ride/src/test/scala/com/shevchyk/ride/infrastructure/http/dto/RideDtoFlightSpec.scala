@@ -51,7 +51,13 @@ object RideDtoFlightSpec extends ZIOSpecDefault:
           dto.isAirportTransfer,
           dto.gate.isEmpty,
           dto.terminal.isEmpty,
-          dto.flightStatus.isEmpty
+          dto.flightStatus.isEmpty,
+          dto.optimalEntryTime.isEmpty
         )
+      },
+      test("surfaces the computed optimalEntryTime as an ISO string when passed") {
+        val entry = Instant.parse("2026-06-26T09:08:00Z")
+        val dto   = RideDto.fromDomain(airportRide, optimalEntryTime = Some(entry))
+        assertTrue(dto.optimalEntryTime.contains(entry.toString))
       }
     )

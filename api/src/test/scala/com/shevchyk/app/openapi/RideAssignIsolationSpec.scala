@@ -3,6 +3,7 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
+import com.shevchyk.core.config.AirportArrivalTimingConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
@@ -401,6 +402,7 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       stubRideEstimateService ++
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
       StubRideRepository.layer
 
   // ---------------------------------------------------------------------------
@@ -595,6 +597,7 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       stubRideEstimateService ++
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
       StubRideRepository.layer
 
   private val updateBody: Body = Body.fromString("""{"notes":"updated"}""")

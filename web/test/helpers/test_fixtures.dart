@@ -94,6 +94,7 @@ class TestFixtures {
     String? gate,
     String? terminal,
     String? flightStatus,
+    DateTime? optimalEntryTime,
     String? driverName,
     double? price,
     String? paymentMethod,
@@ -118,6 +119,7 @@ class TestFixtures {
       gate: gate,
       terminal: terminal,
       flightStatus: flightStatus,
+      optimalEntryTime: optimalEntryTime,
       driverName: driverName,
       price: price,
       paymentMethod: paymentMethod,
@@ -132,6 +134,7 @@ class TestFixtures {
     String? gate = 'G12',
     String? terminal = 'T2',
     String? flightStatus = 'On Time',
+    DateTime? optimalEntryTime,
   }) {
     return ride(
       id: id,
@@ -142,6 +145,7 @@ class TestFixtures {
       gate: gate,
       terminal: terminal,
       flightStatus: flightStatus,
+      optimalEntryTime: optimalEntryTime,
     );
   }
 

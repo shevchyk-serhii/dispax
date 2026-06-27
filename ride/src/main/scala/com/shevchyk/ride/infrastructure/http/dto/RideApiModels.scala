@@ -61,6 +61,10 @@ case class RideDto(
     gate: Option[String] = None,
     terminal: Option[String] = None,
     flightStatus: Option[String] = None,
+    // For airport ARRIVAL rides: the recommended instant to enter the terminal parking
+    // (arrival + walk-out buffer − free-parking window), computed terminal-aware on the backend.
+    // The driver card renders it as "Einfahrt um HH:mm". None when not an arrival or no config/arrival time.
+    optimalEntryTime: Option[String] = None,
     driverName: Option[String] = None,
     driverLocation: Option[LocationDto] = None,
     driverApproaching: Boolean = false,
@@ -371,7 +375,11 @@ object RideDto:
       // Live flight-tracking columns (gate/terminal/status/time) are stored outside the Ride domain object;
       // a caller that has loaded them (RideRepository.findFlightStatus) passes them here so the DTO surfaces
       // real values instead of None. Defaults to empty → unchanged behaviour for callers that don't.
-      flight: Option[FlightStatusRow] = None
+      flight: Option[FlightStatusRow] = None,
+      // For airport ARRIVAL rides: the backend-computed terminal-entry instant ("Einfahrt um"). Computed in the
+      // route layer (it needs the airport timing config); passed in as a ready value so this DTO mapper stays a
+      // pure presentation mapper. Defaults to None → unchanged behaviour for callers that don't compute it.
+      optimalEntryTime: Option[Instant] = None
   ): RideDto =
     val (flightNumber, isAirportTransfer, isArrival) =
       ride.specifics match {
@@ -425,6 +433,7 @@ object RideDto:
       gate = flight.flatMap(_.gate),
       terminal = flight.flatMap(_.terminal),
       flightStatus = flight.flatMap(_.flightStatus),
+      optimalEntryTime = optimalEntryTime.map(_.toString),
       driverName = driverName,
       driverLocation = driverLoc,
       driverApproaching = approaching,

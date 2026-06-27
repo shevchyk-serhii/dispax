@@ -370,5 +370,21 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
       test("savings = early − optimal parking cost") {
         for result <- compute(Some(arrivalRide()))
         yield assertTrue(result.savings == 28.0, result.actualArrivalTime == arrival)
+      },
+      // ── arrivalOptimalEntry: the GPS-free "Einfahrt um" used by the list cards ───────────────
+      test("arrivalOptimalEntry: normal terminal → arrival + 10 walk − 10 free = arrival") {
+        val entry = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("T2"), config)
+        assertTrue(entry.contains(arrival)) // 08:00 + 10 − 10 = 08:00
+      },
+      test("arrivalOptimalEntry: satellite terminal (K) → later entry than normal (18 vs 10 walk)") {
+        val sat    = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("K"), config)
+        val normal = AirportTimingService.arrivalOptimalEntry(Some(arrival), Some("T2"), config)
+        assertTrue(
+          sat.contains(arrival.plusSeconds(8 * 60L)), // (08:00 + 18) − 10 = 08:08
+          sat.exists(s => normal.exists(s.isAfter))
+        )
+      },
+      test("arrivalOptimalEntry: no arrival time → None (no now+2h placeholder)") {
+        assertTrue(AirportTimingService.arrivalOptimalEntry(None, Some("K"), config).isEmpty)
       }
     )

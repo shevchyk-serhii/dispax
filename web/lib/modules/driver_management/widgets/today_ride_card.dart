@@ -292,6 +292,18 @@ class TodayRideCard extends StatelessWidget {
               label: 'Flight',
             ),
           ],
+          // Recommended terminal-entry time for an arrival pickup ("Einfahrt um HH:mm").
+          // Backend-computed (terminal-aware walk buffer), GPS-free, so it shows on the static card.
+          if (ride.isArrivalAirportTransfer && ride.optimalEntryTime != null) ...[
+            const SizedBox(height: 12),
+            RideInfoRow(
+              icon: Icons.login,
+              text: AppLocalizations.of(context)!.airportEntryAt(
+                DateFormat.Hm().format(ride.optimalEntryTime!),
+              ),
+              label: AppLocalizations.of(context)!.airportEntryLabel,
+            ),
+          ],
           const SizedBox(height: 16),
           RideQuickActions(
             ride: ride,

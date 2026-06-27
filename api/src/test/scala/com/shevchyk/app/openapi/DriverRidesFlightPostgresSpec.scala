@@ -3,6 +3,7 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
+import com.shevchyk.core.config.AirportArrivalTimingConfig
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
@@ -311,6 +312,7 @@ object DriverRidesFlightPostgresSpec extends ZIOSpecDefault:
       stubRideEstimateService ++
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
       rideRepoLayer
 
   private def run(req: Request, xa: Transactor[Task]): ZIO[Any, Throwable, Response] = ZioHttpInterpreter()

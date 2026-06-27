@@ -140,6 +140,29 @@ object AirportTimingService:
   )
 
   /**
+   * Pure, GPS-free recommended terminal-entry instant ("Einfahrt um") for an airport arrival ride, for list contexts
+   * (driver "Today" / dispatcher "My Rides" cards) where there is no driver position and so no travel time. This is the
+   * same `(arrival + walkBuffer) − freeWindow` the live [[compute]] uses, minus the travel-aware "depart now" part.
+   *
+   * The arrival instant is taken from the live flight time when the monitor has fetched one, else the booking's
+   * scheduled time. Returns [[None]] when no arrival time is known (so the card simply omits the line) — never the `now
+   * + 2h` placeholder the live path uses, which would be wrong for a static list.
+   *
+   * @param arrivalTime
+   *   the flight arrival instant (`flight.flightTime` or `ride.scheduledTime`), if known
+   * @param terminalCode
+   *   the live terminal code (drives the satellite vs normal walk buffer), if known
+   */
+  def arrivalOptimalEntry(
+      arrivalTime: Option[Instant],
+      terminalCode: Option[String],
+      config: AirportArrivalTimingConfig
+  ): Option[Instant] = arrivalTime.map { arrival =>
+    val latest = computeLatestEntry(arrival, walkBuffer(terminalCode, config))
+    computeOptimalEntry(latest, config.freeParkingMinutes)
+  }
+
+  /**
    * Pure arithmetic: signed minutes until departure = (optimalEntry − travel) − now. `≤ 0` ⇒ depart now.
    */
   def computeTimeToDepart(now: Instant, optimalEntry: Instant, travelMin: Int): Int =
