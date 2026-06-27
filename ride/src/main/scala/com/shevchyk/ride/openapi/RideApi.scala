@@ -442,6 +442,7 @@ object RideApi:
         service     <- ZIO.service[RideService]
         personRepo  <- ZIO.service[PersonRepository]
         ratingRepo  <- ZIO.service[RideRatingRepository]
+        rideRepo    <- ZIO.service[RideRepository]
         rides       <- service.getDriverRides(driverPid, companyId).mapError(fromRideError)
         clientIds    = rides.map(_.clientId).distinct
         persons     <- ZIO
@@ -449,6 +450,11 @@ object RideApi:
                          .mapError(fromRideError)
         clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
         ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        // Live flight gate/terminal/status (kept fresh by FlightStatusMonitor) for airport rides,
+        // loaded in one bulk query so the driver "Today" cards show it without an N+1. Mirrors the
+        // dispatcher "My Rides" endpoint (getRidesByDriversServer) which already enriches flight data.
+        airportIds   = rides.filter(_.isAirportTransfer).map(_.id)
+        flightMap   <- rideRepo.findFlightStatusFor(airportIds).mapError(fromRideError)
       } yield rides.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
@@ -459,7 +465,8 @@ object RideApi:
           clientName = clientMap.get(r.clientId).map(_.name),
           clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
           driverRating = rating,
-          driverRatingCount = count
+          driverRatingCount = count,
+          flight = flightMap.get(r.id)
         )
       }
   }
