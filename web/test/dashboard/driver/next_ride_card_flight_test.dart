@@ -47,4 +47,60 @@ void main() {
       expect(find.textContaining('Gate'), findsNothing);
     });
   });
+
+  group('NextRideCard terminal-entry time', () {
+    // The compact card showed the flight but not the recommended terminal-entry
+    // time ("Einfahrt um HH:mm") for an arrival — it must surface it now.
+    testWidgets('shows the entry time for an airport arrival', (tester) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightNumber: 'LH1671',
+        optimalEntryTime: DateTime(2026, 6, 27, 17, 5),
+      );
+
+      await pump(tester, NextRideCard(ride: ride));
+
+      // en default locale → "Entry at 17:05".
+      expect(find.textContaining('17:05'), findsOneWidget);
+      expect(find.byIcon(Icons.login), findsOneWidget);
+    });
+
+    testWidgets('shows no entry time for a departure', (tester) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: false,
+        flightNumber: 'LH1671',
+        optimalEntryTime: DateTime(2026, 6, 27, 17, 5),
+      );
+
+      await pump(tester, NextRideCard(ride: ride));
+
+      expect(find.byIcon(Icons.login), findsNothing);
+    });
+  });
+
+  group('DriverEntryTimeRow', () {
+    testWidgets('renders the entry time for an arrival with one', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        optimalEntryTime: DateTime(2026, 6, 27, 9, 40),
+      );
+
+      await pump(tester, DriverEntryTimeRow(ride: ride, isDark: false));
+
+      expect(find.textContaining('09:40'), findsOneWidget);
+    });
+
+    testWidgets('self-hides when no entry time is present', (tester) async {
+      final ride = TestFixtures.ride(isAirportTransfer: true, isArrival: true);
+
+      await pump(tester, DriverEntryTimeRow(ride: ride, isDark: false));
+
+      expect(find.byIcon(Icons.login), findsNothing);
+    });
+  });
 }

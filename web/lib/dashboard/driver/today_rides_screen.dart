@@ -1091,6 +1091,7 @@ class _LiveRideCard extends StatelessWidget {
 
               // Full flight info for airport rides (number + gate/terminal + status).
               DriverFlightInfoRow(ride: ride, isDark: isDark),
+              DriverEntryTimeRow(ride: ride, isDark: isDark),
 
               const SizedBox(height: 14),
 
@@ -1293,6 +1294,53 @@ class DriverFlightInfoRow extends StatelessWidget {
             child: Text(
               ride.fullFlightInfo,
               maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5, color: secondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Recommended terminal-entry time ("Einfahrt um HH:mm") for an airport ARRIVAL ride.
+/// Backend-computed (terminal-aware walk buffer), GPS-free, carried on the ride DTO — so it
+/// shows on the static "Today" / "My Rides" cards. Renders nothing for departures or when no
+/// entry time was computed. Shared by the live, next and compact ride cards.
+class DriverEntryTimeRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverEntryTimeRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ride.isArrivalAirportTransfer || ride.optimalEntryTime == null) {
+      return const SizedBox.shrink();
+    }
+
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.login, size: 15, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              AppLocalizations.of(
+                context,
+              )!.airportEntryAt(DateFormat.Hm().format(ride.optimalEntryTime!)),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 12.5, color: secondary),
             ),
@@ -1640,6 +1688,7 @@ class NextRideCard extends StatelessWidget {
               // status). Mirrors the live card so a later ride of the day still
               // surfaces its flight; the row hides itself for non-airport rides.
               DriverFlightInfoRow(ride: ride, isDark: isDark),
+              DriverEntryTimeRow(ride: ride, isDark: isDark),
             ],
           ),
         ),
