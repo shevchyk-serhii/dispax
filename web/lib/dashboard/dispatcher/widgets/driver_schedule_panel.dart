@@ -854,7 +854,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                     color:
                                         Theme.of(context).brightness ==
                                             Brightness.dark
-                                        ? colorScheme.error
+                                        ? AppColors.rideCancelledTextDark
                                         : AppColors.errorStrong,
                                   ),
                                 ),
@@ -1205,7 +1205,7 @@ class _DriverScheduleColumn extends StatelessWidget {
                       // errorStrong is invisible on the dark Card; use the
                       // theme error red in dark mode.
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? colorScheme.error
+                          ? AppColors.rideCancelledTextDark
                           : AppColors.errorStrong,
                     ),
                   ),

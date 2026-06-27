@@ -319,4 +319,21 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('EtaAlertCard — dark-mode readability', () {
+    testWidgets('at-risk title is light (not dark errorStrong) in dark mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(EtaAlertCard(info: _info), brightness: Brightness.dark),
+      );
+      await tester.pumpAndSettle();
+
+      final title = tester.widget<Text>(find.text('Ride at risk of delay'));
+      // On the dark translucent-red card the dark errorStrong (#991B1B) was
+      // unreadable; the fix switches it to the light cancelled-text variant.
+      expect(title.style?.color, AppColors.rideCancelledTextDark);
+      expect(title.style?.color, isNot(AppColors.errorStrong));
+    });
+  });
 }

@@ -1338,9 +1338,9 @@ class _RideRow extends StatelessWidget {
           onPressed: onAction,
           style: OutlinedButton.styleFrom(
             // errorStrong (#991B1B) is invisible on the dark surface; use the
-            // theme error color in dark per HANDOFF (wire *Dark via brightness).
+            // light cancelled-text variant in dark per HANDOFF (wire *Dark).
             foregroundColor: Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).colorScheme.error
+                ? AppColors.rideCancelledTextDark
                 : AppColors.errorStrong,
             side: const BorderSide(color: AppColors.errorBorder),
             padding: const EdgeInsets.symmetric(horizontal: 10),
