@@ -181,9 +181,19 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(_client.email, style: AppStyles.bodySmall),
+                Text(
+                  _client.email,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 if (_client.phone != null && _client.phone!.isNotEmpty)
-                  Text(_client.phone!, style: AppStyles.bodySmall),
+                  Text(
+                    _client.phone!,
+                    style: AppStyles.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 if (_client.preferredDriverId != null)
                   Text(
                     l10n.preferredDriverAssigned,

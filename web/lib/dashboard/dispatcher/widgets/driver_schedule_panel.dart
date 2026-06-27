@@ -849,7 +849,13 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                   child: Icon(
                                     Icons.swap_horiz,
                                     size: 20,
-                                    color: AppColors.errorStrong,
+                                    // errorStrong is invisible on the dark Card;
+                                    // use the theme error red in dark mode.
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? colorScheme.error
+                                        : AppColors.errorStrong,
                                   ),
                                 ),
                               ),
@@ -1196,7 +1202,11 @@ class _DriverScheduleColumn extends StatelessWidget {
                     child: Icon(
                       Icons.swap_horiz,
                       size: 20,
-                      color: AppColors.errorStrong,
+                      // errorStrong is invisible on the dark Card; use the
+                      // theme error red in dark mode.
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? colorScheme.error
+                          : AppColors.errorStrong,
                     ),
                   ),
                 ),

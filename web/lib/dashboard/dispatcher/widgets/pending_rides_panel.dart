@@ -1337,7 +1337,11 @@ class _RideRow extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onAction,
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.errorStrong,
+            // errorStrong (#991B1B) is invisible on the dark surface; use the
+            // theme error color in dark per HANDOFF (wire *Dark via brightness).
+            foregroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.error
+                : AppColors.errorStrong,
             side: const BorderSide(color: AppColors.errorBorder),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             textStyle: const TextStyle(
@@ -1383,7 +1387,12 @@ class _RideRow extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onHandOff,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.rideHandedOffText,
+                  // rideHandedOffText (#7C2D12) is invisible on the dark
+                  // surface; use its existing *Dark variant per HANDOFF.
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.rideHandedOffTextDark
+                      : AppColors.rideHandedOffText,
                   side: const BorderSide(color: AppColors.rideHandedOffBorder),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   textStyle: const TextStyle(
