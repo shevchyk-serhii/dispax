@@ -448,16 +448,35 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               '${DateFormat('HH:mm').format(ride.pickupDateTime)} — ${ride.clientName}',
               style: const TextStyle(fontSize: 13),
             ),
-            subtitle: Text(
-              '${ride.from.address} → ${ride.to.address}',
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${ride.from.address} → ${ride.to.address}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                // Flight info for airport rides so the dispatcher can tell
+                // airport transfers apart when bulk-reassigning.
+                if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty)
+                  Text(
+                    ride.fullFlightInfo,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
         ),

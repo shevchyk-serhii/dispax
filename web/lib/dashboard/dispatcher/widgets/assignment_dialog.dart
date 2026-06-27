@@ -136,7 +136,10 @@ class AssignmentDialog extends StatelessWidget {
                               context,
                               icon: Icons.flight,
                               label: l10n.flightLabel,
-                              value: ride.flightNumber!,
+                              // Show gate/terminal/status next to the number so
+                              // the dispatcher sees where the ride is going
+                              // before picking a driver, not just the flight no.
+                              value: _flightDetails(ride),
                               isDark: isDark,
                             ),
                           if (ride.price != null)
@@ -359,6 +362,25 @@ class AssignmentDialog extends StatelessWidget {
         letterSpacing: 0.8,
       ),
     );
+  }
+
+  /// Flight number plus gate/terminal/status on one line. Mirrors
+  /// [Ride.fullFlightInfo] but drops its leading ✈ glyph because this row
+  /// already renders a flight icon, and skips the 🛬/🛫 status glyph to keep
+  /// the value plain text inside [_infoRow].
+  String _flightDetails(Ride ride) {
+    final parts = <String>[ride.flightNumber!];
+    if (ride.gate != null && ride.terminal != null) {
+      parts.add('Gate ${ride.gate} (Terminal ${ride.terminal})');
+    } else if (ride.gate != null) {
+      parts.add('Gate ${ride.gate}');
+    } else if (ride.terminal != null) {
+      parts.add('Terminal ${ride.terminal}');
+    }
+    if (ride.flightStatus != null) {
+      parts.add(ride.flightStatus!);
+    }
+    return parts.join(' • ');
   }
 
   Widget _infoRow(

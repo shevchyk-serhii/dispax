@@ -58,4 +58,35 @@ void main() {
       expect(find.text('Cash'), findsNothing);
     },
   );
+
+  // The flight row used to print only the number; the dispatcher needs the
+  // gate/terminal/status to decide where the airport ride goes.
+  testWidgets('AssignmentDialog shows gate and terminal for an airport ride', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _buildSubject(
+        TestFixtures.ride(
+          isAirportTransfer: true,
+          flightNumber: 'LH1671',
+          gate: 'G18',
+          terminal: 'T2',
+          flightStatus: 'On time',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.textContaining('LH1671'),
+      findsOneWidget,
+      reason: 'the flight number must still be shown',
+    );
+    expect(
+      find.textContaining('Gate G18'),
+      findsOneWidget,
+      reason: 'the dispatcher must see the gate, not just the flight number',
+    );
+    expect(find.textContaining('Terminal T2'), findsOneWidget);
+  });
 }

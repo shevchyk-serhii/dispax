@@ -13,6 +13,18 @@ import '../utils/conflict_detector.dart';
 import 'assignment_dialog.dart';
 import 'bulk_reassign_dialog.dart';
 
+/// One-line label for a ride in the compact per-driver schedule list:
+/// "HH:mm address", with a `✈ <flight> ·` prefix for airport rides so the
+/// dispatcher can spot transfers at a glance. Pure so it is unit-testable
+/// without standing up the panel's BLoCs.
+String driverScheduleRideLabel(Ride ride) {
+  final time = DateFormat('HH:mm').format(ride.pickupDateTime);
+  if (ride.isAirportTransfer && ride.flightNumber != null) {
+    return '$time ✈ ${ride.flightNumber} · ${ride.from.address}';
+  }
+  return '$time ${ride.from.address}';
+}
+
 class DriverSchedulePanel extends StatefulWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
@@ -913,7 +925,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      '${DateFormat('HH:mm').format(ride.pickupDateTime)} ${ride.from.address}',
+                                      driverScheduleRideLabel(ride),
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: colorScheme.onSurfaceVariant,
