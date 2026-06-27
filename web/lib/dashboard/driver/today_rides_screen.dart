@@ -506,100 +506,36 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
       return buildEmptyState();
     }
 
-    // The "live" ride: in-progress first, then confirmed, then assigned
-    final liveRide = todayRides.firstWhere(
-      (r) => r.status == RideStatus.inProgress,
-      orElse: () => todayRides.firstWhere(
-        (r) => r.status == RideStatus.confirmed,
-        orElse: () => todayRides.firstWhere(
-          (r) => r.status == RideStatus.assigned,
-          orElse: () => todayRides.first,
-        ),
-      ),
-    );
-    final isLiveActive =
-        liveRide.status == RideStatus.inProgress ||
-        liveRide.status == RideStatus.confirmed ||
-        liveRide.status == RideStatus.assigned;
-
-    // Remaining rides (excluding live)
-    final remainingRides = isLiveActive
-        ? todayRides.where((r) => r.id != liveRide.id).toList()
-        : todayRides;
-
-    // "Next" scheduled ride after the live one
-    Ride? nextRide;
-    if (isLiveActive && remainingRides.isNotEmpty) {
-      final candidate = remainingRides.firstWhere(
-        (r) =>
-            r.status == RideStatus.assigned || r.status == RideStatus.confirmed,
-        orElse: () => remainingRides.first,
-      );
-      if (candidate.status == RideStatus.assigned ||
-          candidate.status == RideStatus.confirmed) {
-        nextRide = candidate;
-      }
-    }
-
-    final otherRides = remainingRides
-        .where((r) => r.id != nextRide?.id)
-        .toList();
-
+    // Every ride of the day gets the same detailed card. The card is fully
+    // status-aware (badge, ETA gating, action buttons), so an in-progress ride
+    // and a later assigned ride render with the same level of detail — fare,
+    // payment method, flight info and all. [getTodayRides] already sorts by
+    // pickup time, so the list order is chronological.
     return RefreshIndicator(
       onRefresh: () async => refreshRides(context),
       child: CustomScrollView(
         slivers: [
-          // LIVE RIDE CARD
-          if (isLiveActive)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: _LiveRideCard(
-                  ride: liveRide,
-                  etaMinutes: _etaMinutes[liveRide.id],
-                  approachingDistanceMeters: _approachingDistances[liveRide.id],
-                  onStartRide: () => _handleStartRide(context, liveRide),
-                  onCompleteRide: () => _handleCompleteRide(context, liveRide),
-                  onCallClient: () => _handleCallClient(context, liveRide),
-                  onConfirmRide: () => _handleConfirmRide(context, liveRide),
-                  onRejectRide: () => _handleRejectRide(context, liveRide),
-                ),
-              ),
-            ),
-
-          // NEXT SCHEDULED RIDE CARD
-          if (nextRide != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: NextRideCard(ride: nextRide),
-              ),
-            ),
-
-          // Remaining ride cards
-          if (otherRides.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final ride = otherRides[index];
-                  return TodayRideCard(
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final ride = todayRides[index];
+                return Padding(
+                  padding: EdgeInsets.only(top: index == 0 ? 0 : 12),
+                  child: DriverRideCard(
                     ride: ride,
-                    isLast: index == otherRides.length - 1,
-                    approachingDistanceMeters: _approachingDistances[ride.id],
                     etaMinutes: _etaMinutes[ride.id],
-                    onCallClient: () => _handleCallClient(context, ride),
+                    approachingDistanceMeters: _approachingDistances[ride.id],
                     onStartRide: () => _handleStartRide(context, ride),
                     onCompleteRide: () => _handleCompleteRide(context, ride),
+                    onCallClient: () => _handleCallClient(context, ride),
                     onConfirmRide: () => _handleConfirmRide(context, ride),
                     onRejectRide: () => _handleRejectRide(context, ride),
-                  );
-                }, childCount: otherRides.length),
-              ),
+                  ),
+                );
+              }, childCount: todayRides.length),
             ),
-
-          if (otherRides.isEmpty && !isLiveActive)
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ),
         ],
       ),
     );
@@ -989,7 +925,14 @@ class _SegmentTab extends StatelessWidget {
 // LIVE RIDE CARD  (in-progress or assigned)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _LiveRideCard extends StatelessWidget {
+/// The driver's detailed ride card, used for **every** ride of the day on the
+/// "Heute" tab. Renders client avatar + fare, payment method, full flight info,
+/// arrival/entry times, the route connector, ETA/approaching chips, and the
+/// status-aware action buttons. It is fully parameterised by [ride.status], so
+/// the same card serves an in-progress ride and a later assigned one alike.
+///
+/// Public (not `_LiveRideCard`) so a widget test can locate it directly.
+class DriverRideCard extends StatelessWidget {
   final Ride ride;
   final int? etaMinutes;
   final int? approachingDistanceMeters;
@@ -999,7 +942,8 @@ class _LiveRideCard extends StatelessWidget {
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
 
-  const _LiveRideCard({
+  const DriverRideCard({
+    super.key,
     required this.ride,
     this.etaMinutes,
     this.approachingDistanceMeters,
@@ -1656,124 +1600,6 @@ class _ApproachingChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NEXT SCHEDULED RIDE CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class NextRideCard extends StatelessWidget {
-  final Ride ride;
-
-  const NextRideCard({super.key, required this.ride});
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.textPrimaryDark
-        : AppColors.textPrimary;
-    final textLight = isDark ? AppColors.textLightDark : AppColors.textLight;
-
-    final statusBg = RideStatusStyles.getStatusBackgroundColor(
-      ride.status,
-      brightness: brightness,
-    );
-    final statusBorder = RideStatusStyles.getStatusBorderColor(
-      ride.status,
-      brightness: brightness,
-    );
-    final statusTextColor = RideStatusStyles.getStatusTextColor(
-      ride.status,
-      brightness: brightness,
-    );
-    final statusDotColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusLabel = RideStatusStyles.getStatusDisplayName(
-      ride.status,
-      AppLocalizations.of(context)!,
-    );
-
-    return Container(
-      decoration: AppStyles.primaryCardDecorationOf(context).copyWith(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowXs,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      // Tap opens the full ride details (Edit, Share tracking link, etc.).
-      child: InkWell(
-        onTap: () => NavigationUtils.navigateToRideDetails(context, ride),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: badge + pickup time
-              Row(
-                children: [
-                  _StatusBadge(
-                    bg: statusBg,
-                    border: statusBorder,
-                    dot: statusDotColor,
-                    textColor: statusTextColor,
-                    label: statusLabel,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              // Route summary
-              Text(
-                '${ride.from.address} → ${ride.to.address}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textPrimary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              const SizedBox(height: 6),
-
-              // Client info
-              Text(
-                ride.clientName,
-                style: TextStyle(fontSize: 11.5, color: textLight),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              // Full flight info for airport rides (number + gate/terminal +
-              // status). Mirrors the live card so a later ride of the day still
-              // surfaces its flight; the row hides itself for non-airport rides.
-              DriverFlightInfoRow(ride: ride, isDark: isDark),
-              DriverArrivalTimeRow(ride: ride, isDark: isDark),
-              DriverEntryTimeRow(ride: ride, isDark: isDark),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Embedded Upcoming tab (reuses UpcomingRidesScreen.buildBody directly)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1858,7 +1684,7 @@ class _EmbeddedHistoryTab extends StatelessWidget {
   }
 }
 
-/// Action button row shown at the bottom of a live ride card.
+/// Action button row shown at the bottom of a [DriverRideCard].
 ///
 /// Navigate plus the status-specific primary actions (Confirm/Reject, Start,
 /// Complete) each take an equal share of the available width via [Expanded] so
