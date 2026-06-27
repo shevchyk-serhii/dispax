@@ -285,7 +285,9 @@ lazy val billing = (project in file("billing"))
 
 lazy val root = (project in file("."))
   .aggregate(core, auth, ride, driver, notification, schedule, billing)
-  .dependsOn(core, auth, ride, driver, notification, schedule, billing)
+  // core test->test exposes PostgresTestContainer to api integration specs
+  // (e.g. DriverRidesFlightPostgresSpec drives an endpoint against a real DB).
+  .dependsOn(core % "compile->compile;test->test", auth, ride, driver, notification, schedule, billing)
   .settings(
     name                        := "dispax",
     Compile / scalaSource       := baseDirectory.value / "api" / "src" / "main" / "scala",
