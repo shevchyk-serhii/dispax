@@ -122,15 +122,30 @@ object MucFlightStatusProvider:
     yield body
   }
 
+  // The board paginates server-side and IGNORES per_page (~one ~4h window per page), so a single page only covers the
+  // morning. We walk pages 0,1,2,… until one comes back empty (or the safety cap), to cover the whole day. Cap is
+  // generous: a day is ~5 pages today, 12 leaves headroom without risking a runaway if the markup changes.
+  private val MaxBoardPages = 12
+
   /**
-   * Raw, uncached board scrape — the cache's lookup. WITHOUT the flight_number filter (the whole board), large page
-   * size; the gate is not fetched per row (too slow for a list). Fails on HTTP/parse error so failures are not cached.
+   * Stable dedup of the concatenated board pages by (flightNumber, scheduledTime), preserving board order. A flight
+   * never legitimately spans two pages; this only guards against an overlap at a page boundary. Package-private for
+   * unit testing.
    */
-  private def fetchBoard(
+  private[service] def dedupBoard(all: List[FlightInfo]): List[FlightInfo] =
+    val seen = scala.collection.mutable.LinkedHashMap.empty[(String, Option[java.time.Instant]), FlightInfo]
+    all.foreach(f => seen.getOrElseUpdate((f.flightNumber, f.scheduledTime), f))
+    seen.values.toList
+
+  /**
+   * One board page (no flight-number filter).
+   */
+  private def fetchPage(
       config: MucFlightConfig,
       client: Client,
       date: LocalDate,
-      isArrival: Boolean
+      isArrival: Boolean,
+      page: Int
   ): Task[List[FlightInfo]] =
     val path      = if isArrival then "arrivals" else "departures"
     val dirParam  = if isArrival then "flight_to_muc" else "flight_from_muc"
@@ -139,9 +154,30 @@ object MucFlightStatusProvider:
       s"flight_search_presenter%5B$dirParam%5D=1" +
         s"&flight_search_presenter%5B$dateParam%5D=$date" +
         s"&flight_search_presenter%5Blocale%5D=de" +
-        s"&page=0&per_page=100&allow_pagination=1"
+        s"&page=$page&per_page=100&allow_pagination=1"
     val listUrl   = s"${config.baseUrl}/flightsearch/$path?$q"
     httpGet(client, listUrl).map(body => MucFlightParser.parseAll(body, date, isArrival))
+
+  /**
+   * Raw, uncached whole-DAY board scrape — the cache's lookup. Walks pages until one is empty (server ignores per_page,
+   * paginating ~4h windows), concatenates in board order and dedups by (flightNumber, scheduledTime) — a flight never
+   * spans two pages but the dedup guards against an overlap on the page boundary. The gate is not fetched per row (too
+   * slow). Fails on HTTP/parse error so failures are not cached.
+   */
+  private def fetchBoard(
+      config: MucFlightConfig,
+      client: Client,
+      date: LocalDate,
+      isArrival: Boolean
+  ): Task[List[FlightInfo]] =
+    def loop(page: Int, acc: List[FlightInfo]): Task[List[FlightInfo]] =
+      if page >= MaxBoardPages then ZIO.succeed(acc)
+      else
+        fetchPage(config, client, date, isArrival, page).flatMap { rows =>
+          if rows.isEmpty then ZIO.succeed(acc)
+          else loop(page + 1, acc ++ rows)
+        }
+    loop(0, Nil).map(dedupBoard)
 
   // Scoped because the cache lives for the app's lifetime. The TTL cache also dedups concurrent lookups of the same
   // (date, direction) key, so simultaneous dispatcher refreshes trigger a single MUC scrape.
