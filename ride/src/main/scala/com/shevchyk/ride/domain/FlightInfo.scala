@@ -27,9 +27,12 @@ object FlightStatus:
       case s if s.contains("boarding") || s.contains("einstieg")                                                      => Boarding
       case s if s.contains("gestartet") || s.contains("abgeflogen")                                                   => Departed
       case s if s.contains("unterwegs") || s.contains("en route")                                                     => EnRoute
-      // "beendet" = the arrival is finished/processed (the plane has landed) — MUC's wording for a completed arrival.
-      // "beendet" = the arrival is finished/processed (the plane has landed) — MUC's wording for a completed arrival.
-      case s if s.contains("gelandet") || s.contains("angekommen") || s.contains("beendet")                           => Landed
+      // A completed arrival shows on the MUC board as "beendet" (finished/processed) or "Gepäck" (baggage on the
+      // belt). Both mean the plane is down — without "gepäck" the status flickered Unknown between board updates.
+      case s
+          if s.contains("gelandet") || s.contains("angekommen") || s.contains("beendet") || s.contains("gepäck") ||
+            s.contains("gepaeck") =>
+        Landed
       case s if s.contains("verspätet") || s.contains("verspaetet") || s.contains("verspatet") || s.contains("delay") =>
         Delayed
       case s if s.contains("gestrichen") || s.contains("annulliert") || s.contains("cancel")                          => Cancelled

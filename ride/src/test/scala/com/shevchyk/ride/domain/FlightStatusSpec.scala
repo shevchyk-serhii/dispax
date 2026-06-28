@@ -18,6 +18,10 @@ object FlightStatusSpec extends ZIOSpecDefault:
           // Regression: a completed arrival shows as "beendet" on the MUC board (e.g. "LH 1751 … beendet"),
           // which used to fall through to Unknown — the card then showed "unknown" for a landed flight.
           "beendet"    -> FlightStatus.Landed,
+          // Regression: once the plane is down MUC also shows "Gepäck" (baggage on the belt), which used to fall
+          // through to Unknown — the card's flight status then flickered between "landed" and "unknown" (prod: LH1983).
+          "Gepäck"     -> FlightStatus.Landed,
+          "Gepaeck"    -> FlightStatus.Landed,
           "verspätet"  -> FlightStatus.Delayed,
           "gestrichen" -> FlightStatus.Cancelled,
           "umgeleitet" -> FlightStatus.Diverted
