@@ -1587,6 +1587,8 @@
   "arrivalsBoardTitle": "Прильоти · Аеропорт Мюнхен",
   "departuresTabLabel": "Відльоти",
   "noArrivalsFound": "Прильотів не знайдено",
+  "flightDetailsTitle": "Деталі рейсу",
+  "gateNotPublished": "Гейт ще не оголошено",
   "noDeparturesFound": "Відльотів не знайдено",
   "errorLoadingFlights": "Помилка завантаження рейсів: {error}",
   "@errorLoadingFlights": {

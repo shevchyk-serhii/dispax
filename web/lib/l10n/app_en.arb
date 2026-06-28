@@ -1670,6 +1670,8 @@
   "departuresTabLabel": "Departures",
   "noArrivalsFound": "No arrivals found",
   "noDeparturesFound": "No departures found",
+  "flightDetailsTitle": "Flight details",
+  "gateNotPublished": "Gate not published yet",
   "errorLoadingFlights": "Error loading flights: {error}",
   "@errorLoadingFlights": {
     "placeholders": {

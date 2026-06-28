@@ -6292,6 +6292,18 @@ abstract class AppLocalizations {
   /// **'No departures found'**
   String get noDeparturesFound;
 
+  /// No description provided for @flightDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight details'**
+  String get flightDetailsTitle;
+
+  /// No description provided for @gateNotPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Gate not published yet'**
+  String get gateNotPublished;
+
   /// No description provided for @errorLoadingFlights.
   ///
   /// In en, this message translates to:

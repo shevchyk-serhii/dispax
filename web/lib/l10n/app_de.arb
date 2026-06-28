@@ -1587,6 +1587,8 @@
   "arrivalsBoardTitle": "Ankünfte · Flughafen München",
   "departuresTabLabel": "Abflüge",
   "noArrivalsFound": "Keine Ankünfte gefunden",
+  "flightDetailsTitle": "Flugdetails",
+  "gateNotPublished": "Gate noch nicht veröffentlicht",
   "noDeparturesFound": "Keine Abflüge gefunden",
   "errorLoadingFlights": "Fehler beim Laden der Flüge: {error}",
   "@errorLoadingFlights": {

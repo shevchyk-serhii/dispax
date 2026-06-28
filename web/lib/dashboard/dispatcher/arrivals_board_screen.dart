@@ -10,7 +10,10 @@ import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 /// Dispatcher arrivals board: the live MUC arrivals (flight, origin, scheduled/estimated
 /// time, terminal, localized status), fetched from GET /api/flights/arrivals.
 class ArrivalsBoardScreen extends StatefulWidget {
-  const ArrivalsBoardScreen({super.key});
+  /// Override the data source in tests; production uses [ArrivalsBoardService.instance].
+  final ArrivalsBoardService? service;
+
+  const ArrivalsBoardScreen({super.key, this.service});
 
   @override
   State<ArrivalsBoardScreen> createState() => _ArrivalsBoardScreenState();
@@ -27,9 +30,12 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
     _future = _load();
   }
 
+  ArrivalsBoardService get _service =>
+      widget.service ?? ArrivalsBoardService.instance;
+
   Future<List<MucFlight>> _load() {
     final iso = DateFormat('yyyy-MM-dd').format(_date);
-    return ArrivalsBoardService.instance.getArrivals(date: iso);
+    return _service.getArrivals(date: iso);
   }
 
   void _setDate(DateTime date) {
@@ -55,6 +61,23 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
       lastDate: now.add(const Duration(days: 14)),
     );
     if (picked != null) _setDate(picked);
+  }
+
+  /// The board has no gate (it lives on the flight's detail page). Tapping a row fetches the single
+  /// flight WITH its gate via /flights/lookup and shows it in a bottom sheet. The board row is used
+  /// as the immediate fallback while the gate-bearing lookup is in flight (or if it fails).
+  void _openFlightDetails(MucFlight row, AppLocalizations l10n) {
+    final iso = DateFormat('yyyy-MM-dd').format(_date);
+    final lookup = _service.lookupFlight(
+      flightNumber: row.flightNumber,
+      date: iso,
+      isArrival: true,
+    );
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => FlightDetailsSheet(row: row, lookup: lookup, l10n: l10n),
+    );
   }
 
   @override
@@ -106,8 +129,11 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
             padding: const EdgeInsets.all(12),
             itemCount: flights.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) =>
-                _ArrivalRow(flight: flights[i], l10n: l10n),
+            itemBuilder: (context, i) => _ArrivalRow(
+              flight: flights[i],
+              l10n: l10n,
+              onTap: () => _openFlightDetails(flights[i], l10n),
+            ),
           );
         },
       ),
@@ -189,8 +215,13 @@ class ArrivalsDateBar extends StatelessWidget {
 class _ArrivalRow extends StatelessWidget {
   final MucFlight flight;
   final AppLocalizations l10n;
+  final VoidCallback onTap;
 
-  const _ArrivalRow({required this.flight, required this.l10n});
+  const _ArrivalRow({
+    required this.flight,
+    required this.l10n,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -201,81 +232,211 @@ class _ArrivalRow extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Icon(Icons.flight_land, size: 20, color: scheme.onSurfaceVariant),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        flight.flightNumber,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      if (flight.origin != null) ...[
-                        const SizedBox(width: 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.flight_land, size: 20, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
                         Text(
-                          '← ${flight.origin}',
-                          style: TextStyle(
-                            color: scheme.onSurfaceVariant,
-                            fontSize: 13,
+                          flight.flightNumber,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
                           ),
                         ),
+                        if (flight.origin != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '← ${flight.origin}',
+                            style: TextStyle(
+                              color: scheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (flight.airline != null) flight.airline!,
+                        if (flight.terminal != null)
+                          'Terminal ${flight.terminal!}',
+                      ].join(' · '),
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 12.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    timeText,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    [
-                      if (flight.airline != null) flight.airline!,
-                      if (flight.terminal != null)
-                        'Terminal ${flight.terminal!}',
-                    ].join(' · '),
-                    style: TextStyle(
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 12.5,
+                  if (statusText.isNotEmpty)
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: flight.isDelayed
+                            ? AppColors.error
+                            : scheme.onSurfaceVariant,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet shown when a board row is tapped. The board row ([row]) renders immediately; the
+/// [lookup] future resolves the same flight WITH its gate (the board has none) and replaces the
+/// gate line once it arrives. A failed/empty lookup falls back to the row's data.
+class FlightDetailsSheet extends StatelessWidget {
+  final MucFlight row;
+  final Future<MucFlight?> lookup;
+  final AppLocalizations l10n;
+
+  const FlightDetailsSheet({
+    super.key,
+    required this.row,
+    required this.lookup,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final time = row.estimatedTime ?? row.scheduledTime;
+    final timeText = time != null ? DateFormat.Hm().format(time) : '--:--';
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
+                Icon(Icons.flight_land, color: scheme.primary),
+                const SizedBox(width: 10),
+                Text(
+                  row.flightNumber,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
+                ),
+                if (row.origin != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '← ${row.origin}',
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+                const Spacer(),
                 Text(
                   timeText,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
                   ),
                 ),
-                const SizedBox(height: 2),
-                if (statusText.isNotEmpty)
-                  Text(
-                    statusText,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: flight.isDelayed
-                          ? AppColors.error
-                          : scheme.onSurfaceVariant,
-                    ),
-                  ),
               ],
+            ),
+            const SizedBox(height: 16),
+            _DetailLine(
+              label: l10n.statusLabel,
+              value: l10n.localizedFlightStatus(row.status),
+            ),
+            if (row.airline != null)
+              _DetailLine(label: l10n.flightLabel, value: row.airline!),
+            if (row.terminal != null)
+              _DetailLine(label: l10n.terminalLabel, value: row.terminal!),
+            // The gate comes from the per-flight lookup; show a spinner until it resolves.
+            FutureBuilder<MucFlight?>(
+              future: lookup,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          '${l10n.gateLabel}: ',
+                          style: TextStyle(color: scheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final gate = snapshot.data?.gate ?? row.gate;
+                return _DetailLine(
+                  label: l10n.gateLabel,
+                  value: gate ?? l10n.gateNotPublished,
+                );
+              },
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DetailLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Text('$label: ', style: TextStyle(color: scheme.onSurfaceVariant)),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }

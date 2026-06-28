@@ -31,6 +31,32 @@ void main() {
       expect(label, isNot(contains('✈')));
       expect(label, contains(ride.from.address));
     });
+
+    test('appends the gate for an airport ride whose gate is known', () {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        flightNumber: 'LH1671',
+        gate: 'G18',
+        terminal: 'T2',
+      );
+
+      final label = driverScheduleRideLabel(ride);
+
+      expect(label, contains('✈ LH1671'));
+      expect(label, contains('Gate G18'));
+    });
+
+    test('omits the gate when it is unknown', () {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        flightNumber: 'LH1671',
+      );
+
+      final label = driverScheduleRideLabel(ride);
+
+      expect(label, contains('✈ LH1671'));
+      expect(label, isNot(contains('Gate')));
+    });
   });
 
   group('bulk reassign flight subtitle gate', () {

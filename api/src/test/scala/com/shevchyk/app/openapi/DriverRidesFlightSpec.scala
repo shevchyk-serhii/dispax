@@ -106,6 +106,21 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       )
     )
 
+  private def dispatcherToken: ZIO[JwtService, Throwable, String] = ZIO
+    .serviceWithZIO[JwtService](
+      _.generateToken(
+        Person(
+          id = PersonId(UUID.fromString("000000EE-0000-0000-0000-000000000001")),
+          email = "dispatch@test.de",
+          name = "Dispatcher User",
+          role = PersonRole.Dispatcher,
+          passwordHash = "hash",
+          companyId = Some(companyId),
+          status = UserStatus.ACTIVE
+        )
+      )
+    )
+
   // ---------------------------------------------------------------------------
   // Stubs: only the methods the driver-list endpoint touches return real data.
   // ---------------------------------------------------------------------------
@@ -163,7 +178,11 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       def getClientRides(cId: PersonId, c: CompanyId): IO[RideError, List[Ride]]                                 = notImpl
       def getAllRides: IO[RideError, List[Ride]]                                                                 = notImpl
       def getRidesByCompany(c: CompanyId): IO[RideError, List[Ride]]                                             = notImpl
-      def getRidesByCompanyPaginated(c: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]           = notImpl
+      // Used by the dispatcher list endpoint (GET /api/rides) — returns the same airport ride so its
+      // flight enrichment can be asserted there too.
+      def getRidesByCompanyPaginated(c: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]]           = ZIO.succeed(
+        List(airportRide)
+      )
       def getDriverRidesPaginated(d: PersonId, c: CompanyId, offset: Int, limit: Int): IO[RideError, List[Ride]] =
         notImpl
       def markPayment(rideId: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]         = notImpl
@@ -391,7 +410,7 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
     }
     .provideLayer(layers)
 
-  override def spec: Spec[TestEnvironment & Scope, Any] = suite("GET /api/rides/driver/{driverId} flight enrichment")(
+  override def spec: Spec[TestEnvironment & Scope, Any] = suite("ride-list flight enrichment (driver + dispatcher)")(
     test("driver ride card response carries gate, terminal and flightStatus for an airport ride") {
       for {
         token <- driverToken
@@ -421,6 +440,25 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       } yield assertTrue(
         resp.status == Status.Ok,
         body.contains("\"optimalEntryTime\":\"2090-01-01T10:10:00Z\"")
+      )
+    },
+    // Regression for the SAME class of bug on the dispatcher list endpoint (GET /api/rides), which fed the
+    // per-driver schedule panel: listRidesServer built RideDto.fromDomain WITHOUT flight= → gate null → the
+    // schedule label's "Gate …" was dead in prod. Mutation: drop flight= from listRidesServer → red.
+    test("dispatcher GET /api/rides response carries the gate for an airport ride") {
+      for {
+        token <- dispatcherToken
+        req    = Request
+                   .get(URL.decode("/api/rides").toOption.get)
+                   .addHeader(Header.Authorization.Bearer(token))
+        resp  <- run(req)
+        body  <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        body.contains("LH1751"),
+        body.contains("\"gate\":\"G12\""),
+        body.contains("\"terminal\":\"2\""),
+        body.contains("\"flightStatus\":\"Landed\"")
       )
     }
   ).provideLayer(testJwtService)

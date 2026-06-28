@@ -3380,6 +3380,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noDeparturesFound => 'Keine Abflüge gefunden';
 
   @override
+  String get flightDetailsTitle => 'Flugdetails';
+
+  @override
+  String get gateNotPublished => 'Gate noch nicht veröffentlicht';
+
+  @override
   String errorLoadingFlights(String error) {
     return 'Fehler beim Laden der Flüge: $error';
   }

@@ -3372,6 +3372,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get noDeparturesFound => 'Відльотів не знайдено';
 
   @override
+  String get flightDetailsTitle => 'Деталі рейсу';
+
+  @override
+  String get gateNotPublished => 'Гейт ще не оголошено';
+
+  @override
   String errorLoadingFlights(String error) {
     return 'Помилка завантаження рейсів: $error';
   }

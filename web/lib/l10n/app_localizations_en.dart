@@ -3362,6 +3362,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noDeparturesFound => 'No departures found';
 
   @override
+  String get flightDetailsTitle => 'Flight details';
+
+  @override
+  String get gateNotPublished => 'Gate not published yet';
+
+  @override
   String errorLoadingFlights(String error) {
     return 'Error loading flights: $error';
   }
