@@ -483,6 +483,57 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               updated.specialRequirements.contains("Wheelchair access")
           )
         }.provide(standardLayers),
+        test("editing the flight number updates it without flipping direction or airport") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         mkRide().copy(specifics =
+                           Some(
+                             RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+                           )
+                         )
+                       )
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         // The update DTO only carries a flight number — it builds the placeholder
+                         // AirportTransfer("UNKNOWN", "LH200", isArrival = false).
+                         UpdateRideDetailsRequest(
+                           specifics = Some(
+                             RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = "LH200")
+                           )
+                         ),
+                         testClientId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(
+            updated.specifics.contains(
+              RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH200", isArrival = true)
+            )
+          )
+        }.provide(standardLayers),
+        test("setting a flight number on a non-airport ride adds airport specifics") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(
+                           specifics = Some(
+                             RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = "LH300")
+                           )
+                         ),
+                         testClientId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(
+            updated.specifics.exists {
+              case RideSpecifics.AirportTransfer(_, flight, _) => flight == "LH300"
+              case _                                           => false
+            }
+          )
+        }.provide(standardLayers),
         test("rejects update from a different company") {
           for {
             service <- ZIO.service[RideService]

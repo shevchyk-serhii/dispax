@@ -840,7 +840,7 @@ class RideServiceImpl(
                       .focus(_.notes)
                       .replace(request.notes.orElse(ride.notes))
                       .focus(_.specifics)
-                      .replace(request.specifics.orElse(ride.specifics))
+                      .replace(mergeSpecifics(request.specifics, ride.specifics))
                       .focus(_.specialRequirements)
                       .replace(request.specialRequirements.orElse(ride.specialRequirements))
                       // None leaves tags unchanged; Some(list) replaces (already normalized in the DTO layer).
@@ -862,6 +862,24 @@ class RideServiceImpl(
           )
           .ignore
     } yield persistedRide
+
+  /**
+   * Merge incoming specifics from an update into the ride's existing specifics.
+   *
+   * The update DTO can only carry a flight number, so it builds a placeholder `AirportTransfer("UNKNOWN", flight,
+   * isArrival = false)`. When the ride is already an airport transfer we keep its `airportCode` and `isArrival`,
+   * replacing only the flight number — editing the flight number must never flip the direction or wipe the airport
+   * code. Otherwise the incoming value (or the existing one when the update carries nothing) wins unchanged.
+   */
+  private def mergeSpecifics(
+      incoming: Option[RideSpecifics],
+      existing: Option[RideSpecifics]
+  ): Option[RideSpecifics] =
+    (incoming, existing) match
+      case (Some(RideSpecifics.AirportTransfer(_, flight, _)), Some(prev: RideSpecifics.AirportTransfer)) =>
+        Some(prev.copy(flightNumber = flight))
+      case (Some(value), _)                                                                               => Some(value)
+      case (None, prev)                                                                                   => prev
 
   def assignDriver(
       rideId: RideId,

@@ -178,11 +178,14 @@ object UpdateRideDetailsApiRequest:
 
   def toDomain(request: UpdateRideDetailsApiRequest): UpdateRideDetailsRequest =
     import com.shevchyk.ride.domain.{UpdateRideDetailsRequest, RideSpecifics}
-    val specifics =
-      for {
-        isAirport <- request.isAirportTransfer if isAirport
-        flight    <- request.flightNumber
-      } yield RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight)
+    // Build airport specifics whenever a flight number is supplied (the edit dialog never
+    // sends isAirportTransfer, so gating on it dropped flight-number updates). airportCode
+    // and isArrival are placeholders here — the service preserves the existing ride's values
+    // when it already is an airport transfer, so editing the flight number does not flip the
+    // direction or wipe the airport code.
+    val specifics = request.flightNumber.map(flight =>
+      RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight)
+    )
 
     UpdateRideDetailsRequest(
       pickupLocation = request.from.map(LocationDto.toDomain),
