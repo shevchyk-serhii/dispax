@@ -496,9 +496,9 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             updated <- service.updateRideDetails(
                          ride.id,
                          // The update DTO only carries a flight number — it builds the placeholder
-                         // AirportTransfer("UNKNOWN", "LH200", isArrival = false).
+                         // FieldUpdate.Set(AirportTransfer("UNKNOWN", "LH200", isArrival = false)).
                          UpdateRideDetailsRequest(
-                           specifics = Some(
+                           specifics = FieldUpdate.Set(
                              RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = "LH200")
                            )
                          ),
@@ -519,7 +519,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             updated <- service.updateRideDetails(
                          ride.id,
                          UpdateRideDetailsRequest(
-                           specifics = Some(
+                           specifics = FieldUpdate.Set(
                              RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = "LH300")
                            )
                          ),
@@ -532,6 +532,74 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               case RideSpecifics.AirportTransfer(_, flight, _) => flight == "LH300"
               case _                                           => false
             }
+          )
+        }.provide(standardLayers),
+        test("clearing the flight number drops the airport specifics") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         mkRide().copy(specifics =
+                           Some(
+                             RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+                           )
+                         )
+                       )
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(specifics = FieldUpdate.Clear),
+                         testClientId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(updated.specifics.isEmpty)
+        }.provide(standardLayers),
+        // Regression guard for the previous flight-number fix: an absent update (Unchanged) must NOT
+        // be treated like Clear — the existing specifics survive. Collapsing absent into Clear makes
+        // this go red.
+        test("leaving the flight number untouched preserves the airport specifics") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(
+                         mkRide().copy(specifics =
+                           Some(
+                             RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+                           )
+                         )
+                       )
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(notes = Some("just a note")),
+                         testClientId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(
+            updated.specifics.contains(
+              RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+            )
+          )
+        }.provide(standardLayers),
+        test("clearing notes with an empty string removes them") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide())
+            withNote <- service.updateRideDetails(
+                          ride.id,
+                          UpdateRideDetailsRequest(notes = Some("call on arrival")),
+                          testClientId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+            cleared  <- service.updateRideDetails(
+                          ride.id,
+                          UpdateRideDetailsRequest(notes = Some("")),
+                          testClientId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            withNote.notes.contains("call on arrival") &&
+              cleared.notes.forall(_.isEmpty)
           )
         }.provide(standardLayers),
         test("rejects update from a different company") {

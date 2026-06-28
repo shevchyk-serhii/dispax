@@ -864,22 +864,25 @@ class RideServiceImpl(
     } yield persistedRide
 
   /**
-   * Merge incoming specifics from an update into the ride's existing specifics.
+   * Merge a three-valued specifics update into the ride's existing specifics.
    *
-   * The update DTO can only carry a flight number, so it builds a placeholder `AirportTransfer("UNKNOWN", flight,
-   * isArrival = false)`. When the ride is already an airport transfer we keep its `airportCode` and `isArrival`,
-   * replacing only the flight number — editing the flight number must never flip the direction or wipe the airport
-   * code. Otherwise the incoming value (or the existing one when the update carries nothing) wins unchanged.
+   *   - Unchanged → keep the ride's current specifics (e.g. the partial update did not touch the flight number).
+   *   - Clear → drop the specifics (the flight number was wiped; the ride is no longer an airport transfer).
+   *   - Set → the DTO builds a placeholder `AirportTransfer("UNKNOWN", flight, isArrival = false)`. When the ride is
+   *     already an airport transfer we keep its `airportCode` and `isArrival`, replacing only the flight number —
+   *     editing the flight number must never flip the direction or wipe the airport code.
    */
   private def mergeSpecifics(
-      incoming: Option[RideSpecifics],
+      incoming: FieldUpdate[RideSpecifics],
       existing: Option[RideSpecifics]
   ): Option[RideSpecifics] =
-    (incoming, existing) match
-      case (Some(RideSpecifics.AirportTransfer(_, flight, _)), Some(prev: RideSpecifics.AirportTransfer)) =>
-        Some(prev.copy(flightNumber = flight))
-      case (Some(value), _)                                                                               => Some(value)
-      case (None, prev)                                                                                   => prev
+    incoming match
+      case FieldUpdate.Unchanged                                        => existing
+      case FieldUpdate.Clear                                            => None
+      case FieldUpdate.Set(RideSpecifics.AirportTransfer(_, flight, _)) =>
+        existing match
+          case Some(prev: RideSpecifics.AirportTransfer) => Some(prev.copy(flightNumber = flight))
+          case _                                         => Some(RideSpecifics.AirportTransfer("UNKNOWN", flight))
 
   def assignDriver(
       rideId: RideId,

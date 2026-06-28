@@ -334,9 +334,10 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       'from': {'address': _fromCtrl.text.trim()},
       'to': {'address': _toCtrl.text.trim()},
       'pickupDateTime': utcIso,
-      if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
-      if (_flightCtrl.text.trim().isNotEmpty)
-        'flightNumber': _flightCtrl.text.trim(),
+      // Always send notes and flightNumber (even empty) so clearing them persists — the backend
+      // treats an absent field as "leave unchanged" and an empty string as "clear".
+      'notes': _notesCtrl.text.trim(),
+      'flightNumber': _flightCtrl.text.trim(),
       // Always send tags (even empty) so clearing all tags persists — the
       // backend treats an absent field as "leave unchanged".
       'tags': _tags,

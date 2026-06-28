@@ -349,13 +349,26 @@ final case class HandOffRequest(
     partnerCompanyId: PartnerCompanyId
 )
 
+/**
+ * A three-valued update for a single field, so a partial update can tell "leave it as it is" apart from "remove the
+ * value". A plain `Option` collapses these two (both are `None`), which is why an absent flight number and a cleared
+ * flight number could not be distinguished before.
+ */
+enum FieldUpdate[+A]:
+  case Unchanged
+  case Clear
+  case Set(value: A)
+
 final case class UpdateRideDetailsRequest(
     pickupLocation: Option[Location] = None,
     dropoffLocation: Option[Location] = None,
     pickupDateTime: Option[Instant] = None,
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
-    specifics: Option[RideSpecifics] = None,
+    // Three-valued: Unchanged leaves the ride's specifics, Clear removes them (e.g. the flight number
+    // was cleared so the ride is no longer an airport transfer), Set replaces (preserving direction in
+    // the service when both old and new are airport transfers).
+    specifics: FieldUpdate[RideSpecifics] = FieldUpdate.Unchanged,
     specialRequirements: Option[String] = None,
     // None = leave the ride's tags unchanged; Some(list) = replace with this (already normalized).
     tags: Option[List[String]] = None
