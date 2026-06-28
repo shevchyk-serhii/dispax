@@ -42,13 +42,16 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
       final response = await apiClient.get('/stats/client-value');
 
       if (response.statusCode == 200) {
-        _data = List<Map<String, dynamic>>.from(jsonDecode(response.body));
+        final data = List<Map<String, dynamic>>.from(
+          jsonDecode(response.body),
+        );
         // Sort by total revenue descending
-        _data!.sort(
+        data.sort(
           (a, b) => ((b['totalRevenue'] as num?) ?? 0).compareTo(
             (a['totalRevenue'] as num?) ?? 0,
           ),
         );
+        _data = data;
       }
       setState(() => _isLoading = false);
     } catch (e) {
@@ -60,10 +63,11 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
   }
 
   List<Map<String, dynamic>> get _filteredData {
-    if (_data == null) return [];
+    final data = _data;
+    if (data == null) return [];
     final search = _searchController.text.trim().toLowerCase();
-    if (search.isEmpty) return _data!;
-    return _data!
+    if (search.isEmpty) return data;
+    return data
         .where(
           (c) =>
               (c['clientName'] as String? ?? '').toLowerCase().contains(search),
@@ -90,7 +94,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
@@ -149,7 +153,8 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
   Widget _buildContent() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_data == null || _data!.isEmpty) {
+    final data = _data;
+    if (data == null || data.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -169,8 +174,8 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
       );
     }
 
-    final totalClients = _data!.length;
-    final totalRevenue = _data!.fold<num>(
+    final totalClients = data.length;
+    final totalRevenue = data.fold<num>(
       0,
       (sum, c) => sum + ((c['totalRevenue'] as num?) ?? 0),
     );

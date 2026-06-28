@@ -342,7 +342,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       ElevatedButton(
                         onPressed: _loadPools,
                         child: Text(l10n.retry),

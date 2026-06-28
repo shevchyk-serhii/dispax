@@ -42,11 +42,12 @@ class _TokenStorage implements TokenStorage {
   @override
   Future<String?> read(String key) async {
     try {
-      if (_useFallback) {
+      final secure = _secure;
+      if (_useFallback || secure == null) {
         final prefs = await SharedPreferences.getInstance();
         return prefs.getString(key);
       }
-      return await _secure!.read(key: key);
+      return await secure.read(key: key);
     } catch (_) {
       return null;
     }
@@ -55,12 +56,13 @@ class _TokenStorage implements TokenStorage {
   @override
   Future<void> write(String key, String value) async {
     try {
-      if (_useFallback) {
+      final secure = _secure;
+      if (_useFallback || secure == null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(key, value);
         return;
       }
-      await _secure!.write(key: key, value: value);
+      await secure.write(key: key, value: value);
     } catch (_) {
       // Storage write failed — token won't persist across restarts
     }
@@ -69,12 +71,13 @@ class _TokenStorage implements TokenStorage {
   @override
   Future<void> delete(String key) async {
     try {
-      if (_useFallback) {
+      final secure = _secure;
+      if (_useFallback || secure == null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(key);
         return;
       }
-      await _secure!.delete(key: key);
+      await secure.delete(key: key);
     } catch (_) {
       // Ignore delete failures
     }
@@ -152,12 +155,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         privateApiClient.setAuthToken(token);
 
         // Apply the user's preferred language — backend is the source of truth.
-        if (user.preferredLanguage != null) {
-          final locale = localeFromString(user.preferredLanguage);
+        final preferredLanguage = user.preferredLanguage;
+        if (preferredLanguage != null) {
+          final locale = localeFromString(preferredLanguage);
           if (locale != null) {
             localeNotifier.value = locale;
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('language', user.preferredLanguage!);
+            await prefs.setString('language', preferredLanguage);
           }
         }
 
@@ -238,12 +242,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = Person.fromJson(loginResponse['person']);
 
         // Apply the user's preferred language — backend is the source of truth.
-        if (user.preferredLanguage != null) {
-          final locale = localeFromString(user.preferredLanguage);
+        final preferredLanguage = user.preferredLanguage;
+        if (preferredLanguage != null) {
+          final locale = localeFromString(preferredLanguage);
           if (locale != null) {
             localeNotifier.value = locale;
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('language', user.preferredLanguage!);
+            await prefs.setString('language', preferredLanguage);
           }
         }
 

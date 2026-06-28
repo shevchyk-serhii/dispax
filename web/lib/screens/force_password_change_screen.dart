@@ -36,7 +36,7 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
   }
 
   void _submit() {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
         AuthPasswordChangeRequested(
           currentPassword: _currentCtrl.text,
@@ -66,6 +66,7 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           final busy = state.isLoading;
+          final errorMessage = state.errorMessage;
           return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -122,10 +123,10 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
                             : null,
                         onFieldSubmitted: (_) => busy ? null : _submit(),
                       ),
-                      if (state.errorMessage != null) ...[
+                      if (errorMessage != null) ...[
                         const SizedBox(height: 12),
                         Text(
-                          state.errorMessage!,
+                          errorMessage,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.error,
                           ),

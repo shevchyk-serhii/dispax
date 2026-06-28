@@ -201,7 +201,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       ElevatedButton(
                         onPressed: _loadEntries,
                         child: Text(l10n.retry),

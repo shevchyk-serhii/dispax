@@ -639,8 +639,9 @@ class _BookingRow extends StatelessWidget {
   String _buildSubline(Ride ride) {
     final parts = <String>[];
     if (ride.clientName.isNotEmpty) parts.add(ride.clientName);
-    if (ride.flightNumber != null && ride.flightNumber!.isNotEmpty) {
-      parts.add(ride.flightNumber!);
+    final flightNumber = ride.flightNumber;
+    if (flightNumber != null && flightNumber.isNotEmpty) {
+      parts.add(flightNumber);
     }
     return parts.join(' · ');
   }

@@ -660,14 +660,15 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_geofenceError != null) {
+    final geofenceError = _geofenceError;
+    if (geofenceError != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_geofenceError!),
+            Text(geofenceError),
             const SizedBox(height: 12),
             FilledButton(
               style: AppStyles.accentButtonStyle,
@@ -936,14 +937,15 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_alertError != null) {
+    final alertError = _alertError;
+    if (alertError != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_alertError!),
+            Text(alertError),
             const SizedBox(height: 12),
             FilledButton(
               style: AppStyles.accentButtonStyle,

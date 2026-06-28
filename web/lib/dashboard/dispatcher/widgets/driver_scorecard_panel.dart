@@ -48,8 +48,9 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
   }
 
   List<Map<String, dynamic>> get _sortedData {
-    if (_data == null) return [];
-    final sorted = List<Map<String, dynamic>>.from(_data!);
+    final data = _data;
+    if (data == null) return [];
+    final sorted = List<Map<String, dynamic>>.from(data);
     switch (_sortBy) {
       case 'rides':
         sorted.sort(
@@ -98,7 +99,7 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {

@@ -163,14 +163,15 @@ class _DriverScheduleVisibilityScreenState
     if (_loading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 16),
-            Text(_error!, style: TextStyle(color: AppColors.error)),
+            Text(error, style: TextStyle(color: AppColors.error)),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
           ],

@@ -139,9 +139,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
             formBloc: _createRideFormBloc,
             rideBloc: _rideBloc,
             onCreated: () {
-              context.read<RideBloc>().add(
-                RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-              );
+              final user = context.read<AuthBloc>().state.user;
+              if (user != null) {
+                context.read<RideBloc>().add(RideLoadRequested(user: user));
+              }
               setState(() => _selectedIndex = 0);
             },
           ),
@@ -185,8 +186,9 @@ class MyRidesTab extends StatelessWidget {
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
@@ -197,10 +199,9 @@ class MyRidesTab extends StatelessWidget {
       builder: (context, rideState) {
         if (rideState.status == RideStateStatus.initial) {
           final authState = context.read<AuthBloc>().state;
-          if (authState.user != null) {
-            context.read<RideBloc>().add(
-              RideLoadRequested(user: authState.user!),
-            );
+          final user = authState.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
           }
         }
 
@@ -211,7 +212,7 @@ class MyRidesTab extends StatelessWidget {
         if (rideState.hasError && rideState.rides.isEmpty) {
           return ErrorDisplayWidget(
             title: l10n.failedToLoadRides,
-            message: rideState.errorMessage!,
+            message: rideState.errorMessage ?? '',
             onRetry: () => loadRides(context),
           );
         }
@@ -398,9 +399,10 @@ class MyRidesTab extends StatelessWidget {
       try {
         await rideService.cancelRide(ride.id, result['reason'] as String);
         if (context.mounted) {
-          context.read<RideBloc>().add(
-            RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-          );
+          final user = context.read<AuthBloc>().state.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
+          }
         }
       } catch (e) {
         if (context.mounted) {

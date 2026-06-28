@@ -140,7 +140,9 @@ class LiveFleetPanel extends StatelessWidget {
     final seen = <String>{};
     final entries = <_FleetEntry>[];
     for (final ride in activeRides) {
-      final driverId = ride.driverId!;
+      final driverId = ride.driverId;
+      final driverName = ride.driverName;
+      if (driverId == null || driverName == null) continue;
       if (seen.contains(driverId)) continue;
       seen.add(driverId);
 
@@ -149,7 +151,7 @@ class LiveFleetPanel extends StatelessWidget {
       entries.add(
         _FleetEntry(
           driverId: driverId,
-          driverName: ride.driverName!,
+          driverName: driverName,
           status: status,
           statusLabel: statusLabel,
         ),

@@ -182,8 +182,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(_client.email, style: AppStyles.bodySmall),
-                if (_client.phone != null && _client.phone!.isNotEmpty)
-                  Text(_client.phone!, style: AppStyles.bodySmall),
+                if (_client.phone case final phone?
+                    when phone.isNotEmpty)
+                  Text(phone, style: AppStyles.bodySmall),
                 if (_client.preferredDriverId != null)
                   Text(
                     l10n.preferredDriverAssigned,
@@ -194,11 +195,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               ],
             ),
           ),
-          if (_rides != null)
+          if (_rides case final rides?)
             Column(
               children: [
                 Text(
-                  '${_rides!.length}',
+                  '${rides.length}',
                   style: AppStyles.headlineMedium.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -217,7 +218,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +227,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(
-              _error!,
+              error,
               style: AppStyles.bodyMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -237,7 +239,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       );
     }
 
-    if (_rides == null || _rides!.isEmpty) {
+    final rides = _rides;
+    if (rides == null || rides.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -263,9 +266,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       onRefresh: _loadRides,
       child: ListView.builder(
         padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-        itemCount: _rides!.length,
+        itemCount: rides.length,
         itemBuilder: (context, index) {
-          return _buildRideCard(_rides![index]);
+          return _buildRideCard(rides[index]);
         },
       ),
     );
@@ -274,6 +277,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   Widget _buildRideCard(Ride ride) {
     final l10n = AppLocalizations.of(context)!;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
+    final driverName = ride.driverName;
+    final price = ride.price;
+    final paymentLabel = PaymentMethod.labelForWire(ride.paymentMethod, l10n);
+    final flightNumber = ride.flightNumber;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -357,22 +364,22 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   ),
                 ],
               ),
-              if (ride.driverName != null || ride.price != null) ...[
+              if (driverName != null || price != null) ...[
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (ride.driverName != null)
+                    if (driverName != null)
                       Text(
-                        l10n.driverLabel(ride.driverName!),
+                        l10n.driverLabel(driverName),
                         style: TextStyle(
                           fontSize: 11,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    if (ride.price != null)
+                    if (price != null)
                       Text(
-                        '€${ride.price!.toStringAsFixed(2)}',
+                        '€${price.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -382,8 +389,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   ],
                 ),
               ],
-              if (PaymentMethod.labelForWire(ride.paymentMethod, l10n) !=
-                  null) ...[
+              if (paymentLabel != null) ...[
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -394,7 +400,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      PaymentMethod.labelForWire(ride.paymentMethod, l10n)!,
+                      paymentLabel,
                       style: TextStyle(
                         fontSize: 11,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -403,7 +409,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   ],
                 ),
               ],
-              if (ride.isAirportTransfer && ride.flightNumber != null) ...[
+              if (ride.isAirportTransfer && flightNumber != null) ...[
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -414,7 +420,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      ride.flightNumber!,
+                      flightNumber,
                       style: TextStyle(
                         fontSize: 11,
                         color: Theme.of(context).colorScheme.primary,
@@ -519,7 +525,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     foregroundColor: AppColors.textOnPrimary,
                   ),
                   onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
+                    if (!(formKey.currentState?.validate() ?? false)) return;
                     try {
                       final updated = await userService.updateClient(
                         _client.id,

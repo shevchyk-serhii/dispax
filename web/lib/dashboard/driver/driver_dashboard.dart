@@ -103,9 +103,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
           rideBloc: _rideBloc,
           formBloc: _createRideFormBloc,
           onCreated: () {
-            context.read<RideBloc>().add(
-              RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-            );
+            final user = context.read<AuthBloc>().state.user;
+            if (user != null) {
+              context.read<RideBloc>().add(RideLoadRequested(user: user));
+            }
             setState(() => _selectedIndex = 0);
           },
         );

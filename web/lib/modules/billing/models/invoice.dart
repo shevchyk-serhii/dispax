@@ -165,6 +165,6 @@ class CreateInvoiceRequest {
     'taxRate': taxRate,
     'currency': currency,
     if (notes != null) 'notes': notes,
-    if (dueDate != null) 'dueDate': _fmtDate(dueDate!),
+    if (dueDate case final dueDate?) 'dueDate': _fmtDate(dueDate),
   };
 }

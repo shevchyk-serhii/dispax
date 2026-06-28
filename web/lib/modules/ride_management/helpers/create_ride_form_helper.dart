@@ -83,7 +83,8 @@ class CreateRideFormHelper {
   ) {
     final l10n = AppLocalizations.of(context)!;
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) {
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.authenticationRequiredError),
@@ -115,12 +116,12 @@ class CreateRideFormHelper {
 
     // For a new client we use the current user's ID as a placeholder —
     // for the DRIVER role the backend can override clientId anyway
-    final clientId = formState.selectedClientId ?? authState.user!.id;
+    final clientId = formState.selectedClientId ?? user.id;
 
     final createRequest = CreateRideRequest(
       clientId: clientId,
-      creatorId: authState.user!.id,
-      companyId: authState.user!.companyId ?? '',
+      creatorId: user.id,
+      companyId: user.companyId ?? '',
       // manualPickupDateTime: null for departure rides without an explicit override
       // signals "compute automatically" to the backend. For all other ride types
       // it carries the operator-selected pickup time.

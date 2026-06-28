@@ -65,7 +65,7 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
@@ -128,7 +128,8 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
   Widget _buildContent() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_data == null || _data!.isEmpty) {
+    final data = _data;
+    if (data == null || data.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -157,7 +158,7 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
     int busiestDayCount = 0;
     int busiestHourCount = 0;
 
-    for (final entry in _data!) {
+    for (final entry in data) {
       final day = (entry['dayOfWeek'] as num?)?.toInt() ?? 0;
       final hour = (entry['hour'] as num?)?.toInt() ?? 0;
       final count = (entry['count'] as num?)?.toInt() ?? 0;

@@ -470,7 +470,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen>
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       ElevatedButton(
                         onPressed: _loadNotifications,
                         child: Text(l10n.retry),
@@ -831,23 +831,24 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
   }
 
   Future<void> _savePrefs() async {
-    if (_prefs == null) return;
+    final prefs = _prefs;
+    if (prefs == null) return;
     setState(() => _isSaving = true);
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
       await apiClient.put('/notification-preferences', {
-        'rideUpdates': _prefs!.rideUpdates,
-        'chatMessages': _prefs!.chatMessages,
-        'driverApproaching': _prefs!.driverApproaching,
-        'geofenceAlerts': _prefs!.geofenceAlerts,
-        'poolUpdates': _prefs!.poolUpdates,
-        'emailNotifications': _prefs!.emailNotifications,
-        'smsNotifications': _prefs!.smsNotifications,
-        if (_prefs!.quietHoursStart != null)
-          'quietHoursStart': _prefs!.quietHoursStart,
-        if (_prefs!.quietHoursEnd != null)
-          'quietHoursEnd': _prefs!.quietHoursEnd,
+        'rideUpdates': prefs.rideUpdates,
+        'chatMessages': prefs.chatMessages,
+        'driverApproaching': prefs.driverApproaching,
+        'geofenceAlerts': prefs.geofenceAlerts,
+        'poolUpdates': prefs.poolUpdates,
+        'emailNotifications': prefs.emailNotifications,
+        'smsNotifications': prefs.smsNotifications,
+        if (prefs.quietHoursStart != null)
+          'quietHoursStart': prefs.quietHoursStart,
+        if (prefs.quietHoursEnd != null)
+          'quietHoursEnd': prefs.quietHoursEnd,
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -879,7 +880,10 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    final prefs = _prefs!;
+    final prefs = _prefs;
+    if (prefs == null) {
+      return Center(child: CircularProgressIndicator.adaptive());
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),

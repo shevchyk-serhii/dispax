@@ -77,7 +77,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                             color: AppColors.error,
                           ),
                           const SizedBox(height: 12),
-                          Text(_error!),
+                          Text(_error ?? ''),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _loadStats,
@@ -131,9 +131,9 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
   }
 
   Widget _buildContent() {
-    if (_stats == null) return const SizedBox.shrink();
+    final stats = _stats;
+    if (stats == null) return const SizedBox.shrink();
 
-    final stats = _stats!;
     final total = (stats['totalRides'] ?? 0) as num;
     final completed = (stats['completedRides'] ?? 0) as num;
     final cancelled = (stats['cancelledRides'] ?? 0) as num;
@@ -294,7 +294,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         const SizedBox(height: 20),
 
         // Daily chart
-        if (_dailyStats != null && _dailyStats!.isNotEmpty) ...[
+        if (_dailyStats?.isNotEmpty ?? false) ...[
           const Text(
             'Daily Overview (Last 7 Days)',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -411,7 +411,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
   }
 
   Widget _buildDailyChart(ColorScheme colorScheme) {
-    final days = _dailyStats!;
+    final days = _dailyStats ?? const [];
     final maxTotal = days
         .map((d) => (d['total'] as num?) ?? 0)
         .fold<num>(1, (a, b) => a > b ? a : b);

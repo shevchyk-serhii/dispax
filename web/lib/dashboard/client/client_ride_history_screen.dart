@@ -32,8 +32,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
   void _loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
@@ -126,7 +127,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           if (rideState.hasError && rideState.rides.isEmpty) {
             return ErrorDisplayWidget(
               title: l10n.failedToLoadRideHistory,
-              message: rideState.errorMessage!,
+              message: rideState.errorMessage ?? '',
               onRetry: () => _loadRides(context),
             );
           }
@@ -433,12 +434,14 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
 
     // Detail line: ✈ <flight> · <vehicleClass> · €<price>
     final detailParts = <String>[];
-    if (ride.flightNumber != null && ride.flightNumber!.isNotEmpty) {
-      detailParts.add('✈ ${ride.flightNumber!}');
+    final flightNumber = ride.flightNumber;
+    if (flightNumber != null && flightNumber.isNotEmpty) {
+      detailParts.add('✈ $flightNumber');
     }
     // vehicleClass not yet on model — omit gracefully
-    if (ride.price != null) {
-      detailParts.add('€${ride.price!.toStringAsFixed(0)}');
+    final price = ride.price;
+    if (price != null) {
+      detailParts.add('€${price.toStringAsFixed(0)}');
     }
     final detailLine = detailParts.join(' · ');
 
@@ -584,6 +587,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final price = ride.price;
 
     final route = '${ride.from.address} → ${ride.to.address}';
     final dt = ride.pickupDateTime;
@@ -704,9 +708,9 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (ride.price != null)
+                if (price != null)
                   Text(
-                    '€${ride.price!.toStringAsFixed(2)}',
+                    '€${price.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,

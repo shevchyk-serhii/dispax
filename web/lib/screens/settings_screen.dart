@@ -902,7 +902,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (formKey.currentState!.validate()) {
+                if (formKey.currentState?.validate() ?? false) {
                   try {
                     final authBloc = context.read<AuthBloc>();
                     final apiClient = authBloc.apiClient;

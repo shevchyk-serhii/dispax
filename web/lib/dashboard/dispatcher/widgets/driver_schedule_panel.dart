@@ -56,7 +56,8 @@ const double _boardColumnWidth = 300;
 String resolveDriverLabel(ScheduleDay d, Map<String, String> driverNames) {
   final name = driverNames[d.driverId];
   if (name != null && name.isNotEmpty) return name;
-  if (d.notes?.isNotEmpty == true) return d.notes!;
+  final notes = d.notes;
+  if (notes != null && notes.isNotEmpty) return notes;
   final id = d.driverId;
   return 'Driver ${id.length > 8 ? id.substring(0, 8) : id}...';
 }

@@ -184,6 +184,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
 
   Widget _buildClientCard(BuildContext context, Person client) {
     final l10n = AppLocalizations.of(context)!;
+    final phone = client.phone;
     return Card(
       margin: const EdgeInsets.only(bottom: AppDimensions.paddingSmall),
       child: ListTile(
@@ -235,8 +236,8 @@ class _ClientListPanelState extends State<ClientListPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(client.email, style: AppStyles.bodySmall),
-            if (client.phone != null && client.phone!.isNotEmpty)
-              Text(client.phone!, style: AppStyles.bodySmall),
+            if (phone != null && phone.isNotEmpty)
+              Text(phone, style: AppStyles.bodySmall),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -337,7 +338,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 foregroundColor: AppColors.textOnPrimary,
               ),
               onPressed: () {
-                if (formKey.currentState!.validate()) {
+                if (formKey.currentState?.validate() ?? false) {
                   context.read<ClientBloc>().add(
                     ClientCreateRequested(
                       request: CreateUserRequest(
@@ -447,7 +448,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     foregroundColor: AppColors.textOnPrimary,
                   ),
                   onPressed: () {
-                    if (formKey.currentState!.validate()) {
+                    if (formKey.currentState?.validate() ?? false) {
                       context.read<ClientBloc>().add(
                         ClientUpdateRequested(
                           clientId: client.id,

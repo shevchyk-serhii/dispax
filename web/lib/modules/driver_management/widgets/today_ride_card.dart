@@ -40,9 +40,9 @@ class TodayRideCard extends StatelessWidget {
   /// "Landung um HH:mm", with a delay suffix ("• +N Min Verspätung") when the flight is late.
   static String _landingText(BuildContext context, Ride ride) {
     final l10n = AppLocalizations.of(context)!;
-    final base = l10n.airportLandingAt(
-      DateFormat.Hm().format(ride.flightTime!),
-    );
+    final flightTime = ride.flightTime;
+    if (flightTime == null) return '';
+    final base = l10n.airportLandingAt(DateFormat.Hm().format(flightTime));
     if (!ride.isFlightDelayed) return base;
     final delay = ride.flightDelayMinutes;
     final suffix = delay != null && delay > 0
@@ -70,8 +70,9 @@ class TodayRideCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: () {
             HapticFeedback.selectionClick();
+            final onViewDetails = this.onViewDetails;
             if (onViewDetails != null) {
-              onViewDetails!();
+              onViewDetails();
             } else {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -108,6 +109,7 @@ class TodayRideCard extends StatelessWidget {
     Duration timeUntilRide,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final distance = approachingDistanceMeters;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -169,7 +171,7 @@ class TodayRideCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (approachingDistanceMeters != null)
+                if (distance != null)
                   Flexible(
                     child: Container(
                       margin: const EdgeInsets.only(left: 6),
@@ -178,9 +180,9 @@ class TodayRideCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: approachingDistanceMeters! <= 100
+                        color: distance <= 100
                             ? AppColors.success
-                            : approachingDistanceMeters! <= 500
+                            : distance <= 500
                             ? AppColors.accent
                             : AppColors.info,
                         borderRadius: BorderRadius.circular(10),
@@ -196,11 +198,11 @@ class TodayRideCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              approachingDistanceMeters! <= 100
+                              distance <= 100
                                   ? 'Arrived'
-                                  : approachingDistanceMeters! < 1000
-                                  ? '${approachingDistanceMeters}m'
-                                  : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
+                                  : distance < 1000
+                                  ? '${distance}m'
+                                  : '${(distance / 1000).toStringAsFixed(1)}km',
                               overflow: TextOverflow.ellipsis,
                               softWrap: false,
                               style: const TextStyle(
@@ -278,6 +280,7 @@ class TodayRideCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final optimalEntryTime = ride.optimalEntryTime;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -326,14 +329,13 @@ class TodayRideCard extends StatelessWidget {
           ],
           // Recommended terminal-entry time for an arrival pickup ("Einfahrt um HH:mm").
           // Backend-computed (terminal-aware walk buffer), GPS-free, so it shows on the static card.
-          if (ride.isArrivalAirportTransfer &&
-              ride.optimalEntryTime != null) ...[
+          if (ride.isArrivalAirportTransfer && optimalEntryTime != null) ...[
             const SizedBox(height: 12),
             RideInfoRow(
               icon: Icons.login,
               text: AppLocalizations.of(
                 context,
-              )!.airportEntryAt(DateFormat.Hm().format(ride.optimalEntryTime!)),
+              )!.airportEntryAt(DateFormat.Hm().format(optimalEntryTime)),
               label: AppLocalizations.of(context)!.airportEntryLabel,
             ),
           ],

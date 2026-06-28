@@ -25,10 +25,11 @@ class CreateRideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formBloc = this.formBloc;
     return MultiBlocProvider(
       providers: [
         formBloc != null
-            ? BlocProvider.value(value: formBloc!)
+            ? BlocProvider.value(value: formBloc)
             : BlocProvider(create: (_) => CreateRideFormBloc()),
         BlocProvider.value(value: rideBloc),
       ],
@@ -112,6 +113,9 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
           listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) {
             final listenerL10n = AppLocalizations.of(context)!;
+            final onCreated = widget.onCreated;
+            final conflictRideId = state.conflictRideId;
+            final conflictDriverId = state.conflictDriverId;
             if (state.status == RideStateStatus.created) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -126,26 +130,28 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
               // "Creating Ride..." — because the success branch (unlike the
               // error branch) never clears the status.
               context.read<CreateRideFormBloc>().add(const FormCleared());
-              if (widget.onCreated != null) {
-                widget.onCreated!();
+              if (onCreated != null) {
+                onCreated();
               } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               }
             } else if (state.status == RideStateStatus.assignConflict &&
-                state.hasAssignConflict) {
+                state.hasAssignConflict &&
+                conflictRideId != null &&
+                conflictDriverId != null) {
               // The ride was created into the pool, but the driver's opt-in
               // "Assign to me" hit a schedule conflict so it came back
               // unassigned. The ride is NOT lost — offer to assign anyway
               // (override) or leave it in the pool for the dispatcher.
               _showCreateSelfAssignConflictDialog(
                 context,
-                rideId: state.conflictRideId!,
-                driverId: state.conflictDriverId!,
+                rideId: conflictRideId,
+                driverId: conflictDriverId,
                 message: state.errorMessage,
                 conflict: state.conflictInfo,
               );
-              if (widget.onCreated != null) {
-                widget.onCreated!();
+              if (onCreated != null) {
+                onCreated();
               } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               }

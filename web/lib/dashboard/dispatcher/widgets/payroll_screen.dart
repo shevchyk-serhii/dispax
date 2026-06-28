@@ -94,14 +94,15 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   void _copyPayrollCsv() {
-    if (_payrollData == null) return;
+    final payrollData = _payrollData;
+    if (payrollData == null) return;
 
     final driverName =
         _drivers.where((d) => d.id == _selectedDriverId).firstOrNull?.name ??
         'Unknown';
-    final totalRides = _payrollData!['totalRides'] ?? 0;
-    final totalEarnings = (_payrollData!['totalEarnings'] ?? 0).toDouble();
-    final totalExpenses = (_payrollData!['totalExpenses'] ?? 0).toDouble();
+    final totalRides = payrollData['totalRides'] ?? 0;
+    final totalEarnings = (payrollData['totalEarnings'] ?? 0).toDouble();
+    final totalExpenses = (payrollData['totalExpenses'] ?? 0).toDouble();
     final commission = totalEarnings * (_commissionPercent / 100);
     final netPay = totalEarnings - totalExpenses - commission;
 
@@ -307,7 +308,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           if (_error != null)
             Center(
               child: Text(
-                _error!,
+                _error ?? '',
                 style: const TextStyle(color: AppColors.error),
               ),
             ),
@@ -320,9 +321,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
 
   Widget _buildPayrollSummary() {
     final l10n = AppLocalizations.of(context)!;
-    final totalRides = _payrollData!['totalRides'] ?? 0;
-    final totalEarnings = (_payrollData!['totalEarnings'] ?? 0).toDouble();
-    final totalExpenses = (_payrollData!['totalExpenses'] ?? 0).toDouble();
+    final payrollData = _payrollData ?? const <String, dynamic>{};
+    final totalRides = payrollData['totalRides'] ?? 0;
+    final totalEarnings = (payrollData['totalEarnings'] ?? 0).toDouble();
+    final totalExpenses = (payrollData['totalExpenses'] ?? 0).toDouble();
     final commission = totalEarnings * (_commissionPercent / 100);
     final netPay = totalEarnings - totalExpenses - commission;
 

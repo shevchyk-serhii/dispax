@@ -50,7 +50,7 @@ class RideAssignedDetails extends StatelessWidget {
         RideInfoRow(
           icon: Icons.euro,
           label: 'Price',
-          text: '€${r.price!.toStringAsFixed(2)}',
+          text: '€${r.price?.toStringAsFixed(2) ?? ''}',
         ),
       );
     }

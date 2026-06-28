@@ -84,7 +84,7 @@ class RideRouteCard extends StatelessWidget {
               ],
             ),
 
-            if (ride.estimatedDistance != null) ...[
+            if (ride.estimatedDistance case final estimatedDistance?) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -105,7 +105,7 @@ class RideRouteCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${ride.estimatedDistance!.toStringAsFixed(1)} km',
+                        '${estimatedDistance.toStringAsFixed(1)} km',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),

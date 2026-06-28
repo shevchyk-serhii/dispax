@@ -59,11 +59,12 @@ class _RideExportScreenState extends State<RideExportScreen> {
           .toList();
     }
 
-    if (_dateRange != null) {
+    final dateRange = _dateRange;
+    if (dateRange != null) {
       filtered = filtered.where((r) {
-        return r.pickupDateTime.isAfter(_dateRange!.start) &&
+        return r.pickupDateTime.isAfter(dateRange.start) &&
             r.pickupDateTime.isBefore(
-              _dateRange!.end.add(const Duration(days: 1)),
+              dateRange.end.add(const Duration(days: 1)),
             );
       }).toList();
     }
@@ -153,7 +154,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       ElevatedButton(
                         onPressed: _loadRides,
                         child: Text(l10n.retry),
@@ -221,6 +222,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
   }
 
   Widget _buildFilters(AppLocalizations l10n) {
+    final dateRange = _dateRange;
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -261,13 +263,13 @@ class _RideExportScreenState extends State<RideExportScreen> {
             onPressed: _selectDateRange,
             icon: const Icon(Icons.date_range, size: 18),
             label: Text(
-              _dateRange != null
-                  ? '${_dateRange!.start.day}.${_dateRange!.start.month} - ${_dateRange!.end.day}.${_dateRange!.end.month}'
+              dateRange != null
+                  ? '${dateRange.start.day}.${dateRange.start.month} - ${dateRange.end.day}.${dateRange.end.month}'
                   : l10n.dateRangeButton,
               style: const TextStyle(fontSize: 12),
             ),
           ),
-          if (_dateRange != null)
+          if (dateRange != null)
             IconButton(
               icon: const Icon(Icons.clear, size: 18),
               onPressed: () => setState(() => _dateRange = null),

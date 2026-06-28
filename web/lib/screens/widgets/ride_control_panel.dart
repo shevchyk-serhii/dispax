@@ -38,6 +38,8 @@ class RideControlPanel extends StatelessWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
     final paymentLabel = PaymentMethod.labelForWire(ride.paymentMethod, l10n);
+    final price = ride.price;
+    final checkpoint = airportCheckpoint;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
@@ -115,7 +117,7 @@ class RideControlPanel extends StatelessWidget {
             ],
           ),
 
-          if (ride.price != null) ...[
+          if (price != null) ...[
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(
               children: [
@@ -128,7 +130,7 @@ class RideControlPanel extends StatelessWidget {
                 Text(
                   // Currency symbol + amount is locale-neutral; drop a trailing
                   // ".0" so a whole-euro fare reads "45", not "45.0".
-                  '€${ride.price! == ride.price!.roundToDouble() ? ride.price!.toStringAsFixed(0) : ride.price}',
+                  '€${price == price.roundToDouble() ? price.toStringAsFixed(0) : price}',
                   style: AppStyles.bodyMedium.copyWith(
                     color: onSurface,
                     fontWeight: FontWeight.w600,
@@ -199,9 +201,9 @@ class RideControlPanel extends StatelessWidget {
             ),
           ],
 
-          if (airportCheckpoint != null) ...[
+          if (checkpoint != null) ...[
             const SizedBox(height: AppDimensions.paddingSmall),
-            airportCheckpoint!,
+            checkpoint,
           ],
 
           const SizedBox(height: AppDimensions.paddingLarge),

@@ -186,7 +186,7 @@ class _GdprScreenState extends State<GdprScreen> {
                 children: [
                   Icon(Icons.error_outline, size: 48, color: AppColors.error),
                   const SizedBox(height: 12),
-                  Text(_error!),
+                  Text(_error ?? ''),
                   ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
                 ],
               ),

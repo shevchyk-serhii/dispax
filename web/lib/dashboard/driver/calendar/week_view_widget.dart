@@ -41,8 +41,9 @@ class WeekViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final ridesOverride = this.ridesOverride;
     if (ridesOverride != null) {
-      return _buildBody(context, colorScheme, ridesOverride!);
+      return _buildBody(context, colorScheme, ridesOverride);
     }
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) =>

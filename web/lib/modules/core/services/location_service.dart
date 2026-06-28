@@ -7,8 +7,7 @@ class LocationService {
   LocationService._internal();
 
   static LocationService get instance {
-    _instance ??= LocationService._internal();
-    return _instance!;
+    return _instance ??= LocationService._internal();
   }
 
   StreamController<geo.Position>? _positionController;
@@ -16,8 +15,9 @@ class LocationService {
   geo.Position? _currentPosition;
 
   Stream<geo.Position> get positionStream {
-    _positionController ??= StreamController<geo.Position>.broadcast();
-    return _positionController!.stream;
+    final controller =
+        _positionController ??= StreamController<geo.Position>.broadcast();
+    return controller.stream;
   }
 
   geo.Position? get currentPosition => _currentPosition;

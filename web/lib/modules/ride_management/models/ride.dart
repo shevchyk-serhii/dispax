@@ -518,8 +518,9 @@ class Ride {
 
   /// Status emoji. Neutral (info) for unknown/unmapped so it does not read as an error.
   String get flightStatusIcon {
-    if (flightStatus == null) return '';
-    switch (flightStatus!.toLowerCase()) {
+    final status = flightStatus;
+    if (status == null) return '';
+    switch (status.toLowerCase()) {
       case 'on time':
       case 'scheduled':
         return '✅';
@@ -585,10 +586,12 @@ class Ride {
   }
 
   Person? get driver {
-    if (driverId == null || driverName == null) return null;
+    final id = driverId;
+    final name = driverName;
+    if (id == null || name == null) return null;
     return Person(
-      id: driverId!,
-      name: driverName!,
+      id: id,
+      name: name,
       email: '',
       role: PersonRole.driver,
     );

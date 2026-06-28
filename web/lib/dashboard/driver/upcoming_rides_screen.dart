@@ -18,15 +18,17 @@ class UpcomingRidesScreen extends StatelessWidget {
 
   void loadUpcomingRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
   void refreshRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideRefreshRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideRefreshRequested(user: user));
     }
   }
 
@@ -264,9 +266,9 @@ class UpcomingRidesScreen extends StatelessWidget {
       detailParts.add('✈ ${ride.flightNumber}');
     }
     // specialRequirements as "pax" proxy if present
-    if (ride.specialRequirements != null &&
-        ride.specialRequirements!.isNotEmpty) {
-      detailParts.add(ride.specialRequirements!);
+    final specialRequirements = ride.specialRequirements;
+    if (specialRequirements != null && specialRequirements.isNotEmpty) {
+      detailParts.add(specialRequirements);
     }
     if (ride.isVipRide) {
       detailParts.add('VIP');
@@ -359,10 +361,7 @@ class UpcomingRidesScreen extends StatelessWidget {
       final dateKey =
           '${ride.pickupDateTime.year}-${ride.pickupDateTime.month.toString().padLeft(2, '0')}-${ride.pickupDateTime.day.toString().padLeft(2, '0')}';
 
-      if (!grouped.containsKey(dateKey)) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey]!.add(ride);
+      grouped.putIfAbsent(dateKey, () => []).add(ride);
     }
 
     return grouped;

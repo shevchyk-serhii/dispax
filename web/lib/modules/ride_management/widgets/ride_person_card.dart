@@ -61,7 +61,7 @@ class RidePersonCard extends StatelessWidget {
                       ),
                       if (person.phone?.isNotEmpty == true)
                         Text(
-                          person.phone!,
+                          person.phone ?? '',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -129,7 +129,8 @@ class RidePersonCard extends StatelessWidget {
 
   Widget _buildVehicleInfo(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final vehicle = person.vehicleInfo!;
+    final vehicle = person.vehicleInfo;
+    if (vehicle == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +172,7 @@ class RidePersonCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                vehicle.color!,
+                vehicle.color ?? '',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -198,7 +199,7 @@ class RidePersonCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  vehicle.licensePlate!,
+                  vehicle.licensePlate ?? '',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',

@@ -103,7 +103,8 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -111,7 +112,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
             Text(
-              _error!,
+              error,
               style: AppStyles.bodyMedium.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -126,10 +127,10 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   }
 
   Widget _buildContent() {
-    if (_stats == null) return const SizedBox.shrink();
+    final stats = _stats;
+    if (stats == null) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
-    final stats = _stats!;
     final total = (stats['totalRides'] ?? 0) as num;
     final completed = (stats['completedRides'] ?? 0) as num;
     final cancelled = (stats['cancelledRides'] ?? 0) as num;

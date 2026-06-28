@@ -78,9 +78,10 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
 
   Future<void> _initVisibility() async {
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) return;
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) return;
 
-    final myId = authState.user!.id;
+    final myId = user.id;
 
     try {
       // Check own visibility flag using the dedicated /me endpoint
@@ -194,9 +195,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     final authState = context.read<AuthBloc>().state;
     final myId = authState.user?.id;
 
-    final String titleText = _selectedDriverName != null
-        ? _selectedDriverName!
-        : 'My Schedule';
+    final String titleText = _selectedDriverName ?? 'My Schedule';
 
     return Scaffold(
       appBar: AppBar(
@@ -284,7 +283,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           if (state.hasError) {
             NavigationHelper.showSnackBar(
               context,
-              state.errorMessage!,
+              state.errorMessage ?? '',
               isError: true,
             );
           }

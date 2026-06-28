@@ -364,6 +364,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final error = _error;
     return AlertDialog(
       title: Text(l10n.editRideDialogTitle),
       content: SizedBox(
@@ -421,10 +422,10 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                   onRemoved: _removeTag,
                 ),
               ),
-              if (_error != null) ...[
+              if (error != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  _error!,
+                  error,
                   style: const TextStyle(color: AppColors.error, fontSize: 13),
                 ),
               ],
