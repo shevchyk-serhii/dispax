@@ -3,6 +3,7 @@ package com.shevchyk.ride.application.service
 import com.shevchyk.core.config.MucFlightConfig
 import com.shevchyk.ride.domain.FlightInfo
 import zio.*
+import zio.cache.{Cache, Lookup}
 import zio.http.*
 import java.time.LocalDate
 
@@ -16,7 +17,11 @@ import java.time.LocalDate
  * Pattern mirrors `HereRoutingService`: build URL, `ZIO.scoped` request, parse, and `catchAll` any failure into a
  * logged `None` so the effect never fails (graceful degradation — see [[FlightStatusProvider]]).
  */
-final class MucFlightStatusProvider(config: MucFlightConfig, client: Client) extends FlightStatusProvider:
+final class MucFlightStatusProvider(
+    config: MucFlightConfig,
+    client: Client,
+    boardCache: Cache[(LocalDate, Boolean), Throwable, List[FlightInfo]]
+) extends FlightStatusProvider:
 
   override def lookup(flightNumber: String, date: LocalDate, isArrival: Boolean): Task[Option[FlightInfo]] =
     if !config.enabled then ZIO.logDebug("MUC flight provider disabled").as(None)
@@ -56,22 +61,14 @@ final class MucFlightStatusProvider(config: MucFlightConfig, client: Client) ext
   override def list(date: LocalDate, isArrival: Boolean): Task[List[FlightInfo]] =
     if !config.enabled then ZIO.logDebug("MUC flight provider disabled").as(Nil)
     else
-      val path      = if isArrival then "arrivals" else "departures"
-      val dirParam  = if isArrival then "flight_to_muc" else "flight_from_muc"
-      val dateParam = if isArrival then "flight_date_to_muc" else "flight_date_from_muc"
-
-      // Same board query as `lookup` but WITHOUT the flight_number filter, so the whole board comes back.
-      // A larger page size to cover a realistic board; the gate is intentionally not fetched per row (too slow).
-      val q       =
-        s"flight_search_presenter%5B$dirParam%5D=1" +
-          s"&flight_search_presenter%5B$dateParam%5D=$date" +
-          s"&flight_search_presenter%5Blocale%5D=de" +
-          s"&page=0&per_page=100&allow_pagination=1"
-      val listUrl = s"${config.baseUrl}/flightsearch/$path?$q"
-
-      httpGet(listUrl)
-        .map(body => MucFlightParser.parseAll(body, date, isArrival))
-        .catchAll(err => ZIO.logWarning(s"MUC flight board error ($path $date): ${err.getMessage}").as(Nil))
+      // Serve from the TTL cache (it dedups concurrent dispatchers hitting the same board). A scrape failure is
+      // surfaced through the cache's error channel, NOT cached, and degrades to an empty list here — so a transient
+      // MUC outage neither poisons the cache nor fails the request.
+      boardCache
+        .get((date, isArrival))
+        .catchAll(err =>
+          ZIO.logWarning(s"MUC flight board error ($date arrival=$isArrival): ${err.getMessage}").as(Nil)
+        )
 
   /**
    * Fetch the detail page for `href` and merge its gate (and terminal fallback) into `info`. Detail failures are
@@ -91,23 +88,10 @@ final class MucFlightStatusProvider(config: MucFlightConfig, client: Client) ext
     .catchAll(err => ZIO.logDebug(s"MUC gate fetch failed for $href: ${err.getMessage}").as(Some(info)))
 
   /**
-   * GET a MUC page with browser-like headers. Without a real User-Agent the server returns a stub page (no flight
-   * data), so the headers are required, not cosmetic.
+   * GET a MUC page with browser-like headers. Delegates to the companion so the cache lookup (which has no instance)
+   * can reuse the same request logic.
    */
-  private def httpGet(url: String): Task[String] = ZIO.scoped {
-    for
-      decoded  <- ZIO.fromEither(URL.decode(url)).mapError(e => new RuntimeException(s"Bad MUC url: $e"))
-      response <- client.request(
-                    Request
-                      .get(decoded)
-                      .addHeader(Header.Custom("User-Agent", MucFlightStatusProvider.BrowserUserAgent))
-                      .addHeader(Header.Custom("Accept", "text/html,application/xhtml+xml"))
-                      .addHeader(Header.Custom("Accept-Language", "de-DE,de;q=0.9"))
-                      .addHeader(Header.Custom("X-Requested-With", "XMLHttpRequest"))
-                  )
-      body     <- response.body.asString
-    yield body
-  }
+  private def httpGet(url: String): Task[String] = MucFlightStatusProvider.httpGet(client, url)
 
 object MucFlightStatusProvider:
 
@@ -116,6 +100,59 @@ object MucFlightStatusProvider:
   private val BrowserUserAgent =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
 
-  val layer: ZLayer[MucFlightConfig & Client, Nothing, FlightStatusProvider] = ZLayer.fromFunction(
-    new MucFlightStatusProvider(_, _)
-  )
+  // How long a scraped board stays fresh. The board's statuses/times move on a minutes scale, so a short TTL keeps it
+  // current while collapsing bursts of dispatcher refreshes into a single MUC scrape.
+  private val BoardCacheTtl: Duration = 60.seconds
+
+  /**
+   * GET a MUC page with the browser-like headers the server requires (a bare UA returns a near-empty stub).
+   */
+  private def httpGet(client: Client, url: String): Task[String] = ZIO.scoped {
+    for
+      decoded  <- ZIO.fromEither(URL.decode(url)).mapError(e => new RuntimeException(s"Bad MUC url: $e"))
+      response <- client.request(
+                    Request
+                      .get(decoded)
+                      .addHeader(Header.Custom("User-Agent", BrowserUserAgent))
+                      .addHeader(Header.Custom("Accept", "text/html,application/xhtml+xml"))
+                      .addHeader(Header.Custom("Accept-Language", "de-DE,de;q=0.9"))
+                      .addHeader(Header.Custom("X-Requested-With", "XMLHttpRequest"))
+                  )
+      body     <- response.body.asString
+    yield body
+  }
+
+  /**
+   * Raw, uncached board scrape — the cache's lookup. WITHOUT the flight_number filter (the whole board), large page
+   * size; the gate is not fetched per row (too slow for a list). Fails on HTTP/parse error so failures are not cached.
+   */
+  private def fetchBoard(
+      config: MucFlightConfig,
+      client: Client,
+      date: LocalDate,
+      isArrival: Boolean
+  ): Task[List[FlightInfo]] =
+    val path      = if isArrival then "arrivals" else "departures"
+    val dirParam  = if isArrival then "flight_to_muc" else "flight_from_muc"
+    val dateParam = if isArrival then "flight_date_to_muc" else "flight_date_from_muc"
+    val q         =
+      s"flight_search_presenter%5B$dirParam%5D=1" +
+        s"&flight_search_presenter%5B$dateParam%5D=$date" +
+        s"&flight_search_presenter%5Blocale%5D=de" +
+        s"&page=0&per_page=100&allow_pagination=1"
+    val listUrl   = s"${config.baseUrl}/flightsearch/$path?$q"
+    httpGet(client, listUrl).map(body => MucFlightParser.parseAll(body, date, isArrival))
+
+  // Scoped because the cache lives for the app's lifetime. The TTL cache also dedups concurrent lookups of the same
+  // (date, direction) key, so simultaneous dispatcher refreshes trigger a single MUC scrape.
+  val layer: ZLayer[MucFlightConfig & Client, Nothing, FlightStatusProvider] = ZLayer.scoped {
+    for
+      config <- ZIO.service[MucFlightConfig]
+      client <- ZIO.service[Client]
+      cache  <- Cache.make[(LocalDate, Boolean), Any, Throwable, List[FlightInfo]](
+                  capacity = 64,
+                  timeToLive = BoardCacheTtl,
+                  lookup = Lookup { case (date, isArrival) => fetchBoard(config, client, date, isArrival) }
+                )
+    yield new MucFlightStatusProvider(config, client, cache)
+  }

@@ -101,6 +101,10 @@ lazy val httpDependencies = Seq(
   "dev.zio" %% "zio-http" % "3.0.1"
 )
 
+lazy val cacheDependencies = Seq(
+  "dev.zio" %% "zio-cache" % "0.2.3"
+)
+
 // Sentry error tracking. sentry-logback pulls in the sentry core SDK and wires a
 // logback appender, so ERROR/WARN logs (every ZIO.logError) are reported. Only the
 // root (api) module needs it — that's the entry point that owns logback.xml and the
@@ -217,7 +221,7 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "dispax-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ tapirDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ cacheDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ tapirDependencies ++ testcontainersDependencies,
     scalacOptions += "-Xmax-inlines:64",
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
