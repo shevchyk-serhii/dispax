@@ -6448,6 +6448,30 @@ abstract class AppLocalizations {
   /// **'Diverted'**
   String get flightStatusDiverted;
 
+  /// Header of the flight details card on the ride details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Information'**
+  String get flightInformation;
+
+  /// Label for the flight number field on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Number'**
+  String get flightNumber;
+
+  /// Label for an arriving flight's time on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival Time'**
+  String get arrivalTime;
+
+  /// Label for a departing flight's time on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Departure Time'**
+  String get departureTime;
+
   /// No description provided for @flightNotLinked.
   ///
   /// In en, this message translates to:

@@ -16,6 +16,7 @@ class RideFlightCard extends StatelessWidget {
     if (flight == null) {
       return const SizedBox.shrink();
     }
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       elevation: 4,
@@ -33,7 +34,7 @@ class RideFlightCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Flight Information',
+                  l10n.flightInformation,
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -45,7 +46,7 @@ class RideFlightCard extends StatelessWidget {
             _buildFlightInfoRow(
               context,
               icon: Icons.confirmation_number,
-              label: 'Flight Number',
+              label: l10n.flightNumber,
               value: flight.flightNumber,
             ),
 
@@ -54,7 +55,7 @@ class RideFlightCard extends StatelessWidget {
             _buildFlightInfoRow(
               context,
               icon: Icons.schedule,
-              label: flight.isArrival ? 'Arrival Time' : 'Departure Time',
+              label: flight.isArrival ? l10n.arrivalTime : l10n.departureTime,
               value: DateFormat('HH:mm, MMM dd').format(flight.flightTime),
             ),
 
@@ -63,7 +64,7 @@ class RideFlightCard extends StatelessWidget {
               _buildFlightInfoRow(
                 context,
                 icon: Icons.business,
-                label: 'Terminal',
+                label: l10n.terminalLabel,
                 value: terminal,
               ),
             ],
@@ -73,10 +74,11 @@ class RideFlightCard extends StatelessWidget {
               _buildFlightInfoRow(
                 context,
                 icon: Icons.exit_to_app,
-                label: 'Gate',
+                label: l10n.gateLabel,
                 // A remote (apron) stand has no real gate code → show the localized
                 // "bus gate" label instead of the raw "REMOTE" word.
-                value: AppLocalizations.of(context)!.localizedGate(ride) ?? gate,
+                value:
+                    AppLocalizations.of(context)!.localizedGate(ride) ?? gate,
               ),
             ],
 
@@ -94,7 +96,7 @@ class RideFlightCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Status',
+                      l10n.statusLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
@@ -117,7 +119,9 @@ class RideFlightCard extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        flight.status,
+                        // Localized, never the raw wire string (e.g. "unknown" →
+                        // the neutral "Unbekannt"/"Невідомо" label).
+                        l10n.localizedFlightStatus(flight.status),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: _getFlightStatusColor(context),
                           fontWeight: FontWeight.w600,

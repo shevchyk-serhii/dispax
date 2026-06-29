@@ -3444,6 +3444,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightStatusDiverted => 'Diverted';
 
   @override
+  String get flightInformation => 'Flight Information';
+
+  @override
+  String get flightNumber => 'Flight Number';
+
+  @override
+  String get arrivalTime => 'Arrival Time';
+
+  @override
+  String get departureTime => 'Departure Time';
+
+  @override
   String get flightNotLinked => '— not linked';
 
   @override

@@ -1709,6 +1709,22 @@
   "flightStatusEnRoute": "En route",
   "flightStatusLanded": "Landed",
   "flightStatusDiverted": "Diverted",
+  "flightInformation": "Flight Information",
+  "@flightInformation": {
+    "description": "Header of the flight details card on the ride details screen"
+  },
+  "flightNumber": "Flight Number",
+  "@flightNumber": {
+    "description": "Label for the flight number field on the ride flight card"
+  },
+  "arrivalTime": "Arrival Time",
+  "@arrivalTime": {
+    "description": "Label for an arriving flight's time on the ride flight card"
+  },
+  "departureTime": "Departure Time",
+  "@departureTime": {
+    "description": "Label for a departing flight's time on the ride flight card"
+  },
   "flightNotLinked": "— not linked",
 
   "whoCanSeeWhomTitle": "Who can see whom",

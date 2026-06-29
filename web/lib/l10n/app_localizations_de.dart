@@ -3463,6 +3463,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get flightStatusDiverted => 'Umgeleitet';
 
   @override
+  String get flightInformation => 'Fluginformationen';
+
+  @override
+  String get flightNumber => 'Flugnummer';
+
+  @override
+  String get arrivalTime => 'Ankunftszeit';
+
+  @override
+  String get departureTime => 'Abflugzeit';
+
+  @override
   String get flightNotLinked => '— nicht verknüpft';
 
   @override

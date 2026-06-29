@@ -1624,6 +1624,10 @@
   "flightStatusEnRoute": "Im Flug",
   "flightStatusLanded": "Gelandet",
   "flightStatusDiverted": "Umgeleitet",
+  "flightInformation": "Fluginformationen",
+  "flightNumber": "Flugnummer",
+  "arrivalTime": "Ankunftszeit",
+  "departureTime": "Abflugzeit",
   "flightNotLinked": "— nicht verknüpft",
 
   "whoCanSeeWhomTitle": "Wer sieht wen",

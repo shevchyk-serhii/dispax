@@ -1624,6 +1624,10 @@
   "flightStatusEnRoute": "У польоті",
   "flightStatusLanded": "Приземлився",
   "flightStatusDiverted": "Перенаправлено",
+  "flightInformation": "Інформація про рейс",
+  "flightNumber": "Номер рейсу",
+  "arrivalTime": "Час прибуття",
+  "departureTime": "Час відправлення",
   "flightNotLinked": "— не пов'язано",
 
   "whoCanSeeWhomTitle": "Хто може бачити кого",

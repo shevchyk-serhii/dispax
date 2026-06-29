@@ -3454,6 +3454,18 @@ class AppLocalizationsUk extends AppLocalizations {
   String get flightStatusDiverted => 'Перенаправлено';
 
   @override
+  String get flightInformation => 'Інформація про рейс';
+
+  @override
+  String get flightNumber => 'Номер рейсу';
+
+  @override
+  String get arrivalTime => 'Час прибуття';
+
+  @override
+  String get departureTime => 'Час відправлення';
+
+  @override
   String get flightNotLinked => '— не пов\'язано';
 
   @override
