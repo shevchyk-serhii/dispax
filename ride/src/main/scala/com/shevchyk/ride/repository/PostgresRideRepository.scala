@@ -738,7 +738,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       terminal: Option[String],
       flightStatus: Option[String],
       flightTime: Option[Instant],
-      scheduledTime: Option[Instant]
+      scheduledTime: Option[Instant],
+      departureTime: Option[Instant]
   ): Task[Boolean] =
     sql"""UPDATE rides
           SET flight_gate = $gate,
@@ -746,6 +747,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
               flight_status = $flightStatus,
               flight_time = $flightTime,
               flight_scheduled_time = $scheduledTime,
+              flight_departure_time = $departureTime,
               updated_at = NOW()
           WHERE id = ${rideId.value}""".update.run
       .transact(xa)
@@ -753,13 +755,13 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
 
   override def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]] =
-    sql"""SELECT flight_gate, flight_terminal, flight_status, flight_time, flight_scheduled_time
+    sql"""SELECT flight_gate, flight_terminal, flight_status, flight_time, flight_scheduled_time, flight_departure_time
           FROM rides WHERE id = ${rideId.value}"""
-      .query[(Option[String], Option[String], Option[String], Option[Instant], Option[Instant])]
+      .query[(Option[String], Option[String], Option[String], Option[Instant], Option[Instant], Option[Instant])]
       .option
       .transact(xa)
-      .map(_.map { case (gate, terminal, status, time, scheduled) =>
-        FlightStatusRow(gate, terminal, status, time, scheduled)
+      .map(_.map { case (gate, terminal, status, time, scheduled, departure) =>
+        FlightStatusRow(gate, terminal, status, time, scheduled, departure)
       })
       .mapError(ex => RideError.DatabaseError(ex))
 
@@ -768,13 +770,16 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       case Nil          => ZIO.succeed(Map.empty)
       case head :: tail =>
         val ids = NonEmptyList(head, tail).map(_.value)
-        (fr"""SELECT id, flight_gate, flight_terminal, flight_status, flight_time, flight_scheduled_time
+        (fr"""SELECT id, flight_gate, flight_terminal, flight_status, flight_time, flight_scheduled_time,
+                     flight_departure_time
               FROM rides WHERE""" ++ Fragments.in(fr"id", ids))
-          .query[(UUID, Option[String], Option[String], Option[String], Option[Instant], Option[Instant])]
+          .query[
+            (UUID, Option[String], Option[String], Option[String], Option[Instant], Option[Instant], Option[Instant])
+          ]
           .to[List]
           .transact(xa)
-          .map(_.map { case (id, gate, terminal, status, time, scheduled) =>
-            RideId(id) -> FlightStatusRow(gate, terminal, status, time, scheduled)
+          .map(_.map { case (id, gate, terminal, status, time, scheduled, departure) =>
+            RideId(id) -> FlightStatusRow(gate, terminal, status, time, scheduled, departure)
           }.toMap)
           .mapError(ex => RideError.DatabaseError(ex))
 

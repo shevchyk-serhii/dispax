@@ -124,7 +124,8 @@ trait RideRepository {
       terminal: Option[String],
       flightStatus: Option[String],
       flightTime: Option[Instant],
-      scheduledTime: Option[Instant]
+      scheduledTime: Option[Instant],
+      departureTime: Option[Instant]
   ): Task[Boolean]
 
   // Read just the flight-tracking columns for a ride (the DTO surfaces these; they are not part of the

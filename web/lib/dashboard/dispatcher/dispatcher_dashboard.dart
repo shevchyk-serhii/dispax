@@ -115,6 +115,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           final estimated = flightEstimatedTime != null
               ? DateTime.tryParse(flightEstimatedTime)?.toLocal()
               : null;
+          final flightDepartureTime = event.flightDepartureTime;
+          final departure = flightDepartureTime != null
+              ? DateTime.tryParse(flightDepartureTime)?.toLocal()
+              : null;
           _rideBloc.add(
             RideUpdated(
               ride: existing.copyWith(
@@ -122,6 +126,7 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
                 terminal: event.flightTerminal,
                 flightStatus: event.flightStatus,
                 flightTime: estimated ?? existing.flightTime,
+                flightDepartureTime: departure ?? existing.flightDepartureTime,
               ),
             ),
           );

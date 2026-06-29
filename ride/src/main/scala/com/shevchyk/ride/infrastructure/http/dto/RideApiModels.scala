@@ -63,6 +63,9 @@ case class RideDto(
     // The scheduled (on-time) flight instant, tracked separately so the card can show the delay
     // (flightTime − flightScheduledTime). None until the flight monitor has fetched data.
     flightScheduledTime: Option[String] = None,
+    // For airport ARRIVAL rides: the origin take-off instant, so the card can animate the en-route progress as
+    // (now − flightDepartureTime) / (flightTime − flightDepartureTime). None until the monitor's detail lookup runs.
+    flightDepartureTime: Option[String] = None,
     isAirportTransfer: Boolean = false,
     isArrival: Boolean = false,
     gate: Option[String] = None,
@@ -460,6 +463,7 @@ object RideDto:
       flightTime = flight.flatMap(_.flightTime).map(_.toString).orElse(ride.scheduledTime.map(_.toString)),
       // The on-time scheduled instant (from the flight monitor), surfaced so the card can show the delay.
       flightScheduledTime = flight.flatMap(_.scheduledTime).map(_.toString),
+      flightDepartureTime = flight.flatMap(_.departureTime).map(_.toString),
       isAirportTransfer = isAirportTransfer,
       isArrival = isArrival,
       gate = flight.flatMap(_.gate),

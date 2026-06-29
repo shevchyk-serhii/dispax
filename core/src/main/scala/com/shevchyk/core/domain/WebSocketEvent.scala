@@ -138,7 +138,9 @@ object WebSocketEvent:
       status: String,
       gate: Option[String] = None,
       terminal: Option[String] = None,
-      estimatedTime: Option[String] = None
+      estimatedTime: Option[String] = None,
+      // Origin take-off instant (arrivals), so the card's en-route airplane appears live without a reload.
+      departureTime: Option[String] = None
   ) extends WebSocketEvent
 
   given JsonEncoder[WebSocketEvent] = DeriveJsonEncoder.gen[WebSocketEvent]

@@ -263,7 +263,8 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
           terminal: Option[String],
           flightStatus: Option[String],
           flightTime: Option[Instant],
-          scheduledTime: Option[Instant]
+          scheduledTime: Option[Instant],
+          departureTime: Option[Instant]
       ): Task[Boolean] = notImpl("z")
       def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                                              = notImpl("findFlightStatus")
   )
@@ -301,7 +302,7 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
       def getMessages(rideId: RideId): Task[List[ChatMessage]]                                = ZIO.succeed(Nil)
   )
 
-  private val stubTariffRepo: ZLayer[Any, Nothing, TariffRepository]             = ZLayer.succeed(new InMemoryTariffRepository())
+  private val stubTariffRepo: ZLayer[Any, Nothing, TariffRepository] = ZLayer.succeed(new InMemoryTariffRepository())
 
   private val stubRideEstimateService: ZLayer[Any, Nothing, RideEstimateService] =
     stubTariffRepo >>> RideEstimateService.live

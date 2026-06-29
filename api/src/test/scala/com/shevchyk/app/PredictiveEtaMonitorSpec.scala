@@ -114,7 +114,8 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
           terminal: Option[String],
           flightStatus: Option[String],
           flightTime: Option[java.time.Instant],
-          scheduledTime: Option[java.time.Instant]
+          scheduledTime: Option[java.time.Instant],
+          departureTime: Option[java.time.Instant]
       ): Task[Boolean] = nope("updateFlightStatus")
       def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                = nope(
         "findFlightStatus"

@@ -76,7 +76,8 @@ object FlightStatusMonitor:
                   terminal = newRow.terminal,
                   flightStatus = newRow.flightStatus,
                   flightTime = newRow.flightTime,
-                  scheduledTime = newRow.scheduledTime
+                  scheduledTime = newRow.scheduledTime,
+                  departureTime = newRow.departureTime
                 ) *>
                   eventHub.publish(
                     WebSocketEvent.FlightStatusUpdated(
@@ -87,7 +88,8 @@ object FlightStatusMonitor:
                       status = FlightStatus.toWire(info.status),
                       gate = newRow.gate,
                       terminal = newRow.terminal,
-                      estimatedTime = newRow.flightTime.map(_.toString)
+                      estimatedTime = newRow.flightTime.map(_.toString),
+                      departureTime = newRow.departureTime.map(_.toString)
                     )
                   ) *>
                   ZIO.logInfo(
@@ -107,5 +109,7 @@ object FlightStatusMonitor:
     // flightTime is the latest known (estimated, else scheduled); scheduledTime keeps the on-time instant
     // separately so the card can show the delay = flightTime - scheduledTime.
     flightTime = info.estimatedTime.orElse(info.scheduledTime),
-    scheduledTime = info.scheduledTime
+    scheduledTime = info.scheduledTime,
+    // Origin take-off (arrivals only), so the card can animate the en-route progress toward landing.
+    departureTime = info.departureTime
   )

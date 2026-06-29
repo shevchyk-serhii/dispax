@@ -89,4 +89,5 @@ class WebSocketEvent {
   String? get flightGate => data['gate'] as String?;
   String? get flightTerminal => data['terminal'] as String?;
   String? get flightEstimatedTime => data['estimatedTime'] as String?;
+  String? get flightDepartureTime => data['departureTime'] as String?;
 }

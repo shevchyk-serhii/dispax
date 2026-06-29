@@ -72,7 +72,8 @@ final class MucFlightStatusProvider(
 
   /**
    * Fetch the detail page for `href` and merge its gate (and terminal fallback) into `info`. Detail failures are
-   * swallowed — a missing gate must not lose the list data we already have.
+   * swallowed — a missing gate must not lose the list data we already have. For arrivals we also read the origin's
+   * take-off instant from the same page so the card can show how far along the flight is.
    */
   private def enrichWithGate(info: FlightInfo, href: String): Task[Option[FlightInfo]] = httpGet(
     s"${config.baseUrl}$href"
@@ -81,7 +82,9 @@ final class MucFlightStatusProvider(
       Some(
         info.copy(
           gate = MucFlightParser.parseGate(detailBody),
-          terminal = info.terminal.orElse(MucFlightParser.parseDetailTerminal(detailBody))
+          terminal = info.terminal.orElse(MucFlightParser.parseDetailTerminal(detailBody)),
+          // Only an arrival's origin take-off is meaningful for the en-route progress; a departure's block is MUC itself.
+          departureTime = if info.isArrival then MucFlightParser.parseDepartureInstant(detailBody) else None
         )
       )
     }

@@ -95,7 +95,8 @@ object StubRideRepository:
         terminal: Option[String],
         flightStatus: Option[String],
         flightTime: Option[Instant],
-        scheduledTime: Option[Instant]
+        scheduledTime: Option[Instant],
+        departureTime: Option[Instant]
     ): Task[Boolean] = notImpl("updateFlightStatus")
     def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                                = notImpl("findFlightStatus")
     def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]]                 = ZIO.succeed(Map.empty)

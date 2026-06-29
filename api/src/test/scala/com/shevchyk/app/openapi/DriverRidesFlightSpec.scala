@@ -309,7 +309,8 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
           terminal: Option[String],
           flightStatus: Option[String],
           flightTime: Option[Instant],
-          scheduledTime: Option[Instant]
+          scheduledTime: Option[Instant],
+          departureTime: Option[Instant]
       ): Task[Boolean] = notImpl("updateFlightStatus")
       def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                           = notImpl("findFlightStatus")
   )

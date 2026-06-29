@@ -183,3 +183,33 @@ object MucFlightParser:
     .findAllMatchIn(detailHtml)
     .find(m => textOf(m.group(1)).contains("(MUC)"))
     .map(m => textOf(m.group(3)))
+
+  // The detail page's first overview block is the departure side (`departure-box`); for an arrival into MUC that is the
+  // ORIGIN airport's take-off. We isolate that block (non-greedy up to the arrival block / overview end) so the date and
+  // time we read are the origin's, not MUC's. Each block carries its OWN `flight-box-date` (dd.MM.yyyy), so a long-haul
+  // that departs the previous calendar day (e.g. SIN 25.06 22:45 → MUC 26.06 05:20) reconstructs correctly.
+  private val DepartureBlockRegex                                        = "(?s)departure-box\"(.*?)(?:arrival-box\"|</div>\\s*</div>\\s*</div>\\s*$)".r
+  private val FlightBoxDateRegex                                         = "(?s)flight-box-date\">\\s*(\\d{2})\\.(\\d{2})\\.(\\d{4})".r
+
+  // A `<dt>Geplant:</dt>`/`<dt>Erwartet:</dt>` label followed by its `<dd>HH:mm</dd>`. Prefer "Erwartet" (live) over
+  // "Geplant" (scheduled) when both are present, mirroring how `flightTime` prefers the estimated instant.
+  private def labelledTime(block: String, label: String): Option[String] =
+    ("(?s)<dt>\\s*" + label + ":\\s*</dt>\\s*<dd>\\s*(\\d{2}:\\d{2})\\s*</dd>").r
+      .findFirstMatchIn(block)
+      .map(_.group(1))
+
+  /**
+   * The flight's DEPARTURE instant from its origin airport, read off the detail page's departure block. For an arrival
+   * into MUC this is when the aircraft took off elsewhere — the start of the en-route window the card animates against.
+   * Prefers the live "Erwartet" time over scheduled "Geplant"; anchors it to the block's own date so a flight that
+   * departed the previous day is still ordered before the MUC arrival. None when the page has no departure block/time.
+   */
+  def parseDepartureInstant(detailHtml: String): Option[java.time.Instant] =
+    for
+      block         <- DepartureBlockRegex.findFirstMatchIn(detailHtml).map(_.group(1))
+      dateMatch     <- FlightBoxDateRegex.findFirstMatchIn(block)
+      hhmm          <- labelledTime(block, "Erwartet").orElse(labelledTime(block, "Geplant"))
+      (day, mon, yr) = (dateMatch.group(1).toInt, dateMatch.group(2).toInt, dateMatch.group(3).toInt)
+      lt            <- scala.util.Try(LocalTime.parse(hhmm)).toOption
+      ld            <- scala.util.Try(LocalDate.of(yr, mon, day)).toOption
+    yield ld.atTime(lt).atZone(BerlinZone).toInstant

@@ -308,12 +308,15 @@ class InMemoryRideRepository extends RideRepository:
       terminal: Option[String],
       flightStatus: Option[String],
       flightTime: Option[Instant],
-      scheduledTime: Option[Instant]
+      scheduledTime: Option[Instant],
+      departureTime: Option[Instant]
   ): Task[Boolean] = rides.get.flatMap { m =>
     if !m.contains(rideId) then ZIO.succeed(false)
     else
       flightStatuses
-        .update(_.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime)))
+        .update(
+          _.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime, departureTime))
+        )
         .as(true)
   }
 

@@ -82,6 +82,10 @@ class Ride {
   // Scheduled (on-time) flight instant, tracked separately from flightTime (latest known/estimated)
   // so the card can show the delay = flightTime − flightScheduledTime.
   final DateTime? flightScheduledTime;
+  // For airport ARRIVAL rides: the origin take-off instant, so the card can animate the en-route
+  // progress as (now − flightDepartureTime) / (flightTime − flightDepartureTime). Null until the
+  // flight monitor has fetched detail data.
+  final DateTime? flightDepartureTime;
   final bool isAirportTransfer;
   final bool isArrival;
   final String? gate;
@@ -150,6 +154,7 @@ class Ride {
     this.flightNumber,
     this.flightTime,
     this.flightScheduledTime,
+    this.flightDepartureTime,
     this.isAirportTransfer = false,
     this.isArrival = false,
     this.gate,
@@ -212,6 +217,10 @@ class Ride {
       flightScheduledTime: JsonParse.optionalDateTime(
         json,
         'flightScheduledTime',
+      )?.toLocal(),
+      flightDepartureTime: JsonParse.optionalDateTime(
+        json,
+        'flightDepartureTime',
       )?.toLocal(),
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
@@ -279,6 +288,7 @@ class Ride {
       'flightNumber': flightNumber,
       'flightTime': flightTime?.toUtc().toIso8601String(),
       'flightScheduledTime': flightScheduledTime?.toUtc().toIso8601String(),
+      'flightDepartureTime': flightDepartureTime?.toUtc().toIso8601String(),
       'isAirportTransfer': isAirportTransfer,
       'isArrival': isArrival,
       'optimalEntryTime': optimalEntryTime?.toUtc().toIso8601String(),
@@ -334,6 +344,7 @@ class Ride {
     String? flightNumber,
     Object? flightTime = _sentinel,
     Object? flightScheduledTime = _sentinel,
+    Object? flightDepartureTime = _sentinel,
     bool? isAirportTransfer,
     bool? isArrival,
     String? gate,
@@ -391,6 +402,9 @@ class Ride {
       flightScheduledTime: flightScheduledTime == _sentinel
           ? this.flightScheduledTime
           : flightScheduledTime as DateTime?,
+      flightDepartureTime: flightDepartureTime == _sentinel
+          ? this.flightDepartureTime
+          : flightDepartureTime as DateTime?,
       isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
       isArrival: isArrival ?? this.isArrival,
       optimalEntryTime: optimalEntryTime == _sentinel
@@ -494,6 +508,29 @@ class Ride {
   /// en_route) the arrival time is an estimate, not a fact — the card uses this
   /// to label it "Landung um …" (forecast) vs "Gelandet um …" (actual).
   bool get flightHasLanded => flightStatus?.toLowerCase().trim() == 'landed';
+
+  /// Position of [now] within the take-off → landing window [start, end] as a
+  /// fraction in [0, 1], or null when the window is missing/degenerate. The single
+  /// source of truth for the en-route airplane's position — both this getter and
+  /// the progress-bar widget call it, so the tested math is the math that renders.
+  static double? flightProgress(DateTime now, DateTime? start, DateTime? end) {
+    if (start == null || end == null) return null;
+    final total = end.difference(start).inSeconds;
+    if (total <= 0) return null; // guard against a bad/zero window
+    final elapsed = now.difference(start).inSeconds;
+    return (elapsed / total).clamp(0.0, 1.0);
+  }
+
+  /// How far along the flight is between take-off and (estimated) landing, as a
+  /// fraction in [0, 1] — drives the airplane icon crawling along the "Im Flug"
+  /// segment of the progress bar. The window is [flightDepartureTime, flightTime]:
+  /// using the live [flightTime] as the end means a delay correctly slows the
+  /// plane down. Null (→ no airplane, plain connector) unless this is an arrival
+  /// with both a known departure and arrival time. [now] is injectable for tests.
+  double? flightProgressFraction(DateTime now) {
+    if (!isArrival) return null;
+    return flightProgress(now, flightDepartureTime, flightTime);
+  }
 
   /// True when the flight is delayed — either the computed delay is positive, or
   /// the airport board explicitly reports a "delayed" status.
@@ -617,12 +654,7 @@ class Ride {
     final id = driverId;
     final name = driverName;
     if (id == null || name == null) return null;
-    return Person(
-      id: id,
-      name: name,
-      email: '',
-      role: PersonRole.driver,
-    );
+    return Person(id: id, name: name, email: '', role: PersonRole.driver);
   }
 
   Person get client {

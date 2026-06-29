@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
@@ -37,6 +39,13 @@ class FlightProgressBar extends StatelessWidget {
   /// When true the bar is laid out flat (no Card/title) for dense list rows.
   final bool compact;
 
+  /// Origin take-off / (estimated) landing instants for an arrival. When both are
+  /// present and the flight is en route, an airplane icon crawls along the
+  /// "Im Flug → Gelandet" segment at `(now − departure) / (arrival − departure)`.
+  /// Null on either → no airplane (the plain connector is shown).
+  final DateTime? departureTime;
+  final DateTime? arrivalTime;
+
   const FlightProgressBar({
     super.key,
     required this.status,
@@ -44,6 +53,8 @@ class FlightProgressBar extends StatelessWidget {
     this.delayMinutes,
     this.isDelayed = false,
     this.compact = false,
+    this.departureTime,
+    this.arrivalTime,
   });
 
   /// Builds the bar from a [Ride], reusing the ride's flight getters. Returns a
@@ -56,6 +67,8 @@ class FlightProgressBar extends StatelessWidget {
       delayMinutes: ride.flightDelayMinutes,
       isDelayed: ride.isFlightDelayed,
       compact: compact,
+      departureTime: isAirport ? ride.flightDepartureTime : null,
+      arrivalTime: isAirport ? ride.flightTime : null,
     );
   }
 
@@ -92,12 +105,7 @@ class FlightProgressBar extends StatelessWidget {
         for (int i = 0; i < chain.length; i++) ...[
           _buildStep(context, l10n, chain[i], i, ordinal),
           if (i < chain.length - 1)
-            Expanded(
-              child: Container(
-                height: 2,
-                color: i < ordinal ? _completed : Colors.grey[300],
-              ),
-            ),
+            Expanded(child: _connector(context, chain, i, ordinal)),
         ],
       ],
     );
@@ -148,6 +156,53 @@ class FlightProgressBar extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+
+  /// The line between step [i] and [i+1]. Completed segments (before the current
+  /// step) are green; the rest grey. On the arrival "Im Flug → Gelandet" segment,
+  /// while the flight is en route and we know the take-off/landing window, an
+  /// airplane icon crawls across it toward landing.
+  Widget _connector(
+    BuildContext context,
+    List<FlightPhase> chain,
+    int i,
+    int ordinal,
+  ) {
+    final line = Container(
+      height: 2,
+      color: i < ordinal ? _completed : Colors.grey[300],
+    );
+
+    // Only on the en-route → landed segment, and only while the flight is ACTUALLY
+    // en route (this is the current step, i == ordinal). The monitor fills the
+    // take-off time even before departure (and flightTime falls back to scheduled),
+    // so without this phase gate a still-"Planmäßig" or already-"Gelandet" arrival
+    // would park a plane on the Im-Flug node.
+    final isEnRouteSegment =
+        isArrival &&
+        i == ordinal &&
+        chain[i] == FlightPhase.enRoute &&
+        i + 1 < chain.length &&
+        chain[i + 1] == FlightPhase.landed;
+    final hasWindow = departureTime != null && arrivalTime != null;
+    if (!isEnRouteSegment || !hasWindow) return line;
+
+    // Overlay the moving airplane on top of the (pending) en-route line.
+    return SizedBox(
+      height: 18,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          line,
+          _EnRoutePlane(
+            departureTime: departureTime!,
+            arrivalTime: arrivalTime!,
+            color: _delayed ? _delayedColor : _current,
+          ),
+        ],
       ),
     );
   }
@@ -211,5 +266,90 @@ class FlightProgressBar extends StatelessWidget {
       case FlightPhase.landed:
         return l10n.flightStatusLanded;
     }
+  }
+}
+
+/// A small airplane that sits on the en-route connector at the flight's current
+/// progress `(now − departure) / (arrival − departure)` and glides forward as
+/// time passes. Progress is read from the wall clock on each build and nudged
+/// once a minute by a [Timer] (the per-minute jump is smoothed by a one-shot
+/// [AnimatedPositioned], so there is no continuously-running animation to hang
+/// `pumpAndSettle`). Clamped to the segment, so it parks at "Gelandet" once due.
+class _EnRoutePlane extends StatefulWidget {
+  final DateTime departureTime;
+  final DateTime arrivalTime;
+  final Color color;
+
+  const _EnRoutePlane({
+    required this.departureTime,
+    required this.arrivalTime,
+    required this.color,
+  });
+
+  @override
+  State<_EnRoutePlane> createState() => _EnRoutePlaneState();
+}
+
+class _EnRoutePlaneState extends State<_EnRoutePlane> {
+  static const double _iconSize = 16;
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-read the clock every minute; the plane creeps imperceptibly between ticks.
+    _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  double get _fraction =>
+      // Shared with Ride.flightProgressFraction — the tested math drives the pixels.
+      Ride.flightProgress(
+        DateTime.now(),
+        widget.departureTime,
+        widget.arrivalTime,
+      ) ??
+      1;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final travel = (constraints.maxWidth - _iconSize).clamp(
+          0.0,
+          double.infinity,
+        );
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              left: _fraction * travel,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                // Pointing right, toward "Gelandet".
+                child: Transform.rotate(
+                  angle: 1.5708, // 90° — flight icon points up by default
+                  child: Icon(
+                    Icons.flight,
+                    size: _iconSize,
+                    color: widget.color,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

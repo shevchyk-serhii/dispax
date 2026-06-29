@@ -19,6 +19,7 @@ Ride _airportRide({
   bool isAirportTransfer = true,
   DateTime? flightTime,
   DateTime? flightScheduledTime,
+  DateTime? flightDepartureTime,
 }) => Ride(
   id: 'ride-1',
   clientId: 'client-1',
@@ -35,6 +36,7 @@ Ride _airportRide({
   isArrival: isArrival,
   flightTime: flightTime,
   flightScheduledTime: flightScheduledTime,
+  flightDepartureTime: flightDepartureTime,
 );
 
 Future<void> _pump(WidgetTester tester, Widget child) {
@@ -131,6 +133,83 @@ void main() {
       expect(labelColor(tester, 'Im Flug'), amber);
       // Landed is still pending (grey), not the current step.
       expect(labelColor(tester, 'Gelandet'), const Color(0xFF9E9E9E));
+    });
+  });
+
+  group('FlightProgressBar en-route airplane', () {
+    testWidgets(
+      'arrival en route with a known take-off window shows the airplane',
+      (tester) async {
+        final now = DateTime.now();
+        await _pump(
+          tester,
+          FlightProgressBar.forRide(
+            _airportRide(
+              isArrival: true,
+              flightStatus: 'en_route',
+              flightDepartureTime: now.subtract(const Duration(hours: 1)),
+              flightTime: now.add(const Duration(hours: 1)),
+            ),
+          ),
+        );
+        await tester.pump(); // settle the one-shot AnimatedPositioned
+        expect(find.byIcon(Icons.flight), findsOneWidget);
+      },
+    );
+
+    testWidgets('no airplane when the take-off time is unknown', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'en_route',
+            flightTime: DateTime.now().add(const Duration(hours: 1)),
+            // no flightDepartureTime
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.flight), findsNothing);
+    });
+
+    testWidgets('no airplane for a not-yet-departed (scheduled) arrival even '
+        'with a window', (tester) async {
+      // The monitor fills the take-off time before departure, so a scheduled
+      // arrival has a full window — but the plane must not appear until "Im Flug".
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'scheduled',
+            flightDepartureTime: now.add(const Duration(hours: 1)),
+            flightTime: now.add(const Duration(hours: 3)),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.flight), findsNothing);
+    });
+
+    testWidgets('no airplane once the flight has landed', (tester) async {
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'landed',
+            flightDepartureTime: now.subtract(const Duration(hours: 2)),
+            flightTime: now.subtract(const Duration(minutes: 10)),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.flight), findsNothing);
     });
   });
 

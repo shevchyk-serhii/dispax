@@ -79,7 +79,7 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           repo = PostgresRideRepository(xa)
           id   = RideId(UUID.randomUUID())
           _   <- repo.create(makeRide(id))
-          ok  <- repo.updateFlightStatus(id, Some("A12"), Some("T2"), Some("delayed"), Some(t), None)
+          ok  <- repo.updateFlightStatus(id, Some("A12"), Some("T2"), Some("delayed"), Some(t), None, None)
           row <- repo.findFlightStatus(id)
         yield assertTrue(
           ok,
@@ -92,7 +92,7 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           _   <- seedTestData(xa)
           _   <- cleanRides(xa)
           repo = PostgresRideRepository(xa)
-          ok  <- repo.updateFlightStatus(RideId(UUID.randomUUID()), None, Some("T1"), Some("landed"), None, None)
+          ok  <- repo.updateFlightStatus(RideId(UUID.randomUUID()), None, Some("T1"), Some("landed"), None, None, None)
         yield assertTrue(!ok)
       },
       test("findFlightStatus is None for an unknown ride") {
@@ -104,8 +104,10 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           row <- repo.findFlightStatus(RideId(UUID.randomUUID()))
         yield assertTrue(row.isEmpty)
       },
-      test("findFlightStatusFor bulk-reads only rides that have flight data") {
-        val t = Instant.parse("2026-06-26T09:00:00Z")
+      test("findFlightStatusFor bulk-reads only rides that have flight data (incl. departure time)") {
+        val t   = Instant.parse("2026-06-26T09:00:00Z")
+        // Origin take-off the previous evening — round-trips the V12 flight_departure_time column.
+        val dep = Instant.parse("2026-06-25T20:45:00Z")
         for
           xa     <- ZIO.service[Transactor[Task]]
           _      <- seedTestData(xa)
@@ -116,11 +118,11 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           unknown = RideId(UUID.randomUUID())
           _      <- repo.create(makeRide(withFs))
           _      <- repo.create(makeRide(without))
-          _      <- repo.updateFlightStatus(withFs, Some("G35"), Some("T2"), Some("landed"), Some(t), None)
+          _      <- repo.updateFlightStatus(withFs, Some("G35"), Some("T2"), Some("landed"), Some(t), None, Some(dep))
           map    <- repo.findFlightStatusFor(List(withFs, without, unknown))
         yield assertTrue(
-          // the ride with persisted flight data is present with the exact row,
-          map.get(withFs).contains(FlightStatusRow(Some("G35"), Some("T2"), Some("landed"), Some(t))),
+          // the ride with persisted flight data is present with the exact row (departure time included),
+          map.get(withFs).contains(FlightStatusRow(Some("G35"), Some("T2"), Some("landed"), Some(t), None, Some(dep))),
           // the ride that never got flight data carries only empty columns,
           map.get(without).forall(!_.nonEmpty),
           // and the unknown id is absent entirely.

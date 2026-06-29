@@ -60,10 +60,11 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
           terminal: Option[String],
           flightStatus: Option[String],
           flightTime: Option[Instant],
-          scheduledTime: Option[Instant]
+          scheduledTime: Option[Instant],
+          departureTime: Option[Instant]
       ): Task[Boolean] = store
         .update(
-          _.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime))
+          _.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime, departureTime))
         )
         .as(true)
 
@@ -172,7 +173,8 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
     scheduledTime = Some(Instant.parse("2026-06-26T08:00:00Z")),
     estimatedTime = Some(Instant.parse("2026-06-26T08:20:00Z")),
     terminal = Some("T2"),
-    gate = Some("H14")
+    gate = Some("H14"),
+    departureTime = Some(Instant.parse("2026-06-26T06:30:00Z"))
   )
 
   def spec =
@@ -188,15 +190,19 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
         yield assertTrue(
           ev.size == 1,
           ev.head match
-            case WebSocketEvent.FlightStatusUpdated(rid, cid, comp, num, status, gate, term, _) =>
+            case WebSocketEvent.FlightStatusUpdated(rid, cid, comp, num, status, gate, term, _, dep) =>
               rid == ride.id.value && cid == client.value && comp == companyA.value &&
-              num == "LH123" && status == "landed" && term.contains("T2") && gate.contains("H14")
-            case _                                                                              => false,
+              num == "LH123" && status == "landed" && term.contains("T2") && gate.contains("H14") &&
+              // the take-off time rides along so the card's en-route plane appears live (no reload)
+              dep.contains("2026-06-26T06:30:00Z")
+            case _                                                                                   => false,
           saved
             .get(ride.id)
             .exists(r => r.flightStatus.contains("landed") && r.terminal.contains("T2") && r.gate.contains("H14")),
           // estimated time wins over scheduled
-          saved.get(ride.id).exists(_.flightTime.contains(Instant.parse("2026-06-26T08:20:00Z")))
+          saved.get(ride.id).exists(_.flightTime.contains(Instant.parse("2026-06-26T08:20:00Z"))),
+          // the origin take-off is persisted so the card can animate the en-route progress
+          saved.get(ride.id).exists(_.departureTime.contains(Instant.parse("2026-06-26T06:30:00Z")))
         )
       },
       test("does not re-publish on a second tick with unchanged data (dedup)") {
@@ -221,9 +227,9 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
         yield assertTrue(
           ev.size == 2,
           ev.last match
-            case WebSocketEvent.FlightStatusUpdated(_, _, _, _, status, _, term, _) =>
+            case WebSocketEvent.FlightStatusUpdated(_, _, _, _, status, _, term, _, _) =>
               status == "delayed" && term.contains("T1")
-            case _                                                                  => false
+            case _                                                                     => false
         )
       },
       test("enriches a still-unassigned (Requested) airport ride") {

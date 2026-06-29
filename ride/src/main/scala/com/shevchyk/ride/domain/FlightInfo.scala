@@ -90,7 +90,11 @@ final case class FlightInfo(
     // expose it. None when the detail lookup is skipped, fails, or no gate is published yet.
     gate: Option[String] = None,
     airline: Option[String] = None,
-    otherAirport: Option[String] = None
+    otherAirport: Option[String] = None,
+    // The flight's take-off instant from its ORIGIN airport (for an arrival, when the aircraft left elsewhere),
+    // scraped from the detail page's departure block. The start of the en-route window the card animates against.
+    // None until the detail lookup runs / the page has no departure time.
+    departureTime: Option[Instant] = None
 ) derives JsonCodec
 
 /**
@@ -109,11 +113,15 @@ final case class FlightStatusRow(
     // The scheduled (on-time) arrival/departure instant, tracked separately from `flightTime` (the latest
     // known, i.e. estimated) so a delay can be shown as `flightTime - scheduledTime`. None until the monitor
     // has fetched flight data.
-    scheduledTime: Option[Instant] = None
+    scheduledTime: Option[Instant] = None,
+    // The origin take-off instant (for arrivals), so the card can animate the en-route progress as
+    // `(now - departureTime) / (flightTime - departureTime)`. None until the detail lookup runs.
+    departureTime: Option[Instant] = None
 ):
 
   /**
    * True when at least one flight column carries data (nothing to surface otherwise).
    */
   def nonEmpty: Boolean =
-    gate.isDefined || terminal.isDefined || flightStatus.isDefined || flightTime.isDefined || scheduledTime.isDefined
+    gate.isDefined || terminal.isDefined || flightStatus.isDefined || flightTime.isDefined || scheduledTime.isDefined ||
+      departureTime.isDefined

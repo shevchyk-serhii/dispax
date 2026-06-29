@@ -608,7 +608,8 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                 terminal: Option[String],
                 flightStatus: Option[String],
                 flightTime: Option[java.time.Instant],
-                scheduledTime: Option[java.time.Instant]
+                scheduledTime: Option[java.time.Instant],
+                departureTime: Option[java.time.Instant]
             ): Task[Boolean] = ZIO.succeed(false)
             def findFlightStatus(id: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]            = ZIO.none
             def findFlightStatusFor(

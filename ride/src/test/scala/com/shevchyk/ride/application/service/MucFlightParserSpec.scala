@@ -118,5 +118,19 @@ object MucFlightParserSpec extends ZIOSpecDefault:
           MucFlightParser.parseGate(remoteDetail).contains("REMOTE"),
           MucFlightParser.parseDetailTerminal(remoteDetail).contains("T2")
         )
+      },
+      test("parseDepartureInstant reads the origin take-off across a day boundary (arrival)") {
+        // Arrival detail: origin Singapur departs 25.06 22:45 (its OWN date), MUC arrives 26.06 05:20. The departure
+        // must anchor to 25.06, not the MUC date, so it stays BEFORE the arrival. 22:45 Europe/Berlin (CEST) = 20:45 UTC.
+        val dep = MucFlightParser.parseDepartureInstant(fixture("detail_arrival.html"))
+        assertTrue(dep.contains(Instant.parse("2026-06-25T20:45:00Z")))
+      },
+      test("parseDepartureInstant reads the MUC take-off for a departure detail page") {
+        // Departure detail: the departure block IS the MUC side, 26.06 05:50 (CEST) = 03:50 UTC.
+        val dep = MucFlightParser.parseDepartureInstant(fixture("detail_departure.html"))
+        assertTrue(dep.contains(Instant.parse("2026-06-26T03:50:00Z")))
+      },
+      test("parseDepartureInstant is None when the page has no departure block") {
+        assertTrue(MucFlightParser.parseDepartureInstant("<div>no detail here</div>").isEmpty)
       }
     )
