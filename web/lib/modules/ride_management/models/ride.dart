@@ -72,6 +72,11 @@ class Ride {
   /// Whether the client has a profile photo, so cards can render their avatar.
   /// Sourced from the backend RideDto (derived from the client's Person).
   final bool clientHasAvatar;
+
+  /// True when the ride was booked without a real client — a provisional
+  /// placeholder was created by the backend (from-chat flow). The card renders
+  /// the route instead of the placeholder name until the client is linked.
+  final bool clientProvisional;
   final String? flightNumber;
   final DateTime? flightTime;
   // Scheduled (on-time) flight instant, tracked separately from flightTime (latest known/estimated)
@@ -141,6 +146,7 @@ class Ride {
     this.status = RideStatus.requested,
     required this.clientName,
     this.clientHasAvatar = false,
+    this.clientProvisional = false,
     this.flightNumber,
     this.flightTime,
     this.flightScheduledTime,
@@ -198,6 +204,7 @@ class Ride {
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
       clientHasAvatar: json['clientHasAvatar'] as bool? ?? false,
+      clientProvisional: json['clientProvisional'] as bool? ?? false,
       flightNumber: json['flightNumber'],
       // Convert to local like pickupDateTime, so airport flight times are not
       // shown in UTC while every other time on the ride is local.
@@ -268,6 +275,7 @@ class Ride {
       'status': status.value,
       'clientName': clientName,
       'clientHasAvatar': clientHasAvatar,
+      'clientProvisional': clientProvisional,
       'flightNumber': flightNumber,
       'flightTime': flightTime?.toUtc().toIso8601String(),
       'flightScheduledTime': flightScheduledTime?.toUtc().toIso8601String(),
@@ -322,6 +330,7 @@ class Ride {
     RideStatus? status,
     String? clientName,
     bool? clientHasAvatar,
+    bool? clientProvisional,
     String? flightNumber,
     Object? flightTime = _sentinel,
     Object? flightScheduledTime = _sentinel,
@@ -374,6 +383,7 @@ class Ride {
       status: status ?? this.status,
       clientName: clientName ?? this.clientName,
       clientHasAvatar: clientHasAvatar ?? this.clientHasAvatar,
+      clientProvisional: clientProvisional ?? this.clientProvisional,
       flightNumber: flightNumber ?? this.flightNumber,
       flightTime: flightTime == _sentinel
           ? this.flightTime

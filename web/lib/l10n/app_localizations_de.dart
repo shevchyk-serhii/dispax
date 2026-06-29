@@ -3530,4 +3530,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get trackingLinkCopied =>
       'Tracking-Link in die Zwischenablage kopiert';
+
+  @override
+  String get bookWithoutClient => 'Ohne Kunde (aus Chat)';
+
+  @override
+  String get fromChatRide => 'Aus Chat';
+
+  @override
+  String get linkClient => 'Kunde ergänzen';
 }

@@ -5,6 +5,7 @@ import '../../../../modules/core/models/person.dart';
 import '../../../../modules/core/services/user_service.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../client_search_field.dart';
 import '../clearable_text_field.dart';
 
@@ -55,13 +56,65 @@ class _CreateRideBasicInfoSectionState
     // Client — hidden, they always select themselves
     if (role == PersonRole.client) return const SizedBox.shrink();
 
-    // Driver — show the client select/create section
-    if (role == PersonRole.driver) {
-      return _DriverClientSection(userService: _userService);
-    }
+    // Driver and dispatcher/secretary both get the provisional toggle +
+    // the appropriate client search/create fields.
+    return _ClientSectionWithProvisionalToggle(
+      userService: _userService,
+      role: role,
+    );
+  }
+}
 
-    // Dispatcher/secretary — standard search
-    return ClientSearchField(userService: _userService);
+/// Wraps the client-selection UI for driver and dispatcher/secretary roles,
+/// adding a "Without client (from chat)" provisional-mode toggle at the top.
+class _ClientSectionWithProvisionalToggle extends StatelessWidget {
+  final UserService userService;
+  final PersonRole? role;
+
+  const _ClientSectionWithProvisionalToggle({
+    required this.userService,
+    required this.role,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
+      buildWhen: (prev, curr) =>
+          prev.isProvisionalClient != curr.isProvisionalClient ||
+          prev.isNewClient != curr.isNewClient ||
+          prev.selectedClientId != curr.selectedClientId ||
+          prev.clientName != curr.clientName,
+      builder: (context, state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // "Without client (from chat)" toggle — available to all non-client roles.
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                l10n.bookWithoutClient,
+                style: const TextStyle(fontSize: 14),
+              ),
+              value: state.isProvisionalClient,
+              onChanged: (_) => context.read<CreateRideFormBloc>().add(
+                const ProvisionalClientModeToggled(),
+              ),
+            ),
+
+            // When provisional mode is ON, hide the client search/create section.
+            if (!state.isProvisionalClient) ...[
+              const SizedBox(height: AppDimensions.formSectionGap),
+              if (role == PersonRole.driver)
+                _DriverClientSection(userService: userService)
+              else
+                ClientSearchField(userService: userService),
+            ],
+          ],
+        );
+      },
+    );
   }
 }
 

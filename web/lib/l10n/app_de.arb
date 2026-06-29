@@ -1665,5 +1665,9 @@
   "addPaymentMethodButton": "Zahlungsart hinzufügen",
 
   "shareRideLink": "Tracking-Link teilen",
-  "trackingLinkCopied": "Tracking-Link in die Zwischenablage kopiert"
+  "trackingLinkCopied": "Tracking-Link in die Zwischenablage kopiert",
+
+  "bookWithoutClient": "Ohne Kunde (aus Chat)",
+  "fromChatRide": "Aus Chat",
+  "linkClient": "Kunde ergänzen"
 }

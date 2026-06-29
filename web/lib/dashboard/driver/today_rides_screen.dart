@@ -1118,17 +1118,66 @@ class DriverClientPriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    // Provisional rides: show the route label + "Add client details" action
+    // instead of the placeholder name that the backend assigned.
+    if (ride.clientProvisional) {
+      return Row(
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 15, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              l10n.fromChatRide,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontStyle: FontStyle.italic,
+                color: secondary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _showLinkClientDialog(context, l10n),
+            child: Text(
+              l10n.linkClient,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          if (ride.price != null) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.euro, size: 15, color: secondary),
+            const SizedBox(width: 2),
+            Text(
+              _formatPrice(ride.price!),
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: primary,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     final name = ride.clientName.trim();
     // 'Unknown Client' is the model's fallback when the server sent no name;
     // showing it adds noise, so treat it as absent.
     final hasName = name.isNotEmpty && name != 'Unknown Client';
     final hasPrice = ride.price != null;
     if (!hasName && !hasPrice) return const SizedBox.shrink();
-
-    final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
-    final secondary = isDark
-        ? AppColors.textSecondaryDark
-        : AppColors.textSecondary;
 
     return Row(
       children: [
@@ -1163,6 +1212,116 @@ class DriverClientPriceRow extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  void _showLinkClientDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _LinkClientDialog(ride: ride),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Link-client dialog: upgrade a provisional client with real contact details
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LinkClientDialog extends StatefulWidget {
+  final Ride ride;
+
+  const _LinkClientDialog({required this.ride});
+
+  @override
+  State<_LinkClientDialog> createState() => _LinkClientDialogState();
+}
+
+class _LinkClientDialogState extends State<_LinkClientDialog> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  bool _loading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_nameCtrl.text.trim().isEmpty && _phoneCtrl.text.trim().isEmpty) {
+      setState(() => _errorMessage = l10n.enterClientNameError);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      final authBloc = context.read<AuthBloc>();
+      final service = RideService(apiClient: authBloc.apiClient);
+      await service.upgradeProvisionalClient(
+        widget.ride.clientId,
+        name: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : null,
+        phone: _phoneCtrl.text.trim().isNotEmpty
+            ? _phoneCtrl.text.trim()
+            : null,
+      );
+      service.dispose();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.linkClient),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            decoration: const InputDecoration(labelText: 'Client name'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _phoneCtrl,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(labelText: 'Phone (optional)'),
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.of(context).pop(),
+          child: Text(l10n.closeButton),
+        ),
+        TextButton(
+          onPressed: _loading ? null : _submit,
+          child: _loading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.linkClient),
+        ),
       ],
     );
   }

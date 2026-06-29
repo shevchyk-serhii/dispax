@@ -6573,6 +6573,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tracking link copied to clipboard'**
   String get trackingLinkCopied;
+
+  /// No description provided for @bookWithoutClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Without client (from chat)'**
+  String get bookWithoutClient;
+
+  /// No description provided for @fromChatRide.
+  ///
+  /// In en, this message translates to:
+  /// **'From chat'**
+  String get fromChatRide;
+
+  /// No description provided for @linkClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add client details'**
+  String get linkClient;
 }
 
 class _AppLocalizationsDelegate

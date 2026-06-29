@@ -298,13 +298,11 @@ class RideService {
     String newDriverId, {
     bool overrideScheduleConflict = false,
   }) async {
-    final response = await privateApiClient.put(
-      '/rides/$rideId/reassign-driver',
-      {
-        'driverId': newDriverId,
-        'overrideScheduleConflict': overrideScheduleConflict,
-      },
-    );
+    final response = await privateApiClient
+        .put('/rides/$rideId/reassign-driver', {
+          'driverId': newDriverId,
+          'overrideScheduleConflict': overrideScheduleConflict,
+        });
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);
@@ -568,6 +566,42 @@ class RideService {
       rethrow;
     } catch (e) {
       throw ApiException('Error creating external driver: $e');
+    }
+  }
+
+  /// Upgrades a provisional client by filling in real details.
+  ///
+  /// Calls `PUT /api/users/{clientId}/upgrade-provisional` with a JSON body of
+  /// the non-null fields. Returns the updated user as a raw JSON map.
+  /// Roles allowed by the backend: DISPATCHER, DRIVER, ADMIN.
+  Future<Map<String, dynamic>> upgradeProvisionalClient(
+    String clientId, {
+    String? name,
+    String? phone,
+    String? clientCompanyId,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (clientCompanyId != null && clientCompanyId.isNotEmpty)
+          'clientCompanyId': clientCompanyId,
+      };
+      final response = await privateApiClient.put(
+        '/users/$clientId/upgrade-provisional',
+        body,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to upgrade provisional client',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error upgrading provisional client: $e');
     }
   }
 

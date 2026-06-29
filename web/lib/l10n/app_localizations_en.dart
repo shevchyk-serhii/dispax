@@ -3511,4 +3511,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trackingLinkCopied => 'Tracking link copied to clipboard';
+
+  @override
+  String get bookWithoutClient => 'Without client (from chat)';
+
+  @override
+  String get fromChatRide => 'From chat';
+
+  @override
+  String get linkClient => 'Add client details';
 }

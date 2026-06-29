@@ -3520,4 +3520,13 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get trackingLinkCopied => 'Посилання скопійовано в буфер обміну';
+
+  @override
+  String get bookWithoutClient => 'Без клієнта (з чату)';
+
+  @override
+  String get fromChatRide => 'З чату';
+
+  @override
+  String get linkClient => 'Додати клієнта';
 }

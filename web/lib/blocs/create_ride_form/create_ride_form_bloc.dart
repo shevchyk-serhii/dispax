@@ -34,6 +34,7 @@ class CreateRideFormBloc
     on<SubmissionFailed>(_onSubmissionFailed);
     on<AddressesSwapped>(_onAddressesSwapped);
     on<NewClientModeToggled>(_onNewClientModeToggled);
+    on<ProvisionalClientModeToggled>(_onProvisionalClientModeToggled);
     on<NewClientPhoneChanged>(_onNewClientPhoneChanged);
     on<VehicleClassSelected>(_onVehicleClassSelected);
     on<PaymentMethodSelected>(_onPaymentMethodSelected);
@@ -309,6 +310,36 @@ class CreateRideFormBloc
       // Switching to creating a new client — reset the selected one
       emit(
         state.copyWith(isNewClient: true, clearClientId: true, clientName: ''),
+      );
+    }
+  }
+
+  void _onProvisionalClientModeToggled(
+    ProvisionalClientModeToggled event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    if (state.isProvisionalClient) {
+      // Turning off provisional mode — reset to normal state.
+      emit(
+        state.copyWith(
+          isProvisionalClient: false,
+          isNewClient: false,
+          clientName: '',
+          newClientPhone: '',
+          clearClientId: true,
+        ),
+      );
+    } else {
+      // Turning on provisional mode — clear any selected/typed client info
+      // so a stale selection cannot leak into the provisional submission.
+      emit(
+        state.copyWith(
+          isProvisionalClient: true,
+          isNewClient: false,
+          clientName: '',
+          newClientPhone: '',
+          clearClientId: true,
+        ),
       );
     }
   }

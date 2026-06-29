@@ -1750,5 +1750,9 @@
   "addPaymentMethodButton": "Add payment method",
 
   "shareRideLink": "Share tracking link",
-  "trackingLinkCopied": "Tracking link copied to clipboard"
+  "trackingLinkCopied": "Tracking link copied to clipboard",
+
+  "bookWithoutClient": "Without client (from chat)",
+  "fromChatRide": "From chat",
+  "linkClient": "Add client details"
 }

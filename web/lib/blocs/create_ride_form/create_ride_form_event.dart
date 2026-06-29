@@ -243,6 +243,12 @@ class NewClientModeToggled extends CreateRideFormEvent {
   const NewClientModeToggled();
 }
 
+/// Toggles the "without client (from chat)" / provisional-client mode.
+/// When enabled, the client search is hidden and no client is required.
+class ProvisionalClientModeToggled extends CreateRideFormEvent {
+  const ProvisionalClientModeToggled();
+}
+
 class NewClientPhoneChanged extends CreateRideFormEvent {
   final String phone;
   const NewClientPhoneChanged(this.phone);

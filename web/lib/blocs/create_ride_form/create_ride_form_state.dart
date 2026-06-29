@@ -35,6 +35,7 @@ class CreateRideFormState extends Equatable {
   /// Free-form operator tags attached to the ride at creation.
   final List<String> tags;
   final bool isNewClient;
+  final bool isProvisionalClient;
   final String newClientPhone;
 
   // Baseline values for fields that are auto-preselected (driver/client = self).
@@ -90,6 +91,7 @@ class CreateRideFormState extends Equatable {
     this.specialRequirements = const [],
     this.tags = const [],
     this.isNewClient = false,
+    this.isProvisionalClient = false,
     this.newClientPhone = '',
     this.baselineClientId,
     this.baselineClientName = '',
@@ -122,6 +124,7 @@ class CreateRideFormState extends Equatable {
       specialRequirements: const [],
       tags: const [],
       isNewClient: false,
+      isProvisionalClient: false,
       newClientPhone: '',
       selectedPaymentMethod: PaymentMethod.invoice,
       selectedVehicleClass: VehicleClass.business,
@@ -156,6 +159,7 @@ class CreateRideFormState extends Equatable {
     List<String>? specialRequirements,
     List<String>? tags,
     bool? isNewClient,
+    bool? isProvisionalClient,
     String? newClientPhone,
     String? baselineClientId,
     bool clearBaselineClientId = false,
@@ -201,6 +205,7 @@ class CreateRideFormState extends Equatable {
       specialRequirements: specialRequirements ?? this.specialRequirements,
       tags: tags ?? this.tags,
       isNewClient: isNewClient ?? this.isNewClient,
+      isProvisionalClient: isProvisionalClient ?? this.isProvisionalClient,
       newClientPhone: newClientPhone ?? this.newClientPhone,
       baselineClientId: clearBaselineClientId
           ? null
@@ -230,7 +235,9 @@ class CreateRideFormState extends Equatable {
   bool get isDepartureAutoCompute => isAirportTransfer && !isArrival;
 
   bool get isValid {
-    final clientOk = isNewClient
+    final clientOk = isProvisionalClient
+        ? true
+        : isNewClient
         ? clientName.trim().isNotEmpty
         : selectedClientId != null;
     // For departure rides: flightDepartureTime is required; manualPickupDateTime is optional.
@@ -282,6 +289,7 @@ class CreateRideFormState extends Equatable {
     specialRequirements,
     tags,
     isNewClient,
+    isProvisionalClient,
     newClientPhone,
     baselineClientId,
     baselineClientName,

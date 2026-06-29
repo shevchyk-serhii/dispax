@@ -1665,5 +1665,9 @@
   "addPaymentMethodButton": "Додати спосіб оплати",
 
   "shareRideLink": "Поділитися посиланням",
-  "trackingLinkCopied": "Посилання скопійовано в буфер обміну"
+  "trackingLinkCopied": "Посилання скопійовано в буфер обміну",
+
+  "bookWithoutClient": "Без клієнта (з чату)",
+  "fromChatRide": "З чату",
+  "linkClient": "Додати клієнта"
 }

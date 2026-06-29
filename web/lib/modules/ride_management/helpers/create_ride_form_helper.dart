@@ -93,32 +93,39 @@ class CreateRideFormHelper {
       return;
     }
 
-    if (!formState.isNewClient && formState.selectedClientId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.selectOrCreateClientError),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+    if (!formState.isProvisionalClient) {
+      if (!formState.isNewClient && formState.selectedClientId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.selectOrCreateClientError),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      if (formState.isNewClient && formState.clientName.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.enterClientNameError),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
     }
 
-    if (formState.isNewClient && formState.clientName.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.enterClientNameError),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    // For a new client we use the current user's ID as a placeholder —
-    // for the DRIVER role the backend can override clientId anyway
-    final clientId = formState.selectedClientId ?? authState.user!.id;
+    // Provisional mode: no real client — send an empty clientId and the
+    // provisionalClient flag so the backend creates a placeholder.
+    // Normal mode: use the selected client id (or the current user as
+    // placeholder for the driver role when creating for a new client).
+    final clientId = formState.isProvisionalClient
+        ? ''
+        : (formState.selectedClientId ?? authState.user!.id);
 
     final createRequest = CreateRideRequest(
       clientId: clientId,
+      provisionalClient: formState.isProvisionalClient,
       creatorId: authState.user!.id,
       companyId: authState.user!.companyId ?? '',
       // manualPickupDateTime: null for departure rides without an explicit override
@@ -129,7 +136,9 @@ class CreateRideFormHelper {
       from: Location(address: formState.fromAddress.trim()),
       to: Location(address: formState.toAddress.trim()),
       clientName: formState.clientName.trim(),
-      newClientPhone: formState.isNewClient
+      newClientPhone:
+          (formState.isNewClient || formState.isProvisionalClient) &&
+              formState.newClientPhone.trim().isNotEmpty
           ? formState.newClientPhone.trim()
           : null,
       flightNumber:
