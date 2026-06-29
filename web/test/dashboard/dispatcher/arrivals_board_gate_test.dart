@@ -99,4 +99,52 @@ void main() {
     // German is not the default; en fallback text.
     expect(find.textContaining('not published'), findsOneWidget);
   });
+
+  testWidgets('searching by flight number looks it up and shows its gate', (
+    tester,
+  ) async {
+    when(
+      () => service.lookupFlight(
+        flightNumber: any(named: 'flightNumber'),
+        date: any(named: 'date'),
+        isArrival: any(named: 'isArrival'),
+      ),
+    ).thenAnswer((_) async => withGate);
+
+    await pump(tester);
+
+    await tester.enterText(find.byType(TextField), 'LH2001');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => service.lookupFlight(
+        flightNumber: 'LH2001',
+        date: any(named: 'date'),
+        isArrival: true,
+      ),
+    ).called(1);
+    expect(find.textContaining('G35'), findsOneWidget);
+  });
+
+  testWidgets('searching a non-existent flight shows a not-found snackbar', (
+    tester,
+  ) async {
+    when(
+      () => service.lookupFlight(
+        flightNumber: any(named: 'flightNumber'),
+        date: any(named: 'date'),
+        isArrival: any(named: 'isArrival'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    await pump(tester);
+
+    await tester.enterText(find.byType(TextField), 'ZZ999');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump(); // start the snackbar
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
 }

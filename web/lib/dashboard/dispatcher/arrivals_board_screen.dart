@@ -22,12 +22,20 @@ class ArrivalsBoardScreen extends StatefulWidget {
 class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
   late DateTime _date;
   late Future<List<MucFlight>> _future;
+  final _searchController = TextEditingController();
+  bool _searching = false;
 
   @override
   void initState() {
     super.initState();
     _date = DateTime.now();
     _future = _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   ArrivalsBoardService get _service =>
@@ -80,6 +88,38 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
     );
   }
 
+  /// Look up a single flight by its number (for the selected date) and show its details — incl. the
+  /// gate, which the board list does not carry. Empty input is ignored; a not-found result shows a snackbar.
+  Future<void> _searchByNumber(AppLocalizations l10n) async {
+    final number = _searchController.text.trim();
+    if (number.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _searching = true);
+    final iso = DateFormat('yyyy-MM-dd').format(_date);
+    final flight = await _service.lookupFlight(
+      flightNumber: number,
+      date: iso,
+      isArrival: true,
+    );
+    if (!mounted) return;
+    setState(() => _searching = false);
+    if (flight == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.noArrivalsFound)));
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => FlightDetailsSheet(
+        row: flight,
+        lookup: Future.value(flight),
+        l10n: l10n,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -92,6 +132,34 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
             onPrev: () => _setDate(_date.subtract(const Duration(days: 1))),
             onNext: () => _setDate(_date.add(const Duration(days: 1))),
             onTap: _pickDate,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              textCapitalization: TextCapitalization.characters,
+              onSubmitted: (_) => _searchByNumber(l10n),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l10n.flightNumberHint,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searching
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.arrow_forward),
+                        onPressed: () => _searchByNumber(l10n),
+                      ),
+                border: const OutlineInputBorder(),
+              ),
+            ),
           ),
           Expanded(child: _buildBody(l10n)),
         ],
