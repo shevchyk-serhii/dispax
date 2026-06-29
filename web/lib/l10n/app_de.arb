@@ -911,6 +911,7 @@
   "flightNumberRequired": "Flugnummer ist für Flughafentransfers erforderlich",
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
+  "gateRemote": "Bus-Gate (Außenposition)",
 
   "creatingRideLabel": "Fahrt wird erstellt...",
   "createRideButton": "Fahrt erstellen",

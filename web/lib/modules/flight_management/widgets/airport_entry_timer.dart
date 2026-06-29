@@ -159,7 +159,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
                 ),
               ),
               Text(
-                '${widget.ride.flightNumber} • ${widget.ride.terminal} • Gate ${widget.ride.gate}',
+                '${widget.ride.flightNumber} • ${widget.ride.terminal} • ${widget.ride.isRemoteGate ? AppLocalizations.of(context)!.gateRemote : 'Gate ${widget.ride.gate}'}',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textOnPrimary.withAlpha(180),
                 ),

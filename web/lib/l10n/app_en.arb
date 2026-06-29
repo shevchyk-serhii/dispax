@@ -993,6 +993,10 @@
   "flightNumberRequired": "Flight number is required for airport transfers",
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
+  "gateRemote": "Bus gate (remote stand)",
+  "@gateRemote": {
+    "description": "Shown instead of a gate code when MUC reports 'Gate REMOTE' — the plane is on a remote apron stand and passengers are bussed to the terminal."
+  },
 
   "creatingRideLabel": "Creating Ride...",
   "createRideButton": "Create Ride",

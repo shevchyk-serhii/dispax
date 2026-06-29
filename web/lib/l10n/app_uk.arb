@@ -911,6 +911,7 @@
   "flightNumberRequired": "Номер рейсу обов'язковий для трансферів до аеропорту",
   "gateLabel": "Гейт",
   "terminalLabel": "Термінал",
+  "gateRemote": "Автобусний гейт (віддалена стоянка)",
 
   "creatingRideLabel": "Створення поїздки...",
   "createRideButton": "Створити поїздку",

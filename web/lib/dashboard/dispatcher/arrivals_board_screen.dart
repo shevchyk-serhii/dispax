@@ -471,10 +471,13 @@ class FlightDetailsSheet extends StatelessWidget {
                   );
                 }
                 final gate = snapshot.data?.gate ?? row.gate;
-                return _DetailLine(
-                  label: l10n.gateLabel,
-                  value: gate ?? l10n.gateNotPublished,
-                );
+                // A remote (apron) stand shows as the localized "bus gate" label, not "REMOTE".
+                final gateText = gate == null
+                    ? l10n.gateNotPublished
+                    : (gate.trim().toUpperCase() == 'REMOTE'
+                          ? l10n.gateRemote
+                          : gate);
+                return _DetailLine(label: l10n.gateLabel, value: gateText);
               },
             ),
           ],

@@ -2069,6 +2069,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get terminalLabel => 'Terminal';
 
   @override
+  String get gateRemote => 'Bus-Gate (Außenposition)';
+
+  @override
   String get creatingRideLabel => 'Fahrt wird erstellt...';
 
   @override

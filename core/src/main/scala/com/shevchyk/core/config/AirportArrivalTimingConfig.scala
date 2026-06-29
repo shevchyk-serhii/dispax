@@ -16,6 +16,8 @@ import zio.*
  *   - AIRPORT_ARRIVAL_WALK_MINUTES=10 — a normal terminal (T1/T2): time from landing to curbside.
  *   - AIRPORT_ARRIVAL_SATELLITE_WALK_MINUTES=18 — a satellite/remote terminal (MUC "Terminal K" / the T2 satellite)
  *     where the passenger first takes an internal train to the main terminal, so the walk-out takes longer.
+ *   - AIRPORT_ARRIVAL_REMOTE_WALK_MINUTES=25 — a remote (apron) stand ("Gate REMOTE"): the plane parks away from the
+ *     building and the passenger is bussed to the terminal, the slowest case of all, longer than a satellite pier.
  *   - AIRPORT_FREE_PARKING_MINUTES=10 — length of the free terminal-parking window.
  *   - AIRPORT_SATELLITE_TERMINALS=K,T2K — terminal codes classified as satellite (larger walk buffer).
  *
@@ -25,6 +27,9 @@ import zio.*
 final case class AirportArrivalTimingConfig(
     normalWalkMinutes: Int,
     satelliteWalkMinutes: Int,
+    // A remote (apron) bus stand — the plane parks away from the building and the passenger is bussed in, so the
+    // walk-out is the longest of all. Selected when the gate is the sentinel "REMOTE".
+    remoteWalkMinutes: Int,
     freeParkingMinutes: Int,
     satelliteTerminalCodes: Set[String],
     // Gate leading letters that mark a satellite pier (longer walk-out). At MUC the gate encodes the pier:
@@ -53,6 +58,7 @@ object AirportArrivalTimingConfig:
     AirportArrivalTimingConfig(
       normalWalkMinutes = envInt("AIRPORT_ARRIVAL_WALK_MINUTES", 10),
       satelliteWalkMinutes = envInt("AIRPORT_ARRIVAL_SATELLITE_WALK_MINUTES", 18),
+      remoteWalkMinutes = envInt("AIRPORT_ARRIVAL_REMOTE_WALK_MINUTES", 25),
       freeParkingMinutes = envInt("AIRPORT_FREE_PARKING_MINUTES", 10),
       satelliteTerminalCodes = envTerminals("AIRPORT_SATELLITE_TERMINALS", Set("K", "T2K")),
       satelliteGateLetters = envTerminals("AIRPORT_SATELLITE_GATE_LETTERS", Set("K", "L")),

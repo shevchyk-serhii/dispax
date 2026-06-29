@@ -1182,12 +1182,14 @@ class _RideRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       () {
-                        final statusText = AppLocalizations.of(
-                          context,
-                        )!.localizedFlightStatus(ride.flightStatus);
+                        final l10n = AppLocalizations.of(context)!;
+                        final flightInfo = l10n.fullFlightInfoLocalized(ride);
+                        final statusText = l10n.localizedFlightStatus(
+                          ride.flightStatus,
+                        );
                         return statusText.isEmpty
-                            ? ride.fullFlightInfo
-                            : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+                            ? flightInfo
+                            : '$flightInfo • ${ride.flightStatusIcon} $statusText';
                       }(),
                       style: TextStyle(
                         fontSize: 12,

@@ -3,6 +3,7 @@ import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../core/date_utils.dart';
 
 class FlightInfoCard extends StatelessWidget {
@@ -47,7 +48,7 @@ class FlightInfoCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Terminal ${ride.terminal ?? 'N/A'} • Gate ${ride.gate ?? 'N/A'}',
+                      'Terminal ${ride.terminal ?? 'N/A'} • ${ride.isRemoteGate ? AppLocalizations.of(context)!.gateRemote : 'Gate ${ride.gate ?? 'N/A'}'}',
                       style: AppStyles.bodyMedium.copyWith(
                         color: AppColors.textOnPrimary.withAlpha(180),
                       ),
