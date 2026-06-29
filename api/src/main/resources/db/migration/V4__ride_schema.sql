@@ -2,11 +2,18 @@
 -- Depends on V1 (companies, persons), V2 (tariffs), V3 (schedule_days).
 -- FK creation order within this file:
 --   ride_pools, invoice_sequences, invoices (before rides — rides.invoice_id FK),
+--   partner_companies, external_drivers (before rides — rides.{partner_company_id,external_driver_id} FK),
 --   rides (folds V9 vehicle_class), sent_reminders, invoice_items,
 --   client_locations, chat_messages, expenses, ride_templates, ride_ratings,
---   ride_pool_members, sent_checkpoint_notifications, eta_alerts, emergency_reassignments.
+--   ride_pool_members, sent_checkpoint_notifications, eta_alerts, emergency_reassignments,
+--   sent_confirmation_requests, ride_share_tokens.
 -- Folded in from later ALTERs:
---   V9: rides.vehicle_class VARCHAR(20) NOT NULL DEFAULT 'business'
+--   V9:  rides.vehicle_class VARCHAR(20) NOT NULL DEFAULT 'business'
+--   V11: partner_companies, external_drivers + rides.{external_driver_id,partner_company_id}
+--   V14: rides.{confirmed_at,rejection_reason,rejected_by,rejected_at} + sent_confirmation_requests
+--   V17: ride_share_tokens
+--   V19: rides.tags text[] + GIN index
+--   V20: rides.flight_scheduled_time
 
 -- ============================================================
 -- Ride pools
@@ -79,6 +86,39 @@ CREATE INDEX idx_invoices_overdue
 -- Rides
 -- ============================================================
 -- Folded in: V9 vehicle_class VARCHAR(20) NOT NULL DEFAULT 'business'
+-- ============================================================
+-- External hand-off: partner companies and their drivers (V11)
+-- ============================================================
+-- Created before rides because rides.{partner_company_id,external_driver_id} FK them.
+CREATE TABLE partner_companies (
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name             VARCHAR(255) NOT NULL,
+    email            VARCHAR(255),
+    phone            VARCHAR(20),
+    address          TEXT,
+    taxi_company_id  UUID NOT NULL REFERENCES companies(id),
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_partner_companies_taxi_company ON partner_companies(taxi_company_id);
+
+CREATE TABLE external_drivers (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name                VARCHAR(255) NOT NULL,
+    phone               VARCHAR(20),
+    partner_company_id  UUID REFERENCES partner_companies(id) ON DELETE SET NULL,
+    taxi_company_id     UUID NOT NULL REFERENCES companies(id),
+    created_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at          TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_external_drivers_taxi_company ON external_drivers(taxi_company_id);
+CREATE INDEX idx_external_drivers_partner ON external_drivers(partner_company_id);
+
+-- ============================================================
+-- Rides
+-- ============================================================
 CREATE TABLE rides (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     client_id UUID NOT NULL REFERENCES persons(id),
@@ -143,7 +183,22 @@ CREATE TABLE rides (
     pool_id UUID REFERENCES ride_pools(id),
 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- Columns below are folded from later ALTERs; kept at the table end and in
+    -- ascending migration order so the physical column layout matches the old chain.
+    -- V11: external hand-off references
+    external_driver_id UUID REFERENCES external_drivers(id) ON DELETE SET NULL,
+    partner_company_id UUID REFERENCES partner_companies(id) ON DELETE SET NULL,
+    -- V14: confirmation / rejection tracking
+    confirmed_at TIMESTAMPTZ,
+    rejection_reason TEXT,
+    rejected_by UUID REFERENCES persons(id),
+    rejected_at TIMESTAMPTZ,
+    -- V19: free-form dispatcher tags
+    tags text[] NOT NULL DEFAULT '{}',
+    -- V20: scheduled flight time (delay = flight_time - flight_scheduled_time)
+    flight_scheduled_time TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_rides_client_id ON rides(client_id);
@@ -157,6 +212,8 @@ CREATE INDEX idx_rides_specifics ON rides USING gin(specifics);
 CREATE INDEX idx_rides_specifics_type ON rides ((specifics->>'type'));
 CREATE INDEX idx_rides_schedule_day_id ON rides(schedule_day_id);
 CREATE INDEX idx_rides_invoice_id ON rides(invoice_id);
+-- V19: GIN index for tag filtering (tags && ARRAY[...]).
+CREATE INDEX idx_rides_tags ON rides USING gin (tags);
 
 -- ============================================================
 -- Sent reminders (deduplication of ride push reminders)
@@ -342,3 +399,33 @@ CREATE TABLE emergency_reassignments (
 
 CREATE INDEX idx_emergency_reassign_ride ON emergency_reassignments(ride_id);
 CREATE INDEX idx_emergency_reassign_company ON emergency_reassignments(company_id);
+
+-- ============================================================
+-- Confirmation-request push deduplication (V14)
+-- ============================================================
+-- Mirrors sent_reminders; cleared on confirm/reject so a re-assigned ride can
+-- receive a new request in the next morning window.
+CREATE TABLE sent_confirmation_requests (
+    ride_id   UUID        NOT NULL REFERENCES rides(id) ON DELETE CASCADE,
+    person_id UUID        NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    sent_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ride_id, person_id)
+);
+
+-- ============================================================
+-- Guest tracking links (V17)
+-- ============================================================
+-- A public, opaque token grants read-only tracking access to exactly one ride
+-- (no JWT). The token is high-entropy random; possession is the only authorization.
+-- company_id is denormalized so the public read path needs no second tenant lookup.
+CREATE TABLE ride_share_tokens (
+    id UUID PRIMARY KEY,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    ride_id UUID NOT NULL REFERENCES rides(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_ride_share_tokens_token ON ride_share_tokens(token);
+CREATE INDEX idx_ride_share_tokens_ride ON ride_share_tokens(ride_id);

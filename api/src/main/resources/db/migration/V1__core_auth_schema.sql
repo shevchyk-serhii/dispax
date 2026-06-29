@@ -5,6 +5,12 @@
 --   V11: client_companies.airport_buffer_minutes, airport_checkin_close_minutes
 --   V8:  persons.avatar, persons.avatar_content_type
 --   V12: persons.preferred_language
+--   V15: client_companies.vat_id
+--   V18: persons.must_change_password
+-- Enum values folded from later ALTER TYPE ... ADD VALUE migrations (so no
+-- non-transactional ADD VALUE migration is needed):
+--   ride_status:    'Confirmed' (V12, after 'Assigned'), 'HandedOff' (V11, appended)
+--   payment_method: 'Payment'   (V16, appended)
 -- The driver_unavailability_reason enum (originally V10) lives here so that
 -- V3__schedule_schema.sql can reference it without a forward dependency.
 
@@ -13,12 +19,15 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 -- Enums (all 9, in dependency order)
 -- ============================================================
-CREATE TYPE ride_status AS ENUM ('Requested', 'Assigned', 'InProgress', 'Completed', 'Cancelled');
+-- ride_status value order matches the historical ADD VALUE sequence:
+--   'Confirmed' was inserted AFTER 'Assigned' (V12); 'HandedOff' was appended (V11).
+CREATE TYPE ride_status AS ENUM ('Requested', 'Assigned', 'Confirmed', 'InProgress', 'Completed', 'Cancelled', 'HandedOff');
 CREATE TYPE person_role AS ENUM ('driver', 'client', 'secretary', 'dispatcher', 'admin', 'client_secretary', 'super_admin');
 CREATE TYPE driver_status AS ENUM ('Available', 'Busy', 'Offline');
 CREATE TYPE schedule_day_status AS ENUM ('Scheduled', 'Active', 'Completed', 'Cancelled');
 CREATE TYPE payment_status AS ENUM ('Unpaid', 'Pending', 'Paid');
-CREATE TYPE payment_method AS ENUM ('Cash', 'Card', 'Invoice', 'Bank', 'Receivable');
+-- 'Payment' was appended to payment_method (V16).
+CREATE TYPE payment_method AS ENUM ('Cash', 'Card', 'Invoice', 'Bank', 'Receivable', 'Payment');
 CREATE TYPE company_status AS ENUM ('Active', 'Suspended', 'Trial', 'Inactive');
 CREATE TYPE subscription_plan AS ENUM ('Free', 'Starter', 'Professional', 'Enterprise');
 CREATE TYPE driver_unavailability_reason AS ENUM ('Lunch', 'Vacation', 'Personal');
@@ -56,8 +65,13 @@ CREATE TABLE client_companies (
     airport_buffer_minutes        INTEGER,
     airport_checkin_close_minutes INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- V15: appended last (matches the old ALTER chain's physical column order).
+    -- VAT ID (USt-IdNr.) of the billed client company; shown on invoices.
+    vat_id VARCHAR(50)
 );
+
+COMMENT ON COLUMN client_companies.vat_id IS 'VAT ID (USt-IdNr.) of the billed client company; shown on invoices.';
 
 CREATE INDEX idx_client_companies_taxi_company ON client_companies(taxi_company_id);
 
@@ -92,7 +106,10 @@ CREATE TABLE persons (
     -- V12: stores the user-selected UI language (en, de, uk); NULL means default/system locale.
     preferred_language VARCHAR(5),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- V18: appended last (matches the old ALTER chain's physical column order).
+    -- Users created by a dispatcher/admin get a temporary password and must change it on first login.
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX idx_persons_email ON persons(email);
