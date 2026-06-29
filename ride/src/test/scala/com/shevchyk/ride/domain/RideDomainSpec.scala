@@ -98,7 +98,7 @@ object RideDomainSpec extends ZIOSpecDefault {
             dropoffLocation = Location("Hotel"),
             scheduledTime = Some(Instant.now().plusSeconds(3600)),
             notes = Some("Terminal 2"),
-            specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123"))
+            specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123")))
           )
 
           assertTrue(
@@ -240,7 +240,7 @@ object RideDomainSpec extends ZIOSpecDefault {
             pickupLocation = Location("Airport"),
             dropoffLocation = Location("Hotel"),
             pickupDateTime = Instant.now().plusSeconds(3600),
-            specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123"))
+            specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123")))
           )
           assertTrue(ride.isAirportTransfer)
         },

@@ -417,6 +417,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get appVersion => 'App version';
+
+  @override
+  String get backendVersion => 'Backend version';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override
@@ -512,6 +518,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String airportLandingAt(String time) {
     return 'Landing at $time';
+  }
+
+  @override
+  String airportLandedAt(String time) {
+    return 'Landed at $time';
   }
 
   @override
@@ -2050,6 +2061,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get terminalLabel => 'Terminal';
 
   @override
+  String get gateRemote => 'Bus gate (remote stand)';
+
+  @override
   String get creatingRideLabel => 'Creating Ride...';
 
   @override
@@ -2141,17 +2155,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editRideDialogTitle => 'Edit Ride';
 
   @override
-  String get pickupDateTimeLabel => 'Pickup date/time (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Pickup date/time';
 
   @override
   String get flightNumberOptionalLabel => 'Flight number (optional)';
 
   @override
   String get notesOptionalLabel => 'Notes (optional)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Invalid date format. Use: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {
@@ -3360,6 +3370,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noDeparturesFound => 'No departures found';
+
+  @override
+  String get flightDetailsTitle => 'Flight details';
+
+  @override
+  String get gateNotPublished => 'Gate not published yet';
 
   @override
   String errorLoadingFlights(String error) {

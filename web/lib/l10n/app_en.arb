@@ -166,6 +166,8 @@
 
   "about": "About",
   "version": "Version",
+  "appVersion": "App version",
+  "backendVersion": "Backend version",
   "privacyPolicy": "Privacy Policy",
   "termsOfService": "Terms of Service",
 
@@ -205,6 +207,12 @@
   },
   "airportLandingAt": "Landing at {time}",
   "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandedAt": "Landed at {time}",
+  "@airportLandedAt": {
     "placeholders": {
       "time": {"type": "String"}
     }
@@ -985,6 +993,10 @@
   "flightNumberRequired": "Flight number is required for airport transfers",
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
+  "gateRemote": "Bus gate (remote stand)",
+  "@gateRemote": {
+    "description": "Shown instead of a gate code when MUC reports 'Gate REMOTE' — the plane is on a remote apron stand and passengers are bussed to the terminal."
+  },
 
   "creatingRideLabel": "Creating Ride...",
   "createRideButton": "Create Ride",
@@ -1021,10 +1033,9 @@
   "enterClientNameError": "Please enter client name",
 
   "editRideDialogTitle": "Edit Ride",
-  "pickupDateTimeLabel": "Pickup date/time (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Pickup date/time",
   "flightNumberOptionalLabel": "Flight number (optional)",
   "notesOptionalLabel": "Notes (optional)",
-  "invalidDateFormatError": "Invalid date format. Use: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Server error: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {
@@ -1670,6 +1681,8 @@
   "departuresTabLabel": "Departures",
   "noArrivalsFound": "No arrivals found",
   "noDeparturesFound": "No departures found",
+  "flightDetailsTitle": "Flight details",
+  "gateNotPublished": "Gate not published yet",
   "errorLoadingFlights": "Error loading flights: {error}",
   "@errorLoadingFlights": {
     "placeholders": {

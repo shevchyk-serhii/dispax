@@ -892,6 +892,18 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get appVersion;
+
+  /// No description provided for @backendVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend version'**
+  String get backendVersion;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
@@ -1077,6 +1089,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Landing at {time}'**
   String airportLandingAt(String time);
+
+  /// No description provided for @airportLandedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed at {time}'**
+  String airportLandedAt(String time);
 
   /// No description provided for @airportFlightDelay.
   ///
@@ -3916,6 +3934,12 @@ abstract class AppLocalizations {
   /// **'Terminal'**
   String get terminalLabel;
 
+  /// Shown instead of a gate code when MUC reports 'Gate REMOTE' — the plane is on a remote apron stand and passengers are bussed to the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus gate (remote stand)'**
+  String get gateRemote;
+
   /// No description provided for @creatingRideLabel.
   ///
   /// In en, this message translates to:
@@ -4099,7 +4123,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickupDateTimeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Pickup date/time (yyyy-MM-ddTHH:mm)'**
+  /// **'Pickup date/time'**
   String get pickupDateTimeLabel;
 
   /// No description provided for @flightNumberOptionalLabel.
@@ -4113,12 +4137,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes (optional)'**
   String get notesOptionalLabel;
-
-  /// No description provided for @invalidDateFormatError.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid date format. Use: yyyy-MM-ddTHH:mm'**
-  String get invalidDateFormatError;
 
   /// No description provided for @serverErrorMessage.
   ///
@@ -6291,6 +6309,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No departures found'**
   String get noDeparturesFound;
+
+  /// No description provided for @flightDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight details'**
+  String get flightDetailsTitle;
+
+  /// No description provided for @gateNotPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Gate not published yet'**
+  String get gateNotPublished;
 
   /// No description provided for @errorLoadingFlights.
   ///

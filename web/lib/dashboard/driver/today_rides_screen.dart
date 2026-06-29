@@ -1355,11 +1355,7 @@ class DriverArrivalTimeRow extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(
-                    text: l10n.airportLandingAt(
-                      DateFormat.Hm().format(flightTime),
-                    ),
-                  ),
+                  TextSpan(text: l10n.airportArrivalText(ride)),
                   if (showDelay)
                     TextSpan(
                       text: delay != null && delay > 0

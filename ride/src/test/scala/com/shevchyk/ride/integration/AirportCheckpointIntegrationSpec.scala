@@ -52,7 +52,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     pickupLocation = Location("MUC Airport"),
     dropoffLocation = Location("Munich City"),
     pickupDateTime = Instant.now().plusSeconds(3600),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true)),
     airportCheckpoint = checkpoint
   )
 
@@ -326,6 +326,6 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     pickupDateTime = Instant.now().plusSeconds(3600),
     // isArrival encoded in AirportTransfer.isArrival — persisted via the specifics JSONB column.
     // After round-trip through create()/findById(), isArrivalAirportTransfer must be true.
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true))
   )
 }

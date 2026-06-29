@@ -216,6 +216,39 @@ void main() {
 
       expect(find.byIcon(Icons.flight_land), findsNothing);
     });
+
+    testWidgets('labels the time as a forecast while the flight is airborne', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightStatus: 'departed', // still in the air → estimate, not fact
+        flightTime: DateTime(2026, 6, 27, 14, 5),
+      );
+
+      await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+      // en: forecast → "Landing at 14:05" (NOT "Landed at").
+      expect(find.textContaining('Landing at 14:05'), findsOneWidget);
+      expect(find.textContaining('Landed at'), findsNothing);
+    });
+
+    testWidgets('labels the time as actual once the flight has landed', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightStatus: 'landed', // touched down → the time IS the actual landing
+        flightTime: DateTime(2026, 6, 27, 14, 5),
+      );
+
+      await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+      // en: fact → "Landed at 14:05" (NOT the forecast "Landing at").
+      expect(find.textContaining('Landed at 14:05'), findsOneWidget);
+    });
   });
 
   // Screen-level test: locks in that the "Heute" tab renders EVERY ride of the

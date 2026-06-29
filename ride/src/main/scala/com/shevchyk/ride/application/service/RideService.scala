@@ -840,7 +840,7 @@ class RideServiceImpl(
                       .focus(_.notes)
                       .replace(request.notes.orElse(ride.notes))
                       .focus(_.specifics)
-                      .replace(request.specifics.orElse(ride.specifics))
+                      .replace(mergeSpecifics(request.specifics, ride.specifics))
                       .focus(_.specialRequirements)
                       .replace(request.specialRequirements.orElse(ride.specialRequirements))
                       // None leaves tags unchanged; Some(list) replaces (already normalized in the DTO layer).
@@ -862,6 +862,28 @@ class RideServiceImpl(
           )
           .ignore
     } yield persistedRide
+
+  /**
+   * Merge a three-valued specifics update into the ride's existing specifics.
+   *
+   *   - Unchanged → keep the ride's current specifics (the partial update did not touch airportness).
+   *   - Clear → drop the specifics (the ride is no longer an airport transfer).
+   *   - Set → the DTO builds a placeholder `AirportTransfer("UNKNOWN", flight, isArrival = false)` carrying the
+   *     optional flight number. When the ride is already an airport transfer we keep its `airportCode` and `isArrival`,
+   *     replacing only the (optional) flight number — editing it must never flip the direction or wipe the airport
+   *     code. A None flight is valid: an airport transfer whose flight is not yet known.
+   */
+  private def mergeSpecifics(
+      incoming: FieldUpdate[RideSpecifics],
+      existing: Option[RideSpecifics]
+  ): Option[RideSpecifics] =
+    incoming match
+      case FieldUpdate.Unchanged                                        => existing
+      case FieldUpdate.Clear                                            => None
+      case FieldUpdate.Set(RideSpecifics.AirportTransfer(_, flight, _)) =>
+        existing match
+          case Some(prev: RideSpecifics.AirportTransfer) => Some(prev.copy(flightNumber = flight))
+          case _                                         => Some(RideSpecifics.AirportTransfer("UNKNOWN", flight))
 
   def assignDriver(
       rideId: RideId,

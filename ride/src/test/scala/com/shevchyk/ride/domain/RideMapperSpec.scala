@@ -71,9 +71,9 @@ object RideMapperSpec extends ZIOSpecDefault {
         assertTrue(ride.status == RideStatus.Requested)
       },
       test("maps specifics when provided") {
-        val req  = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")))
+        val req  = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"))))
         val ride = RideMapper.fromRequest(req)
-        assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", "LH123")))
+        assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", Some("LH123"))))
       },
       // [HIGH] vehicleClass = request.vehicleClass — mutation to VehicleClass.Default survives the existing tests
       // because they all use the default.  This test uses Van (a non-default class) so the mutation is caught.

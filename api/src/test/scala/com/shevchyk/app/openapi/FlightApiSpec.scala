@@ -66,6 +66,7 @@ object FlightApiSpec extends ZIOSpecDefault:
     isArrival = true,
     status = FlightStatus.Landed,
     terminal = Some("T2"),
+    gate = Some("G35"),
     airline = Some("Lufthansa"),
     otherAirport = Some("FRA")
   )
@@ -168,5 +169,42 @@ object FlightApiSpec extends ZIOSpecDefault:
                    .addHeader(Header.Authorization.Bearer(token))
         resp  <- run(req)
       } yield assertTrue(resp.status == Status.BadRequest)
+    },
+    test("dispatcher GET /api/flights/lookup → 200 with the flight's gate") {
+      for {
+        token   <- generateToken(dispatcher)
+        req      = Request
+                     .get(URL.decode("/api/flights/lookup?flightNumber=LH123&isArrival=true").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        bodyStr.contains("LH123"),
+        bodyStr.contains("G35") // the gate is the whole point of lookup (the board has none)
+      )
+    },
+    test("lookup of an unknown flight → 200 null") {
+      for {
+        token   <- generateToken(dispatcher)
+        req      = Request
+                     .get(URL.decode("/api/flights/lookup?flightNumber=ZZ000&isArrival=true").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        !bodyStr.contains("ZZ000"), // no flight body for an unknown number (empty / null)
+        bodyStr.trim == "null" || bodyStr.trim.isEmpty
+      )
+    },
+    test("lookup as client (non-dispatcher) → 403") {
+      for {
+        token <- generateToken(client)
+        req    = Request
+                   .get(URL.decode("/api/flights/lookup?flightNumber=LH123").toOption.get)
+                   .addHeader(Header.Authorization.Bearer(token))
+        resp  <- run(req)
+      } yield assertTrue(resp.status == Status.Forbidden)
     }
   ).provide(testLayers)

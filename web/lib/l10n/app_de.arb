@@ -148,6 +148,8 @@
 
   "about": "Über",
   "version": "Version",
+  "appVersion": "App-Version",
+  "backendVersion": "Backend-Version",
   "privacyPolicy": "Datenschutzrichtlinie",
   "termsOfService": "Nutzungsbedingungen",
 
@@ -187,6 +189,12 @@
   },
   "airportLandingAt": "Landung um {time}",
   "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandedAt": "Gelandet um {time}",
+  "@airportLandedAt": {
     "placeholders": {
       "time": {"type": "String"}
     }
@@ -903,6 +911,7 @@
   "flightNumberRequired": "Flugnummer ist für Flughafentransfers erforderlich",
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
+  "gateRemote": "Bus-Gate (Außenposition)",
 
   "creatingRideLabel": "Fahrt wird erstellt...",
   "createRideButton": "Fahrt erstellen",
@@ -939,10 +948,9 @@
   "enterClientNameError": "Bitte geben Sie den Kundennamen ein",
 
   "editRideDialogTitle": "Fahrt bearbeiten",
-  "pickupDateTimeLabel": "Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Abholdatum/-uhrzeit",
   "flightNumberOptionalLabel": "Flugnummer (optional)",
   "notesOptionalLabel": "Notizen (optional)",
-  "invalidDateFormatError": "Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Serverfehler: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {
@@ -1587,6 +1595,8 @@
   "arrivalsBoardTitle": "Ankünfte · Flughafen München",
   "departuresTabLabel": "Abflüge",
   "noArrivalsFound": "Keine Ankünfte gefunden",
+  "flightDetailsTitle": "Flugdetails",
+  "gateNotPublished": "Gate noch nicht veröffentlicht",
   "noDeparturesFound": "Keine Abflüge gefunden",
   "errorLoadingFlights": "Fehler beim Laden der Flüge: {error}",
   "@errorLoadingFlights": {

@@ -52,6 +52,7 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
   private val config = AirportArrivalTimingConfig(
     normalWalkMinutes = 10,
     satelliteWalkMinutes = 18,
+    remoteWalkMinutes = 25,
     freeParkingMinutes = 10,
     satelliteTerminalCodes = Set("K", "T2K"),
     satelliteGateLetters = Set("K", "L"),
@@ -83,7 +84,7 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
     pickupDateTime = arrival,
     scheduledTime = scheduled,
     specifics = Some(
-      RideSpecifics.AirportTransfer(airportCode = airportCode, flightNumber = "LH123", isArrival = isArrival)
+      RideSpecifics.AirportTransfer(airportCode = airportCode, flightNumber = Some("LH123"), isArrival = isArrival)
     )
   )
 
@@ -286,6 +287,18 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
           AirportTimingService
             .computeLatestEntry(arrival, satelliteBuf)
             .isAfter(AirportTimingService.computeLatestEntry(arrival, mainBuf))
+        )
+      },
+      test("remote (bus) stand: longest walk buffer of all, beats satellite") {
+        // A remote apron stand ("Gate REMOTE") busses the passenger in → the slowest case (25),
+        // longer than the satellite pier (18) and the main terminal (10). Case-insensitive.
+        val remoteBuf    = AirportTimingService.walkBuffer(Some("REMOTE"), None, config)
+        val remoteLower  = AirportTimingService.walkBuffer(Some("remote"), Some("T2"), config)
+        val satelliteBuf = AirportTimingService.walkBuffer(Some("K12"), None, config)
+        assertTrue(
+          remoteBuf == 25,
+          remoteLower == 25, // case-insensitive, and not overridden by the (main) T2 terminal
+          remoteBuf > satelliteBuf
         )
       },
       test("entry == latestEntry (free-parking window is not subtracted)") {

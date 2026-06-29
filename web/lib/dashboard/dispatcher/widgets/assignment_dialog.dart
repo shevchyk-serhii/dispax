@@ -373,12 +373,17 @@ class AssignmentDialog extends StatelessWidget {
   /// the value plain text inside [_infoRow].
   String _flightDetails(AppLocalizations l10n, Ride ride) {
     final parts = <String>[ride.flightNumber ?? ''];
-    if (ride.gate != null && ride.terminal != null) {
-      parts.add('Gate ${ride.gate} (Terminal ${ride.terminal})');
-    } else if (ride.gate != null) {
-      parts.add('Gate ${ride.gate}');
+    // A remote stand has no real code → its label is self-describing (no "Gate" prefix).
+    final gate = l10n.localizedGate(ride);
+    final gateText = ride.isRemoteGate
+        ? gate
+        : (gate != null ? '${l10n.gateLabel} $gate' : null);
+    if (gateText != null && ride.terminal != null) {
+      parts.add('$gateText (${l10n.terminalLabel} ${ride.terminal})');
+    } else if (gateText != null) {
+      parts.add(gateText);
     } else if (ride.terminal != null) {
-      parts.add('Terminal ${ride.terminal}');
+      parts.add('${l10n.terminalLabel} ${ride.terminal}');
     }
     final statusText = l10n.localizedFlightStatus(ride.flightStatus);
     if (statusText.isNotEmpty) {

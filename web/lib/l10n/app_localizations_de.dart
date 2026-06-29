@@ -418,6 +418,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get appVersion => 'App-Version';
+
+  @override
+  String get backendVersion => 'Backend-Version';
+
+  @override
   String get privacyPolicy => 'Datenschutzrichtlinie';
 
   @override
@@ -513,6 +519,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String airportLandingAt(String time) {
     return 'Landung um $time';
+  }
+
+  @override
+  String airportLandedAt(String time) {
+    return 'Gelandet um $time';
   }
 
   @override
@@ -2058,6 +2069,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get terminalLabel => 'Terminal';
 
   @override
+  String get gateRemote => 'Bus-Gate (Außenposition)';
+
+  @override
   String get creatingRideLabel => 'Fahrt wird erstellt...';
 
   @override
@@ -2153,17 +2167,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editRideDialogTitle => 'Fahrt bearbeiten';
 
   @override
-  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit';
 
   @override
   String get flightNumberOptionalLabel => 'Flugnummer (optional)';
 
   @override
   String get notesOptionalLabel => 'Notizen (optional)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {
@@ -3378,6 +3388,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noDeparturesFound => 'Keine Abflüge gefunden';
+
+  @override
+  String get flightDetailsTitle => 'Flugdetails';
+
+  @override
+  String get gateNotPublished => 'Gate noch nicht veröffentlicht';
 
   @override
   String errorLoadingFlights(String error) {

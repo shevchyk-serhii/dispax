@@ -148,6 +148,8 @@
 
   "about": "Про додаток",
   "version": "Версія",
+  "appVersion": "Версія додатка",
+  "backendVersion": "Версія бекенду",
   "privacyPolicy": "Політика конфіденційності",
   "termsOfService": "Умови використання",
 
@@ -187,6 +189,12 @@
   },
   "airportLandingAt": "Приліт о {time}",
   "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandedAt": "Приземлився о {time}",
+  "@airportLandedAt": {
     "placeholders": {
       "time": {"type": "String"}
     }
@@ -903,6 +911,7 @@
   "flightNumberRequired": "Номер рейсу обов'язковий для трансферів до аеропорту",
   "gateLabel": "Гейт",
   "terminalLabel": "Термінал",
+  "gateRemote": "Автобусний гейт (віддалена стоянка)",
 
   "creatingRideLabel": "Створення поїздки...",
   "createRideButton": "Створити поїздку",
@@ -939,10 +948,9 @@
   "enterClientNameError": "Будь ласка, введіть ім'я клієнта",
 
   "editRideDialogTitle": "Редагувати поїздку",
-  "pickupDateTimeLabel": "Дата/час подачі (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Дата/час подачі",
   "flightNumberOptionalLabel": "Номер рейсу (необов'язково)",
   "notesOptionalLabel": "Примітки (необов'язково)",
-  "invalidDateFormatError": "Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Помилка сервера: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {
@@ -1587,6 +1595,8 @@
   "arrivalsBoardTitle": "Прильоти · Аеропорт Мюнхен",
   "departuresTabLabel": "Відльоти",
   "noArrivalsFound": "Прильотів не знайдено",
+  "flightDetailsTitle": "Деталі рейсу",
+  "gateNotPublished": "Гейт ще не оголошено",
   "noDeparturesFound": "Відльотів не знайдено",
   "errorLoadingFlights": "Помилка завантаження рейсів: {error}",
   "@errorLoadingFlights": {

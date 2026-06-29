@@ -333,7 +333,7 @@ object RideServiceSpec extends ZIOSpecDefault {
             companyId = testCompanyId,
             pickupLocation = Location("Airport Terminal 1"),
             dropoffLocation = Location("Hotel"),
-            specifics = Some(RideSpecifics.AirportTransfer("KBP", "PS123"))
+            specifics = Some(RideSpecifics.AirportTransfer("KBP", Some("PS123")))
           )
 
           for {
@@ -342,7 +342,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(
             ride.isAirportTransfer &&
               ride.specifics.exists { case RideSpecifics.AirportTransfer(code, flight, _) =>
-                code == "KBP" && flight == "PS123"
+                code == "KBP" && flight.contains("PS123")
               }
           )
         }.provide(standardLayers),

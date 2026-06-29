@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dispax/dashboard/driver/calendar/week_view_widget.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 
 import '../../../helpers/test_fixtures.dart';
@@ -37,6 +38,8 @@ void main() {
     Ride? tapped;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: WeekViewWidget(
             selectedDay: selectedDay,

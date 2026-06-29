@@ -19,6 +19,11 @@ import java.time.LocalDate
  * `GET /api/flights/arrivals?date=YYYY-MM-DD` returns the whole Munich arrivals board for the given date (default:
  * today), restricted to DISPATCHER / ADMIN. The data comes from the already-wired [[FlightStatusProvider.list]] (real
  * MUC scrape in prod, in-memory double in tests); a malformed `date` is a 400, an unexpected failure a 500.
+ *
+ * `GET /api/flights/lookup?flightNumber=…&date=YYYY-MM-DD&isArrival=true` returns a single flight WITH its gate (the
+ * board view has no gate — it lives on each flight's detail page). It is a thin wrapper over
+ * [[FlightStatusProvider.lookup]], which already enriches the row with the gate from the detail page. `null` when the
+ * flight is not found.
  */
 object FlightApi:
 
@@ -37,7 +42,16 @@ object FlightApi:
     .tag(flightsTag)
     .summary("MUC arrivals board")
 
-  val endpoints = List(arrivalsBoardEndpoint)
+  val flightLookupEndpoint = secureEndpoint.get
+    .in("api" / "flights" / "lookup")
+    .in(query[String]("flightNumber"))
+    .in(query[Option[String]]("date"))
+    .in(query[Option[Boolean]]("isArrival"))
+    .out(jsonBody[Option[FlightDto]])
+    .tag(flightsTag)
+    .summary("MUC single-flight lookup (with gate)")
+
+  val endpoints = List(arrivalsBoardEndpoint, flightLookupEndpoint)
 
   // -- Server logic --------------------------------------------------------
 
@@ -53,4 +67,18 @@ object FlightApi:
       } yield flights.map(FlightDto.fromDomain)
   }
 
-  val serverEndpoints: List[ZServerEndpoint[FlightEnv, Any]] = List(arrivalsBoardServer)
+  private val flightLookupServer: ZServerEndpoint[FlightEnv, Any] = flightLookupEndpoint.serverLogic {
+    user => (flightNumber, dateOpt, isArrivalOpt) =>
+      for {
+        _        <- checkRole(user, "DISPATCHER", "ADMIN")
+        date     <- ZIO
+                      .attempt(dateOpt.map(LocalDate.parse).getOrElse(LocalDate.now()))
+                      .orElseFail((StatusCode.BadRequest, ApiError("Invalid date format, expected YYYY-MM-DD")))
+        provider <- ZIO.service[FlightStatusProvider]
+        flight   <- provider
+                      .lookup(flightNumber, date, isArrival = isArrivalOpt.getOrElse(true))
+                      .mapError(_ => internalError)
+      } yield flight.map(FlightDto.fromDomain)
+  }
+
+  val serverEndpoints: List[ZServerEndpoint[FlightEnv, Any]] = List(arrivalsBoardServer, flightLookupServer)

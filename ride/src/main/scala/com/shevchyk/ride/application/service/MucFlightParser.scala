@@ -150,10 +150,18 @@ object MucFlightParser:
    * Extract the MUC gate code (e.g. "G35") from a flight detail page. Reads the `flight-box-area` of the block whose
    * airport is MUC (text like "T2 - Gate G35"), and returns just the gate token after "Gate". None when no gate is
    * published. Also exposes the terminal as a fallback for the list value.
+   *
+   * "Gate REMOTE" is a remote (bus) stand, not a passenger gate. It is kept (normalised to upper-case "REMOTE") rather
+   * than dropped: the driver still needs to know the passenger arrives by apron bus (so it takes longer), and the
+   * walk-buffer logic recognises "REMOTE" as the longest buffer. The terminal is still read separately.
    */
   def parseGate(detailHtml: String): Option[String] = mucArea(detailHtml).flatMap { area =>
     // area reads like "T2 - Gate G35" → take the token after "Gate".
-    "(?i)gate\\s+(\\S+)".r.findFirstMatchIn(area).map(_.group(1).trim).filter(_.nonEmpty)
+    "(?i)gate\\s+(\\S+)".r
+      .findFirstMatchIn(area)
+      .map(_.group(1).trim)
+      .filter(_.nonEmpty)
+      .map(g => if g.equalsIgnoreCase("remote") then "REMOTE" else g)
   }
 
   /**

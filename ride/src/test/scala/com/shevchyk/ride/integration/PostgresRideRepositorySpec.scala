@@ -115,12 +115,54 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           _     <- seedTestData(xa)
           _     <- cleanRides(xa)
           repo   = PostgresRideRepository(xa)
-          ride   = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH1234")))
+          ride   = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH1234"))))
           _     <- repo.create(ride)
           found <- repo.findById(ride.id)
         } yield assertTrue(
           found.get.specifics.isDefined,
-          found.get.specifics.get == RideSpecifics.AirportTransfer("MUC", "LH1234")
+          found.get.specifics.get == RideSpecifics.AirportTransfer("MUC", Some("LH1234"))
+        )
+      },
+      // Airport transfer with NO flight number — the JSONB codec must write null and read it back as
+      // None (the only path that exercises the Circe encoder/decoder, which the in-memory double skips).
+      test("create with AirportTransfer specifics and no flight number round-trips as None") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", None, isArrival = true)))
+          _     <- repo.create(ride)
+          found <- repo.findById(ride.id)
+        } yield assertTrue(
+          found.get.specifics.contains(RideSpecifics.AirportTransfer("MUC", None, isArrival = true))
+        )
+      },
+      test("findActiveRidesInWindow returns unassigned rides and excludes finished ones") {
+        // The flight monitor relies on this to enrich even Requested (no-driver) rides,
+        // while never tracking Completed/Cancelled ones.
+        val now      = Instant.now()
+        val inWindow = now.plusSeconds(3600) // +1h, inside the [now, now+...] window
+        for {
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <- cleanRides(xa)
+          repo      = PostgresRideRepository(xa)
+          requested = makeRide(status = RideStatus.Requested).copy(pickupDateTime = inWindow)
+          completed = makeRide(status = RideStatus.Completed).copy(pickupDateTime = inWindow)
+          cancelled = makeRide(status = RideStatus.Cancelled).copy(pickupDateTime = inWindow)
+          past      = makeRide(status = RideStatus.Requested).copy(pickupDateTime = now.minusSeconds(3600))
+          _        <- repo.create(requested)
+          _        <- repo.create(completed)
+          _        <- repo.create(cancelled)
+          _        <- repo.create(past)
+          found    <- repo.findActiveRidesInWindow(now, now.plusSeconds(2 * 3600))
+          ids       = found.map(_.id).toSet
+        } yield assertTrue(
+          ids.contains(requested.id),  // unassigned, in window → tracked
+          !ids.contains(completed.id), // finished → excluded
+          !ids.contains(cancelled.id), // finished → excluded
+          !ids.contains(past.id)       // outside the window → excluded
         )
       },
       test("update changes status and driver") {
@@ -150,7 +192,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           repo   = PostgresRideRepository(xa)
           ride   = makeRide(
                      notes = Some("ring the bell"),
-                     specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
+                     specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true)),
                      paymentMethod = Some(PaymentMethod.Cash),
                      tags = List("Urgent", "Cash Only")
                    )
@@ -498,7 +540,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
                               estimatedPrice = Some(BigDecimal("42.50")),
                               finalPrice = Some(BigDecimal("45.00")),
                               notes = Some("Please ring bell"),
-                              specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH100")),
+                              specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH100"))),
                               specialRequirements = Some("Wheelchair access"),
                               paymentStatus = PaymentStatus.Paid,
                               paymentMethod = Some(PaymentMethod.Card),

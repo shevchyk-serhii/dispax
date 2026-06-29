@@ -38,6 +38,7 @@ object PredictiveEtaMonitorSpec extends ZIOSpecDefault:
       private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected RideRepository.$m")
 
       def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = ZIO.succeed(rides)
+      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]   = nope("findActiveRidesInWindow")
 
       def create(ride: Ride): Task[Ride]                                                                          = nope("create")
       def findById(id: RideId): Task[Option[Ride]]                                                                = nope("findById")

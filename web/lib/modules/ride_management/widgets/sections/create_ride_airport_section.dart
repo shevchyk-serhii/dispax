@@ -140,14 +140,9 @@ class CreateRideAirportSection extends StatelessWidget {
           onTerminalChanged: (value) {
             context.read<CreateRideFormBloc>().add(TerminalSelected(value));
           },
-          flightNumberValidator: isAirportTransfer
-              ? (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Flight number is required for airport transfers';
-                  }
-                  return null;
-                }
-              : null,
+          // The flight number is optional: an airport transfer can be booked before the
+          // flight is known (no live gate/terminal/entry-time until it is added).
+          flightNumberValidator: null,
         ),
         // Departure pickers are shown only for airport departure rides.
         // For arrival rides and non-airport rides the schedule section above

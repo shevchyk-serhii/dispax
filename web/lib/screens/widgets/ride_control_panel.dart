@@ -190,12 +190,13 @@ class RideControlPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
                 Text(() {
+                  final flightInfo = l10n.fullFlightInfoLocalized(ride);
                   final statusText = l10n.localizedFlightStatus(
                     ride.flightStatus,
                   );
                   return statusText.isEmpty
-                      ? ride.fullFlightInfo
-                      : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+                      ? flightInfo
+                      : '$flightInfo • ${ride.flightStatusIcon} $statusText';
                 }(), style: AppStyles.bodyMedium.copyWith(color: onSurface)),
               ],
             ),

@@ -47,12 +47,12 @@ class RideBadges {
         color = AppColors.error;
     }
 
-    final base = ride.fullFlightInfo.isNotEmpty
-        ? ride.fullFlightInfo
+    final l10n = AppLocalizations.of(context)!;
+    final fullInfo = l10n.fullFlightInfoLocalized(ride);
+    final base = fullInfo.isNotEmpty
+        ? fullInfo
         : '${ride.flightTypeText} ${ride.flightNumber}';
-    final statusText = AppLocalizations.of(
-      context,
-    )!.localizedFlightStatus(ride.flightStatus);
+    final statusText = l10n.localizedFlightStatus(ride.flightStatus);
     final label = statusText.isEmpty
         ? base
         : '$base • ${ride.flightStatusIcon} $statusText';

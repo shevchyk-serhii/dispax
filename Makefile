@@ -18,6 +18,11 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Build number for production app builds, derived from git so it auto-increments
+# every commit (App Store / Play require a strictly increasing build number).
+# `git rev-list --count HEAD` = total commits on the current branch. Override:
+# `make flutter-prod-android FLUTTER_BUILD_NUMBER=123`.
+FLUTTER_BUILD_NUMBER ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 1)
 # Mapbox public token (geocoding/address autocomplete + maps SDK). Read from
 # .env.dev and passed to every `flutter run`/`build` via --dart-define so the
 # in-app MapboxService.suggestAddresses/geocodeAddress actually work. Override
@@ -598,23 +603,23 @@ load-test:
 #
 # --update-env-vars (not --set-env-vars) merges values in without wiping the
 # service's other env (DATABASE_URL, JWT_SECRET, …):
-#   PUBLIC_BASE_URL    — base for absolute guest tracking links (<base>/track/<token>)
-#   MAPBOX_ACCESS_TOKEN — public pk.* token for the server-rendered /track map page
-# PUBLIC_BASE_URL is always set (= PROD_URL). MAPBOX_ACCESS_TOKEN is only sent when
-# non-empty (it comes from .env.dev), so a deploy without .env.dev never clobbers a
-# token already configured on the service. Both degrade gracefully if unset
-# (relative link / no map) rather than break.
+#   PUBLIC_BASE_URL — base for absolute guest tracking links (<base>/track/<token>)
+#
+# MAPBOX_ACCESS_TOKEN is deliberately NOT set here: in prod it is a Secret Manager
+# reference (valueFrom.secretKeyRef). Passing it as a literal via --update-env-vars
+# fails — Cloud Run rejects changing an env var from a secret to a string literal
+# ("Cannot update environment variable [MAPBOX_ACCESS_TOKEN] to string literal …").
+# The token is managed out-of-band (gcloud run services update --update-secrets),
+# so the deploy must leave it untouched. (.env.dev still feeds MAPBOX_ACCESS_TOKEN
+# to the local `flutter-dev*` targets below.)
 deploy:
 	sbt assembly
 	docker buildx build --platform linux/amd64 --provenance=false --sbom=false -t $(GCP_IMAGE) --push .
-	@ENV_VARS="PUBLIC_BASE_URL=$(PROD_URL)"; \
-	if [ -n "$(MAPBOX_ACCESS_TOKEN)" ]; then ENV_VARS="$$ENV_VARS,MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)"; \
-	else echo "⚠️  MAPBOX_ACCESS_TOKEN empty (no .env.dev?) — leaving the service's existing value unchanged"; fi; \
 	gcloud run services update $(GCP_SERVICE) \
 		--project $(GCP_PROJECT) \
 		--region $(GCP_REGION) \
 		--image $(GCP_IMAGE) \
-		--update-env-vars "$$ENV_VARS"
+		--update-env-vars "PUBLIC_BASE_URL=$(PROD_URL)"
 	@echo "✅ Deployed to $(PROD_URL)"
 
 # Tail Cloud Run logs
@@ -662,6 +667,7 @@ flutter-prod:
 # Build Android APK for production
 flutter-prod-android:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build apk --release \
+		--build-number=$(FLUTTER_BUILD_NUMBER) \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ APK: $(FLUTTER_DIR)/build/app/outputs/flutter-apk/app-release.apk"
@@ -670,6 +676,7 @@ flutter-prod-android:
 # signing identity / provisioning profile in Xcode.
 flutter-prod-ios:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build ipa --release \
+		--build-number=$(FLUTTER_BUILD_NUMBER) \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ IPA: $(FLUTTER_DIR)/build/ios/ipa/"

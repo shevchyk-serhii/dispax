@@ -16,6 +16,7 @@ import 'package:dispax/dashboard/secretary/widgets/client_list_panel.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/flight_management/services/arrivals_board_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -98,6 +99,10 @@ void main() {
     when(
       () => apiClient.get(any()),
     ).thenAnswer((_) async => http.Response('[]', 200));
+
+    // The dispatcher arrivals board reads from this singleton; configure it with
+    // the mocked client so the screen builds (mirrors AuthBloc.configure on login).
+    ArrivalsBoardService.configure(apiClient);
 
     // RideBloc: idle loaded state, silently accept events.
     when(() => rideBloc.state).thenReturn(RideState.loaded(const []));

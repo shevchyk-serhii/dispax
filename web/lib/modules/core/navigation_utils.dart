@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'date_utils.dart';
 import 'navigation_helper.dart';
 import 'models/location.dart';
 import 'models/person.dart';
@@ -266,9 +266,10 @@ class _EditRideDialog extends StatefulWidget {
 class _EditRideDialogState extends State<_EditRideDialog> {
   late final TextEditingController _fromCtrl;
   late final TextEditingController _toCtrl;
-  late final TextEditingController _dateCtrl;
+  late DateTime _pickupDateTime;
   late final TextEditingController _notesCtrl;
   late final TextEditingController _flightCtrl;
+  late bool _isAirportTransfer;
   late List<String> _tags;
   bool _saving = false;
   String? _error;
@@ -278,12 +279,54 @@ class _EditRideDialogState extends State<_EditRideDialog> {
     super.initState();
     _fromCtrl = TextEditingController(text: widget.ride.from.address);
     _toCtrl = TextEditingController(text: widget.ride.to.address);
-    _dateCtrl = TextEditingController(
-      text: DateFormat("yyyy-MM-dd'T'HH:mm").format(widget.ride.pickupDateTime),
-    );
+    // Keep the value as-is (no toLocal/toUtc) to preserve the existing behaviour.
+    _pickupDateTime = widget.ride.pickupDateTime;
     _notesCtrl = TextEditingController(text: widget.ride.notes ?? '');
     _flightCtrl = TextEditingController(text: widget.ride.flightNumber ?? '');
+    _isAirportTransfer = widget.ride.isAirportTransfer;
     _tags = List<String>.from(widget.ride.tags);
+  }
+
+  /// Opens a Material date picker followed by a time picker and stores the
+  /// combined [DateTime]. Minutes are rounded to the nearest 5, mirroring the
+  /// create-ride flow (CreateRideFormHelper.selectDateTime).
+  Future<void> _pickDateTime() async {
+    // The ride may be in the past or far future, so clamp the picker window
+    // around both the current value and now — showDatePicker asserts that
+    // initialDate is within [firstDate, lastDate].
+    final now = DateTime.now();
+    final earliest = _pickupDateTime.isBefore(now) ? _pickupDateTime : now;
+    final latest = _pickupDateTime.isAfter(now) ? _pickupDateTime : now;
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _pickupDateTime,
+      firstDate: DateTime(earliest.year - 1, earliest.month, earliest.day),
+      lastDate: DateTime(latest.year + 1, latest.month, latest.day),
+    );
+    if (date == null || !mounted) return;
+
+    final initialTime = TimeOfDay.fromDateTime(_pickupDateTime);
+    final roundedInitial = TimeOfDay(
+      hour: initialTime.hour,
+      minute: (initialTime.minute / 5).round() * 5 % 60,
+    );
+    final time = await showTimePicker(
+      context: context,
+      initialTime: roundedInitial,
+    );
+    if (time == null || !mounted) return;
+
+    final roundedMinute = (time.minute / 5).round() * 5;
+    setState(() {
+      _pickupDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour + (roundedMinute == 60 ? 1 : 0),
+        roundedMinute == 60 ? 0 : roundedMinute,
+      );
+    });
   }
 
   void _addTag(String raw) {
@@ -301,7 +344,6 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   void dispose() {
     _fromCtrl.dispose();
     _toCtrl.dispose();
-    _dateCtrl.dispose();
     _notesCtrl.dispose();
     _flightCtrl.dispose();
     super.dispose();
@@ -315,28 +357,20 @@ class _EditRideDialogState extends State<_EditRideDialog> {
 
     final l10n = AppLocalizations.of(context)!;
     final apiClient = context.read<AuthBloc>().apiClient;
-    // Parse local time and convert to UTC ISO-8601 for the backend
-    DateTime localDt;
-    try {
-      localDt = DateFormat(
-        "yyyy-MM-dd'T'HH:mm",
-      ).parseStrict(_dateCtrl.text.trim());
-    } catch (_) {
-      setState(() {
-        _error = l10n.invalidDateFormatError;
-        _saving = false;
-      });
-      return;
-    }
-    final utcIso = localDt.toUtc().toIso8601String();
+    // Convert the picked local time to UTC ISO-8601 for the backend.
+    final utcIso = _pickupDateTime.toUtc().toIso8601String();
 
     final body = <String, dynamic>{
       'from': {'address': _fromCtrl.text.trim()},
       'to': {'address': _toCtrl.text.trim()},
       'pickupDateTime': utcIso,
-      if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
-      if (_flightCtrl.text.trim().isNotEmpty)
-        'flightNumber': _flightCtrl.text.trim(),
+      // Always send notes and flightNumber (even empty) so clearing them persists — the backend
+      // treats an absent field as "leave unchanged" and an empty string as "clear".
+      'notes': _notesCtrl.text.trim(),
+      'flightNumber': _flightCtrl.text.trim(),
+      // Airportness is an explicit toggle, decoupled from the flight number: the backend keys
+      // specifics on this (true = airport, possibly without a flight; false = un-airport).
+      'isAirportTransfer': _isAirportTransfer,
       // Always send tags (even empty) so clearing all tags persists — the
       // backend treats an absent field as "leave unchanged".
       'tags': _tags,
@@ -389,21 +423,39 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _dateCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.pickupDateTimeLabel,
-                  border: const OutlineInputBorder(),
+              InkWell(
+                key: const Key('edit-ride-pickup-datetime'),
+                onTap: _saving ? null : _pickDateTime,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.pickupDateTimeLabel,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: const Icon(Icons.event),
+                  ),
+                  child: Text(AppDateUtils.formatDateTime(_pickupDateTime)),
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _flightCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.flightNumberOptionalLabel,
-                  border: const OutlineInputBorder(),
-                ),
+              SwitchListTile(
+                key: const Key('edit-ride-airport-toggle'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.airportTransferLabel),
+                value: _isAirportTransfer,
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _isAirportTransfer = value),
               ),
+              // The flight number is optional even when airport is on — it may be unknown.
+              if (_isAirportTransfer) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _flightCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.flightNumberOptionalLabel,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _notesCtrl,

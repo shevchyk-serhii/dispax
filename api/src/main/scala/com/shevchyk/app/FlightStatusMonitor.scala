@@ -12,7 +12,8 @@ import java.time.{Instant, ZoneId}
 /**
  * Background flight-status monitor.
  *
- * Periodically scans upcoming airport-transfer rides, looks up each ride's flight via the [[FlightStatusProvider]], and
+ * Periodically scans upcoming airport-transfer rides (including still-unassigned `Requested` ones, so the dispatcher
+ * sees the gate/terminal before assigning a driver), looks up each ride's flight via the [[FlightStatusProvider]], and
  * — when the live data differs from what is currently persisted — writes the new gate/terminal/status/time and emits a
  * `WebSocketEvent.FlightStatusUpdated` so dispatchers and the client see the change without a manual refresh.
  *
@@ -44,7 +45,9 @@ object FlightStatusMonitor:
       eventHub    <- ZIO.service[EventHub]
       now          = Instant.now()
       windowTo     = now.plusSeconds(LookAheadMinutes * 60L)
-      rides       <- rideRepo.findAssignedRidesInWindow(now, windowTo)
+      // Includes still-unassigned (Requested) rides so a dispatcher sees the gate/terminal in
+      // the pending list before assigning a driver — not only after assignment.
+      rides       <- rideRepo.findActiveRidesInWindow(now, windowTo)
       airportRides = rides.filter(_.isAirportTransfer)
       _           <- ZIO.foreachParDiscard(airportRides)(ride => evaluate(ride, rideRepo, provider, eventHub))
     yield ()
@@ -56,7 +59,8 @@ object FlightStatusMonitor:
       eventHub: EventHub
   ): ZIO[Any, Throwable, Unit] =
     ride.specifics match
-      case Some(RideSpecifics.AirportTransfer(_, flightNumber, isArrival)) =>
+      // Only look up when a flight number is known — an airport transfer may have none yet.
+      case Some(RideSpecifics.AirportTransfer(_, Some(flightNumber), isArrival)) if flightNumber.trim.nonEmpty =>
         val date = ride.scheduledTime.getOrElse(ride.pickupDateTime).atZone(BerlinZone).toLocalDate
         provider.lookup(flightNumber, date, isArrival).flatMap {
           case None       => ZIO.unit // not found / source down → nothing to update this tick
@@ -91,7 +95,7 @@ object FlightStatusMonitor:
                   )
             }
         }
-      case _                                                               => ZIO.unit
+      case _                                                                                                   => ZIO.unit
 
   /**
    * Project the provider's [[FlightInfo]] onto the persisted [[FlightStatusRow]] (board has no gate → None).

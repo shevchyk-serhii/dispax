@@ -116,12 +116,9 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
 
   private def validateAirportTransfer(request: CreateRideApiRequest): IO[RideError, Unit] =
     for {
-      _ <-
-        ZIO
-          .when(request.isAirportTransfer && request.flightNumber.isEmpty)(
-            ZIO.fail(RideError.ValidationError("Flight number is required for airport transfers"))
-          )
-          .unit
+      // A flight number is NOT required: an airport transfer can be created before the flight is
+      // known (it then gets no live gate/terminal/entry-time until the number is added). Only the
+      // departure auto-compute path below still needs a flight time.
       // For departure rides without a manual pickup time, flightTime must be provided so the
       // backend can compute the pickup time automatically.
       _ <-
@@ -187,15 +184,16 @@ given createRideRequestValidator: Validator[CreateRideRequest] with
 
   private def validateDomainAirportTransfer(request: CreateRideRequest): IO[RideError, Unit] =
     request.specifics match {
-      case Some(RideSpecifics.AirportTransfer(airportCode, flightNumber, _)) =>
+      // Only the airport code is mandatory; the flight number is optional (may be unknown at creation).
+      case Some(RideSpecifics.AirportTransfer(airportCode, _, _)) =>
         ZIO
-          .when(airportCode.trim.isEmpty || flightNumber.trim.isEmpty)(
+          .when(airportCode.trim.isEmpty)(
             ZIO.fail(
-              RideError.ValidationError("Airport code and flight number must not be empty for airport transfers")
+              RideError.ValidationError("Airport code must not be empty for airport transfers")
             )
           )
           .unit
-      case None                                                              => ZIO.unit
+      case None                                                   => ZIO.unit
     }
 
 given assignDriverRequestValidator: Validator[AssignDriverRequest] with

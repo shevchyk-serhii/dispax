@@ -416,6 +416,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get version => 'Версія';
 
   @override
+  String get appVersion => 'Версія додатка';
+
+  @override
+  String get backendVersion => 'Версія бекенду';
+
+  @override
   String get privacyPolicy => 'Політика конфіденційності';
 
   @override
@@ -511,6 +517,11 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String airportLandingAt(String time) {
     return 'Приліт о $time';
+  }
+
+  @override
+  String airportLandedAt(String time) {
+    return 'Приземлився о $time';
   }
 
   @override
@@ -2051,6 +2062,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get terminalLabel => 'Термінал';
 
   @override
+  String get gateRemote => 'Автобусний гейт (віддалена стоянка)';
+
+  @override
   String get creatingRideLabel => 'Створення поїздки...';
 
   @override
@@ -2143,17 +2157,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editRideDialogTitle => 'Редагувати поїздку';
 
   @override
-  String get pickupDateTimeLabel => 'Дата/час подачі (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Дата/час подачі';
 
   @override
   String get flightNumberOptionalLabel => 'Номер рейсу (необов\'язково)';
 
   @override
   String get notesOptionalLabel => 'Примітки (необов\'язково)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {
@@ -3370,6 +3380,12 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noDeparturesFound => 'Відльотів не знайдено';
+
+  @override
+  String get flightDetailsTitle => 'Деталі рейсу';
+
+  @override
+  String get gateNotPublished => 'Гейт ще не оголошено';
 
   @override
   String errorLoadingFlights(String error) {

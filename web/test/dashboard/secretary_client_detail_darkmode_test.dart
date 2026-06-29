@@ -106,6 +106,30 @@ void main() {
     expect(nameWidget.style?.color, isNot(const Color(0xFF18181B)));
   });
 
+  testWidgets('client email/phone use theme onSurfaceVariant in dark mode', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    when(
+      () => api.get(any()),
+    ).thenAnswer((_) async => http.Response('[]', 200));
+
+    await tester.pumpWidget(host());
+    await tester.pumpAndSettle();
+
+    final emailWidget = tester.widget<Text>(find.text('bruno@example.com'));
+    final context = tester.element(find.text('bruno@example.com'));
+    final expected = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    expect(emailWidget.style?.color, expected);
+    // The hardcoded light-theme textSecondary must not be used statically.
+    expect(emailWidget.style?.color, isNot(const Color(0xFF71717A)));
+  });
+
   testWidgets('ride-load error text uses theme onSurface color in dark mode', (
     tester,
   ) async {
