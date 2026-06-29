@@ -26,6 +26,7 @@ import '../utils/conflict_detector.dart';
 import '../../../widgets/common/cancel_ride_dialog.dart';
 import '../../../widgets/common/notification_bell.dart';
 import '../../../widgets/common/hand_off_ride_dialog.dart';
+import '../../../modules/flight_management/widgets/flight_progress_bar.dart';
 import 'assignment_dialog.dart';
 import 'eta_alert_card.dart';
 
@@ -1206,6 +1207,17 @@ class _RideRow extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              // Compact flight progress stepper under the flight line.
+              Builder(
+                builder: (context) {
+                  final bar = FlightProgressBar.forRide(ride, compact: true);
+                  if (!bar.isVisible) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: bar,
+                  );
+                },
               ),
             ],
             // Payment method

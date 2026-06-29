@@ -10,6 +10,7 @@ import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 import '../../modules/core/services/api_client.dart';
 import '../../modules/core/widgets/avatar_circle.dart';
+import '../../modules/flight_management/widgets/flight_progress_bar.dart';
 import '../../modules/driver_management/services/driver_availability_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
@@ -1046,6 +1047,18 @@ class DriverRideCard extends StatelessWidget {
 
               // Full flight info for airport rides (number + gate/terminal + status).
               DriverFlightInfoRow(ride: ride, isDark: isDark),
+              // Live flight progress (Geplant → … → Gelandet); hidden for
+              // non-airport rides and unknown status.
+              Builder(
+                builder: (context) {
+                  final bar = FlightProgressBar.forRide(ride);
+                  if (!bar.isVisible) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: bar,
+                  );
+                },
+              ),
               DriverArrivalTimeRow(ride: ride, isDark: isDark),
               DriverEntryTimeRow(ride: ride, isDark: isDark),
 
