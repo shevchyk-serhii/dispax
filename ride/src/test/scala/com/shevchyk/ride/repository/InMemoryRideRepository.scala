@@ -227,6 +227,17 @@ class InMemoryRideRepository extends RideRepository:
       .toList
   )
 
+  override def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = rides.get.map(
+    _.values
+      .filter(r =>
+        r.status != RideStatus.Completed &&
+          r.status != RideStatus.Cancelled &&
+          r.pickupDateTime.isAfter(from) &&
+          !r.pickupDateTime.isAfter(to)
+      )
+      .toList
+  )
+
   override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = rides.get.map(
     _.values
       .filter(r =>

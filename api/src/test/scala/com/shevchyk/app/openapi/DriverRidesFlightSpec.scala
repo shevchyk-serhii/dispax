@@ -289,6 +289,9 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                   = notImpl(
         "findAssignedRidesInWindow"
       )
+      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                     = notImpl(
+        "findActiveRidesInWindow"
+      )
       def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                = notImpl(
         "findRidesNeedingConfirmation"
       )

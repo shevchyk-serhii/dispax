@@ -736,6 +736,14 @@ object TestApplication extends ZIOAppDefault:
               )
               .toList
           )
+          def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                             = ridesRef.get.map(
+            _.values
+              .filter(r =>
+                r.status != RideStatus.Completed && r.status != RideStatus.Cancelled &&
+                  r.pickupDateTime.isAfter(from) && !r.pickupDateTime.isAfter(to)
+              )
+              .toList
+          )
           def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                        = ridesRef.get.map(
             _.values
               .filter(r =>

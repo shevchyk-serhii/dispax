@@ -138,6 +138,33 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.specifics.contains(RideSpecifics.AirportTransfer("MUC", None, isArrival = true))
         )
       },
+      test("findActiveRidesInWindow returns unassigned rides and excludes finished ones") {
+        // The flight monitor relies on this to enrich even Requested (no-driver) rides,
+        // while never tracking Completed/Cancelled ones.
+        val now      = Instant.now()
+        val inWindow = now.plusSeconds(3600) // +1h, inside the [now, now+...] window
+        for {
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <- cleanRides(xa)
+          repo      = PostgresRideRepository(xa)
+          requested = makeRide(status = RideStatus.Requested).copy(pickupDateTime = inWindow)
+          completed = makeRide(status = RideStatus.Completed).copy(pickupDateTime = inWindow)
+          cancelled = makeRide(status = RideStatus.Cancelled).copy(pickupDateTime = inWindow)
+          past      = makeRide(status = RideStatus.Requested).copy(pickupDateTime = now.minusSeconds(3600))
+          _        <- repo.create(requested)
+          _        <- repo.create(completed)
+          _        <- repo.create(cancelled)
+          _        <- repo.create(past)
+          found    <- repo.findActiveRidesInWindow(now, now.plusSeconds(2 * 3600))
+          ids       = found.map(_.id).toSet
+        } yield assertTrue(
+          ids.contains(requested.id),  // unassigned, in window → tracked
+          !ids.contains(completed.id), // finished → excluded
+          !ids.contains(cancelled.id), // finished → excluded
+          !ids.contains(past.id)       // outside the window → excluded
+        )
+      },
       test("update changes status and driver") {
         for {
           xa     <- ZIO.service[Transactor[Task]]

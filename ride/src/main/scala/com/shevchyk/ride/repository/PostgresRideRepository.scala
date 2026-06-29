@@ -792,6 +792,21 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  override def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
+    // Any not-yet-finished ride (incl. Requested, no driver) so the flight monitor can
+    // enrich gate/terminal/status before assignment. Completed/Cancelled are excluded.
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE status NOT IN ('Completed', 'Cancelled')
+             AND pickup_datetime > $from
+             AND pickup_datetime <= $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++
       fr"""FROM rides
