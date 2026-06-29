@@ -109,6 +109,31 @@ void main() {
     });
   });
 
+  group('FlightProgressBar arrival phase highlighting', () {
+    // Color of the rendered step label, used to tell completed (green) from
+    // current (amber) from pending (grey). Mirrors FlightProgressBar's palette.
+    Color? labelColor(WidgetTester tester, String label) =>
+        tester.widget<Text>(find.text(label)).style?.color;
+
+    testWidgets('arrival "departed"/"Gestartet" lights up "Im Flug", not '
+        '"Planmäßig"', (tester) async {
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(isArrival: true, flightStatus: 'departed'),
+        ),
+      );
+      // departed projects onto enRoute (ordinal 1) on the arrival chain:
+      // scheduled (0) is completed (green), enRoute (1) is current (amber).
+      const green = Color(0xFF4CAF50);
+      const amber = Color(0xFFFF9800);
+      expect(labelColor(tester, 'Planmäßig'), green);
+      expect(labelColor(tester, 'Im Flug'), amber);
+      // Landed is still pending (grey), not the current step.
+      expect(labelColor(tester, 'Gelandet'), const Color(0xFF9E9E9E));
+    });
+  });
+
   group('FlightProgressBar off-ramp and delay', () {
     testWidgets('cancelled collapses to a single label, no step dots', (
       tester,

@@ -69,12 +69,28 @@ class FlightPhases {
   /// The index of [wireStatus] within the chain for [isArrival], or `null` when
   /// the status is not a chain position (delayed/unknown/off-ramp) or maps to a
   /// phase that direction does not show (e.g. `landed` on a departure chain).
+  ///
+  /// On the arrival chain the departure-only phases are projected onto the
+  /// nearest arrival position: `departed` (the flight has left its origin →
+  /// "in the air, heading to us") becomes `enRoute`, and `boarding` (still on
+  /// the ground at origin) becomes `scheduled`. This way an arrival showing the
+  /// raw MUC "Gestartet"/"departed" status lights up "Im Flug", not "Planmäßig".
   static int? phaseOrdinalFor(String? wireStatus, {required bool isArrival}) {
     final phase = phaseOf(wireStatus);
     if (phase == null) return null;
-    final index = chainFor(isArrival: isArrival).indexOf(phase);
+    final resolved = isArrival ? _projectOntoArrival(phase) : phase;
+    final index = chainFor(isArrival: isArrival).indexOf(resolved);
     return index < 0 ? null : index;
   }
+
+  /// Maps a phase that exists only on the departure chain onto its nearest
+  /// position on the arrival chain. Phases already on the arrival chain
+  /// (`scheduled`/`enRoute`/`landed`) pass through unchanged.
+  static FlightPhase _projectOntoArrival(FlightPhase phase) => switch (phase) {
+    FlightPhase.departed => FlightPhase.enRoute, // left origin → heading to us
+    FlightPhase.boarding => FlightPhase.scheduled, // still on the ground
+    _ => phase,
+  };
 
   /// True for terminal off-ramp statuses (`cancelled`/`diverted`) that abort the
   /// normal chain — the bar renders a single label instead of steps.

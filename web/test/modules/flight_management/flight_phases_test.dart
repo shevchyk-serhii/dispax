@@ -69,9 +69,15 @@ void main() {
     test('a phase absent from the direction chain returns null', () {
       // landed is not a step on the departure chain
       expect(FlightPhases.phaseOrdinalFor('landed', isArrival: false), isNull);
-      // boarding/departed are not steps on the arrival chain
-      expect(FlightPhases.phaseOrdinalFor('boarding', isArrival: true), isNull);
-      expect(FlightPhases.phaseOrdinalFor('departed', isArrival: true), isNull);
+    });
+
+    test('departure-only phases project onto the arrival chain', () {
+      // "departed" (left origin → in the air, heading to us) → enRoute / "Im Flug"
+      expect(FlightPhases.phaseOrdinalFor('departed', isArrival: true), 1);
+      expect(FlightPhases.phaseOrdinalFor('Gestartet', isArrival: true), 1);
+      // "boarding" (still on the ground at origin) → scheduled
+      expect(FlightPhases.phaseOrdinalFor('boarding', isArrival: true), 0);
+      expect(FlightPhases.phaseOrdinalFor('Einstieg', isArrival: true), 0);
     });
 
     test('non-positional statuses return null in both directions', () {
