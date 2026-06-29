@@ -31,7 +31,7 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
     pickupLocation = Location("MUC Airport"),
     dropoffLocation = Location("Munich City"),
     pickupDateTime = Instant.now().plusSeconds(3600),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true)),
     airportCheckpoint = checkpoint
   )
 
@@ -213,7 +213,7 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             svc    <- ZIO.service[AirportCheckpointService]
             // isArrival=false in specifics → isArrivalAirportTransfer=false → InvalidOperation
             ride    = makeInProgressArrivalRide().copy(
-                        specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = false))
+                        specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = false))
                       )
             _      <- repo.create(ride)
             result <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId).exit

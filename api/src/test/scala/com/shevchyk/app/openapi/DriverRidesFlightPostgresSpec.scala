@@ -91,7 +91,7 @@ object DriverRidesFlightPostgresSpec extends ZIOSpecDefault:
     pickupLocation = Location("Munich Airport Terminal 2", Some(48.3537), Some(11.7860)),
     dropoffLocation = Location("City Center", Some(48.1374), Some(11.5755)),
     pickupDateTime = Instant.parse("2090-01-01T11:32:00Z"),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH1751", isArrival = true))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH1751"), isArrival = true))
   )
 
   // ---------------------------------------------------------------------------

@@ -27,7 +27,7 @@ object RideDtoFlightSpec extends ZIOSpecDefault:
     pickupLocation = Location("Marienplatz", Some(48.1374), Some(11.5755)),
     dropoffLocation = Location("MUC Airport", Some(48.3537), Some(11.7860)),
     pickupDateTime = Instant.parse("2026-06-26T08:00:00Z"),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true))
   )
 
   def spec =

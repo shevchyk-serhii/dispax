@@ -198,7 +198,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     companyId = companyId,
     pickupLocation = Location("Munich City", latitude = Some(pickupLat), longitude = Some(pickupLng)),
     dropoffLocation = Location("MUC Airport", latitude = Some(dropoffLat), longitude = Some(dropoffLng)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH001", isArrival = false)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH001"), isArrival = false)),
     scheduledTime = Some(flightDep),
     pickupDateTime = None // ← signal: compute it automatically
   )
@@ -212,7 +212,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     companyId = companyId,
     pickupLocation = Location("MUC Airport", latitude = Some(dropoffLat), longitude = Some(dropoffLng)),
     dropoffLocation = Location("Munich City", latitude = Some(pickupLat), longitude = Some(pickupLng)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH001", isArrival = true)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH001"), isArrival = true)),
     scheduledTime = Some(flightDep),
     pickupDateTime = Some(manualPickup) // required for non-departure
   )
@@ -230,7 +230,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     companyId = companyId,
     pickupLocation = Location("Munich City", latitude = Some(pickupLat), longitude = Some(pickupLng)),
     dropoffLocation = Location("MUC Airport", latitude = Some(dropoffLat), longitude = Some(dropoffLng)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH001", isArrival = false)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH001"), isArrival = false)),
     scheduledTime = None, // no flight time supplied
     pickupDateTime = None // also no manual pickup
   )

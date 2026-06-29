@@ -46,6 +46,33 @@ object CreateRideApiRequestSpec extends ZIOSpecDefault {
         CreateRideApiRequest
           .toDomain(makeRequest(paymentMethod = Some("Bitcoin")), companyId)
           .map(domain => assertTrue(domain.paymentMethod.isEmpty))
+      },
+      // An airport transfer can be created without a flight number — specifics are still built,
+      // with the flight left None (no live gate/terminal/entry-time until the number is added).
+      test("builds airport specifics with no flight when isAirportTransfer is set but no flight given") {
+        CreateRideApiRequest
+          .toDomain(makeRequest(paymentMethod = None).copy(isAirportTransfer = true), companyId)
+          .map(domain =>
+            assertTrue(
+              domain.specifics match
+                case Some(RideSpecifics.AirportTransfer(_, None, _)) => true
+                case _                                               => false
+            )
+          )
+      },
+      test("builds airport specifics carrying the flight number when one is given") {
+        CreateRideApiRequest
+          .toDomain(
+            makeRequest(paymentMethod = None).copy(isAirportTransfer = true, flightNumber = Some("LH123")),
+            companyId
+          )
+          .map(domain =>
+            assertTrue(
+              domain.specifics match
+                case Some(RideSpecifics.AirportTransfer(_, Some("LH123"), _)) => true
+                case _                                                        => false
+            )
+          )
       }
     )
 }

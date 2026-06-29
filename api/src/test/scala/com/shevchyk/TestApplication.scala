@@ -571,7 +571,7 @@ object TestApplication extends ZIOAppDefault:
     pickupDateTime = Instant.now().minusSeconds(1200),
     scheduledTime = Some(Instant.now().minusSeconds(1200)),
     startTime = Some(Instant.now().minusSeconds(1200)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456", isArrival = true))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH456"), isArrival = true))
   )
 
   private def rideSeed: Map[RideId, Ride] = Map[RideId, Ride](

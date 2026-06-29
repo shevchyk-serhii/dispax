@@ -56,7 +56,8 @@ object FlightStatusMonitor:
       eventHub: EventHub
   ): ZIO[Any, Throwable, Unit] =
     ride.specifics match
-      case Some(RideSpecifics.AirportTransfer(_, flightNumber, isArrival)) =>
+      // Only look up when a flight number is known — an airport transfer may have none yet.
+      case Some(RideSpecifics.AirportTransfer(_, Some(flightNumber), isArrival)) if flightNumber.trim.nonEmpty =>
         val date = ride.scheduledTime.getOrElse(ride.pickupDateTime).atZone(BerlinZone).toLocalDate
         provider.lookup(flightNumber, date, isArrival).flatMap {
           case None       => ZIO.unit // not found / source down → nothing to update this tick
@@ -91,7 +92,7 @@ object FlightStatusMonitor:
                   )
             }
         }
-      case _                                                               => ZIO.unit
+      case _                                                                                                   => ZIO.unit
 
   /**
    * Project the provider's [[FlightInfo]] onto the persisted [[FlightStatusRow]] (board has no gate → None).

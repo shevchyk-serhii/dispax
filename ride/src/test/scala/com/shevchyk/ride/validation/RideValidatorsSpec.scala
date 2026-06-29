@@ -81,11 +81,9 @@ object RideValidatorsSpec extends ZIOSpecDefault {
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid client ID"))
         }
       },
-      test("rejects airport transfer without flight number") {
+      test("accepts an airport transfer without a flight number (flight may be unknown at creation)") {
         val req = validCreateRequest(isAirportTransfer = true, flightNumber = None)
-        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
-          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Flight number"))
-        }
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
       },
       test("accepts airport transfer with flight number") {
         val req = validCreateRequest(isAirportTransfer = true, flightNumber = Some("LH123"))

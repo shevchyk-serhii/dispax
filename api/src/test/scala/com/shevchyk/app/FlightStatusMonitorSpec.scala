@@ -33,7 +33,7 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
     pickupLocation = Location("Marienplatz, München"),
     dropoffLocation = Location("Munich Airport"),
     pickupDateTime = Instant.now().plusSeconds(pickupInMinutes * 60L),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", flightNumber, isArrival))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some(flightNumber), isArrival))
   )
 
   // RideRepository stub: serves the window query and a mutable per-ride flight-status store so dedup is exercised.
@@ -238,6 +238,19 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
           events <- Ref.make(List.empty[WebSocketEvent])
           store  <- Ref.make(Map.empty[RideId, FlightStatusRow])
           _      <- runTick(List(ride), None, events, store)
+          ev     <- events.get
+          saved  <- store.get
+        yield assertTrue(ev.isEmpty, saved.isEmpty)
+      },
+      // An airport ride with no flight number must not be looked up — even though the provider would
+      // return a usable flight, there is nothing to query, so no status is published or stored.
+      test("skips an airport ride that has no flight number") {
+        val noFlight = airportRide("ignored", isArrival = true)
+          .copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", None, isArrival = true)))
+        for
+          events <- Ref.make(List.empty[WebSocketEvent])
+          store  <- Ref.make(Map.empty[RideId, FlightStatusRow])
+          _      <- runTick(List(noFlight), Some(sampleInfo), events, store)
           ev     <- events.get
           saved  <- store.get
         yield assertTrue(ev.isEmpty, saved.isEmpty)

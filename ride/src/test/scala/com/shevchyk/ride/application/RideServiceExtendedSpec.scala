@@ -489,17 +489,21 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             ride    <- service.createRide(
                          mkRide().copy(specifics =
                            Some(
-                             RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+                             RideSpecifics.AirportTransfer(
+                               airportCode = "MUC",
+                               flightNumber = Some("LH100"),
+                               isArrival = true
+                             )
                            )
                          )
                        )
             updated <- service.updateRideDetails(
                          ride.id,
                          // The update DTO only carries a flight number — it builds the placeholder
-                         // FieldUpdate.Set(AirportTransfer("UNKNOWN", "LH200", isArrival = false)).
+                         // FieldUpdate.Set(AirportTransfer("UNKNOWN", Some("LH200"), isArrival = false)).
                          UpdateRideDetailsRequest(
                            specifics = FieldUpdate.Set(
-                             RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = "LH200")
+                             RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = Some("LH200"))
                            )
                          ),
                          testClientId,
@@ -508,7 +512,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                        )
           } yield assertTrue(
             updated.specifics.contains(
-              RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH200", isArrival = true)
+              RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = Some("LH200"), isArrival = true)
             )
           )
         }.provide(standardLayers),
@@ -520,7 +524,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                          ride.id,
                          UpdateRideDetailsRequest(
                            specifics = FieldUpdate.Set(
-                             RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = "LH300")
+                             RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = Some("LH300"))
                            )
                          ),
                          testClientId,
@@ -529,7 +533,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                        )
           } yield assertTrue(
             updated.specifics.exists {
-              case RideSpecifics.AirportTransfer(_, flight, _) => flight == "LH300"
+              case RideSpecifics.AirportTransfer(_, flight, _) => flight.contains("LH300")
               case _                                           => false
             }
           )
@@ -540,7 +544,11 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             ride    <- service.createRide(
                          mkRide().copy(specifics =
                            Some(
-                             RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+                             RideSpecifics.AirportTransfer(
+                               airportCode = "MUC",
+                               flightNumber = Some("LH100"),
+                               isArrival = true
+                             )
                            )
                          )
                        )
@@ -553,6 +561,28 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                        )
           } yield assertTrue(updated.specifics.isEmpty)
         }.provide(standardLayers),
+        test("marking a ride as airport without a flight number keeps it airport with no flight") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         // The dialog toggles airport on without a flight number → Set carrying None.
+                         UpdateRideDetailsRequest(
+                           specifics = FieldUpdate.Set(RideSpecifics.AirportTransfer("UNKNOWN", None))
+                         ),
+                         testClientId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(
+            updated.isAirportTransfer &&
+              updated.specifics.exists {
+                case RideSpecifics.AirportTransfer(_, flight, _) => flight.isEmpty
+                case _                                           => false
+              }
+          )
+        }.provide(standardLayers),
         // Regression guard for the previous flight-number fix: an absent update (Unchanged) must NOT
         // be treated like Clear — the existing specifics survive. Collapsing absent into Clear makes
         // this go red.
@@ -562,7 +592,11 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             ride    <- service.createRide(
                          mkRide().copy(specifics =
                            Some(
-                             RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+                             RideSpecifics.AirportTransfer(
+                               airportCode = "MUC",
+                               flightNumber = Some("LH100"),
+                               isArrival = true
+                             )
                            )
                          )
                        )
@@ -575,7 +609,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                        )
           } yield assertTrue(
             updated.specifics.contains(
-              RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH100", isArrival = true)
+              RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = Some("LH100"), isArrival = true)
             )
           )
         }.provide(standardLayers),

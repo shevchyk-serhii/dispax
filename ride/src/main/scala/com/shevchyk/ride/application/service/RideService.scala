@@ -866,11 +866,12 @@ class RideServiceImpl(
   /**
    * Merge a three-valued specifics update into the ride's existing specifics.
    *
-   *   - Unchanged → keep the ride's current specifics (e.g. the partial update did not touch the flight number).
-   *   - Clear → drop the specifics (the flight number was wiped; the ride is no longer an airport transfer).
-   *   - Set → the DTO builds a placeholder `AirportTransfer("UNKNOWN", flight, isArrival = false)`. When the ride is
-   *     already an airport transfer we keep its `airportCode` and `isArrival`, replacing only the flight number —
-   *     editing the flight number must never flip the direction or wipe the airport code.
+   *   - Unchanged → keep the ride's current specifics (the partial update did not touch airportness).
+   *   - Clear → drop the specifics (the ride is no longer an airport transfer).
+   *   - Set → the DTO builds a placeholder `AirportTransfer("UNKNOWN", flight, isArrival = false)` carrying the
+   *     optional flight number. When the ride is already an airport transfer we keep its `airportCode` and `isArrival`,
+   *     replacing only the (optional) flight number — editing it must never flip the direction or wipe the airport
+   *     code. A None flight is valid: an airport transfer whose flight is not yet known.
    */
   private def mergeSpecifics(
       incoming: FieldUpdate[RideSpecifics],

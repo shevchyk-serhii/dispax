@@ -73,7 +73,9 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
     dropoffLocation = Location("City Center"),
     pickupDateTime = Instant.parse("2090-01-01T11:32:00Z"),
     requestTime = Instant.now(),
-    specifics = Some(RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = "LH1751", isArrival = true))
+    specifics = Some(
+      RideSpecifics.AirportTransfer(airportCode = "MUC", flightNumber = Some("LH1751"), isArrival = true)
+    )
   )
 
   // ---------------------------------------------------------------------------

@@ -121,6 +121,78 @@ void main() {
       // The clearing fix: both fields are present and empty (not omitted).
       expect(sentBody['flightNumber'], '');
       expect(sentBody['notes'], '');
+      // Clearing the flight number does NOT un-airport the ride — the toggle stays on.
+      expect(sentBody['isAirportTransfer'], true);
+    },
+  );
+
+  testWidgets('toggling airport OFF sends isAirportTransfer false', (
+    tester,
+  ) async {
+    final ride = TestFixtures.ride(
+      id: 'ride-off',
+      flightNumber: 'LH100',
+      isAirportTransfer: true,
+      isArrival: true,
+    );
+
+    late Map<String, dynamic> sentBody;
+    when(() => apiClient.put(any(), any())).thenAnswer((invocation) async {
+      sentBody = invocation.positionalArguments[1] as Map<String, dynamic>;
+      return http.Response(jsonEncode(ride.toJson()), 200);
+    });
+
+    await tester.pumpWidget(buildHost(ride));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Flip the airport switch off.
+    await tester.tap(find.byKey(const Key('edit-ride-airport-toggle')));
+    await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(TextField).first),
+    )!;
+    await tester.tap(find.text(l10n.save));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
+
+    verify(() => apiClient.put('/rides/ride-off', any())).called(1);
+    expect(sentBody['isAirportTransfer'], false);
+  });
+
+  testWidgets(
+    'toggling airport ON for a plain ride sends isAirportTransfer true',
+    (tester) async {
+      final ride = TestFixtures.ride(id: 'ride-on'); // not an airport transfer
+
+      late Map<String, dynamic> sentBody;
+      when(() => apiClient.put(any(), any())).thenAnswer((invocation) async {
+        sentBody = invocation.positionalArguments[1] as Map<String, dynamic>;
+        return http.Response(jsonEncode(ride.toJson()), 200);
+      });
+
+      await tester.pumpWidget(buildHost(ride));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // Flip the airport switch on (no flight number entered — that's allowed).
+      await tester.tap(find.byKey(const Key('edit-ride-airport-toggle')));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(TextField).first),
+      )!;
+      await tester.tap(find.text(l10n.save));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      verify(() => apiClient.put('/rides/ride-on', any())).called(1);
+      expect(sentBody['isAirportTransfer'], true);
+      // Flight number is sent (empty) — airport without a flight is valid.
+      expect(sentBody['flightNumber'], '');
     },
   );
 }

@@ -178,18 +178,26 @@ object UpdateRideDetailsApiRequest:
 
   def toDomain(request: UpdateRideDetailsApiRequest): UpdateRideDetailsRequest =
     import com.shevchyk.ride.domain.{UpdateRideDetailsRequest, RideSpecifics, FieldUpdate}
-    // Three-valued flight-number update (the edit dialog never sends isAirportTransfer, so we key off
-    // flightNumber alone):
-    //   absent (None)        → Unchanged: keep the ride's current specifics
-    //   empty ("")           → Clear: the flight number was wiped, drop the airport-transfer specifics
-    //   value                → Set a placeholder AirportTransfer; the service preserves the existing
-    //                          airportCode/isArrival so editing the number never flips the direction.
+    // Airportness is now an explicit signal, decoupled from the flight number (a ride can be an
+    // airport transfer with no flight number yet). The dialog sends `isAirportTransfer`:
+    //   Some(false) → Clear: drop the airport-transfer specifics (un-airport the ride)
+    //   Some(true)  → Set: keep/make it an airport transfer; the flight number (empty = none, value
+    //                 = set) fills the optional flight. The service preserves the existing
+    //                 airportCode/isArrival so editing never flips the direction.
+    //   None        → fall back to flight-only logic for older callers that don't send the toggle:
+    //                 absent flight = Unchanged, empty = Clear, value = Set.
+    val flight                                = request.flightNumber.map(_.trim).filter(_.nonEmpty)
     val specifics: FieldUpdate[RideSpecifics] =
-      request.flightNumber match
-        case None                 => FieldUpdate.Unchanged
-        case Some(s) if s.isEmpty => FieldUpdate.Clear
-        case Some(flight)         =>
+      request.isAirportTransfer match
+        case Some(false) => FieldUpdate.Clear
+        case Some(true)  =>
           FieldUpdate.Set(RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight))
+        case None        =>
+          request.flightNumber match
+            case None                 => FieldUpdate.Unchanged
+            case Some(s) if s.isEmpty => FieldUpdate.Clear
+            case Some(_)              =>
+              FieldUpdate.Set(RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight))
 
     UpdateRideDetailsRequest(
       pickupLocation = request.from.map(LocationDto.toDomain),
@@ -394,7 +402,7 @@ object RideDto:
   ): RideDto =
     val (flightNumber, isAirportTransfer, isArrival) =
       ride.specifics match {
-        case Some(RideSpecifics.AirportTransfer(_, flight, arr)) => (Some(flight), true, arr)
+        case Some(RideSpecifics.AirportTransfer(_, flight, arr)) => (flight, true, arr)
         case None                                                => (None, false, false)
       }
 
@@ -500,13 +508,14 @@ object CreateRideApiRequest:
     // or when a flight number is supplied.
     val specifics =
       if (request.isAirportTransfer || request.flightNumber.isDefined) {
-        request.flightNumber.map { flight =>
+        Some(
           RideSpecifics.AirportTransfer(
             airportCode = extractAirportCode(request),
-            flightNumber = flight,
+            // Optional: an airport transfer may be created before the flight number is known.
+            flightNumber = request.flightNumber.map(_.trim).filter(_.nonEmpty),
             isArrival = request.isArrival
           )
-        }
+        )
       }
       else {
         None

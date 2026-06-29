@@ -83,7 +83,7 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
     pickupDateTime = arrival,
     scheduledTime = scheduled,
     specifics = Some(
-      RideSpecifics.AirportTransfer(airportCode = airportCode, flightNumber = "LH123", isArrival = isArrival)
+      RideSpecifics.AirportTransfer(airportCode = airportCode, flightNumber = Some("LH123"), isArrival = isArrival)
     )
   )
 
