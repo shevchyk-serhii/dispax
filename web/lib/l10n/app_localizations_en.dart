@@ -3388,6 +3388,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gateNotPublished => 'Gate not published yet';
 
   @override
+  String get trackFlightLive => 'Track live on Flightradar24';
+
+  @override
+  String get couldNotOpenFlightTracker => 'Could not open the flight tracker';
+
+  @override
   String errorLoadingFlights(String error) {
     return 'Error loading flights: $error';
   }

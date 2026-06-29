@@ -3406,6 +3406,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get gateNotPublished => 'Gate noch nicht veröffentlicht';
 
   @override
+  String get trackFlightLive => 'Live auf Flightradar24 verfolgen';
+
+  @override
+  String get couldNotOpenFlightTracker =>
+      'Flugverfolgung konnte nicht geöffnet werden';
+
+  @override
   String errorLoadingFlights(String error) {
     return 'Fehler beim Laden der Flüge: $error';
   }

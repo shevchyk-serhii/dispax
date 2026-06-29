@@ -1600,6 +1600,8 @@
   "noArrivalsFound": "Прильотів не знайдено",
   "flightDetailsTitle": "Деталі рейсу",
   "gateNotPublished": "Гейт ще не оголошено",
+  "trackFlightLive": "Стежити наживо на Flightradar24",
+  "couldNotOpenFlightTracker": "Не вдалося відкрити трекер рейсу",
   "noDeparturesFound": "Відльотів не знайдено",
   "errorLoadingFlights": "Помилка завантаження рейсів: {error}",
   "@errorLoadingFlights": {

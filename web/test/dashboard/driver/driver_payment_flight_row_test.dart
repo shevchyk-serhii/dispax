@@ -56,5 +56,23 @@ void main() {
       await pump(tester, DriverFlightInfoRow(ride: ride, isDark: false));
       expect(find.byType(Text), findsNothing);
     });
+
+    testWidgets('offers a Flightradar24 track button when a flight number is set', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        flightNumber: 'LH1234',
+      );
+      await pump(tester, DriverFlightInfoRow(ride: ride, isDark: false));
+      expect(find.byIcon(Icons.radar), findsOneWidget);
+    });
+
+    testWidgets('shows no track button without a flight number', (tester) async {
+      // Airport transfer but no flight number → fullFlightInfo is empty, row hides.
+      final ride = TestFixtures.ride(isAirportTransfer: true);
+      await pump(tester, DriverFlightInfoRow(ride: ride, isDark: false));
+      expect(find.byIcon(Icons.radar), findsNothing);
+    });
   });
 }

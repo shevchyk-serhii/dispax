@@ -10,6 +10,7 @@ import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 import '../../modules/core/services/api_client.dart';
 import '../../modules/core/widgets/avatar_circle.dart';
+import '../../modules/flight_management/flight_tracker.dart';
 import '../../modules/flight_management/widgets/flight_progress_bar.dart';
 import '../../modules/driver_management/services/driver_availability_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
@@ -1434,7 +1435,45 @@ class DriverFlightInfoRow extends StatelessWidget {
               style: TextStyle(fontSize: 12.5, color: secondary),
             ),
           ),
+          if (ride.flightNumber != null)
+            FlightRadarButton(
+              flightNumber: ride.flightNumber!,
+              color: secondary,
+            ),
         ],
+      ),
+    );
+  }
+}
+
+/// A small "track live on Flightradar24" action — opens the flight's FR24 page
+/// (real-time map position once airborne) in an external browser. Shared by the
+/// ride cards and the arrivals-board flight detail sheet.
+class FlightRadarButton extends StatelessWidget {
+  final String flightNumber;
+  final Color? color;
+
+  const FlightRadarButton({super.key, required this.flightNumber, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Tooltip(
+      message: l10n.trackFlightLive,
+      child: InkResponse(
+        radius: 18,
+        onTap: () async {
+          final ok = await FlightTracker.open(flightNumber);
+          if (!ok && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.couldNotOpenFlightTracker)),
+            );
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: Icon(Icons.radar, size: 16, color: color),
+        ),
       ),
     );
   }
