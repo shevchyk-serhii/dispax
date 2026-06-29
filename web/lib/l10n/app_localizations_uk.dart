@@ -416,6 +416,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get version => 'Версія';
 
   @override
+  String get appVersion => 'Версія додатка';
+
+  @override
+  String get backendVersion => 'Версія бекенду';
+
+  @override
   String get privacyPolicy => 'Політика конфіденційності';
 
   @override

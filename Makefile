@@ -18,6 +18,11 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Build number for production app builds, derived from git so it auto-increments
+# every commit (App Store / Play require a strictly increasing build number).
+# `git rev-list --count HEAD` = total commits on the current branch. Override:
+# `make flutter-prod-android FLUTTER_BUILD_NUMBER=123`.
+FLUTTER_BUILD_NUMBER ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 1)
 # Mapbox public token (geocoding/address autocomplete + maps SDK). Read from
 # .env.dev and passed to every `flutter run`/`build` via --dart-define so the
 # in-app MapboxService.suggestAddresses/geocodeAddress actually work. Override
@@ -662,6 +667,7 @@ flutter-prod:
 # Build Android APK for production
 flutter-prod-android:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build apk --release \
+		--build-number=$(FLUTTER_BUILD_NUMBER) \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ APK: $(FLUTTER_DIR)/build/app/outputs/flutter-apk/app-release.apk"
@@ -670,6 +676,7 @@ flutter-prod-android:
 # signing identity / provisioning profile in Xcode.
 flutter-prod-ios:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build ipa --release \
+		--build-number=$(FLUTTER_BUILD_NUMBER) \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ IPA: $(FLUTTER_DIR)/build/ios/ipa/"

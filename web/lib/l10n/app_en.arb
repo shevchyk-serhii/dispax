@@ -166,6 +166,8 @@
 
   "about": "About",
   "version": "Version",
+  "appVersion": "App version",
+  "backendVersion": "Backend version",
   "privacyPolicy": "Privacy Policy",
   "termsOfService": "Terms of Service",
 
