@@ -188,8 +188,8 @@ object MucFlightParser:
   // ORIGIN airport's take-off. We isolate that block (non-greedy up to the arrival block / overview end) so the date and
   // time we read are the origin's, not MUC's. Each block carries its OWN `flight-box-date` (dd.MM.yyyy), so a long-haul
   // that departs the previous calendar day (e.g. SIN 25.06 22:45 → MUC 26.06 05:20) reconstructs correctly.
-  private val DepartureBlockRegex                                        = "(?s)departure-box\"(.*?)(?:arrival-box\"|</div>\\s*</div>\\s*</div>\\s*$)".r
-  private val FlightBoxDateRegex                                         = "(?s)flight-box-date\">\\s*(\\d{2})\\.(\\d{2})\\.(\\d{4})".r
+  private val DepartureBlockRegex = "(?s)departure-box\"(.*?)(?:arrival-box\"|</div>\\s*</div>\\s*</div>\\s*$)".r
+  private val FlightBoxDateRegex  = "(?s)flight-box-date\">\\s*(\\d{2})\\.(\\d{2})\\.(\\d{4})".r
 
   // A `<dt>Geplant:</dt>`/`<dt>Erwartet:</dt>` label followed by its `<dd>HH:mm</dd>`. Prefer "Erwartet" (live) over
   // "Geplant" (scheduled) when both are present, mirroring how `flightTime` prefers the estimated instant.
