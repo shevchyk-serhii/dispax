@@ -1078,6 +1078,12 @@ abstract class AppLocalizations {
   /// **'Landing at {time}'**
   String airportLandingAt(String time);
 
+  /// No description provided for @airportLandedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed at {time}'**
+  String airportLandedAt(String time);
+
   /// No description provided for @airportFlightDelay.
   ///
   /// In en, this message translates to:

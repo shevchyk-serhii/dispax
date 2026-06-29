@@ -37,12 +37,12 @@ class TodayRideCard extends StatelessWidget {
     this.onViewDetails,
   });
 
-  /// "Landung um HH:mm", with a delay suffix ("• +N Min Verspätung") when the flight is late.
+  /// Arrival line: "Gelandet um HH:mm" once the flight has landed (actual time) or
+  /// "Landung um HH:mm" while still airborne (forecast), with a delay suffix
+  /// ("• +N Min Verspätung") when the flight is late.
   static String _landingText(BuildContext context, Ride ride) {
     final l10n = AppLocalizations.of(context)!;
-    final base = l10n.airportLandingAt(
-      DateFormat.Hm().format(ride.flightTime!),
-    );
+    final base = l10n.airportArrivalText(ride);
     if (!ride.isFlightDelayed) return base;
     final delay = ride.flightDelayMinutes;
     final suffix = delay != null && delay > 0

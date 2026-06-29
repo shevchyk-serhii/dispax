@@ -1,4 +1,6 @@
+import 'package:intl/intl.dart';
 import '../../../l10n/app_localizations.dart';
+import '../models/ride.dart';
 
 /// Maps a backend flight-status wire string (e.g. "scheduled", "delayed", "landed",
 /// "unknown") to a localized label. Single source of truth so every card/dialog shows
@@ -19,7 +21,9 @@ extension RideFlightStatusL10n on AppLocalizations {
     if (s.contains('boarding') || s.contains('einstieg')) {
       return flightStatusBoarding;
     }
-    if (s.contains('en_route') || s.contains('en route') || s.contains('unterwegs')) {
+    if (s.contains('en_route') ||
+        s.contains('en route') ||
+        s.contains('unterwegs')) {
       return flightStatusEnRoute;
     }
     if (s.contains('departed') || s.contains('gestartet')) {
@@ -38,5 +42,17 @@ extension RideFlightStatusL10n on AppLocalizations {
       return flightStatusDiverted;
     }
     return flightStatusUnknown;
+  }
+
+  /// Base arrival-time label for an airport ride, distinguishing forecast from fact:
+  /// once the flight has landed the time IS the actual landing time → "Gelandet um HH:mm";
+  /// while still airborne it is only an estimate/schedule → "Landung um HH:mm".
+  /// The delay suffix is added by the caller (it is styled differently per card).
+  /// Assumes [ride.flightTime] is non-null (callers gate on it).
+  String airportArrivalText(Ride ride) {
+    final time = DateFormat.Hm().format(ride.flightTime!);
+    return ride.flightHasLanded
+        ? airportLandedAt(time)
+        : airportLandingAt(time);
   }
 }

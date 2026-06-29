@@ -191,6 +191,12 @@
       "time": {"type": "String"}
     }
   },
+  "airportLandedAt": "Gelandet um {time}",
+  "@airportLandedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "airportFlightDelay": "+{minutes} Min Verspätung",
   "@airportFlightDelay": {
     "placeholders": {

@@ -209,6 +209,12 @@
       "time": {"type": "String"}
     }
   },
+  "airportLandedAt": "Landed at {time}",
+  "@airportLandedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "airportFlightDelay": "+{minutes} min delay",
   "@airportFlightDelay": {
     "placeholders": {
