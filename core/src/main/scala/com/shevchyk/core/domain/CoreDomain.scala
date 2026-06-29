@@ -175,7 +175,11 @@ final case class Person(
     preferredLanguage: Option[String] = None,
     // True when the account was created with a temporary password and the user must change it on first login.
     // Set on creation by a dispatcher/admin and cleared by changePassword.
-    mustChangePassword: Boolean = false
+    mustChangePassword: Boolean = false,
+    // True for a lightweight "walk-in / from-chat" client created on the fly to book a ride when no real
+    // client is known yet. Such a Person does not log in (synthetic email, placeholder password) and is
+    // upgraded in place into a real client later. Excluded from billing until upgraded.
+    provisional: Boolean = false
 ):
 
   /**
@@ -197,6 +201,39 @@ final case class Person(
    * Primary role (same as `role`, exposed for symmetry with `roles`).
    */
   def primaryRole: PersonRole = role
+
+object Person:
+
+  /**
+   * Placeholder password hash stored on a provisional client. It is never a valid bcrypt hash, so the account can never
+   * authenticate — a provisional client is a booking placeholder, not a login.
+   */
+  val ProvisionalPasswordPlaceholder: String = "provisional-no-login"
+
+  /**
+   * Default display name for a provisional client when the operator did not type one. Kept short and neutral; the ride
+   * card shows the route instead of this label.
+   */
+  val ProvisionalDefaultName: String = "Walk-in"
+
+  /**
+   * Build a lightweight provisional ("walk-in / from-chat") client. It carries the creator's `companyId` so tenant
+   * isolation holds, gets a synthetic unique email (the `persons.email` column is UNIQUE NOT NULL) derived from its own
+   * id, and a placeholder password so it can never log in. Pure: no effects — generate it and persist via
+   * `PersonRepository.create`.
+   */
+  def provisionalClient(name: Option[String], phone: Option[String], companyId: CompanyId): Person =
+    val id = PersonId.generate()
+    Person(
+      id = id,
+      name = name.map(_.trim).filter(_.nonEmpty).getOrElse(ProvisionalDefaultName),
+      email = s"provisional+${id.value}@chat.dispax.local",
+      role = PersonRole.Client,
+      companyId = Some(companyId),
+      passwordHash = ProvisionalPasswordPlaceholder,
+      phone = phone.map(_.trim).filter(_.nonEmpty),
+      provisional = true
+    )
 
 // DTO for safe serialization — excludes passwordHash and avatar bytes
 final case class PersonDto(

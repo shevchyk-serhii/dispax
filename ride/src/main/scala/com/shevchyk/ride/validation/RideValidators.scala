@@ -56,7 +56,8 @@ given createRideApiRequestValidator: Validator[CreateRideApiRequest] with
       validateLocation(request.from, "Pickup location"),
       validateLocation(request.to, "Dropoff location"),
       validatePickupDateTime(request),
-      validateClientId(request.clientId),
+      // In provisional mode the client is created server-side, so clientId is empty/ignored here.
+      if request.provisionalClient then ZIO.unit else validateClientId(request.clientId),
       validateAirportTransfer(request),
       validatePrice(request.price),
       validateTags(request.tags)

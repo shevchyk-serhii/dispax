@@ -3,7 +3,7 @@ package com.shevchyk.ride.openapi
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.core.config.AirportArrivalTimingConfig
-import com.shevchyk.core.domain.{ExternalDriverId, PartnerCompanyId, PersonId}
+import com.shevchyk.core.domain.{ExternalDriverId, PartnerCompanyId, Person, PersonId}
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
@@ -305,35 +305,58 @@ object RideApi:
 
   private val createRideServer: ZServerEndpoint[RideEnv, Any] = createRideEndpoint.serverLogic { user => apiRequest =>
     for {
-      _              <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
-      companyId      <- requireCompanyId(user.companyId)
-      validRequest   <- apiRequest.validate.mapError(fromRideError)
-      domainRequest  <- CreateRideApiRequest
-                          .toDomain(validRequest, companyId)
-                          .mapError(_ => (StatusCode.BadRequest, ApiError("Invalid UUID format")))
-                          .map { req =>
-                            if (user.role.toUpperCase == "CLIENT")
-                              req.copy(clientId = PersonId(user.userId))
-                            else if (user.role.toUpperCase == "DRIVER" && validRequest.clientId == user.userId.toString)
-                              req.copy(clientId = PersonId(user.userId))
-                            else
-                              req
-                          }
+      _               <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
+      companyId       <- requireCompanyId(user.companyId)
+      validRequest    <- apiRequest.validate.mapError(fromRideError)
+      personRepo      <- ZIO.service[PersonRepository]
+      // Provisional ("from-chat") ride: no real client is known. Create a lightweight provisional
+      // client carrying the typed clientName/clientPhone (which were previously discarded), stamped
+      // with the creator's companyId for tenant isolation, and book the ride against it. This replaces
+      // the old "clientId == own userId" driver hack, which silently booked the ride onto the driver.
+      provisionalOpt  <-
+        ZIO
+          .when(validRequest.provisionalClient) {
+            val provisional = Person.provisionalClient(
+              name = Option(validRequest.clientName).map(_.trim).filter(_.nonEmpty),
+              phone = validRequest.clientPhone,
+              companyId = companyId
+            )
+            personRepo
+              .create(provisional)
+              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+          }
+      // For a client booking, the client is always the authenticated user. For a provisional ride,
+      // point clientId at the freshly created provisional client. Otherwise use the supplied clientId.
+      effectiveRequest =
+        provisionalOpt match
+          case Some(p) => validRequest.copy(clientId = p.id.value.toString)
+          case None    =>
+            if (user.role.toUpperCase == "CLIENT")
+              validRequest.copy(clientId = user.userId.toString)
+            else
+              validRequest
+      domainRequest   <- CreateRideApiRequest
+                           .toDomain(effectiveRequest, companyId)
+                           .mapError(_ => (StatusCode.BadRequest, ApiError("Invalid UUID format")))
       // Resolve the client's clientCompanyId so PickupTimeService can apply per-client timing
       // overrides (e.g. a corporate account with a custom check-in window). The lookup is
       // best-effort: if the person is not found or has no company affiliation, we proceed
-      // without a client override (company/global defaults apply).
-      personRepo     <- ZIO.service[PersonRepository]
-      clientPerson   <- personRepo
-                          .findById(domainRequest.clientId)
-                          .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
-      enrichedRequest =
+      // without a client override (company/global defaults apply). For a provisional ride we already
+      // hold the Person, so skip the round-trip.
+      clientPerson    <-
+        provisionalOpt match
+          case Some(p) => ZIO.some(p)
+          case None    =>
+            personRepo
+              .findById(domainRequest.clientId)
+              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+      enrichedRequest  =
         clientPerson
           .flatMap(_.clientCompanyId)
           .fold(domainRequest)(ccId => domainRequest.copy(clientCompanyId = Some(ccId)))
-      service        <- ZIO.service[RideService]
-      ride0          <- service.createRide(enrichedRequest).mapError(fromRideError)
-      ride           <-
+      service         <- ZIO.service[RideService]
+      ride0           <- service.createRide(enrichedRequest).mapError(fromRideError)
+      ride            <-
         validRequest.driverId match
           case Some(driverIdStr) =>
             parsePersonId(driverIdStr).flatMap { driverPid =>
@@ -358,13 +381,13 @@ object RideApi:
                 .mapError(fromRideError)
             }
           case None              => ZIO.succeed(ride0)
-      addrService    <- ZIO.service[ClientAddressService]
-      _              <-
+      addrService     <- ZIO.service[ClientAddressService]
+      _               <-
         addrService
           .recordUsage(ride.clientId, ride.pickupLocation.address, "Pickup", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record from address: $e"))
           .ignore
-      _              <-
+      _               <-
         addrService
           .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
@@ -372,7 +395,8 @@ object RideApi:
     } yield RideDto.fromDomain(
       ride,
       clientName = clientPerson.map(_.name),
-      clientHasAvatar = clientPerson.exists(_.avatarPresent)
+      clientHasAvatar = clientPerson.exists(_.avatarPresent),
+      clientProvisional = clientPerson.exists(_.provisional)
     )
   }
 
@@ -399,6 +423,7 @@ object RideApi:
         r,
         clientName = clientMap.get(r.clientId).map(_.name),
         clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+        clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
         driverRating = rating,
         driverRatingCount = count
       )
@@ -428,6 +453,7 @@ object RideApi:
         r,
         clientName = clientMap.get(r.clientId).map(_.name),
         clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+        clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
         driverRating = rating,
         driverRatingCount = count
       )
@@ -467,6 +493,7 @@ object RideApi:
           r,
           clientName = clientMap.get(r.clientId).map(_.name),
           clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
           driverRating = rating,
           driverRatingCount = count,
           flight = flight,
@@ -532,7 +559,8 @@ object RideApi:
       } yield RideDto.fromDomain(
         ride,
         clientName = clientPerson.map(_.name),
-        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
       )
   }
 
@@ -560,7 +588,8 @@ object RideApi:
       } yield RideDto.fromDomain(
         ride,
         clientName = clientPerson.map(_.name),
-        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
       )
   }
 
@@ -587,7 +616,8 @@ object RideApi:
       } yield RideDto.fromDomain(
         ride,
         clientName = clientPerson.map(_.name),
-        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
       )
   }
 
@@ -613,7 +643,8 @@ object RideApi:
       } yield RideDto.fromDomain(
         ride,
         clientName = clientPerson.map(_.name),
-        clientHasAvatar = clientPerson.exists(_.avatarPresent)
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
       )
   }
 
@@ -641,7 +672,8 @@ object RideApi:
     } yield RideDto.fromDomain(
       ride,
       clientName = clientPerson.map(_.name),
-      clientHasAvatar = clientPerson.exists(_.avatarPresent)
+      clientHasAvatar = clientPerson.exists(_.avatarPresent),
+      clientProvisional = clientPerson.exists(_.provisional)
     )
   }
 
@@ -798,6 +830,7 @@ object RideApi:
           r,
           clientName = clientMap.get(r.clientId).map(_.name),
           clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
           driverRating = rating,
           driverRatingCount = count,
           flight = flight,
@@ -1117,6 +1150,7 @@ object RideApi:
           r,
           clientName = clientMap.get(r.clientId).map(_.name),
           clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
           driverRating = rating,
           driverRatingCount = count,
           flight = flight,

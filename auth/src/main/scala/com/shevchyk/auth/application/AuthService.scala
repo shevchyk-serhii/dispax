@@ -4,7 +4,16 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.repository.{PersonRepository, SessionRepository}
-import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, Session, SessionId, UserStatus}
+import com.shevchyk.core.domain.{
+  ClientCompanyId,
+  CompanyId,
+  Person,
+  PersonId,
+  PersonRole,
+  Session,
+  SessionId,
+  UserStatus
+}
 import zio.*
 import java.time.Instant
 import java.util.UUID
@@ -39,6 +48,18 @@ trait AuthService:
    * the preceding read used `findById` (no company) while the SQL update was already company-guarded.
    */
   def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
+
+  /**
+   * Promote a provisional ("from-chat / walk-in") client to a real client, scoped to `companyId`: the row is read and
+   * updated only when it belongs to that company AND is currently provisional. Fills in name/phone/clientCompanyId and
+   * clears the `provisional` flag in place, so the ride keeps its `clientId` and history. Fails `UserNotFound` for a
+   * missing/cross-tenant id (no existence leak) and `ValidationError` when the target is not provisional.
+   */
+  def upgradeProvisionalClient(
+      id: UUID,
+      companyId: CompanyId,
+      request: UpgradeProvisionalClientRequest
+  ): ZIO[Any, AuthError, UserDto]
 
   /**
    * Hard-deletes a user by id, scoped to `companyId`: the row is only removed when it belongs to that company, so a
@@ -241,6 +262,31 @@ class AuthServiceImpl(
               .upsertDriverRow(saved.id)
               .orElseFail(ValidationError("user", "Failed to create driver row"))
           )
+    yield UserDto.fromPerson(saved)
+
+  override def upgradeProvisionalClient(
+      id: UUID,
+      companyId: CompanyId,
+      request: UpgradeProvisionalClientRequest
+  ): ZIO[Any, AuthError, UserDto] =
+    for
+      existingOpt     <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
+      existing        <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
+      _               <- ZIO.when(!existing.provisional)(ZIO.fail(ValidationError("provisional", "Client is not provisional")))
+      clientCompanyId <-
+        request.clientCompanyId.fold(ZIO.succeed(existing.clientCompanyId))(raw =>
+          ZIO
+            .attempt(ClientCompanyId(UUID.fromString(raw)))
+            .mapBoth(_ => ValidationError("clientCompanyId", "Invalid clientCompanyId format"), Some(_))
+        )
+      // Upgrade in place: keep id/email so the ride's clientId and history stay intact; clear the provisional flag.
+      updated          = existing.copy(
+                           name = request.name.map(_.trim).filter(_.nonEmpty).getOrElse(existing.name),
+                           phone = request.phone.map(_.trim).filter(_.nonEmpty).orElse(existing.phone),
+                           clientCompanyId = clientCompanyId,
+                           provisional = false
+                         )
+      saved           <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to upgrade client"))
     yield UserDto.fromPerson(saved)
 
   override def deleteUser(id: UUID, companyId: CompanyId): ZIO[Any, AuthError, Unit] =

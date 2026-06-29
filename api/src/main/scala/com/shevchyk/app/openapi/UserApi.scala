@@ -341,6 +341,13 @@ object UserApi:
     .tag(usersTag)
     .summary("Update a user (dispatcher, admin, or self)")
 
+  val upgradeProvisionalClientEndpoint = secureBase.put
+    .in("api" / "users" / path[String]("id") / "upgrade-provisional")
+    .in(jsonBody[UpgradeProvisionalClientRequest])
+    .out(jsonBody[UserDto])
+    .tag(usersTag)
+    .summary("Fill in a provisional (from-chat) client and promote it to a real client (dispatcher, driver)")
+
   val deleteUserEndpoint = secureBase.delete
     .in("api" / "users" / path[String]("id"))
     .out(statusCode(StatusCode.NoContent))
@@ -385,6 +392,7 @@ object UserApi:
     createUserEndpoint,
     getUserEndpoint,
     updateUserEndpoint,
+    upgradeProvisionalClientEndpoint,
     deleteUserEndpoint,
     updateUserRoleEndpoint,
     updateUserStatusEndpoint
@@ -663,6 +671,21 @@ object UserApi:
     }
   }
 
+  private val upgradeProvisionalClientServer: ZServerEndpoint[UserEnv, Any] = upgradeProvisionalClientEndpoint
+    .serverLogic[UserEnv] { user =>
+      { case (userId, upgradeReq) =>
+        for {
+          uid       <- parseUuid(userId)
+          _         <- checkRole(user, "DISPATCHER", "DRIVER", "ADMIN")
+          _         <- requireSameCompany(user, uid)
+          companyId <- requireCompanyId(user)
+          userDto   <- ZIO
+                         .serviceWithZIO[AuthService](_.upgradeProvisionalClient(uid, companyId, upgradeReq))
+                         .mapError(mapAuthError)
+        } yield userDto
+      }
+    }
+
   private val deleteUserServer: ZServerEndpoint[UserEnv, Any] = deleteUserEndpoint.serverLogic[UserEnv] {
     user => userId =>
       (for {
@@ -749,9 +772,10 @@ object UserApi:
     uploadAvatarServer,
     getAvatarServer,
     deleteAvatarServer,
-    // users — {id} (and {id}/role, {id}/status)
+    // users — {id} (and {id}/role, {id}/status, {id}/upgrade-provisional)
     updateUserRoleServer,
     updateUserStatusServer,
+    upgradeProvisionalClientServer,
     getUserServer,
     updateUserServer,
     deleteUserServer

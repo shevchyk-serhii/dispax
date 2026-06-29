@@ -1439,7 +1439,7 @@ class _RideRow extends StatelessWidget {
 
   String _buildMetaLine() {
     final time = DateFormat('dd.MM HH:mm').format(ride.pickupDateTime);
-    final parts = [time, ride.clientName];
+    final parts = [time, provisionalAwareClientLabel(ride)];
     if (ride.driverName != null) parts.add(ride.driverName!);
     if (ride.etaMinutes != null) parts.add('${ride.etaMinutes} min');
     if (ride.driverDistanceMeters != null) {
@@ -1448,6 +1448,16 @@ class _RideRow extends StatelessWidget {
     }
     return parts.join(' · ');
   }
+}
+
+/// Label for a ride's client in dispatcher lists. For a provisional ("from-chat") ride the placeholder
+/// client name ("Walk-in") is meaningless, so we show the route instead — matching how the driver card
+/// renders provisional rides. Real clients keep their name.
+String provisionalAwareClientLabel(Ride ride) {
+  if (ride.clientProvisional) {
+    return '${ride.from.address} → ${ride.to.address}';
+  }
+  return ride.clientName;
 }
 
 // ─── Driver Selection Sheet (unchanged business logic, restyled header) ────
@@ -1537,7 +1547,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${widget.ride.clientName} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
+                  '${provisionalAwareClientLabel(widget.ride)} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
                   style: TextStyle(
                     color: Theme.of(
                       context,

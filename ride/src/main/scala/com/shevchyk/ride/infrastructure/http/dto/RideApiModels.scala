@@ -54,6 +54,9 @@ case class RideDto(
     // Whether the client has a profile photo, so a driver/dispatcher card can render their avatar.
     // Derived from the client Person already loaded for clientName; defaults false for backward compatibility.
     clientHasAvatar: Boolean = false,
+    // True when the client is a provisional ("from-chat / walk-in") placeholder not yet filled in. The card
+    // then shows the route instead of the placeholder name, and an action to upgrade it to a real client.
+    clientProvisional: Boolean = false,
     flightNumber: Option[String] = None,
     // The latest known flight instant (estimated/live, else scheduled) — what the card shows as the arrival.
     flightTime: Option[String] = None,
@@ -133,7 +136,13 @@ case class CreateRideApiRequest(
     // Operator-selected payment method (wire enum name, e.g. "Invoice"). Absent leaves it unset.
     paymentMethod: Option[String] = None,
     // Free-form operator tags. Normalized server-side before persistence.
-    tags: Option[List[String]] = None
+    tags: Option[List[String]] = None,
+    // When true, the ride is booked without a real client (e.g. taken from a chat): the backend creates a
+    // lightweight provisional client carrying clientName/clientPhone, to be upgraded into a real client later.
+    // Set by driver/dispatcher. Replaces the old "clientId == own userId" driver hack.
+    provisionalClient: Boolean = false,
+    // Optional phone for the provisional client, when known from the chat. Ignored unless provisionalClient=true.
+    clientPhone: Option[String] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
@@ -387,6 +396,7 @@ object RideDto:
       driverLng: Option[Double] = None,
       clientName: Option[String] = None,
       clientHasAvatar: Boolean = false,
+      clientProvisional: Boolean = false,
       driverName: Option[String] = None,
       etaMinutes: Option[Int] = None,
       driverRating: Option[Double] = None,
@@ -444,6 +454,7 @@ object RideDto:
       status = ride.status.toString,
       clientName = clientName.getOrElse("Unknown Client"),
       clientHasAvatar = clientHasAvatar,
+      clientProvisional = clientProvisional,
       flightNumber = flightNumber,
       // Prefer the live flight time (when the monitor has fetched one) over the booking's scheduledTime.
       flightTime = flight.flatMap(_.flightTime).map(_.toString).orElse(ride.scheduledTime.map(_.toString)),

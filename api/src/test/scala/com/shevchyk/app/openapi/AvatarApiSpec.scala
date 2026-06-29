@@ -162,6 +162,11 @@ object AvatarApiSpec extends ZIOSpecDefault:
       def getUserById(id: UUID): IO[AuthError, UserDto]                                                       = notImpl
       def getUserByEmail(email: String): IO[AuthError, UserDto]                                               = notImpl
       def updateUser(id: UUID, companyId: CompanyId, req: UpdateUserRequest): IO[AuthError, UserDto]          = notImpl
+      def upgradeProvisionalClient(
+          id: UUID,
+          companyId: CompanyId,
+          req: UpgradeProvisionalClientRequest
+      ): IO[AuthError, UserDto] = notImpl
       def deleteUser(id: UUID, companyId: CompanyId): IO[AuthError, Unit]                                     = notImpl
       def changePassword(userId: UUID, companyId: CompanyId, req: ChangePasswordRequest): IO[AuthError, Unit] = notImpl
       def validateToken(token: String): IO[AuthError, UserDto]                                                = notImpl

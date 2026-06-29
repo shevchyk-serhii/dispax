@@ -731,6 +731,110 @@ object AuthServiceSpec extends ZIOSpecDefault {
           })
         }.provide(layers)
       ),
+      suite("upgradeProvisionalClient")(
+        test("fills in fields and clears the provisional flag in place (clientId stays)") {
+          val companyId = CompanyId(UUID.randomUUID())
+          val ccId      = UUID.randomUUID()
+          val person    = Person(
+            id = PersonId.generate(),
+            name = "Walk-in",
+            email = s"provisional+x@chat.dispax.local",
+            role = PersonRole.Client,
+            passwordHash = "provisional-no-login",
+            status = UserStatus.ACTIVE,
+            companyId = Some(companyId),
+            roles = Set(PersonRole.Client),
+            provisional = true
+          )
+          for {
+            repo    <- ZIO.service[PersonRepository]
+            _       <- repo.create(person)
+            service <- ZIO.service[AuthService]
+            _       <- service.upgradeProvisionalClient(
+                         person.id.value,
+                         companyId,
+                         UpgradeProvisionalClientRequest(
+                           name = Some("Real Client"),
+                           phone = Some("+49 170 1234567"),
+                           clientCompanyId = Some(ccId.toString)
+                         )
+                       )
+            saved   <- repo.findById(person.id)
+          } yield assertTrue(
+            saved.exists(p => !p.provisional),
+            saved.exists(_.name == "Real Client"),
+            saved.exists(_.phone.contains("+49 170 1234567")),
+            saved.exists(_.clientCompanyId.exists(_.value == ccId)),
+            // id is unchanged → the ride's clientId and history stay intact
+            saved.exists(_.id == person.id)
+          )
+        }.provide(layersWithRepo),
+        test("does not touch a provisional client from another company") {
+          val ownerCompany    = CompanyId(UUID.randomUUID())
+          val attackerCompany = CompanyId(UUID.randomUUID())
+          val person          = Person(
+            id = PersonId.generate(),
+            name = "Walk-in",
+            email = s"provisional+y@chat.dispax.local",
+            role = PersonRole.Client,
+            passwordHash = "provisional-no-login",
+            status = UserStatus.ACTIVE,
+            companyId = Some(ownerCompany),
+            roles = Set(PersonRole.Client),
+            provisional = true
+          )
+          for {
+            repo      <- ZIO.service[PersonRepository]
+            _         <- repo.create(person)
+            service   <- ZIO.service[AuthService]
+            result    <-
+              service
+                .upgradeProvisionalClient(
+                  person.id.value,
+                  attackerCompany,
+                  UpgradeProvisionalClientRequest(name = Some("Hijack"))
+                )
+                .exit
+            untouched <- repo.findById(person.id)
+          } yield assertTrue(
+            result match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[UserNotFound])
+              case _                   => false
+            },
+            untouched.exists(p => p.provisional && p.name == "Walk-in")
+          )
+        }.provide(layersWithRepo),
+        test("rejects a non-provisional client with ValidationError") {
+          val companyId = CompanyId(UUID.randomUUID())
+          val person    = Person(
+            id = PersonId.generate(),
+            name = "Real",
+            email = "real@example.com",
+            role = PersonRole.Client,
+            passwordHash = "hash",
+            status = UserStatus.ACTIVE,
+            companyId = Some(companyId),
+            roles = Set(PersonRole.Client),
+            provisional = false
+          )
+          for {
+            repo    <- ZIO.service[PersonRepository]
+            _       <- repo.create(person)
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .upgradeProvisionalClient(
+                  person.id.value,
+                  companyId,
+                  UpgradeProvisionalClientRequest(name = Some("X"))
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ValidationError])
+            case _                   => false
+          })
+        }.provide(layersWithRepo)
+      ),
       suite("deleteUser")(
         test("deletes existing user in the same company") {
           val companyId = CompanyId(UUID.randomUUID())

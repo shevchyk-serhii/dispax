@@ -81,6 +81,21 @@ case class UpdateUserRequest(
 object UpdateUserRequest:
   given Schema[UpdateUserRequest] = Schema.derived
 
+/**
+ * Fill in a provisional ("from-chat / walk-in") client and promote it to a real client. All fields are optional — the
+ * operator fills in whatever became known after the ride. Applying this clears the `provisional` flag, so the client
+ * then behaves like any normal client (appears in billing once `clientCompanyId` is linked).
+ */
+case class UpgradeProvisionalClientRequest(
+    name: Option[String] = None,
+    phone: Option[String] = None,
+    // Link to a billing client-company so completed rides become invoiceable. Plain UUID string; absent leaves it unset.
+    clientCompanyId: Option[String] = None
+) derives JsonCodec
+
+object UpgradeProvisionalClientRequest:
+  given Schema[UpgradeProvisionalClientRequest] = Schema.derived
+
 case class ChangePasswordRequest(
     currentPassword: String,
     newPassword: String

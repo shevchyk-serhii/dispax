@@ -24,7 +24,8 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       isAirportTransfer: Boolean = false,
       flightNumber: Option[String] = None,
       price: Option[Double] = None,
-      tags: Option[List[String]] = None
+      tags: Option[List[String]] = None,
+      provisionalClient: Boolean = false
   ) = CreateRideApiRequest(
     clientId = clientId,
     creatorId = validClientId,
@@ -35,7 +36,8 @@ object RideValidatorsSpec extends ZIOSpecDefault {
     isAirportTransfer = isAirportTransfer,
     flightNumber = flightNumber,
     price = price,
-    tags = tags
+    tags = tags,
+    provisionalClient = provisionalClient
   )
 
   def suite_createRideApiRequest =
@@ -77,6 +79,18 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       },
       test("rejects invalid client UUID") {
         val req = validCreateRequest(clientId = "not-a-uuid")
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid client ID"))
+        }
+      },
+      // Provisional ("from-chat") mode: the client is created server-side, so an empty clientId must NOT
+      // be rejected. Mutation: drop the `if provisionalClient then ZIO.unit` branch → this goes red.
+      test("accepts a provisional request with an empty clientId") {
+        val req = validCreateRequest(clientId = "", provisionalClient = true)
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("still rejects an empty clientId when NOT provisional") {
+        val req = validCreateRequest(clientId = "", provisionalClient = false)
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid client ID"))
         }

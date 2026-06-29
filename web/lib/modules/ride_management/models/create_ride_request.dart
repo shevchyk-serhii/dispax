@@ -49,6 +49,11 @@ class CreateRideRequest {
   /// null, in which case the backend creates the ride without a price.
   final double? price;
 
+  /// When true, the ride is booked "from chat" without a real client: the backend creates a
+  /// lightweight provisional client (carrying [clientName]/[newClientPhone]) and books the ride
+  /// onto it, to be upgraded into a real client later. [clientId] is sent empty in this mode.
+  final bool provisionalClient;
+
   const CreateRideRequest({
     required this.clientId,
     required this.creatorId,
@@ -69,6 +74,7 @@ class CreateRideRequest {
     this.vehicleClass = VehicleClass.business,
     this.paymentMethod = PaymentMethod.invoice,
     this.price,
+    this.provisionalClient = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -101,6 +107,7 @@ class CreateRideRequest {
       'vehicleClass': vehicleClass.wire,
       'paymentMethod': paymentMethod.wire,
       if (price != null) 'price': price,
+      if (provisionalClient) 'provisionalClient': true,
     };
   }
 

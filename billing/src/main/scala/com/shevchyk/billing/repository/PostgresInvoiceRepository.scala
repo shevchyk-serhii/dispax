@@ -392,6 +392,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
           AND r.company_id = ${taxiCompanyId.value}
           AND r.status = 'Completed'
           AND r.invoice_id IS NULL
+          AND NOT p.provisional
       """
     val fromFilter = from.map(d => fr"AND r.pickup_datetime::date >= $d").getOrElse(Fragment.empty)
     val toFilter   = to.map(d => fr"AND r.pickup_datetime::date <= $d").getOrElse(Fragment.empty)
