@@ -12,8 +12,17 @@ variable "image" {
   type = string # Повний шлях до Docker образу в Artifact Registry
 }
 
-variable "connector_id" {
-  type = string # ID VPC Connector для зʼєднання з Cloud SQL
+variable "vpc_name" {
+  type = string # VPC network name for Direct VPC egress (reach Cloud SQL private IP)
+}
+
+variable "subnet_name" {
+  type = string # Regional subnet name for Direct VPC egress (must match the run region)
+}
+
+variable "public_base_url" {
+  type    = string
+  default = "https://dispax-o2trzxjbva-ew.a.run.app" # Base for guest-tracking links
 }
 
 variable "db_private_ip" {
@@ -60,21 +69,34 @@ resource "google_cloud_run_v2_service" "app" {
     timeout = "3600s" # Максимальний час запиту 1 година (для WebSocket зʼєднань)
 
     scaling {
-      min_instance_count = 1  # Завжди є мінімум 1 запущений екземпляр
-                               # → немає cold start, WebSocket зʼєднання не рвуться
+      min_instance_count = 0  # Cost optimization (pre-prod): scale to zero when idle.
+                               # NOTE: background daemon fibers (flight monitor, driver
+                               # reminders, ETA guarantee) are frozen/killed while idle —
+                               # acceptable only without live drivers. Raise back to 1
+                               # before going live with real users.
       max_instance_count = 10 # Максимум 10 екземплярів при навантаженні
     }
 
+    # Direct VPC egress — connects Cloud Run straight to the VPC subnet to reach
+    # Cloud SQL over its private IP, WITHOUT a Serverless VPC Access connector.
+    # This removes the connector's always-on e2-micro machines (~€10/mo Compute Engine).
     vpc_access {
-      connector = var.connector_id      # Через який VPC Connector йти до приватної мережі
-      egress    = "PRIVATE_RANGES_ONLY" # Через VPC йде тільки трафік до приватних IP
-                                         # Публічний трафік (Firebase, APIs) йде напряму
+      network_interfaces {
+        network    = var.vpc_name    # Private VPC network
+        subnetwork = var.subnet_name # Regional subnet (must match Cloud Run region)
+      }
+      egress = "PRIVATE_RANGES_ONLY" # Only private-IP traffic goes through the VPC;
+                                      # public traffic (Firebase, APIs) goes direct
     }
 
     containers {
       image = var.image # Docker образ з Artifact Registry
 
       resources {
+        cpu_idle          = true # CPU only allocated during request handling (cost
+                                 # optimization). Throttles background fibers between
+                                 # requests — pre-prod only, see scaling note above.
+        startup_cpu_boost = true # Faster JVM cold start (matches live config)
         limits = {
           cpu    = "1"     # 1 vCPU на екземпляр
           memory = "512Mi" # 512 MB RAM (JVM налаштований на -XX:MaxRAMPercentage=75%)
@@ -99,6 +121,13 @@ resource "google_cloud_run_v2_service" "app" {
       env {
         name  = "APP_ENV"
         value = "production" # Вмикає production режим Flyway (без seed даних)
+      }
+
+      env {
+        name  = "PUBLIC_BASE_URL"
+        # Base for absolute guest-tracking links (<base>/track/<token>).
+        # Managed in TF so a targeted apply does not drop it (was set out-of-band).
+        value = var.public_base_url
       }
 
       # ── ENV ЗМІННІ (з Secret Manager) ─────────────────────────────────────

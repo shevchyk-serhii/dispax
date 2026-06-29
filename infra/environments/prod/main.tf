@@ -106,7 +106,8 @@ module "cloud_run" {
   project_id             = var.project_id
   region                 = var.region
   image                  = var.app_image                        # Docker образ для запуску
-  connector_id           = module.networking.connector_id       # VPC Connector для зʼєднання з БД
+  vpc_name               = module.networking.vpc_name           # Direct VPC egress: network
+  subnet_name            = module.networking.subnet_name        # Direct VPC egress: subnet
   db_private_ip          = module.cloud_sql.private_ip_address  # Приватний IP PostgreSQL
   cloudrun_sa_email      = module.iam.cloudrun_sa_email         # Сервісний акаунт для Cloud Run
   db_password_secret_id  = module.secrets.db_password_secret_id # Посилання на секрет в Secret Manager
