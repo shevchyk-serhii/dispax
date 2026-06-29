@@ -362,10 +362,14 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               Expanded(
                 child: Text(
                   l10n.driverDelayedMessage(driverLabel, slackStr),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.errorStrong,
+                    // On the dark rideCancelledBgDark surface the dark
+                    // errorStrong red is invisible; use the light *Dark variant.
+                    color: isDark
+                        ? AppColors.rideCancelledTextDark
+                        : AppColors.errorStrong,
                   ),
                 ),
               ),
