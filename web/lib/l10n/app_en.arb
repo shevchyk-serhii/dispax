@@ -1021,10 +1021,9 @@
   "enterClientNameError": "Please enter client name",
 
   "editRideDialogTitle": "Edit Ride",
-  "pickupDateTimeLabel": "Pickup date/time (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Pickup date/time",
   "flightNumberOptionalLabel": "Flight number (optional)",
   "notesOptionalLabel": "Notes (optional)",
-  "invalidDateFormatError": "Invalid date format. Use: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Server error: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {

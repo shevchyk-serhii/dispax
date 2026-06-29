@@ -939,10 +939,9 @@
   "enterClientNameError": "Bitte geben Sie den Kundennamen ein",
 
   "editRideDialogTitle": "Fahrt bearbeiten",
-  "pickupDateTimeLabel": "Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Abholdatum/-uhrzeit",
   "flightNumberOptionalLabel": "Flugnummer (optional)",
   "notesOptionalLabel": "Notizen (optional)",
-  "invalidDateFormatError": "Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Serverfehler: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {

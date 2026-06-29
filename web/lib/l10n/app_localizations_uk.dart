@@ -2143,17 +2143,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editRideDialogTitle => 'Редагувати поїздку';
 
   @override
-  String get pickupDateTimeLabel => 'Дата/час подачі (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Дата/час подачі';
 
   @override
   String get flightNumberOptionalLabel => 'Номер рейсу (необов\'язково)';
 
   @override
   String get notesOptionalLabel => 'Примітки (необов\'язково)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {

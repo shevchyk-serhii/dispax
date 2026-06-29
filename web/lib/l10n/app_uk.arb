@@ -939,10 +939,9 @@
   "enterClientNameError": "Будь ласка, введіть ім'я клієнта",
 
   "editRideDialogTitle": "Редагувати поїздку",
-  "pickupDateTimeLabel": "Дата/час подачі (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Дата/час подачі",
   "flightNumberOptionalLabel": "Номер рейсу (необов'язково)",
   "notesOptionalLabel": "Примітки (необов'язково)",
-  "invalidDateFormatError": "Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Помилка сервера: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {

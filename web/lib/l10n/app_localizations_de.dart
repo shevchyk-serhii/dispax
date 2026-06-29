@@ -2153,17 +2153,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editRideDialogTitle => 'Fahrt bearbeiten';
 
   @override
-  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit';
 
   @override
   String get flightNumberOptionalLabel => 'Flugnummer (optional)';
 
   @override
   String get notesOptionalLabel => 'Notizen (optional)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {

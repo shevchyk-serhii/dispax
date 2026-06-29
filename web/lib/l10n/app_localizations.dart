@@ -4099,7 +4099,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickupDateTimeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Pickup date/time (yyyy-MM-ddTHH:mm)'**
+  /// **'Pickup date/time'**
   String get pickupDateTimeLabel;
 
   /// No description provided for @flightNumberOptionalLabel.
@@ -4113,12 +4113,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes (optional)'**
   String get notesOptionalLabel;
-
-  /// No description provided for @invalidDateFormatError.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid date format. Use: yyyy-MM-ddTHH:mm'**
-  String get invalidDateFormatError;
 
   /// No description provided for @serverErrorMessage.
   ///

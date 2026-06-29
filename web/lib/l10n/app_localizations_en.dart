@@ -2141,17 +2141,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editRideDialogTitle => 'Edit Ride';
 
   @override
-  String get pickupDateTimeLabel => 'Pickup date/time (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Pickup date/time';
 
   @override
   String get flightNumberOptionalLabel => 'Flight number (optional)';
 
   @override
   String get notesOptionalLabel => 'Notes (optional)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Invalid date format. Use: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {
