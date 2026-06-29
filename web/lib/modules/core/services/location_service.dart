@@ -15,8 +15,8 @@ class LocationService {
   geo.Position? _currentPosition;
 
   Stream<geo.Position> get positionStream {
-    final controller =
-        _positionController ??= StreamController<geo.Position>.broadcast();
+    final controller = _positionController ??=
+        StreamController<geo.Position>.broadcast();
     return controller.stream;
   }
 

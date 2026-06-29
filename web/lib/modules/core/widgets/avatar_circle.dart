@@ -67,8 +67,7 @@ class _AvatarCircleState extends State<AvatarCircle> {
       future: _avatarFuture,
       builder: (context, snapshot) {
         final data = snapshot.data;
-        if (snapshot.connectionState == ConnectionState.done &&
-            data != null) {
+        if (snapshot.connectionState == ConnectionState.done && data != null) {
           return CircleAvatar(
             radius: widget.radius,
             backgroundImage: MemoryImage(data),

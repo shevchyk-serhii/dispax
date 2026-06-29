@@ -173,30 +173,18 @@ class ProfileDialog extends StatelessWidget {
     final companyName = user.companyName;
     if (companyName != null) {
       rows.add(
-        _buildInfoRow(
-          context,
-          Icons.business_outlined,
-          'Company',
-          companyName,
-        ),
+        _buildInfoRow(context, Icons.business_outlined, 'Company', companyName),
       );
     }
     final licenseNumber = user.licenseNumber;
     if (licenseNumber != null) {
       rows.add(
-        _buildInfoRow(
-          context,
-          Icons.badge_outlined,
-          'License',
-          licenseNumber,
-        ),
+        _buildInfoRow(context, Icons.badge_outlined, 'License', licenseNumber),
       );
     }
     final phone = user.phone;
     if (phone != null) {
-      rows.add(
-        _buildInfoRow(context, Icons.phone_outlined, 'Phone', phone),
-      );
+      rows.add(_buildInfoRow(context, Icons.phone_outlined, 'Phone', phone));
     }
 
     // Interleave dividers between the rows.

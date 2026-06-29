@@ -1238,7 +1238,9 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                     _StatusBadge(inv.status),
                     if (reminderSentAt != null)
                       _ReminderBadge(
-                        label: l10n.reminderBadgeLabel(_fmtDate(reminderSentAt)),
+                        label: l10n.reminderBadgeLabel(
+                          _fmtDate(reminderSentAt),
+                        ),
                       ),
                   ],
                 ),

@@ -103,8 +103,7 @@ class CreateRideRequest {
       if (flightTime != null)
         'flightTime': flightTime.toUtc().toIso8601String(),
       if (notes != null) 'notes': notes,
-      if (requirements != null)
-        'specialRequirements': requirements.join(', '),
+      if (requirements != null) 'specialRequirements': requirements.join(', '),
       if (tagsList != null && tagsList.isNotEmpty) 'tags': tagsList,
       if (driverId != null) 'driverId': driverId,
       if (clientPhone != null && clientPhone.isNotEmpty)

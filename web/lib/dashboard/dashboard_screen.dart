@@ -22,7 +22,6 @@ class DashboardScreen extends StatelessWidget {
           return const Scaffold(body: LoadingWidget());
         }
 
-
         return Scaffold(
           appBar: UserAppBar(
             user: user,

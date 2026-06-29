@@ -847,8 +847,7 @@ class _NotificationSettingsTabState extends State<_NotificationSettingsTab> {
         'smsNotifications': prefs.smsNotifications,
         if (prefs.quietHoursStart != null)
           'quietHoursStart': prefs.quietHoursStart,
-        if (prefs.quietHoursEnd != null)
-          'quietHoursEnd': prefs.quietHoursEnd,
+        if (prefs.quietHoursEnd != null) 'quietHoursEnd': prefs.quietHoursEnd,
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

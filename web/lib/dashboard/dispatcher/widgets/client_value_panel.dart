@@ -42,9 +42,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
       final response = await apiClient.get('/stats/client-value');
 
       if (response.statusCode == 200) {
-        final data = List<Map<String, dynamic>>.from(
-          jsonDecode(response.body),
-        );
+        final data = List<Map<String, dynamic>>.from(jsonDecode(response.body));
         // Sort by total revenue descending
         data.sort(
           (a, b) => ((b['totalRevenue'] as num?) ?? 0).compareTo(
