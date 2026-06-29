@@ -324,6 +324,16 @@ class AppLocalizationsUk extends AppLocalizations {
       'Ваш обліковий запис використовує тимчасовий пароль. Будь ласка, встановіть новий пароль, щоб продовжити.';
 
   @override
+  String get updateRequired => 'Потрібне оновлення';
+
+  @override
+  String get updateRequiredMessage =>
+      'Ця версія застосунку більше не підтримується. Будь ласка, оновіть до останньої версії, щоб продовжити.';
+
+  @override
+  String get updateNow => 'Оновити зараз';
+
+  @override
   String get temporaryPassword => 'Тимчасовий пароль';
 
   @override

@@ -16,6 +16,7 @@ import 'locale_notifier.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'screens/force_password_change_screen.dart';
+import 'screens/force_update_gate.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
@@ -146,7 +147,7 @@ class MyApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const AppRoot(),
+            home: const ForceUpdateGate(child: AppRoot()),
           ),
         ),
       ),

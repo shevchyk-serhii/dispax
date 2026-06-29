@@ -326,6 +326,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ihr Konto verwendet ein temporäres Passwort. Bitte legen Sie ein neues Passwort fest, um fortzufahren.';
 
   @override
+  String get updateRequired => 'Aktualisierung erforderlich';
+
+  @override
+  String get updateRequiredMessage =>
+      'Diese Version der App wird nicht mehr unterstützt. Bitte aktualisieren Sie auf die neueste Version, um fortzufahren.';
+
+  @override
+  String get updateNow => 'Jetzt aktualisieren';
+
+  @override
   String get temporaryPassword => 'Temporäres Passwort';
 
   @override
