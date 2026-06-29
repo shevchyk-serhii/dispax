@@ -25,6 +25,13 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
   final _searchController = TextEditingController();
   bool _searching = false;
 
+  // The board list has no gate (it lives on each flight's detail page). We lazily look it up for the
+  // rows that actually get built (ListView.builder builds ~visible only), cache by flight number, and
+  // re-render the row with the resolved gate. Requested-but-not-yet-resolved numbers are tracked so a
+  // flight is fetched at most once even while the user scrolls.
+  final Map<String, String> _gateByFlight = {};
+  final Set<String> _gateRequested = {};
+
   @override
   void initState() {
     super.initState();
@@ -50,14 +57,40 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
     setState(() {
       // Compare by calendar day only.
       _date = DateTime(date.year, date.month, date.day);
+      _gateByFlight.clear(); // gates are per-date
+      _gateRequested.clear();
       _future = _load();
     });
   }
 
   Future<void> _refresh() async {
     final next = _load();
-    setState(() => _future = next);
+    setState(() {
+      _gateByFlight.clear();
+      _gateRequested.clear();
+      _future = next;
+    });
     await next;
+  }
+
+  /// Lazily resolve the gate for a row being built. Fetches once per flight (for the current date)
+  /// via /flights/lookup and re-renders with the gate. No-op once known/requested.
+  void _ensureGate(MucFlight flight) {
+    final n = flight.flightNumber;
+    if (flight.gate != null ||
+        _gateByFlight.containsKey(n) ||
+        _gateRequested.contains(n)) {
+      return;
+    }
+    _gateRequested.add(n);
+    final iso = DateFormat('yyyy-MM-dd').format(_date);
+    _service.lookupFlight(flightNumber: n, date: iso, isArrival: true).then((
+      found,
+    ) {
+      if (!mounted) return;
+      final gate = found?.gate;
+      if (gate != null) setState(() => _gateByFlight[n] = gate);
+    });
   }
 
   Future<void> _pickDate() async {
@@ -197,11 +230,16 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
             padding: const EdgeInsets.all(12),
             itemCount: flights.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, i) => _ArrivalRow(
-              flight: flights[i],
-              l10n: l10n,
-              onTap: () => _openFlightDetails(flights[i], l10n),
-            ),
+            itemBuilder: (context, i) {
+              final flight = flights[i];
+              _ensureGate(flight);
+              return _ArrivalRow(
+                flight: flight,
+                resolvedGate: flight.gate ?? _gateByFlight[flight.flightNumber],
+                l10n: l10n,
+                onTap: () => _openFlightDetails(flight, l10n),
+              );
+            },
           );
         },
       ),
@@ -282,11 +320,15 @@ class ArrivalsDateBar extends StatelessWidget {
 
 class _ArrivalRow extends StatelessWidget {
   final MucFlight flight;
+
+  /// Gate resolved lazily from the flight's detail page (the board list has none). Null until known.
+  final String? resolvedGate;
   final AppLocalizations l10n;
   final VoidCallback onTap;
 
   const _ArrivalRow({
     required this.flight,
+    required this.resolvedGate,
     required this.l10n,
     required this.onTap,
   });
@@ -340,6 +382,7 @@ class _ArrivalRow extends StatelessWidget {
                         if (flight.airline != null) flight.airline!,
                         if (flight.terminal != null)
                           'Terminal ${flight.terminal!}',
+                        if (resolvedGate != null) 'Gate $resolvedGate',
                       ].join(' · '),
                       style: TextStyle(
                         color: scheme.onSurfaceVariant,

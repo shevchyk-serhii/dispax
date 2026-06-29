@@ -37,6 +37,14 @@ void main() {
     when(
       () => service.getArrivals(date: any(named: 'date')),
     ).thenAnswer((_) async => [boardRow]);
+    // Default: rows lazily look up their gate; individual tests override this.
+    when(
+      () => service.lookupFlight(
+        flightNumber: any(named: 'flightNumber'),
+        date: any(named: 'date'),
+        isArrival: any(named: 'isArrival'),
+      ),
+    ).thenAnswer((_) async => null);
   });
 
   Future<void> pump(WidgetTester tester) async {
@@ -75,10 +83,10 @@ void main() {
         date: any(named: 'date'),
         isArrival: true,
       ),
-    ).called(1);
+    ).called(greaterThanOrEqualTo(1));
 
-    // ... and the resolved gate is shown in the sheet.
-    expect(find.textContaining('G35'), findsOneWidget);
+    // ... and the resolved gate is shown (in the sheet; also inline in the row now).
+    expect(find.textContaining('G35'), findsWidgets);
   });
 
   testWidgets('shows a "not published" fallback when no gate is available', (
@@ -123,8 +131,8 @@ void main() {
         date: any(named: 'date'),
         isArrival: true,
       ),
-    ).called(1);
-    expect(find.textContaining('G35'), findsOneWidget);
+    ).called(greaterThanOrEqualTo(1));
+    expect(find.textContaining('G35'), findsWidgets);
   });
 
   testWidgets('searching a non-existent flight shows a not-found snackbar', (
@@ -146,5 +154,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(SnackBar), findsOneWidget);
+  });
+
+  testWidgets('a board row lazily loads and shows its gate inline', (
+    tester,
+  ) async {
+    // The row's lazy gate lookup resolves to a flight WITH the gate.
+    when(
+      () => service.lookupFlight(
+        flightNumber: any(named: 'flightNumber'),
+        date: any(named: 'date'),
+        isArrival: any(named: 'isArrival'),
+      ),
+    ).thenAnswer((_) async => withGate);
+
+    await pump(tester); // builds the row → fires _ensureGate
+    await tester.pumpAndSettle(); // let the lookup resolve + re-render
+
+    verify(
+      () => service.lookupFlight(
+        flightNumber: 'LH2001',
+        date: any(named: 'date'),
+        isArrival: true,
+      ),
+    ).called(greaterThanOrEqualTo(1));
+    // Gate now shown inline in the row's terminal line.
+    expect(find.textContaining('Gate G35'), findsOneWidget);
   });
 }
