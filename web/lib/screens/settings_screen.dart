@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../blocs/blocs.dart';
+import '../modules/core/services/version_service.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/models/person.dart';
@@ -31,12 +33,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _pushEnabled = true;
   bool _uploadingAvatar = false;
   int _sessionCount = 1;
+  String? _appVersion;
+  BackendVersion? _backendVersion;
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
     _loadSessionCount();
+    _loadVersions();
+  }
+
+  Future<void> _loadVersions() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(
+        () => _appVersion = '${info.version} (build ${info.buildNumber})',
+      );
+    } catch (_) {
+      // Non-critical; the row falls back to a dash.
+    }
+    try {
+      final apiClient = context.read<AuthBloc>().apiClient;
+      final backend = await VersionService(
+        apiClient: apiClient,
+      ).fetchBackendVersion();
+      if (!mounted) return;
+      setState(() => _backendVersion = backend);
+    } catch (_) {
+      // Backend unreachable — the row falls back to a dash.
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -114,6 +141,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
                 const SizedBox(height: 8),
                 _buildPrivacySection(),
+                const SizedBox(height: 8),
+                _buildAboutSection(),
                 const SizedBox(height: 24),
                 _buildSignOutRow(),
                 const SizedBox(height: 32),
@@ -510,6 +539,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ]),
       ],
+    );
+  }
+
+  // ─── About / version ──────────────────────────────────────────────────────
+
+  Widget _buildAboutSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(l10n.about),
+        _buildSettingsCard([
+          _buildInfoRow(
+            icon: Icons.smartphone_outlined,
+            label: l10n.appVersion,
+            value: _appVersion ?? '—',
+          ),
+          _buildDivider(context),
+          _buildInfoRow(
+            icon: Icons.dns_outlined,
+            label: l10n.backendVersion,
+            value: _backendVersion?.display ?? '—',
+          ),
+        ]),
+      ],
+    );
+  }
+
+  /// A read-only settings row: icon + label on the left, a value on the right.
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+      child: Row(
+        children: [
+          _buildIconBox(icon),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

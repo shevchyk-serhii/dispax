@@ -148,6 +148,8 @@
 
   "about": "Про додаток",
   "version": "Версія",
+  "appVersion": "Версія додатка",
+  "backendVersion": "Версія бекенду",
   "privacyPolicy": "Політика конфіденційності",
   "termsOfService": "Умови використання",
 

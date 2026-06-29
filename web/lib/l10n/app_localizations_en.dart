@@ -417,6 +417,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get appVersion => 'App version';
+
+  @override
+  String get backendVersion => 'Backend version';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override

@@ -1,4 +1,19 @@
-ThisBuild / version      := "0.1.0-SNAPSHOT"
+// Semver base reported by GET /api/version. Bump this on a release; the commit
+// SHA / branch / build time are derived automatically from git at compile time
+// (the gitProp helper below + sbt-buildinfo) so no other version edit is needed
+// per deploy.
+ThisBuild / version := "0.1.0"
+
+// Read a value from the local git checkout via the `git` CLI. Used to stamp the
+// build (see the BuildInfo keys on `root`). The CLI is worktree-aware, unlike
+// sbt-git/jgit which treats a worktree's `.git` file pointer as a bare repo and
+// fails. Returns "unknown" when git is unavailable (e.g. a source tarball build),
+// so the build never breaks on a missing repo.
+def gitProp(args: String*): String = scala.util
+  .Try(scala.sys.process.Process("git" +: args).!!.trim)
+  .toOption
+  .filter(_.nonEmpty)
+  .getOrElse("unknown")
 ThisBuild / scalaVersion := "3.3.7"
 
 // Test-coverage (scoverage) exclusions: generated/derived/wiring code that carries
@@ -288,12 +303,26 @@ lazy val billing = (project in file("billing"))
   )
 
 lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
   .aggregate(core, auth, ride, driver, notification, schedule, billing)
   // core test->test exposes PostgresTestContainer to api integration specs
   // (e.g. DriverRidesFlightPostgresSpec drives an endpoint against a real DB).
   .dependsOn(core % "compile->compile;test->test", auth, ride, driver, notification, schedule, billing)
   .settings(
     name                        := "dispax",
+    // Generated com.shevchyk.app.BuildInfo, baked at compile time. Powers the
+    // public GET /api/version endpoint so any deployed build self-reports its
+    // semver, git commit/branch and build time — no manual stamping after deploy.
+    buildInfoPackage            := "com.shevchyk.app",
+    buildInfoKeys               := Seq[BuildInfoKey](
+      version,
+      "gitCommit"      -> gitProp("rev-parse", "HEAD"),
+      "gitShortCommit" -> gitProp("rev-parse", "--short", "HEAD"),
+      "gitBranch"      -> gitProp("rev-parse", "--abbrev-ref", "HEAD"),
+      // NOTE: a wall-clock build time makes BuildInfo non-reproducible (busts the
+      // sbt cache so it regenerates each assembly) — intended, the stamp must be fresh.
+      BuildInfoKey.action("buildTime")(java.time.Instant.now().toString)
+    ),
     Compile / scalaSource       := baseDirectory.value / "api" / "src" / "main" / "scala",
     Compile / resourceDirectory := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource          := baseDirectory.value / "api" / "src" / "test" / "scala",

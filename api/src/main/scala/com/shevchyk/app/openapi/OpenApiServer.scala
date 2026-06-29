@@ -1,5 +1,6 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.app.BuildInfo
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.openapi.AuthApi
@@ -136,13 +137,14 @@ object OpenApiServer:
       SuperAdminAirportApi.serverEndpoints.map(_.endpoint) :::
       PartnerCompanyApi.serverEndpoints.map(_.endpoint) :::
       ExternalDriverApi.serverEndpoints.map(_.endpoint) :::
-      TrackApi.serverEndpoints.map(_.endpoint)
+      TrackApi.serverEndpoints.map(_.endpoint) :::
+      VersionApi.serverEndpoints.map(_.endpoint)
 
   /**
    * Swagger UI + the generated OpenAPI document, served under `/docs`.
    */
   private val swaggerEndpoints: List[ServerEndpoint[Any, Task]] = SwaggerInterpreter()
-    .fromEndpoints[Task](allEndpoints, "Dispax API", "0.1.0")
+    .fromEndpoints[Task](allEndpoints, "Dispax API", BuildInfo.version)
 
   /**
    * zio-http routes that serve the documented API and the Swagger UI.
@@ -178,4 +180,5 @@ object OpenApiServer:
       http(PartnerCompanyApi.serverEndpoints) ++
       http(ExternalDriverApi.serverEndpoints) ++
       http(TrackApi.serverEndpoints) ++
+      http(VersionApi.serverEndpoints) ++
       http(swaggerEndpoints)

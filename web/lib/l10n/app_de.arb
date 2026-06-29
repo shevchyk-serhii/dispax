@@ -148,6 +148,8 @@
 
   "about": "Über",
   "version": "Version",
+  "appVersion": "App-Version",
+  "backendVersion": "Backend-Version",
   "privacyPolicy": "Datenschutzrichtlinie",
   "termsOfService": "Nutzungsbedingungen",
 
