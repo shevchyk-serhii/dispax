@@ -1,5 +1,4 @@
 import 'package:dispax/l10n/app_localizations.dart';
-import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/screens/force_update_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
