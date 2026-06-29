@@ -14,11 +14,12 @@ class DateTimePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedDateTime = this.selectedDateTime;
     return Card(
       child: ListTile(
         leading: const Icon(Icons.access_time),
         title: Text(
-          selectedDateTime != null ? _formatDateTime(selectedDateTime!) : label,
+          selectedDateTime != null ? _formatDateTime(selectedDateTime) : label,
         ),
         onTap: () => _showDateTimePicker(context),
       ),

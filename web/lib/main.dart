@@ -16,6 +16,7 @@ import 'locale_notifier.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
 import 'screens/force_password_change_screen.dart';
+import 'screens/force_update_gate.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
@@ -146,7 +147,7 @@ class MyApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const AppRoot(),
+            home: const ForceUpdateGate(child: AppRoot()),
           ),
         ),
       ),
@@ -259,8 +260,9 @@ class _AppRootState extends State<AppRoot> {
 
         // Logged in with a temporary password: gate behind the forced
         // password-change screen until the user sets a new password.
-        if (authState.mustChangePassword && authState.user != null) {
-          return ForcePasswordChangeScreen(user: authState.user!);
+        final mustChangeUser = authState.user;
+        if (authState.mustChangePassword && mustChangeUser != null) {
+          return ForcePasswordChangeScreen(user: mustChangeUser);
         }
 
         if (authState.isAuthenticated) {
@@ -309,13 +311,15 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
     super.initState();
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
+      final statusRideId = event.rideId;
+      final newStatus = event.newStatus;
       if (event.isRideStatusChanged &&
-          event.rideId != null &&
-          event.newStatus != null) {
-        final parsedStatus = RideStatus.fromStringOrNull(event.newStatus!);
+          statusRideId != null &&
+          newStatus != null) {
+        final parsedStatus = RideStatus.fromStringOrNull(newStatus);
         if (parsedStatus != null) {
           context.read<RideBloc>().add(
-            RideStatusReceived(rideId: event.rideId!, newStatus: parsedStatus),
+            RideStatusReceived(rideId: statusRideId, newStatus: parsedStatus),
           );
         } else {
           debugPrint(
@@ -353,8 +357,9 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
 
   void _refreshRides() {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideRefreshRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideRefreshRequested(user: user));
     }
   }
 

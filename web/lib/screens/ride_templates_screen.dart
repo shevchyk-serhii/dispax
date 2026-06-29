@@ -280,12 +280,15 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
+                if (!(formKey.currentState?.validate() ?? false)) return;
+
+                final clientId = selectedClientId;
+                if (clientId == null) return;
 
                 final navigator = Navigator.of(ctx);
                 final request = CreateRideTemplateRequest(
                   name: nameController.text,
-                  clientId: selectedClientId!,
+                  clientId: clientId,
                   fromAddress: fromController.text,
                   toAddress: toController.text,
                   pickupTime: timeController.text,
@@ -407,7 +410,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!, textAlign: TextAlign.center),
+            Text(_error ?? '', textAlign: TextAlign.center),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
           ],

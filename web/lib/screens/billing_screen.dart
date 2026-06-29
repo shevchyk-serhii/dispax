@@ -119,9 +119,8 @@ class _BillingScreenState extends State<BillingScreen>
         .where(
           (i) =>
               i.status == InvoiceStatus.paid &&
-              i.paidAt != null &&
-              i.paidAt!.year == now.year &&
-              i.paidAt!.month == now.month,
+              i.paidAt?.year == now.year &&
+              i.paidAt?.month == now.month,
         )
         .fold(0.0, (s, i) => s + i.totalAmount);
   }
@@ -132,8 +131,7 @@ class _BillingScreenState extends State<BillingScreen>
         .where(
           (i) =>
               i.status == InvoiceStatus.sent &&
-              i.dueDate != null &&
-              i.dueDate!.isBefore(now),
+              (i.dueDate?.isBefore(now) ?? false),
         )
         .fold(0.0, (s, i) => s + i.totalAmount);
   }
@@ -273,17 +271,18 @@ class _BillingScreenState extends State<BillingScreen>
 
   Widget _buildInvoicesTab() {
     final l10n = AppLocalizations.of(context)!;
+    final invoiceError = _invoiceError;
     return Column(
       children: [
-        if (!_loadingInvoices && _invoiceError == null && _invoices.isNotEmpty)
+        if (!_loadingInvoices && invoiceError == null && _invoices.isNotEmpty)
           _buildStatTiles(),
         _buildTopActions(),
         _buildStatusFilters(),
         Expanded(
           child: _loadingInvoices
               ? Center(child: CircularProgressIndicator.adaptive())
-              : _invoiceError != null
-              ? _buildError(_invoiceError!, _loadInvoices)
+              : invoiceError != null
+              ? _buildError(invoiceError, _loadInvoices)
               : _invoices.isEmpty
               ? _buildEmpty(l10n.noInvoices, Icons.receipt)
               : _buildInvoiceTable(),
@@ -414,13 +413,14 @@ class _BillingScreenState extends State<BillingScreen>
             ),
             ElevatedButton(
               onPressed: () async {
-                if (selectedCompanyId == null) return;
+                final companyId = selectedCompanyId;
+                if (companyId == null) return;
                 Navigator.pop(ctx);
                 final now = DateTime.now();
                 try {
                   await _invoiceService.createInvoice(
                     CreateInvoiceRequest(
-                      clientCompanyId: selectedCompanyId!,
+                      clientCompanyId: companyId,
                       periodFrom: DateTime(now.year, now.month, 1),
                       periodTo: DateTime(now.year, now.month + 1, 0),
                       taxRate: 19,
@@ -615,8 +615,7 @@ class _BillingScreenState extends State<BillingScreen>
 
     // Check if overdue (sent + dueDate in past)
     if (invoice.status == InvoiceStatus.sent &&
-        invoice.dueDate != null &&
-        invoice.dueDate!.isBefore(DateTime.now())) {
+        (invoice.dueDate?.isBefore(DateTime.now()) ?? false)) {
       statusBadge = BillingStatusBadge.overdue(label: l10n.overdueStatus);
     }
 
@@ -771,12 +770,13 @@ class _BillingScreenState extends State<BillingScreen>
 
   Widget _buildCompaniesTab() {
     final l10n = AppLocalizations.of(context)!;
+    final companyError = _companyError;
     return Stack(
       children: [
         _loadingCompanies
             ? Center(child: CircularProgressIndicator.adaptive())
-            : _companyError != null
-            ? _buildError(_companyError!, _loadCompanies)
+            : companyError != null
+            ? _buildError(companyError, _loadCompanies)
             : _companies.isEmpty
             ? _buildEmpty(l10n.noCompanies, Icons.business)
             : RefreshIndicator(
@@ -805,6 +805,7 @@ class _BillingScreenState extends State<BillingScreen>
 
   Widget _buildCompanyCard(ClientCompany company) {
     final l10n = AppLocalizations.of(context)!;
+    final email = company.email;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -822,8 +823,8 @@ class _BillingScreenState extends State<BillingScreen>
           company.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: company.email != null
-            ? Text(company.email!, style: const TextStyle(fontSize: 12))
+        subtitle: email != null
+            ? Text(email, style: const TextStyle(fontSize: 12))
             : null,
         trailing: PopupMenuButton<String>(
           onSelected: (action) {
@@ -1184,6 +1185,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
     final inv = _invoice;
     final isDraft = inv.status == InvoiceStatus.draft;
     final isSent = inv.status == InvoiceStatus.sent;
+    final reminderSentAt = inv.reminderSentAt;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -1234,11 +1236,9 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                   alignment: WrapAlignment.end,
                   children: [
                     _StatusBadge(inv.status),
-                    if (inv.reminderSentAt != null)
+                    if (reminderSentAt != null)
                       _ReminderBadge(
-                        label: l10n.reminderBadgeLabel(
-                          _fmtDate(inv.reminderSentAt!),
-                        ),
+                        label: l10n.reminderBadgeLabel(_fmtDate(reminderSentAt)),
                       ),
                   ],
                 ),

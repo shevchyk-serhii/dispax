@@ -81,6 +81,7 @@ class _LocationClarificationDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final errorMessage = _errorMessage;
     final quickLocations = [
       l10n.locationQuickMainEntrance,
       l10n.locationQuickBaggageClaim,
@@ -201,7 +202,7 @@ class _LocationClarificationDialogState
               maxLines: 3,
             ),
 
-            if (_errorMessage != null) ...[
+            if (errorMessage != null) ...[
               const SizedBox(height: AppDimensions.paddingMedium),
               Container(
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -221,7 +222,7 @@ class _LocationClarificationDialogState
                     const SizedBox(width: AppDimensions.paddingSmall),
                     Expanded(
                       child: Text(
-                        _errorMessage!,
+                        errorMessage,
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.error,
                         ),

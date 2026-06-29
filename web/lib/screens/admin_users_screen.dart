@@ -315,7 +315,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(_error ?? ''),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadUsers,

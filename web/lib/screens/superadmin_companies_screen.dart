@@ -847,11 +847,12 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_isEdit) {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final company = widget.company;
+    if (company != null) {
       widget.bloc.add(
         UpdateCompany(
-          companyId: widget.company!.id,
+          companyId: company.id,
           name: _nameCtrl.text.trim(),
           email: _emailCtrl.text.trim(),
           phone: _phoneCtrl.text.trim(),

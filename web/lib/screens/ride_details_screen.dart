@@ -225,7 +225,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 l10n.cancellationReasonDetail(
-                                  _currentRide.cancellationReason!,
+                                  _currentRide.cancellationReason ?? '',
                                 ),
                                 style: TextStyle(
                                   fontSize: 13,
@@ -237,7 +237,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               if (_currentRide.cancelledBy != null)
                                 Text(
                                   l10n.cancelledByLabel(
-                                    _currentRide.cancelledBy!,
+                                    _currentRide.cancelledBy ?? '',
                                   ),
                                   style: TextStyle(
                                     fontSize: 12,
@@ -246,11 +246,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                         : AppColors.errorStrong,
                                   ),
                                 ),
-                              if (_currentRide.cancellationFee != null &&
-                                  _currentRide.cancellationFee! > 0)
+                              if ((_currentRide.cancellationFee ?? 0) > 0)
                                 Text(
                                   l10n.cancellationFeeDisplay(
-                                    _currentRide.cancellationFee!
+                                    (_currentRide.cancellationFee ?? 0)
                                         .toStringAsFixed(2),
                                   ),
                                   style: TextStyle(
@@ -297,7 +296,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                 children: List.generate(
                                   5,
                                   (i) => Icon(
-                                    i < _currentRide.rating!
+                                    i < (_currentRide.rating ?? 0)
                                         ? Icons.star
                                         : Icons.star_border,
                                     color: AppColors.warning,
@@ -305,11 +304,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                   ),
                                 ),
                               ),
-                              if (_currentRide.ratingComment != null &&
-                                  _currentRide.ratingComment!.isNotEmpty) ...[
+                              if ((_currentRide.ratingComment ?? '')
+                                  .isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text(
-                                  _currentRide.ratingComment!,
+                                  _currentRide.ratingComment ?? '',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: isDark
@@ -344,8 +343,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       ],
 
                       // Notes and special requirements
-                      if (_currentRide.notes != null &&
-                          _currentRide.notes!.isNotEmpty) ...[
+                      if ((_currentRide.notes ?? '').isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
@@ -372,7 +370,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _currentRide.notes!,
+                                _currentRide.notes ?? '',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: isDark
@@ -384,12 +382,12 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           ),
                         ),
                       ],
-                      if (_currentRide.specialRequirements != null &&
-                          _currentRide.specialRequirements!.isNotEmpty) ...[
+                      if ((_currentRide.specialRequirements ?? '')
+                          .isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Chip(
                           label: Text(
-                            _currentRide.specialRequirements!,
+                            _currentRide.specialRequirements ?? '',
                             style: const TextStyle(fontSize: 12),
                           ),
                           backgroundColor: Theme.of(
@@ -442,14 +440,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      if (widget.isClientView && _currentRide.driver != null)
+                      if (_currentRide.driver case final driver?
+                          when widget.isClientView)
                         RidePersonCard(
-                          person: _currentRide.driver!,
+                          person: driver,
                           isDriver: true,
-                          onCall: () =>
-                              _makePhoneCall(_currentRide.driver!.phone),
-                          onMessage: () =>
-                              _sendMessage(_currentRide.driver!.phone),
+                          onCall: () => _makePhoneCall(driver.phone),
+                          onMessage: () => _sendMessage(driver.phone),
                         )
                       else if (!widget.isClientView)
                         RidePersonCard(

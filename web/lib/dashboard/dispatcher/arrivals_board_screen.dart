@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../modules/flight_management/models/muc_flight.dart';
 import '../../modules/flight_management/services/arrivals_board_service.dart';
+import '../../modules/flight_management/widgets/flight_progress_bar.dart';
 import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 
 /// Dispatcher arrivals board: the live MUC arrivals (flight, origin, scheduled/estimated
@@ -483,6 +484,23 @@ class FlightDetailsSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            // Flight phase stepper (arrivals board → all rows are arrivals).
+            Builder(
+              builder: (context) {
+                final bar = FlightProgressBar(
+                  status: row.status,
+                  isArrival: true,
+                  delayMinutes: row.delayMinutes,
+                  isDelayed: row.isDelayed,
+                );
+                return bar.isVisible
+                    ? Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: bar,
+                      )
+                    : const SizedBox.shrink();
+              },
+            ),
             _DetailLine(
               label: l10n.statusLabel,
               value: l10n.localizedFlightStatus(row.status),

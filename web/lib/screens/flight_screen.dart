@@ -357,7 +357,7 @@ class _FlightScreenState extends State<FlightScreen>
                   .where(
                     (r) =>
                         r.flightNumber != null &&
-                        r.flightNumber!.toUpperCase() == callsign.toUpperCase(),
+                        r.flightNumber?.toUpperCase() == callsign.toUpperCase(),
                   )
                   .firstOrNull;
 

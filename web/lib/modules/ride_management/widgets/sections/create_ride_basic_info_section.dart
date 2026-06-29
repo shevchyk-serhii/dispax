@@ -28,11 +28,12 @@ class _CreateRideBasicInfoSectionState
     _userService = UserService(apiClient: authBloc.apiClient);
 
     final authState = authBloc.state;
-    final role = authState.user?.role;
+    final user = authState.user;
+    final role = user?.role;
     // Client and driver book for themselves by default
     if (authState.status == AuthStatus.authenticated &&
+        user != null &&
         (role == PersonRole.client || role == PersonRole.driver)) {
-      final user = authState.user!;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<CreateRideFormBloc>().add(

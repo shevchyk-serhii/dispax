@@ -43,11 +43,17 @@ CREATE INDEX idx_notification_prefs_person ON notification_preferences(person_id
 -- ============================================================
 -- FCM tokens
 -- ============================================================
+-- V13: company_id is mandatory for tenant isolation (a token belongs to exactly
+-- one company so findByPersonId cannot leak a cross-tenant push).
 CREATE TABLE fcm_tokens (
     person_id UUID NOT NULL REFERENCES persons(id),
     token TEXT NOT NULL UNIQUE,
     platform VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    -- V13: appended last (matches the old ALTER chain's physical column order).
+    company_id UUID NOT NULL REFERENCES companies(id)
 );
 
 CREATE INDEX idx_fcm_tokens_person ON fcm_tokens(person_id);
+CREATE INDEX idx_fcm_tokens_company ON fcm_tokens(company_id);
+CREATE INDEX idx_fcm_tokens_person_company ON fcm_tokens(person_id, company_id);

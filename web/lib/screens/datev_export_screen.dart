@@ -244,7 +244,8 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -253,7 +254,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(_error!, textAlign: TextAlign.center),
+              child: Text(error, textAlign: TextAlign.center),
             ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),

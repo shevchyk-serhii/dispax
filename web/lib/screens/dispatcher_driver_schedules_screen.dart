@@ -115,8 +115,9 @@ class _DispatcherDriverSchedulesScreenState
             icon: const Icon(Icons.refresh),
             tooltip: l10n.retry,
             onPressed: () {
-              if (_selectedDriver != null) {
-                _loadSchedule(_selectedDriver!);
+              final selectedDriver = _selectedDriver;
+              if (selectedDriver != null) {
+                _loadSchedule(selectedDriver);
               } else {
                 _loadDrivers();
               }
@@ -172,7 +173,8 @@ class _DispatcherDriverSchedulesScreenState
   }
 
   Widget _buildScheduleArea(AppLocalizations l10n) {
-    if (_selectedDriver == null) {
+    final selectedDriver = _selectedDriver;
+    if (selectedDriver == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -188,7 +190,7 @@ class _DispatcherDriverSchedulesScreenState
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return _buildError(l10n, () => _loadSchedule(_selectedDriver!));
+      return _buildError(l10n, () => _loadSchedule(selectedDriver));
     }
     if (_schedule.isEmpty) {
       return Center(child: Text(l10n.noScheduleForDriver));

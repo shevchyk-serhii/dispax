@@ -194,7 +194,9 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              AppLocalizations.of(context)!.airportTimingError(_errorMessage!),
+              AppLocalizations.of(
+                context,
+              )!.airportTimingError(_errorMessage ?? ''),
               style: AppStyles.bodySmall.copyWith(color: AppColors.error),
             ),
           ),
@@ -213,7 +215,8 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
   }
 
   Widget _buildTimingInfo() {
-    final timing = _airportTiming!;
+    final timing = _airportTiming;
+    if (timing == null) return const SizedBox.shrink();
 
     return Column(
       children: [

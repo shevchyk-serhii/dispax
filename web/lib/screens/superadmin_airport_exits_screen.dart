@@ -1048,20 +1048,21 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
     final lat = double.tryParse(_latCtrl.text) ?? 0.0;
     final lon = double.tryParse(_lonCtrl.text) ?? 0.0;
     final radius = int.tryParse(_radiusCtrl.text) ?? 2000;
-    if (_isEdit) {
+    final airport = widget.airport;
+    if (airport != null) {
       widget.bloc.add(
         UpdateAirport(
-          code: widget.airport!.code,
+          code: airport.code,
           name: _nameCtrl.text.trim(),
           country: _countryCtrl.text.trim(),
           landingLat: lat,
           landingLon: lon,
           landingRadius: radius,
-          isActive: widget.airport!.isActive,
+          isActive: airport.isActive,
         ),
       );
     } else {
@@ -1266,15 +1267,16 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
     final lat = double.tryParse(_latCtrl.text) ?? 0.0;
     final lon = double.tryParse(_lonCtrl.text) ?? 0.0;
     final radius = int.tryParse(_radiusCtrl.text) ?? 200;
     final order = int.tryParse(_orderCtrl.text) ?? 0;
-    if (_isEdit) {
+    final zone = widget.zone;
+    if (zone != null) {
       widget.bloc.add(
         UpdateZone(
-          zoneId: widget.zone!.id,
+          zoneId: zone.id,
           airportCode: widget.airportCode,
           terminalCode: _terminalCtrl.text.trim(),
           checkpointType: _checkpointType,

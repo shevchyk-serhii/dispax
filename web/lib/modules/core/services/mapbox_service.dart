@@ -271,12 +271,12 @@ class MapboxService {
   }) {
     final List<CircleAnnotationOptions> markers = [];
 
-    if (from.latitude != null && from.longitude != null) {
+    final fromLat = from.latitude;
+    final fromLng = from.longitude;
+    if (fromLat != null && fromLng != null) {
       markers.add(
         CircleAnnotationOptions(
-          geometry: Point(
-            coordinates: Position(from.longitude!, from.latitude!),
-          ),
+          geometry: Point(coordinates: Position(fromLng, fromLat)),
           circleRadius: 8.0,
           circleColor: _parseColor('green'),
           circleStrokeWidth: 2.0,
@@ -285,10 +285,12 @@ class MapboxService {
       );
     }
 
-    if (to.latitude != null && to.longitude != null) {
+    final toLat = to.latitude;
+    final toLng = to.longitude;
+    if (toLat != null && toLng != null) {
       markers.add(
         CircleAnnotationOptions(
-          geometry: Point(coordinates: Position(to.longitude!, to.latitude!)),
+          geometry: Point(coordinates: Position(toLng, toLat)),
           circleRadius: 8.0,
           circleColor: _parseColor('red'),
           circleStrokeWidth: 2.0,
@@ -307,12 +309,16 @@ class MapboxService {
   }) {
     final List<Position> positions = [];
 
-    if (from.latitude != null && from.longitude != null) {
-      positions.add(Position(from.longitude!, from.latitude!));
+    final fromLat = from.latitude;
+    final fromLng = from.longitude;
+    if (fromLat != null && fromLng != null) {
+      positions.add(Position(fromLng, fromLat));
     }
 
-    if (to.latitude != null && to.longitude != null) {
-      positions.add(Position(to.longitude!, to.latitude!));
+    final toLat = to.latitude;
+    final toLng = to.longitude;
+    if (toLat != null && toLng != null) {
+      positions.add(Position(toLng, toLat));
     }
 
     if (currentPosition != null) {

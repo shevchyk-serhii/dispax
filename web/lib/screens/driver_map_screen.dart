@@ -77,13 +77,16 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Future<void> _refreshEta() async {
-    if (!mounted || _rideService == null || _currentRide == null) return;
-    final data = await _rideService!.getDriverProximity(_currentRide!.id);
+    final rideService = _rideService;
+    final ride = _currentRide;
+    if (!mounted || rideService == null || ride == null) return;
+    final data = await rideService.getDriverProximity(ride.id);
     if (!mounted) return;
     final eta = data?['etaMinutes'] as int?;
-    if (eta != null && _currentRide != null) {
+    final currentRide = _currentRide;
+    if (eta != null && currentRide != null) {
       setState(() {
-        _currentRide = _currentRide!.copyWith(etaMinutes: eta);
+        _currentRide = currentRide.copyWith(etaMinutes: eta);
       });
     }
   }
@@ -92,12 +95,13 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     if (!mounted) return;
     final authState = context.read<AuthBloc>().state;
     final rideState = context.read<RideBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) return;
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) return;
 
     final driverRides = rideState.rides
         .where(
           (ride) =>
-              ride.driverId == authState.user!.id &&
+              ride.driverId == user.id &&
               (ride.status == RideStatus.assigned ||
                   ride.status == RideStatus.inProgress),
         )
@@ -129,13 +133,15 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       }
       _pulseState = !_pulseState;
       final size = _pulseState ? 2.0 : 1.5;
-      if (_clientLabelAnnotation != null) {
-        _clientLabelAnnotation!.iconSize = size;
-        _pointAnnotationManager?.update(_clientLabelAnnotation!);
+      final clientLabel = _clientLabelAnnotation;
+      if (clientLabel != null) {
+        clientLabel.iconSize = size;
+        _pointAnnotationManager?.update(clientLabel);
       }
-      if (_driverSelfAnnotation != null) {
-        _driverSelfAnnotation!.iconSize = size;
-        _pointAnnotationManager?.update(_driverSelfAnnotation!);
+      final driverSelf = _driverSelfAnnotation;
+      if (driverSelf != null) {
+        driverSelf.iconSize = size;
+        _pointAnnotationManager?.update(driverSelf);
       }
     });
   }
@@ -173,32 +179,35 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         });
       }
 
+      final eventLat = event.latitude;
+      final eventLng = event.longitude;
       if (event.isLocationUpdated &&
           event.locationType == 'client' &&
-          event.latitude != null &&
-          event.longitude != null) {
+          eventLat != null &&
+          eventLng != null) {
         final rideId = event.rideId;
-        if (_currentRide != null &&
-            (rideId == null || rideId == _currentRide!.id)) {
+        final ride = _currentRide;
+        if (ride != null && (rideId == null || rideId == ride.id)) {
           setState(() {
-            _currentRide = _currentRide!.copyWith(
+            _currentRide = ride.copyWith(
               clientLocation: loc.Location(
                 address: '',
-                latitude: event.latitude,
-                longitude: event.longitude,
+                latitude: eventLat,
+                longitude: eventLng,
               ),
             );
           });
-          _updateClientMarker(event.latitude!, event.longitude!);
+          _updateClientMarker(eventLat, eventLng);
         }
       }
 
+      final checkpointRide = _currentRide;
       if (event.isAirportCheckpointReached &&
-          _currentRide != null &&
-          event.rideId == _currentRide!.id) {
+          checkpointRide != null &&
+          event.rideId == checkpointRide.id) {
         setState(() {
           _airportCheckpoint = event.checkpointType;
-          _currentRide = _currentRide!.copyWith(
+          _currentRide = checkpointRide.copyWith(
             airportCheckpoint: event.checkpointType,
           );
         });
@@ -208,9 +217,10 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Future<void> _renderCheckpointMarkers() async {
-    if (_checkpointAnnotationManager == null) return;
+    final checkpointManager = _checkpointAnnotationManager;
+    if (checkpointManager == null) return;
 
-    await _checkpointAnnotationManager!.deleteAll();
+    await checkpointManager.deleteAll();
 
     final currentOrdinal = MucCheckpoints.ordinal(_airportCheckpoint);
 
@@ -225,7 +235,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         color = 0xFF9E9E9E; // pending - grey
       }
 
-      await _checkpointAnnotationManager!.create(
+      await checkpointManager.create(
         CircleAnnotationOptions(
           geometry: Point(coordinates: Position(cp.lon, cp.lat)),
           circleRadius: 12.0,
@@ -239,14 +249,17 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Future<void> _updateClientMarker(double latitude, double longitude) async {
-    if (_pointAnnotationManager == null) return;
+    final pointManager = _pointAnnotationManager;
+    if (pointManager == null) return;
 
-    if (_clientCircleAnnotation != null) {
-      await _circleAnnotationManager?.delete(_clientCircleAnnotation!);
+    final clientCircle = _clientCircleAnnotation;
+    if (clientCircle != null) {
+      await _circleAnnotationManager?.delete(clientCircle);
       _clientCircleAnnotation = null;
     }
-    if (_clientLabelAnnotation != null) {
-      await _pointAnnotationManager!.delete(_clientLabelAnnotation!);
+    final clientLabel = _clientLabelAnnotation;
+    if (clientLabel != null) {
+      await pointManager.delete(clientLabel);
       _clientLabelAnnotation = null;
     }
 
@@ -254,7 +267,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       'assets/client_marker.png',
     )).buffer.asUint8List();
 
-    _clientLabelAnnotation = await _pointAnnotationManager!.create(
+    _clientLabelAnnotation = await pointManager.create(
       PointAnnotationOptions(
         geometry: Point(coordinates: Position(longitude, latitude)),
         image: _clientMarkerImage,
@@ -290,8 +303,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         _updateCurrentLocationMarker();
         _sendLocationUpdate();
         // Center map on first real GPS fix if map was created without position
-        if (isFirst && _mapboxMap != null && _currentRide == null) {
-          _mapboxMap!.setCamera(
+        final mapboxMap = _mapboxMap;
+        if (isFirst && mapboxMap != null && _currentRide == null) {
+          mapboxMap.setCamera(
             MapboxService.createCameraOptions(
               latitude: position.latitude,
               longitude: position.longitude,
@@ -320,10 +334,11 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
     await MapboxService.addDefaultImages(mapboxMap);
 
-    if (_currentPosition != null) {
+    final currentPosition = _currentPosition;
+    if (currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
         zoom: 15.0,
       );
       await mapboxMap.setCamera(cameraOptions);
@@ -341,8 +356,9 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
 
     final driverName = context.read<AuthBloc>().state.user?.name;
 
-    if (_driverSelfAnnotation != null) {
-      await _pointAnnotationManager?.delete(_driverSelfAnnotation!);
+    final existingDriverSelf = _driverSelfAnnotation;
+    if (existingDriverSelf != null) {
+      await _pointAnnotationManager?.delete(existingDriverSelf);
       _driverSelfAnnotation = null;
     }
 
@@ -350,12 +366,15 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       'assets/driver_marker.png',
     )).buffer.asUint8List();
 
+    final currentPosition = _currentPosition;
+    if (currentPosition == null) return;
+
     _driverSelfAnnotation = await _pointAnnotationManager?.create(
       PointAnnotationOptions(
         geometry: Point(
           coordinates: Position(
-            _currentPosition!.longitude,
-            _currentPosition!.latitude,
+            currentPosition.longitude,
+            currentPosition.latitude,
           ),
         ),
         image: _driverMarkerImage,
@@ -369,19 +388,19 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       ),
     );
 
-    if (_currentRide?.clientLocation?.latitude != null &&
-        _currentRide?.clientLocation?.longitude != null) {
-      await _updateClientMarker(
-        _currentRide!.clientLocation!.latitude!,
-        _currentRide!.clientLocation!.longitude!,
-      );
+    final clientLocation = _currentRide?.clientLocation;
+    final clientLat = clientLocation?.latitude;
+    final clientLng = clientLocation?.longitude;
+    if (clientLat != null && clientLng != null) {
+      await _updateClientMarker(clientLat, clientLng);
     }
   }
 
   void _updateMapMarkers() {
-    if (_mapboxMap == null || _circleAnnotationManager == null) return;
+    final circleManager = _circleAnnotationManager;
+    if (_mapboxMap == null || circleManager == null) return;
 
-    _circleAnnotationManager!.deleteAll();
+    circleManager.deleteAll();
     _clientCircleAnnotation = null;
     _pointAnnotationManager?.deleteAll();
     _clientLabelAnnotation = null;
@@ -392,12 +411,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     // Background rides (not the priority one) — small grey markers
     for (final ride in _assignedRides) {
       if (ride.id == _currentRide?.id) continue;
-      if (ride.from.latitude != null && ride.from.longitude != null) {
-        _circleAnnotationManager?.create(
+      final fromLat = ride.from.latitude;
+      final fromLng = ride.from.longitude;
+      if (fromLat != null && fromLng != null) {
+        circleManager.create(
           CircleAnnotationOptions(
-            geometry: Point(
-              coordinates: Position(ride.from.longitude!, ride.from.latitude!),
-            ),
+            geometry: Point(coordinates: Position(fromLng, fromLat)),
             circleRadius: 5.0,
             circleColor: 0xFF9E9E9E,
             circleStrokeWidth: 1.5,
@@ -405,12 +424,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           ),
         );
       }
-      if (ride.to.latitude != null && ride.to.longitude != null) {
-        _circleAnnotationManager?.create(
+      final toLat = ride.to.latitude;
+      final toLng = ride.to.longitude;
+      if (toLat != null && toLng != null) {
+        circleManager.create(
           CircleAnnotationOptions(
-            geometry: Point(
-              coordinates: Position(ride.to.longitude!, ride.to.latitude!),
-            ),
+            geometry: Point(coordinates: Position(toLng, toLat)),
             circleRadius: 5.0,
             circleColor: 0xFF9E9E9E,
             circleStrokeWidth: 1.5,
@@ -420,19 +439,16 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       }
     }
 
-    if (_currentRide == null) return;
+    final currentRide = _currentRide;
+    if (currentRide == null) return;
 
     // Priority ride: large pickup marker (client location), smaller drop-off
-    if (_currentRide!.from.latitude != null &&
-        _currentRide!.from.longitude != null) {
-      _circleAnnotationManager?.create(
+    final fromLat = currentRide.from.latitude;
+    final fromLng = currentRide.from.longitude;
+    if (fromLat != null && fromLng != null) {
+      circleManager.create(
         CircleAnnotationOptions(
-          geometry: Point(
-            coordinates: Position(
-              _currentRide!.from.longitude!,
-              _currentRide!.from.latitude!,
-            ),
-          ),
+          geometry: Point(coordinates: Position(fromLng, fromLat)),
           circleRadius: 16.0,
           circleColor: 0xFF4CAF50,
           circleStrokeWidth: 3.0,
@@ -441,16 +457,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       );
     }
 
-    if (_currentRide!.to.latitude != null &&
-        _currentRide!.to.longitude != null) {
-      _circleAnnotationManager?.create(
+    final toLat = currentRide.to.latitude;
+    final toLng = currentRide.to.longitude;
+    if (toLat != null && toLng != null) {
+      circleManager.create(
         CircleAnnotationOptions(
-          geometry: Point(
-            coordinates: Position(
-              _currentRide!.to.longitude!,
-              _currentRide!.to.latitude!,
-            ),
-          ),
+          geometry: Point(coordinates: Position(toLng, toLat)),
           circleRadius: 10.0,
           circleColor: 0xFFF44336,
           circleStrokeWidth: 2.0,
@@ -460,30 +472,29 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     }
 
     // Real-time client location (if shared via WebSocket)
-    if (_currentRide!.clientLocation?.latitude != null &&
-        _currentRide!.clientLocation?.longitude != null) {
-      _updateClientMarker(
-        _currentRide!.clientLocation!.latitude!,
-        _currentRide!.clientLocation!.longitude!,
-      );
+    final clientLat = currentRide.clientLocation?.latitude;
+    final clientLng = currentRide.clientLocation?.longitude;
+    if (clientLat != null && clientLng != null) {
+      _updateClientMarker(clientLat, clientLng);
     }
 
     // Focus camera: pickup coords → driver position → Munich (default)
-    final pickup = _currentRide!.from;
-    if (pickup.latitude != null && pickup.longitude != null) {
+    final pickup = currentRide.from;
+    final pickupLat = pickup.latitude;
+    final pickupLng = pickup.longitude;
+    final currentPosition = _currentPosition;
+    if (pickupLat != null && pickupLng != null) {
       _mapboxMap?.setCamera(
         CameraOptions(
-          center: Point(
-            coordinates: Position(pickup.longitude!, pickup.latitude!),
-          ),
+          center: Point(coordinates: Position(pickupLng, pickupLat)),
           zoom: 14.0,
         ),
       );
-    } else if (_currentPosition != null) {
+    } else if (currentPosition != null) {
       _mapboxMap?.setCamera(
         MapboxService.createCameraOptions(
-          latitude: _currentPosition!.latitude,
-          longitude: _currentPosition!.longitude,
+          latitude: currentPosition.latitude,
+          longitude: currentPosition.longitude,
           zoom: 14.0,
         ),
       );
@@ -503,38 +514,43 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   double? _lastSentLng;
 
   void _sendLocationUpdate() {
-    if (_currentPosition == null) return;
+    final currentPosition = _currentPosition;
+    if (currentPosition == null) return;
 
     // Throttle: don't send more than once per 10 seconds
     final now = DateTime.now();
-    if (_lastLocationSent != null &&
-        now.difference(_lastLocationSent!).inSeconds < 10) {
+    final lastLocationSent = _lastLocationSent;
+    if (lastLocationSent != null &&
+        now.difference(lastLocationSent).inSeconds < 10) {
       return;
     }
 
     // Skip when the driver hasn't meaningfully moved (< 25m) since the last send:
     // a parked driver shouldn't keep re-posting the same coordinate every 30s.
-    if (_lastSentLat != null && _lastSentLng != null) {
+    final lastSentLat = _lastSentLat;
+    final lastSentLng = _lastSentLng;
+    if (lastSentLat != null && lastSentLng != null) {
       final moved = geo.Geolocator.distanceBetween(
-        _lastSentLat!,
-        _lastSentLng!,
-        _currentPosition!.latitude,
-        _currentPosition!.longitude,
+        lastSentLat,
+        lastSentLng,
+        currentPosition.latitude,
+        currentPosition.longitude,
       );
       if (moved < 25) return;
     }
 
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) return;
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) return;
 
     _lastLocationSent = now;
-    _lastSentLat = _currentPosition!.latitude;
-    _lastSentLng = _currentPosition!.longitude;
+    _lastSentLat = currentPosition.latitude;
+    _lastSentLng = currentPosition.longitude;
 
     _rideService?.updateDriverLocation(
-      authState.user!.id,
-      _currentPosition!.latitude,
-      _currentPosition!.longitude,
+      user.id,
+      currentPosition.latitude,
+      currentPosition.longitude,
     );
   }
 
@@ -574,11 +590,12 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
         body: BlocListener<RideBloc, RideState>(
           listener: (context, state) {
             final authState = context.read<AuthBloc>().state;
-            if (authState.isAuthenticated && authState.user != null) {
+            final user = authState.user;
+            if (authState.isAuthenticated && user != null) {
               final driverRides = state.rides
                   .where(
                     (ride) =>
-                        ride.driverId == authState.user!.id &&
+                        ride.driverId == user.id &&
                         (ride.status == RideStatus.assigned ||
                             ride.status == RideStatus.inProgress),
                   )
@@ -668,7 +685,8 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   Widget _buildGeofenceOverlay() {
-    final isEntry = _geofenceOverlayMessage?.startsWith('Entered') ?? false;
+    final message = _geofenceOverlayMessage ?? '';
+    final isEntry = message.startsWith('Entered');
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppDimensions.paddingMedium,
@@ -698,7 +716,7 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              _geofenceOverlayMessage!,
+              message,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -832,18 +850,21 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
   }
 
   void _centerOnCurrentLocation() {
-    if (_mapboxMap != null && _currentPosition != null) {
+    final mapboxMap = _mapboxMap;
+    final currentPosition = _currentPosition;
+    if (mapboxMap != null && currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
         zoom: 16.0,
       );
-      _mapboxMap!.setCamera(cameraOptions);
+      mapboxMap.setCamera(cameraOptions);
     }
   }
 
   void _showAllRides() {
-    if (_mapboxMap == null || _assignedRides.isEmpty) return;
+    final mapboxMap = _mapboxMap;
+    if (mapboxMap == null || _assignedRides.isEmpty) return;
 
     double minLat = double.infinity;
     double maxLat = -double.infinity;
@@ -851,34 +872,33 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
     double maxLng = -double.infinity;
 
     for (final ride in _assignedRides) {
-      if (ride.from.latitude != null && ride.from.longitude != null) {
-        minLat = minLat > ride.from.latitude! ? ride.from.latitude! : minLat;
-        maxLat = maxLat < ride.from.latitude! ? ride.from.latitude! : maxLat;
-        minLng = minLng > ride.from.longitude! ? ride.from.longitude! : minLng;
-        maxLng = maxLng < ride.from.longitude! ? ride.from.longitude! : maxLng;
+      final fromLat = ride.from.latitude;
+      final fromLng = ride.from.longitude;
+      if (fromLat != null && fromLng != null) {
+        minLat = minLat > fromLat ? fromLat : minLat;
+        maxLat = maxLat < fromLat ? fromLat : maxLat;
+        minLng = minLng > fromLng ? fromLng : minLng;
+        maxLng = maxLng < fromLng ? fromLng : maxLng;
       }
 
-      if (ride.to.latitude != null && ride.to.longitude != null) {
-        minLat = minLat > ride.to.latitude! ? ride.to.latitude! : minLat;
-        maxLat = maxLat < ride.to.latitude! ? ride.to.latitude! : maxLat;
-        minLng = minLng > ride.to.longitude! ? ride.to.longitude! : minLng;
-        maxLng = maxLng < ride.to.longitude! ? ride.to.longitude! : maxLng;
+      final toLat = ride.to.latitude;
+      final toLng = ride.to.longitude;
+      if (toLat != null && toLng != null) {
+        minLat = minLat > toLat ? toLat : minLat;
+        maxLat = maxLat < toLat ? toLat : maxLat;
+        minLng = minLng > toLng ? toLng : minLng;
+        maxLng = maxLng < toLng ? toLng : maxLng;
       }
     }
 
-    if (_currentPosition != null) {
-      minLat = minLat > _currentPosition!.latitude
-          ? _currentPosition!.latitude
-          : minLat;
-      maxLat = maxLat < _currentPosition!.latitude
-          ? _currentPosition!.latitude
-          : maxLat;
-      minLng = minLng > _currentPosition!.longitude
-          ? _currentPosition!.longitude
-          : minLng;
-      maxLng = maxLng < _currentPosition!.longitude
-          ? _currentPosition!.longitude
-          : maxLng;
+    final currentPosition = _currentPosition;
+    if (currentPosition != null) {
+      final lat = currentPosition.latitude;
+      final lng = currentPosition.longitude;
+      minLat = minLat > lat ? lat : minLat;
+      maxLat = maxLat < lat ? lat : maxLat;
+      minLng = minLng > lng ? lng : minLng;
+      maxLng = maxLng < lng ? lng : maxLng;
     }
 
     final centerLat = (minLat + maxLat) / 2;
@@ -889,6 +909,6 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       zoom: 12.0,
     );
 
-    _mapboxMap!.setCamera(cameraOptions);
+    mapboxMap.setCamera(cameraOptions);
   }
 }

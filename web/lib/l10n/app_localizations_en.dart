@@ -325,6 +325,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account uses a temporary password. Please set a new password to continue.';
 
   @override
+  String get updateRequired => 'Update required';
+
+  @override
+  String get updateRequiredMessage =>
+      'This version of the app is no longer supported. Please update to the latest version to continue.';
+
+  @override
+  String get updateNow => 'Update now';
+
+  @override
   String get temporaryPassword => 'Temporary password';
 
   @override

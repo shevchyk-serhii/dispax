@@ -52,8 +52,9 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
   }
 
   List<Map<String, dynamic>> get _sortedStats {
-    if (_driverStats == null) return [];
-    final sorted = List<Map<String, dynamic>>.from(_driverStats!);
+    final driverStats = _driverStats;
+    if (driverStats == null) return [];
+    final sorted = List<Map<String, dynamic>>.from(driverStats);
     switch (_sortBy) {
       case 'earnings':
         sorted.sort(
@@ -99,7 +100,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                             color: AppColors.error,
                           ),
                           const SizedBox(height: 12),
-                          Text(_error!),
+                          Text(_error ?? ''),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _loadStats,

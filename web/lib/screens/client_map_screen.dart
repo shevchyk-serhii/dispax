@@ -164,13 +164,15 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
       if (!mounted) return;
       _pulseState = !_pulseState;
-      if (_driverCircle != null) {
-        _driverCircle!.circleRadius = _pulseState ? 15.0 : 12.0;
-        _driverCircleManager?.update(_driverCircle!);
+      final driverCircle = _driverCircle;
+      if (driverCircle != null) {
+        driverCircle.circleRadius = _pulseState ? 15.0 : 12.0;
+        _driverCircleManager?.update(driverCircle);
       }
-      if (_selfCircle != null) {
-        _selfCircle!.circleRadius = _pulseState ? 12.0 : 9.0;
-        _selfCircleManager?.update(_selfCircle!);
+      final selfCircle = _selfCircle;
+      if (selfCircle != null) {
+        selfCircle.circleRadius = _pulseState ? 12.0 : 9.0;
+        _selfCircleManager?.update(selfCircle);
       }
     });
   }
@@ -208,6 +210,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
 
+      final eventLatitude = event.latitude;
+      final eventLongitude = event.longitude;
       if (event.isLocationUpdated &&
           event.locationType == 'driver' &&
           // Only react to the driver of the ride we are actually tracking.
@@ -217,29 +221,31 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             _activeRide,
             eventDriverId: event.driverId,
           ) &&
-          event.latitude != null &&
-          event.longitude != null) {
-        if (_activeRide != null) {
+          eventLatitude != null &&
+          eventLongitude != null) {
+        final activeRide = _activeRide;
+        if (activeRide != null) {
           setState(() {
-            _activeRide = _activeRide!.copyWith(
+            _activeRide = activeRide.copyWith(
               driverLocation: loc.Location(
                 address: '',
-                latitude: event.latitude,
-                longitude: event.longitude,
+                latitude: eventLatitude,
+                longitude: eventLongitude,
               ),
             );
           });
         }
-        _updateDriverMarker(event.latitude!, event.longitude!);
-        _centerOnDriverAndClient(event.latitude!, event.longitude!);
+        _updateDriverMarker(eventLatitude, eventLongitude);
+        _centerOnDriverAndClient(eventLatitude, eventLongitude);
 
         // Check if driver is approaching (< 500m)
-        if (_currentPosition != null) {
+        final currentPosition = _currentPosition;
+        if (currentPosition != null) {
           final distance = geo.Geolocator.distanceBetween(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude,
-            event.latitude!,
-            event.longitude!,
+            currentPosition.latitude,
+            currentPosition.longitude,
+            eventLatitude,
+            eventLongitude,
           );
           if (distance < 500 && !_driverApproachingShown) {
             _driverApproachingShown = true;
@@ -284,15 +290,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       setState(() {
         _currentPosition = position;
       });
-      if (_mapboxMap != null) {
-        _mapboxMap!.setCamera(
-          MapboxService.createCameraOptions(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            zoom: 15.0,
-          ),
-        );
-      }
+      _mapboxMap?.setCamera(
+        MapboxService.createCameraOptions(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          zoom: 15.0,
+        ),
+      );
     }
 
     final started = await _locationService.startLocationTracking();
@@ -316,9 +320,10 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
         _updateCurrentLocationMarker();
 
         // Share client location if toggle is on
-        if (_sharingLocation && _activeRide != null) {
+        final activeRide = _activeRide;
+        if (_sharingLocation && activeRide != null) {
           _rideService?.updateClientLocation(
-            _activeRide!.id,
+            activeRide.id,
             position.latitude,
             position.longitude,
           );
@@ -341,10 +346,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _driverLabelManager = await mapboxMap.annotations
         .createPointAnnotationManager();
 
-    if (_currentPosition != null) {
+    final currentPosition = _currentPosition;
+    if (currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
         zoom: 15.0,
       );
       await mapboxMap.setCamera(cameraOptions);
@@ -354,18 +360,20 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   Future<void> _updateCurrentLocationMarker() async {
-    if (_mapboxMap == null || _currentPosition == null) return;
+    final currentPosition = _currentPosition;
+    if (_mapboxMap == null || currentPosition == null) return;
 
     // Pulsing cyan dot (design §8) — recreate so it tracks the latest GPS fix.
-    if (_selfCircle != null) {
-      await _selfCircleManager?.delete(_selfCircle!);
+    final selfCircle = _selfCircle;
+    if (selfCircle != null) {
+      await _selfCircleManager?.delete(selfCircle);
       _selfCircle = null;
     }
 
     _selfCircle = await _selfCircleManager?.create(
       MapboxService.createClientMarker(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
         radius: _pulseState ? 12.0 : 9.0,
       ),
     );
@@ -379,8 +387,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     final status = _activeRide?.status ?? RideStatus.assigned;
     final color = RideStatusStyles.getStatusColorValue(status);
 
-    if (_driverCircle != null) {
-      await _driverCircleManager?.delete(_driverCircle!);
+    final driverCircle = _driverCircle;
+    if (driverCircle != null) {
+      await _driverCircleManager?.delete(driverCircle);
       _driverCircle = null;
     }
     _driverCircle = await _driverCircleManager?.create(
@@ -395,8 +404,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
     // Driver name label above the dot.
     final name = _activeRide?.driverName;
-    if (_driverLabel != null) {
-      await _driverLabelManager?.delete(_driverLabel!);
+    final driverLabel = _driverLabel;
+    if (driverLabel != null) {
+      await _driverLabelManager?.delete(driverLabel);
       _driverLabel = null;
     }
     if (name != null && name.isNotEmpty) {
@@ -419,31 +429,30 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
 
     _updateCurrentLocationMarker();
 
-    if (_activeRide != null) {
+    final activeRide = _activeRide;
+    if (activeRide != null) {
       // Clear stale pickup/dropoff dots before redrawing.
       _routeCircleManager?.deleteAll();
 
       final rideMarkers = MapboxService.createRideMarkers(
-        from: _activeRide!.from,
-        to: _activeRide!.to,
+        from: activeRide.from,
+        to: activeRide.to,
       );
 
       for (final marker in rideMarkers) {
         _routeCircleManager?.create(marker);
       }
 
-      if (_activeRide!.driverLocation != null &&
-          _activeRide!.driverLocation!.latitude != null &&
-          _activeRide!.driverLocation!.longitude != null) {
-        _updateDriverMarker(
-          _activeRide!.driverLocation!.latitude!,
-          _activeRide!.driverLocation!.longitude!,
-        );
+      final driverLocation = activeRide.driverLocation;
+      final driverLat = driverLocation?.latitude;
+      final driverLng = driverLocation?.longitude;
+      if (driverLat != null && driverLng != null) {
+        _updateDriverMarker(driverLat, driverLng);
       }
 
       final cameraOptions = MapboxService.getCameraForRoute(
-        from: _activeRide!.from,
-        to: _activeRide!.to,
+        from: activeRide.from,
+        to: activeRide.to,
         currentPosition: _currentPosition,
       );
 
@@ -452,14 +461,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   void _centerOnDriverAndClient(double driverLat, double driverLng) {
-    if (_mapboxMap == null) return;
+    final mapboxMap = _mapboxMap;
+    if (mapboxMap == null) return;
 
     final List<double> lats = [driverLat];
     final List<double> lngs = [driverLng];
 
-    if (_currentPosition != null) {
-      lats.add(_currentPosition!.latitude);
-      lngs.add(_currentPosition!.longitude);
+    final currentPosition = _currentPosition;
+    if (currentPosition != null) {
+      lats.add(currentPosition.latitude);
+      lngs.add(currentPosition.longitude);
     }
 
     final minLat = lats.reduce((a, b) => a < b ? a : b);
@@ -485,7 +496,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
       zoom = 11.0;
     }
 
-    _mapboxMap!.setCamera(
+    mapboxMap.setCamera(
       CameraOptions(
         center: Point(coordinates: Position(centerLng, centerLat)),
         zoom: zoom,
@@ -572,7 +583,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                       const SizedBox(width: 12),
 
                       // Status pill — colour and label follow the ride status.
-                      if (_activeRide != null) _buildStatusPill(_activeRide!),
+                      if (_activeRide case final activeRide?)
+                        _buildStatusPill(activeRide),
                     ],
                   ),
                 ),
@@ -680,7 +692,8 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   Widget _buildDriverBottomSheet() {
-    final ride = _activeRide!;
+    final ride = _activeRide;
+    if (ride == null) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
 
     // Driver initials
@@ -899,9 +912,9 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
             ),
 
             // Airport checkpoint panel (if applicable)
-            if (_activeRide!.isAirportTransfer &&
-                _activeRide!.isArrival &&
-                _activeRide!.status == RideStatus.inProgress) ...[
+            if (ride.isAirportTransfer &&
+                ride.isArrival &&
+                ride.status == RideStatus.inProgress) ...[
               const SizedBox(height: 12),
               _buildAirportCheckpointPanel(),
             ],
@@ -1029,7 +1042,7 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              _approachingBannerMessage!,
+              _approachingBannerMessage ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -1068,11 +1081,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
           value: _sharingLocation,
           onChanged: (value) {
             setState(() => _sharingLocation = value);
-            if (value && _currentPosition != null && _activeRide != null) {
+            final activeRide = _activeRide;
+            final currentPosition = _currentPosition;
+            if (value && currentPosition != null && activeRide != null) {
               _rideService?.updateClientLocation(
-                _activeRide!.id,
-                _currentPosition!.latitude,
-                _currentPosition!.longitude,
+                activeRide.id,
+                currentPosition.latitude,
+                currentPosition.longitude,
               );
             }
           },
@@ -1094,10 +1109,11 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   Widget _buildAirportCheckpointPanel() {
-    if (_activeRide == null) return const SizedBox.shrink();
+    final panelRide = _activeRide;
+    if (panelRide == null) return const SizedBox.shrink();
 
     final cs = Theme.of(context).colorScheme;
-    final currentOrdinal = _checkpointOrdinal(_activeRide!.airportCheckpoint);
+    final currentOrdinal = _checkpointOrdinal(panelRide.airportCheckpoint);
 
     const checkpoints = [
       ('landed', 'Landed'),
@@ -1146,14 +1162,16 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
                     onPressed: _airportCheckpointSent.contains(key)
                         ? null
                         : () async {
+                            final activeRide = _activeRide;
+                            if (activeRide == null) return;
                             try {
                               await _rideService?.markAirportCheckpoint(
-                                _activeRide!.id,
+                                activeRide.id,
                                 key,
                               );
                               setState(() {
                                 _airportCheckpointSent.add(key);
-                                _activeRide = _activeRide!.copyWith(
+                                _activeRide = _activeRide?.copyWith(
                                   airportCheckpoint: key,
                                 );
                               });
@@ -1206,24 +1224,28 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   }
 
   void _centerOnCurrentLocation() {
-    if (_mapboxMap != null && _currentPosition != null) {
+    final mapboxMap = _mapboxMap;
+    final currentPosition = _currentPosition;
+    if (mapboxMap != null && currentPosition != null) {
       final cameraOptions = MapboxService.createCameraOptions(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
         zoom: 16.0,
       );
-      _mapboxMap!.setCamera(cameraOptions);
+      mapboxMap.setCamera(cameraOptions);
     }
   }
 
   void _centerOnRoute() {
-    if (_mapboxMap != null && _activeRide != null) {
+    final mapboxMap = _mapboxMap;
+    final activeRide = _activeRide;
+    if (mapboxMap != null && activeRide != null) {
       final cameraOptions = MapboxService.getCameraForRoute(
-        from: _activeRide!.from,
-        to: _activeRide!.to,
+        from: activeRide.from,
+        to: activeRide.to,
         currentPosition: _currentPosition,
       );
-      _mapboxMap!.setCamera(cameraOptions);
+      mapboxMap.setCamera(cameraOptions);
     }
   }
 }

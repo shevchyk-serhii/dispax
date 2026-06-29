@@ -125,6 +125,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final error = _error;
     return Column(
       children: [
         _buildHeader(l10n),
@@ -132,7 +133,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
-              : _error != null
+              : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -143,7 +144,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(error),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadAuditLog,

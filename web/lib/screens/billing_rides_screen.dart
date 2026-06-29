@@ -377,11 +377,12 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(_error!, style: TextStyle(color: colorScheme.error)),
+          child: Text(error, style: TextStyle(color: colorScheme.error)),
         ),
       );
     }

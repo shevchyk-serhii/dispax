@@ -91,7 +91,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      dialogL10n.amountLabel(ride.price!.toStringAsFixed(2)),
+                      dialogL10n.amountLabel(
+                        (ride.price ?? 0).toStringAsFixed(2),
+                      ),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -232,14 +234,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!),
+            Text(error),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadUnpaidRides,
@@ -365,7 +368,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   if (ride.price != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      '${ride.price!.toStringAsFixed(2)} EUR',
+                      '${(ride.price ?? 0).toStringAsFixed(2)} EUR',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

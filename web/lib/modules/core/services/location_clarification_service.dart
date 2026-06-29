@@ -10,13 +10,14 @@ class LocationClarificationService {
   LocationClarificationService._internal(this._apiClient);
 
   static LocationClarificationService get instance {
-    if (_instance == null) {
+    final instance = _instance;
+    if (instance == null) {
       throw StateError(
         'LocationClarificationService has not been configured. '
         'Call LocationClarificationService.configure() with an authenticated ApiClient first.',
       );
     }
-    return _instance!;
+    return instance;
   }
 
   static void configure(ApiClient apiClient) {

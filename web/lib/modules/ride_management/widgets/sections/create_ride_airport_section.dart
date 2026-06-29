@@ -202,6 +202,8 @@ class _DeparturePickers extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final flightDepartureTime = this.flightDepartureTime;
+    final manualPickupDateTime = this.manualPickupDateTime;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -267,7 +269,7 @@ class _DeparturePickers extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             flightDepartureTime != null
-                                ? _formatDateTime(flightDepartureTime!)
+                                ? _formatDateTime(flightDepartureTime)
                                 : 'Tap to select flight departure time',
                             style: TextStyle(
                               fontSize: 16,
@@ -333,7 +335,7 @@ class _DeparturePickers extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             manualPickupDateTime != null
-                                ? _formatDateTime(manualPickupDateTime!)
+                                ? _formatDateTime(manualPickupDateTime)
                                 : 'Computed automatically from flight departure',
                             style: TextStyle(
                               fontSize: 16,
@@ -399,6 +401,7 @@ class _ArrivalFlightTimePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final flightArrivalTime = this.flightArrivalTime;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -458,7 +461,7 @@ class _ArrivalFlightTimePicker extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             flightArrivalTime != null
-                                ? _formatDateTime(flightArrivalTime!)
+                                ? _formatDateTime(flightArrivalTime)
                                 : 'Tap to set — enables the terminal-entry time',
                             style: TextStyle(
                               fontSize: 16,

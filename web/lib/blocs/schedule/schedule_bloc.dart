@@ -116,8 +116,9 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     ScheduleRefreshRequested event,
     Emitter<ScheduleState> emit,
   ) async {
-    if (state.lastDriverId != null) {
-      add(ScheduleLoadDriverSchedule(driverId: state.lastDriverId!));
+    final lastDriverId = state.lastDriverId;
+    if (lastDriverId != null) {
+      add(ScheduleLoadDriverSchedule(driverId: lastDriverId));
     }
   }
 

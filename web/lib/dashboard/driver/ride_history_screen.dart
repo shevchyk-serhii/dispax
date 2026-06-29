@@ -25,8 +25,9 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
@@ -94,16 +95,14 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                 if (rideState.hasError && rideState.rides.isEmpty) {
                   return ErrorDisplayWidget(
                     title: 'Failed to load ride history',
-                    message: rideState.errorMessage!,
+                    message: rideState.errorMessage ?? '',
                     onRetry: () => loadRides(context),
                   );
                 }
 
-                final completedRides = authState.user != null
-                    ? getCompletedRides(
-                        rideState.rides,
-                        authState.user!.id.toString(),
-                      )
+                final user = authState.user;
+                final completedRides = user != null
+                    ? getCompletedRides(rideState.rides, user.id.toString())
                     : <Ride>[];
 
                 if (completedRides.isEmpty && _period == _PeriodFilter.all) {
@@ -375,7 +374,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
   double? _averageRating(List<Ride> rides) {
     final rated = rides.where((r) => r.rating != null).toList();
     if (rated.isEmpty) return null;
-    final sum = rated.fold<int>(0, (acc, r) => acc + r.rating!);
+    final sum = rated.fold<int>(0, (acc, r) => acc + (r.rating ?? 0));
     return sum / rated.length;
   }
 
@@ -547,7 +546,7 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                     isCancelled
                         ? '€0.00'
                         : (ride.price != null
-                              ? '€${ride.price!.toStringAsFixed(2)}'
+                              ? '€${ride.price?.toStringAsFixed(2) ?? ''}'
                               : '—'),
                     style: TextStyle(
                       fontSize: 14,

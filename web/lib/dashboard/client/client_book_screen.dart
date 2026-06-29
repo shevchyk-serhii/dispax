@@ -69,13 +69,11 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
     // for the logged-in user.
     if (!_clientPreselected) {
       final auth = context.read<AuthBloc>().state;
-      if (auth.status == AuthStatus.authenticated && auth.user != null) {
+      final user = auth.user;
+      if (auth.status == AuthStatus.authenticated && user != null) {
         _clientPreselected = true;
         context.read<CreateRideFormBloc>().add(
-          ClientPreselected(
-            clientId: auth.user!.id,
-            clientName: auth.user!.name,
-          ),
+          ClientPreselected(clientId: user.id, clientName: user.name),
         );
       }
     }
@@ -91,10 +89,11 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
   void _triggerEstimates(CreateRideFormState state) {
     final from = state.fromAddress.trim();
     final to = state.toAddress.trim();
-    if (from.isEmpty || to.isEmpty || _estimateService == null) return;
+    final estimateService = _estimateService;
+    if (from.isEmpty || to.isEmpty || estimateService == null) return;
 
     for (final vc in VehicleClass.values) {
-      _estimateService!
+      estimateService
           .estimate(
             RideEstimateRequest(
               fromAddress: from,
@@ -648,8 +647,9 @@ class _VehicleClassRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final priceText = estimate != null
-        ? '€${estimate!.estimatedPrice.toStringAsFixed(2)}'
+    final estimatedPrice = estimate?.estimatedPrice;
+    final priceText = estimatedPrice != null
+        ? '€${estimatedPrice.toStringAsFixed(2)}'
         : '—';
 
     return Column(

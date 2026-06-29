@@ -180,7 +180,7 @@ class RideCalendarCard extends StatelessWidget {
                               : null,
                           child: ride.price != null
                               ? Text(
-                                  '€${ride.price!.toStringAsFixed(2)}',
+                                  '€${ride.price?.toStringAsFixed(2) ?? ''}',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -268,7 +268,7 @@ class RideCalendarCard extends StatelessWidget {
                                   : null,
                               child: ride.price != null
                                   ? Text(
-                                      '€${ride.price!.toStringAsFixed(2)}',
+                                      '€${ride.price?.toStringAsFixed(2) ?? ''}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -337,7 +337,7 @@ class RideCalendarCard extends StatelessWidget {
               ],
               if (showActions && actionsWidget != null) ...[
                 const SizedBox(height: 12),
-                actionsWidget!,
+                actionsWidget ?? const SizedBox.shrink(),
               ],
             ],
           ),

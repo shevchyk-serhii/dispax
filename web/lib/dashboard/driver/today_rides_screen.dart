@@ -10,6 +10,7 @@ import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 import '../../modules/core/services/api_client.dart';
 import '../../modules/core/widgets/avatar_circle.dart';
+import '../../modules/flight_management/widgets/flight_progress_bar.dart';
 import '../../modules/driver_management/services/driver_availability_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
@@ -129,15 +130,17 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     // ── Preserved verbatim: WS event listener ──────────────────────────────
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
-      if (event.isDriverApproaching && event.rideId != null) {
+      final approachingRideId = event.rideId;
+      if (event.isDriverApproaching && approachingRideId != null) {
         setState(() {
-          _approachingDistances[event.rideId!] = event.distanceMeters ?? 0;
+          _approachingDistances[approachingRideId] = event.distanceMeters ?? 0;
         });
       }
-      if (event.isRideAssigned && event.rideId != null) {
+      final assignedRideId = event.rideId;
+      if (event.isRideAssigned && assignedRideId != null) {
         final authState = context.read<AuthBloc>().state;
         if (event.driverId == authState.user?.id) {
-          _showRideAssignedDialog(event.rideId!);
+          _showRideAssignedDialog(assignedRideId);
         }
       }
     });
@@ -152,7 +155,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
 
   // ── Preserved verbatim ────────────────────────────────────────────────────
   Future<void> _refreshEta() async {
-    if (!mounted || _rideService == null) return;
+    final rideService = _rideService;
+    if (!mounted || rideService == null) return;
     final myId = context.read<AuthBloc>().state.user?.id;
     final rideState = context.read<RideBloc>().state;
     final activeRides = rideState.rides.where(
@@ -163,7 +167,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
               r.status == RideStatus.inProgress),
     );
     for (final ride in activeRides) {
-      final data = await _rideService!.getDriverProximity(ride.id);
+      final data = await rideService.getDriverProximity(ride.id);
       if (!mounted) return;
       final eta = data?['etaMinutes'] as int?;
       if (eta != null) {
@@ -206,16 +210,18 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     if (!mounted) return;
 
     if (accepted == true) {
-      context.read<RideBloc>().add(
-        RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-      );
+      final user = context.read<AuthBloc>().state.user;
+      if (user != null) {
+        context.read<RideBloc>().add(RideLoadRequested(user: user));
+      }
     } else {
       try {
         await _rideService?.updateRideStatus(rideId, RideStatus.requested);
         if (mounted) {
-          context.read<RideBloc>().add(
-            RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-          );
+          final user = context.read<AuthBloc>().state.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
+          }
         }
       } catch (_) {
         // best-effort
@@ -265,29 +271,32 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
 
   void _sendLocationUpdate(double latitude, double longitude) {
     final now = DateTime.now();
-    if (_lastLocationSent != null &&
-        now.difference(_lastLocationSent!).inSeconds < 10) {
+    final lastSent = _lastLocationSent;
+    if (lastSent != null && now.difference(lastSent).inSeconds < 10) {
       return;
     }
     _lastLocationSent = now;
 
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) return;
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) return;
 
-    _rideService?.updateDriverLocation(authState.user!.id, latitude, longitude);
+    _rideService?.updateDriverLocation(user.id, latitude, longitude);
   }
 
   void loadTodayRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
   void refreshRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideRefreshRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideRefreshRequested(user: user));
     }
   }
 
@@ -956,6 +965,8 @@ class DriverRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final etaMinutes = this.etaMinutes;
+    final approachingDistanceMeters = this.approachingDistanceMeters;
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final statusBg = RideStatusStyles.getStatusBackgroundColor(
@@ -1036,6 +1047,18 @@ class DriverRideCard extends StatelessWidget {
 
               // Full flight info for airport rides (number + gate/terminal + status).
               DriverFlightInfoRow(ride: ride, isDark: isDark),
+              // Live flight progress (Geplant → … → Gelandet); hidden for
+              // non-airport rides and unknown status.
+              Builder(
+                builder: (context) {
+                  final bar = FlightProgressBar.forRide(ride);
+                  if (!bar.isVisible) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: bar,
+                  );
+                },
+              ),
               DriverArrivalTimeRow(ride: ride, isDark: isDark),
               DriverEntryTimeRow(ride: ride, isDark: isDark),
 
@@ -1057,10 +1080,10 @@ class DriverRideCard extends StatelessWidget {
                   children: [
                     if (etaMinutes != null &&
                         ride.status == RideStatus.inProgress)
-                      _EtaChip(etaMinutes: etaMinutes!),
+                      _EtaChip(etaMinutes: etaMinutes),
                     if (approachingDistanceMeters != null)
                       _ApproachingChip(
-                        distanceMeters: approachingDistanceMeters!,
+                        distanceMeters: approachingDistanceMeters,
                       ),
                   ],
                 ),
@@ -1176,7 +1199,8 @@ class DriverClientPriceRow extends StatelessWidget {
     // 'Unknown Client' is the model's fallback when the server sent no name;
     // showing it adds noise, so treat it as absent.
     final hasName = name.isNotEmpty && name != 'Unknown Client';
-    final hasPrice = ride.price != null;
+    final price = ride.price;
+    final hasPrice = price != null;
     if (!hasName && !hasPrice) return const SizedBox.shrink();
 
     return Row(
@@ -1199,12 +1223,12 @@ class DriverClientPriceRow extends StatelessWidget {
           ),
         ] else
           const Spacer(),
-        if (hasPrice) ...[
+        if (price != null) ...[
           const SizedBox(width: 8),
           Icon(Icons.euro, size: 15, color: secondary),
           const SizedBox(width: 2),
           Text(
-            _formatPrice(ride.price!),
+            _formatPrice(price),
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.w700,
@@ -1432,7 +1456,8 @@ class DriverEntryTimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!ride.isArrivalAirportTransfer || ride.optimalEntryTime == null) {
+    final optimalEntryTime = ride.optimalEntryTime;
+    if (!ride.isArrivalAirportTransfer || optimalEntryTime == null) {
       return const SizedBox.shrink();
     }
 
@@ -1451,7 +1476,7 @@ class DriverEntryTimeRow extends StatelessWidget {
             child: Text(
               AppLocalizations.of(
                 context,
-              )!.airportEntryAt(DateFormat.Hm().format(ride.optimalEntryTime!)),
+              )!.airportEntryAt(DateFormat.Hm().format(optimalEntryTime)),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 12.5, color: secondary),
@@ -1479,7 +1504,8 @@ class DriverArrivalTimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!ride.isAirportTransfer || ride.flightTime == null) {
+    final flightTime = ride.flightTime;
+    if (!ride.isAirportTransfer || flightTime == null) {
       return const SizedBox.shrink();
     }
 

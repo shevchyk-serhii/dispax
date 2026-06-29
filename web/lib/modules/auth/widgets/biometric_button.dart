@@ -37,7 +37,8 @@ class _BiometricButtonState extends State<BiometricButton>
 
   Future<void> _initBiometrics() async {
     _biometricService = BiometricService();
-    _availableBiometrics = await _biometricService!.availableBiometrics;
+    _availableBiometrics =
+        await _biometricService?.availableBiometrics ?? const [];
     if (mounted) setState(() {});
   }
 

@@ -28,6 +28,7 @@ class BiometricUnlockScreen extends StatelessWidget {
           child: BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
               final person = state.user;
+              final errorMessage = state.errorMessage;
               return Column(
                 children: [
                   // ── Header ──────────────────────────────────────────────
@@ -125,7 +126,7 @@ class BiometricUnlockScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         // Error message
-                        if (state.hasError && state.errorMessage != null) ...[
+                        if (state.hasError && errorMessage != null) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
@@ -137,7 +138,7 @@ class BiometricUnlockScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              state.errorMessage!,
+                              errorMessage,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: AppColors.error,

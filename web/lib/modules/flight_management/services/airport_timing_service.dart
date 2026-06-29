@@ -10,13 +10,14 @@ class AirportTimingService {
   AirportTimingService._internal(this._apiClient);
 
   static AirportTimingService get instance {
-    if (_instance == null) {
+    final instance = _instance;
+    if (instance == null) {
       throw StateError(
         'AirportTimingService has not been configured. '
         'Call AirportTimingService.configure() with an authenticated ApiClient first.',
       );
     }
-    return _instance!;
+    return instance;
   }
 
   /// Configure the singleton with an authenticated ApiClient

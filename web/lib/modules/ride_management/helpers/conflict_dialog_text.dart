@@ -14,10 +14,12 @@ String scheduleConflictDialogBody(
   ScheduleConflictInfo? info,
   String? message,
 }) {
-  if (info != null && info.from != null && info.to != null) {
+  final from = info?.from;
+  final to = info?.to;
+  if (info != null && from != null && to != null) {
     return l10n.conflictDialogContentRich(
-      info.from!,
-      info.to!,
+      from,
+      to,
       _formatLocalTime(info.pickupAt),
     );
   }

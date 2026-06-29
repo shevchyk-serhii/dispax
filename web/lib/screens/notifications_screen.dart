@@ -162,14 +162,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error;
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!),
+            Text(error),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadNotifications,

@@ -11,13 +11,14 @@ class ArrivalsBoardService {
   ArrivalsBoardService._internal(this._apiClient);
 
   static ArrivalsBoardService get instance {
-    if (_instance == null) {
+    final instance = _instance;
+    if (instance == null) {
       throw StateError(
         'ArrivalsBoardService has not been configured. '
         'Call ArrivalsBoardService.configure() with an authenticated ApiClient first.',
       );
     }
-    return _instance!;
+    return instance;
   }
 
   static void configure(ApiClient apiClient) {

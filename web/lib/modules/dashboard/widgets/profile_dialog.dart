@@ -170,29 +170,32 @@ class ProfileDialog extends StatelessWidget {
     final rows = <Widget>[
       _buildInfoRow(context, Icons.email_outlined, 'Email', user.email),
     ];
-    if (user.companyName != null) {
+    final companyName = user.companyName;
+    if (companyName != null) {
       rows.add(
         _buildInfoRow(
           context,
           Icons.business_outlined,
           'Company',
-          user.companyName!,
+          companyName,
         ),
       );
     }
-    if (user.licenseNumber != null) {
+    final licenseNumber = user.licenseNumber;
+    if (licenseNumber != null) {
       rows.add(
         _buildInfoRow(
           context,
           Icons.badge_outlined,
           'License',
-          user.licenseNumber!,
+          licenseNumber,
         ),
       );
     }
-    if (user.phone != null) {
+    final phone = user.phone;
+    if (phone != null) {
       rows.add(
-        _buildInfoRow(context, Icons.phone_outlined, 'Phone', user.phone!),
+        _buildInfoRow(context, Icons.phone_outlined, 'Phone', phone),
       );
     }
 

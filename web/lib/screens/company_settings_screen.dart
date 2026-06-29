@@ -309,7 +309,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         children: [
           const Icon(Icons.error_outline, size: 48, color: AppColors.error),
           const SizedBox(height: 12),
-          Text(_error!),
+          Text(_error ?? ''),
           const SizedBox(height: 12),
           ElevatedButton(onPressed: _loadSettings, child: Text(l10n.retry)),
         ],

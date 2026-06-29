@@ -148,7 +148,7 @@ class AssignmentDialog extends StatelessWidget {
                               context,
                               icon: Icons.euro_outlined,
                               label: l10n.fareLabel,
-                              value: '€${ride.price!.toStringAsFixed(2)}',
+                              value: '€${ride.price?.toStringAsFixed(2) ?? ''}',
                               isDark: isDark,
                               accent: true,
                             ),
@@ -161,10 +161,12 @@ class AssignmentDialog extends StatelessWidget {
                               context,
                               icon: Icons.payments_outlined,
                               label: l10n.paymentMethodSelectLabel,
-                              value: PaymentMethod.labelForWire(
-                                ride.paymentMethod,
-                                l10n,
-                              )!,
+                              value:
+                                  PaymentMethod.labelForWire(
+                                    ride.paymentMethod,
+                                    l10n,
+                                  ) ??
+                                  '',
                               isDark: isDark,
                             ),
                         ],
@@ -370,7 +372,7 @@ class AssignmentDialog extends StatelessWidget {
   /// already renders a flight icon, and skips the 🛬/🛫 status glyph to keep
   /// the value plain text inside [_infoRow].
   String _flightDetails(AppLocalizations l10n, Ride ride) {
-    final parts = <String>[ride.flightNumber!];
+    final parts = <String>[ride.flightNumber ?? ''];
     // A remote stand has no real code → its label is self-describing (no "Gate" prefix).
     final gate = l10n.localizedGate(ride);
     final gateText = ride.isRemoteGate

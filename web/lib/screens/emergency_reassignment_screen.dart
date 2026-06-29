@@ -164,7 +164,7 @@ class _EmergencyReassignmentScreenState
                               children: [
                                 Icon(reasonIcons[r], size: 20),
                                 const SizedBox(width: 8),
-                                Text(reasonLabels[r]!),
+                                Text(reasonLabels[r] ?? ''),
                               ],
                             ),
                           ),
@@ -328,13 +328,14 @@ class _EmergencyReassignmentScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final error = _error;
     return Column(
       children: [
         _buildHeader(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
-              : _error != null
+              : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -345,7 +346,7 @@ class _EmergencyReassignmentScreenState
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(error),
                       ElevatedButton(
                         onPressed: _loadReassignments,
                         child: Text(l10n.retry),

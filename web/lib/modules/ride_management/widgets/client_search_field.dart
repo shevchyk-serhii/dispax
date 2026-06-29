@@ -102,7 +102,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  _error!,
+                  _error ?? '',
                   style: const TextStyle(color: AppColors.error, fontSize: 12),
                 ),
               ),

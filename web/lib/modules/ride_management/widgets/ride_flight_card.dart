@@ -12,11 +12,10 @@ class RideFlightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ride.flightInfo == null) {
+    final flight = ride.flightInfo;
+    if (flight == null) {
       return const SizedBox.shrink();
     }
-
-    final flight = ride.flightInfo!;
 
     return Card(
       elevation: 4,
@@ -59,17 +58,17 @@ class RideFlightCard extends StatelessWidget {
               value: DateFormat('HH:mm, MMM dd').format(flight.flightTime),
             ),
 
-            if (flight.terminal != null) ...[
+            if (flight.terminal case final terminal?) ...[
               const SizedBox(height: 12),
               _buildFlightInfoRow(
                 context,
                 icon: Icons.business,
                 label: 'Terminal',
-                value: flight.terminal!,
+                value: terminal,
               ),
             ],
 
-            if (flight.gate != null) ...[
+            if (flight.gate case final gate?) ...[
               const SizedBox(height: 12),
               _buildFlightInfoRow(
                 context,
@@ -77,9 +76,7 @@ class RideFlightCard extends StatelessWidget {
                 label: 'Gate',
                 // A remote (apron) stand has no real gate code → show the localized
                 // "bus gate" label instead of the raw "REMOTE" word.
-                value:
-                    AppLocalizations.of(context)!.localizedGate(ride) ??
-                    flight.gate!,
+                value: AppLocalizations.of(context)!.localizedGate(ride) ?? gate,
               ),
             ],
 
@@ -132,7 +129,7 @@ class RideFlightCard extends StatelessWidget {
               ],
             ),
 
-            if (flight.notes?.isNotEmpty == true) ...[
+            if (flight.notes case final notes? when notes.isNotEmpty) ...[
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 8),
@@ -147,7 +144,7 @@ class RideFlightCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      flight.notes!,
+                      notes,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
@@ -196,7 +193,7 @@ class RideFlightCard extends StatelessWidget {
   }
 
   Color _getFlightStatusColor(BuildContext context) {
-    final status = ride.flightInfo!.status.toLowerCase();
+    final status = ride.flightInfo?.status.toLowerCase() ?? '';
     if (status.contains('on time')) return AppColors.success;
     if (status.contains('delayed')) return AppColors.warning;
     if (status.contains('cancelled')) return AppColors.error;

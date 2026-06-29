@@ -712,6 +712,24 @@ abstract class AppLocalizations {
   /// **'Your account uses a temporary password. Please set a new password to continue.'**
   String get forcePasswordChangeMessage;
 
+  /// No description provided for @updateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Update required'**
+  String get updateRequired;
+
+  /// No description provided for @updateRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of the app is no longer supported. Please update to the latest version to continue.'**
+  String get updateRequiredMessage;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateNow;
+
   /// No description provided for @temporaryPassword.
   ///
   /// In en, this message translates to:

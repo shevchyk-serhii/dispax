@@ -223,6 +223,8 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
   }
 
   Widget _buildForm(BuildContext context) {
+    final companies = _companies ?? const <PartnerCompany>[];
+    final drivers = _drivers ?? const <ExternalDriver>[];
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -233,7 +235,7 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
               key: const Key('handOffCreateError'),
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                _createError!,
+                _createError ?? '',
                 style: const TextStyle(color: AppColors.error, fontSize: 12),
               ),
             ),
@@ -245,7 +247,7 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
               value: _selectedCompany,
               isExpanded: true,
               hint: const Text('Select company'),
-              items: _companies!
+              items: companies
                   .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
                   .toList(),
               onChanged: (v) => setState(() => _selectedCompany = v),
@@ -280,7 +282,7 @@ class _HandOffRideDialogState extends State<HandOffRideDialog> {
               value: _selectedDriver,
               isExpanded: true,
               hint: const Text('Select driver'),
-              items: _drivers!
+              items: drivers
                   .map((d) => DropdownMenuItem(value: d, child: Text(d.name)))
                   .toList(),
               onChanged: (v) => setState(() => _selectedDriver = v),

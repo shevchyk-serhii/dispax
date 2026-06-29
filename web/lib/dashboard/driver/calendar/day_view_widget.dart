@@ -37,8 +37,9 @@ class DayViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (ridesOverride != null) {
-      return _buildBody(context, colorScheme, ridesOverride!);
+    final override = ridesOverride;
+    if (override != null) {
+      return _buildBody(context, colorScheme, override);
     }
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) =>

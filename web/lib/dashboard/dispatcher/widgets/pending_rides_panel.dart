@@ -26,6 +26,7 @@ import '../utils/conflict_detector.dart';
 import '../../../widgets/common/cancel_ride_dialog.dart';
 import '../../../widgets/common/notification_bell.dart';
 import '../../../widgets/common/hand_off_ride_dialog.dart';
+import '../../../modules/flight_management/widgets/flight_progress_bar.dart';
 import 'assignment_dialog.dart';
 import 'eta_alert_card.dart';
 
@@ -176,19 +177,25 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       },
       listener: (context, state) {
         final l10n = AppLocalizations.of(context)!;
-        if (state.hasReassignConflict) {
+        final conflictRideId = state.conflictRideId;
+        final conflictDriverId = state.conflictDriverId;
+        if (state.hasReassignConflict &&
+            conflictRideId != null &&
+            conflictDriverId != null) {
           _showReassignConflictDialog(
             context,
-            rideId: state.conflictRideId!,
-            driverId: state.conflictDriverId!,
+            rideId: conflictRideId,
+            driverId: conflictDriverId,
             message: state.errorMessage,
             conflict: state.conflictInfo,
           );
-        } else if (state.hasAssignConflict) {
+        } else if (state.hasAssignConflict &&
+            conflictRideId != null &&
+            conflictDriverId != null) {
           _showAssignConflictDialog(
             context,
-            rideId: state.conflictRideId!,
-            driverId: state.conflictDriverId!,
+            rideId: conflictRideId,
+            driverId: conflictDriverId,
             message: state.errorMessage,
             conflict: state.conflictInfo,
           );
@@ -1095,7 +1102,7 @@ class _RideRow extends StatelessWidget {
                 const Spacer(),
                 if (ride.price != null)
                   Text(
-                    '€${ride.price!.toStringAsFixed(2)}',
+                    '€${ride.price?.toStringAsFixed(2) ?? ''}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -1200,6 +1207,17 @@ class _RideRow extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              // Compact flight progress stepper under the flight line.
+              Builder(
+                builder: (context) {
+                  final bar = FlightProgressBar.forRide(ride, compact: true);
+                  if (!bar.isVisible) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: bar,
+                  );
+                },
               ),
             ],
             // Payment method
@@ -1347,7 +1365,11 @@ class _RideRow extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onAction,
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.errorStrong,
+            // errorStrong (#991B1B) is invisible on the dark surface; use the
+            // light cancelled-text variant in dark per HANDOFF (wire *Dark).
+            foregroundColor: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.rideCancelledTextDark
+                : AppColors.errorStrong,
             side: const BorderSide(color: AppColors.errorBorder),
             padding: const EdgeInsets.symmetric(horizontal: 10),
             textStyle: const TextStyle(
@@ -1393,7 +1415,12 @@ class _RideRow extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onHandOff,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.rideHandedOffText,
+                  // rideHandedOffText (#7C2D12) is invisible on the dark
+                  // surface; use its existing *Dark variant per HANDOFF.
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.rideHandedOffTextDark
+                      : AppColors.rideHandedOffText,
                   side: const BorderSide(color: AppColors.rideHandedOffBorder),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   textStyle: const TextStyle(
@@ -1440,10 +1467,12 @@ class _RideRow extends StatelessWidget {
   String _buildMetaLine() {
     final time = DateFormat('dd.MM HH:mm').format(ride.pickupDateTime);
     final parts = [time, provisionalAwareClientLabel(ride)];
-    if (ride.driverName != null) parts.add(ride.driverName!);
+    final driverName = ride.driverName;
+    if (driverName != null) parts.add(driverName);
     if (ride.etaMinutes != null) parts.add('${ride.etaMinutes} min');
-    if (ride.driverDistanceMeters != null) {
-      final km = ride.driverDistanceMeters! / 1000;
+    final driverDistanceMeters = ride.driverDistanceMeters;
+    if (driverDistanceMeters != null) {
+      final km = driverDistanceMeters / 1000;
       parts.add('${km.toStringAsFixed(1)} km');
     }
     return parts.join(' · ');
@@ -1574,14 +1603,15 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
         ),
       );
     }
-    if (_drivers == null) {
+    final loadedDrivers = _drivers;
+    if (loadedDrivers == null) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    if (_drivers!.isEmpty) {
+    if (loadedDrivers.isEmpty) {
       return Center(child: Text(l10n.noDriversFound));
     }
 
-    final drivers = List<Person>.from(_drivers!)
+    final drivers = List<Person>.from(loadedDrivers)
       ..sort((a, b) {
         final aScheduled = widget.scheduledDriverIds.contains(a.id) ? 0 : 1;
         final bScheduled = widget.scheduledDriverIds.contains(b.id) ? 0 : 1;

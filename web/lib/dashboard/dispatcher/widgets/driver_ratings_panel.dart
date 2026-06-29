@@ -48,13 +48,14 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final error = _error;
     return Column(
       children: [
         _buildHeader(),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
-              : _error != null
+              : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -65,7 +66,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(error),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
@@ -124,7 +125,8 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
   Widget _buildContent() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_data == null || _data!.isEmpty) {
+    final data = _data;
+    if (data == null || data.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -148,7 +150,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
       padding: const EdgeInsets.all(16),
       children: [
         // Driver cards with ratings
-        ..._data!.map((driver) {
+        ...data.map((driver) {
           final name = driver['driverName'] as String? ?? 'Unknown';
           final avgRating = (driver['avgRating'] as num?)?.toDouble() ?? 0;
           final reviewCount = (driver['reviewCount'] as num?) ?? 0;

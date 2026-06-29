@@ -90,7 +90,7 @@ class LoginCard extends StatelessWidget {
                         children: [
                           const SizedBox(height: AppDimensions.paddingMedium),
                           ErrorMessageCard(
-                            message: authState.errorMessage!,
+                            message: authState.errorMessage ?? '',
                             onDismiss: onErrorDismiss,
                           ),
                         ],
