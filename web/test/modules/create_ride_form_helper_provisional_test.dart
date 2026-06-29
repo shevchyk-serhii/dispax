@@ -119,34 +119,29 @@ void main() {
     },
   );
 
-  testWidgets('mutation check: without isProvisionalClient path, '
-      'clientId would be the user id (not empty)', (tester) async {
-    // Simulate the "fix reverted" state by using the OLD logic:
-    // clientId = formState.selectedClientId ?? authState.user!.id
-    // We run this as a unit test of that expression directly.
-    final form = _provisionalForm();
-    const userId = 'user-id-99';
+  testWidgets(
+    'mutation check: provisional request sends clientId="" not user id',
+    (tester) async {
+      // This test verifies the fix is necessary: the captured CreateRideRequest
+      // must have clientId='' (not the user id 'user-id-99').
+      // If the fix were reverted (clientId = selectedClientId ?? user.id),
+      // clientId would be 'user-id-99' and the assertion below would fail.
+      final request = await submitAndCapture(tester, _provisionalForm());
 
-    // Old path (no provisional check): always falls back to user id.
-    final oldClientId = form.selectedClientId ?? userId;
-    expect(
-      oldClientId,
-      userId,
-      reason:
-          'Without the fix, clientId would be the current user id, '
-          'not empty — confirming the fix is necessary',
-    );
-
-    // New path (with provisional check): empty string.
-    final newClientId = form.isProvisionalClient
-        ? ''
-        : (form.selectedClientId ?? userId);
-    expect(
-      newClientId,
-      '',
-      reason: 'With the fix, clientId is empty for provisional rides',
-    );
-  });
+      expect(
+        request.clientId,
+        '',
+        reason:
+            'Fix reverted → clientId would be the user id "user-id-99", '
+            'not empty. Assertion would go RED, proving the fix is real.',
+      );
+      expect(
+        request.clientId,
+        isNot('user-id-99'),
+        reason: 'clientId must never be the user id for provisional rides',
+      );
+    },
+  );
 
   testWidgets(
     'non-provisional submission still uses the selected client id (no regression)',
