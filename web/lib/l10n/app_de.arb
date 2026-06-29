@@ -1600,6 +1600,8 @@
   "noArrivalsFound": "Keine Ankünfte gefunden",
   "flightDetailsTitle": "Flugdetails",
   "gateNotPublished": "Gate noch nicht veröffentlicht",
+  "trackFlightLive": "Live auf Flightradar24 verfolgen",
+  "couldNotOpenFlightTracker": "Flugverfolgung konnte nicht geöffnet werden",
   "noDeparturesFound": "Keine Abflüge gefunden",
   "errorLoadingFlights": "Fehler beim Laden der Flüge: {error}",
   "@errorLoadingFlights": {

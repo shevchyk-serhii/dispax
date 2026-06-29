@@ -6340,6 +6340,18 @@ abstract class AppLocalizations {
   /// **'Gate not published yet'**
   String get gateNotPublished;
 
+  /// No description provided for @trackFlightLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Track live on Flightradar24'**
+  String get trackFlightLive;
+
+  /// No description provided for @couldNotOpenFlightTracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the flight tracker'**
+  String get couldNotOpenFlightTracker;
+
   /// No description provided for @errorLoadingFlights.
   ///
   /// In en, this message translates to:

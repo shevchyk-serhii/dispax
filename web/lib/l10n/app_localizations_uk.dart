@@ -3398,6 +3398,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get gateNotPublished => 'Гейт ще не оголошено';
 
   @override
+  String get trackFlightLive => 'Стежити наживо на Flightradar24';
+
+  @override
+  String get couldNotOpenFlightTracker => 'Не вдалося відкрити трекер рейсу';
+
+  @override
   String errorLoadingFlights(String error) {
     return 'Помилка завантаження рейсів: $error';
   }

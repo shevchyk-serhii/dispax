@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../modules/flight_management/flight_tracker.dart';
 import '../../modules/flight_management/models/muc_flight.dart';
 import '../../modules/flight_management/services/arrivals_board_service.dart';
 import '../../modules/flight_management/widgets/flight_progress_bar.dart';
@@ -449,7 +450,7 @@ class FlightDetailsSheet extends StatelessWidget {
     final time = row.estimatedTime ?? row.scheduledTime;
     final timeText = time != null ? DateFormat.Hm().format(time) : '--:--';
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -540,6 +541,22 @@ class FlightDetailsSheet extends StatelessWidget {
                           : gate);
                 return _DetailLine(label: l10n.gateLabel, value: gateText);
               },
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.radar, size: 18),
+                label: Text(l10n.trackFlightLive),
+                onPressed: () async {
+                  final ok = await FlightTracker.open(row.flightNumber);
+                  if (!ok && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.couldNotOpenFlightTracker)),
+                    );
+                  }
+                },
+              ),
             ),
           ],
         ),
