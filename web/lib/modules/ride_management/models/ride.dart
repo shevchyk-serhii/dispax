@@ -479,6 +479,12 @@ class Ride {
     return actual.difference(scheduled).inMinutes;
   }
 
+  /// True once the flight has actually landed (the board status is "landed").
+  /// While the aircraft is still airborne (scheduled / boarding / departed /
+  /// en_route) the arrival time is an estimate, not a fact — the card uses this
+  /// to label it "Landung um …" (forecast) vs "Gelandet um …" (actual).
+  bool get flightHasLanded => flightStatus?.toLowerCase().trim() == 'landed';
+
   /// True when the flight is delayed — either the computed delay is positive, or
   /// the airport board explicitly reports a "delayed" status.
   bool get isFlightDelayed {

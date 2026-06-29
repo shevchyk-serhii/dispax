@@ -515,6 +515,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String airportLandedAt(String time) {
+    return 'Landed at $time';
+  }
+
+  @override
   String airportFlightDelay(int minutes) {
     return '+$minutes min delay';
   }

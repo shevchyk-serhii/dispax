@@ -191,6 +191,12 @@
       "time": {"type": "String"}
     }
   },
+  "airportLandedAt": "Приземлився о {time}",
+  "@airportLandedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "airportFlightDelay": "+{minutes} хв затримки",
   "@airportFlightDelay": {
     "placeholders": {
