@@ -3922,6 +3922,12 @@ abstract class AppLocalizations {
   /// **'Terminal'**
   String get terminalLabel;
 
+  /// Shown instead of a gate code when MUC reports 'Gate REMOTE' — the plane is on a remote apron stand and passengers are bussed to the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus gate (remote stand)'**
+  String get gateRemote;
+
   /// No description provided for @creatingRideLabel.
   ///
   /// In en, this message translates to:

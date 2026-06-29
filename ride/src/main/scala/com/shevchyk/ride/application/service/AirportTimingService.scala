@@ -133,13 +133,17 @@ object AirportTimingService:
       terminalCode: Option[String],
       config: AirportArrivalTimingConfig
   ): Int =
-    val gateLetter  = gate.map(_.trim.toUpperCase).filter(_.nonEmpty).map(_.take(1))
-    val bySatellite =
-      gateLetter match
-        case Some(letter) => Some(config.satelliteGateLetters.contains(letter))
-        // No gate yet → fall back to the terminal code (e.g. "T2K"/"K" satellite terminals).
-        case None         => terminalCode.map(t => config.satelliteTerminalCodes.contains(t.trim.toUpperCase))
-    if bySatellite.contains(true) then config.satelliteWalkMinutes else config.normalWalkMinutes
+    val normalisedGate = gate.map(_.trim.toUpperCase).filter(_.nonEmpty)
+    // A remote (apron) bus stand is the slowest case — checked first, ahead of the satellite/main split.
+    if normalisedGate.contains("REMOTE") then config.remoteWalkMinutes
+    else
+      val gateLetter  = normalisedGate.map(_.take(1))
+      val bySatellite =
+        gateLetter match
+          case Some(letter) => Some(config.satelliteGateLetters.contains(letter))
+          // No gate yet → fall back to the terminal code (e.g. "T2K"/"K" satellite terminals).
+          case None         => terminalCode.map(t => config.satelliteTerminalCodes.contains(t.trim.toUpperCase))
+      if bySatellite.contains(true) then config.satelliteWalkMinutes else config.normalWalkMinutes
 
   /**
    * Pure arithmetic: latest entry instant = arrival + walk buffer (passenger at curbside).

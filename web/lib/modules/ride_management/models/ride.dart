@@ -546,19 +546,31 @@ class Ride {
     }
   }
 
+  /// True when MUC put the flight on a remote (apron) bus stand — the gate is the
+  /// sentinel "REMOTE" rather than a real code (e.g. "G35"). Such a gate must be shown
+  /// as a localized "bus gate" label, not the raw word, and means a longer walk-out.
+  bool get isRemoteGate => gate?.trim().toUpperCase() == 'REMOTE';
+
   /// Flight line WITHOUT the status (flight number + gate/terminal). The status is rendered
   /// separately and localized at the call site (a getter has no BuildContext / AppLocalizations),
   /// via [RideFlightStatusL10n.localizedFlightStatus].
+  ///
+  /// NOTE: a remote ("REMOTE") gate is rendered here with the raw word as a fallback only;
+  /// prefer [RideFlightStatusL10n.fullFlightInfoLocalized] which localizes it to "Bus gate".
   String get fullFlightInfo {
     if (!isAirportTransfer || flightNumber == null) return '';
 
     List<String> parts = [];
     parts.add('$flightIcon $flightNumber');
 
-    if (gate != null && terminal != null) {
-      parts.add('Gate $gate (Terminal $terminal)');
-    } else if (gate != null) {
-      parts.add('Gate $gate');
+    final gatePart = isRemoteGate
+        ? 'Bus gate'
+        : (gate != null ? 'Gate $gate' : null);
+
+    if (gatePart != null && terminal != null) {
+      parts.add('$gatePart (Terminal $terminal)');
+    } else if (gatePart != null) {
+      parts.add(gatePart);
     } else if (terminal != null) {
       parts.add('Terminal $terminal');
     }

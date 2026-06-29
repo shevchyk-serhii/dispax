@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../ride_management/models/ride.dart';
+import '../helpers/flight_status_l10n.dart';
 import '../../../constants/app_colors.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RideFlightCard extends StatelessWidget {
   final Ride ride;
@@ -73,7 +75,11 @@ class RideFlightCard extends StatelessWidget {
                 context,
                 icon: Icons.exit_to_app,
                 label: 'Gate',
-                value: flight.gate!,
+                // A remote (apron) stand has no real gate code → show the localized
+                // "bus gate" label instead of the raw "REMOTE" word.
+                value:
+                    AppLocalizations.of(context)!.localizedGate(ride) ??
+                    flight.gate!,
               ),
             ],
 

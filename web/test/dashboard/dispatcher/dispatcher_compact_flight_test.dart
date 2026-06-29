@@ -57,6 +57,22 @@ void main() {
       expect(label, contains('✈ LH1671'));
       expect(label, isNot(contains('Gate')));
     });
+
+    test('renders a remote stand as a bus gate, never the raw "REMOTE"', () {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        flightNumber: 'LH1671',
+        gate: 'REMOTE',
+        terminal: 'T2',
+      );
+
+      // No l10n passed → English fallback, but never the bare word "REMOTE"
+      // and never the misleading "Gate REMOTE".
+      final label = driverScheduleRideLabel(ride);
+
+      expect(label, contains('Bus gate'));
+      expect(label, isNot(contains('Gate REMOTE')));
+    });
   });
 
   group('bulk reassign flight subtitle gate', () {

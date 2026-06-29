@@ -221,6 +221,46 @@ void main() {
       expect(ride.toJson()['paidAt'], '2026-01-01T23:30:00.000Z');
       expect(ride.toJson()['confirmedAt'], '2026-03-14T08:00:00.000Z');
     });
+
+    test(
+      'isRemoteGate detects the MUC remote-stand sentinel (case-insensitive)',
+      () {
+        expect(
+          TestFixtures.ride(
+            isAirportTransfer: true,
+            gate: 'REMOTE',
+          ).isRemoteGate,
+          isTrue,
+        );
+        expect(
+          TestFixtures.ride(
+            isAirportTransfer: true,
+            gate: 'remote',
+          ).isRemoteGate,
+          isTrue,
+        );
+        expect(
+          TestFixtures.ride(isAirportTransfer: true, gate: 'G18').isRemoteGate,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'fullFlightInfo renders a remote stand as "Bus gate", not "Gate REMOTE"',
+      () {
+        final ride = TestFixtures.ride(
+          isAirportTransfer: true,
+          flightNumber: 'LH429',
+          gate: 'REMOTE',
+          terminal: 'T2',
+        );
+
+        expect(ride.fullFlightInfo, contains('Bus gate'));
+        expect(ride.fullFlightInfo, isNot(contains('Gate REMOTE')));
+        expect(ride.fullFlightInfo, contains('Terminal T2'));
+      },
+    );
   });
 
   group('RideStatus.fromString', () {

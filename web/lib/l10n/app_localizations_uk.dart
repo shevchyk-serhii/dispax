@@ -2056,6 +2056,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get terminalLabel => 'Термінал';
 
   @override
+  String get gateRemote => 'Автобусний гейт (віддалена стоянка)';
+
+  @override
   String get creatingRideLabel => 'Створення поїздки...';
 
   @override

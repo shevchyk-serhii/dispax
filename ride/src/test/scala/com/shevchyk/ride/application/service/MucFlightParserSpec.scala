@@ -108,14 +108,14 @@ object MucFlightParserSpec extends ZIOSpecDefault:
       test("parseGate is None when the page has no gate") {
         assertTrue(MucFlightParser.parseGate("<div>no detail here</div>").isEmpty)
       },
-      test("parseGate treats a remote stand as no gate but keeps the terminal") {
-        // Regression: a remote (bus) stand renders "T2 - Gate REMOTE" (prod: LH1983). "REMOTE" is not a real gate
-        // code — surfacing it as a gate breaks the walk-buffer logic that keys off the gate letter.
+      test("parseGate keeps a remote stand as the \"REMOTE\" sentinel, plus the terminal") {
+        // A remote (bus) stand renders "T2 - Gate REMOTE" (prod: LH1983). It is kept (normalised to "REMOTE") so the
+        // driver knows the passenger arrives by apron bus and the walk-buffer logic picks the longest buffer.
         val remoteDetail =
           """<span class="flight-box-airport">Franz Josef Strauß Intl. (MUC)</span>
             |<div class="flight-box-area">T2 - Gate REMOTE</div>""".stripMargin
         assertTrue(
-          MucFlightParser.parseGate(remoteDetail).isEmpty,
+          MucFlightParser.parseGate(remoteDetail).contains("REMOTE"),
           MucFlightParser.parseDetailTerminal(remoteDetail).contains("T2")
         )
       }
