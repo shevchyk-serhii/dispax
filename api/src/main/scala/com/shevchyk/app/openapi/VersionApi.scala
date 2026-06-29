@@ -20,11 +20,22 @@ object VersionApi:
 
   private val versionTag = "System"
 
+  // API contract version — the unit of client/server compatibility, set by hand
+  // (NOT derived from git like commit/buildTime, which change every commit).
+  // Bump `apiVersion` on ANY API change; raise `minClientVersion` only on a
+  // BREAKING change, to the oldest client contract the server still serves.
+  // The Flutter client carries its own kClientApiVersion and force-updates when
+  // it is below minClientVersion.
+  val ApiVersion: Int       = 1
+  val MinClientVersion: Int = 1
+
   final case class VersionResponse(
       version: String,
       commit: String,
       branch: String,
-      buildTime: String
+      buildTime: String,
+      apiVersion: Int,
+      minClientVersion: Int
   ) derives JsonCodec
 
   val versionEndpoint = endpoint.get
@@ -38,7 +49,9 @@ object VersionApi:
     version = BuildInfo.version,
     commit = BuildInfo.gitShortCommit,
     branch = BuildInfo.gitBranch,
-    buildTime = BuildInfo.buildTime
+    buildTime = BuildInfo.buildTime,
+    apiVersion = ApiVersion,
+    minClientVersion = MinClientVersion
   )
 
   private val versionServer: ZServerEndpoint[Any, Any] = versionEndpoint.zServerLogic[Any](_ => ZIO.succeed(response))

@@ -32,7 +32,12 @@ object VersionApiSpec extends ZIOSpecDefault:
           dto.buildTime == BuildInfo.buildTime,
           // The values are really baked in, not empty placeholders.
           dto.version.nonEmpty,
-          dto.commit.nonEmpty
+          dto.commit.nonEmpty,
+          // API contract version drives client/server compatibility + force-update.
+          // Pinned to literals: the endpoint must actually carry these, and a
+          // contract bump is a deliberate change that should update this test.
+          dto.apiVersion == 1,
+          dto.minClientVersion == 1
         )
       }
     )

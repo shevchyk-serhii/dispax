@@ -8,11 +8,20 @@ class BackendVersion {
   final String branch;
   final String buildTime;
 
+  /// Current API contract version of the backend.
+  final int apiVersion;
+
+  /// Oldest client API contract the backend still serves. The app force-updates
+  /// when [kClientApiVersion] is below this.
+  final int minClientVersion;
+
   const BackendVersion({
     required this.version,
     required this.commit,
     required this.branch,
     required this.buildTime,
+    this.apiVersion = 0,
+    this.minClientVersion = 0,
   });
 
   factory BackendVersion.fromJson(Map<String, dynamic> json) => BackendVersion(
@@ -20,6 +29,8 @@ class BackendVersion {
     commit: json['commit'] as String? ?? '',
     branch: json['branch'] as String? ?? '',
     buildTime: json['buildTime'] as String? ?? '',
+    apiVersion: json['apiVersion'] as int? ?? 0,
+    minClientVersion: json['minClientVersion'] as int? ?? 0,
   );
 
   /// Compact label for the UI, e.g. "0.1.0 +a1b2c3d".
