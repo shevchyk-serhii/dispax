@@ -41,7 +41,10 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
     new RideRepository:
       private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected RideRepository.$m")
 
-      def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = ZIO.succeed(rides)
+      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]   = ZIO.succeed(rides)
+      def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = nope(
+        "findAssignedRidesInWindow"
+      )
 
       def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]] = store.get.map(m =>
         Some(m.getOrElse(rideId, FlightStatusRow()))
@@ -221,6 +224,24 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
             case WebSocketEvent.FlightStatusUpdated(_, _, _, _, status, _, term, _) =>
               status == "delayed" && term.contains("T1")
             case _                                                                  => false
+        )
+      },
+      test("enriches a still-unassigned (Requested) airport ride") {
+        // The dispatcher should see the gate/terminal before assigning a driver, so the
+        // monitor must enrich rides that have no driver yet — not only Assigned ones.
+        val pending = airportRide("LH123", isArrival = true).copy(
+          status = RideStatus.Requested,
+          driverId = None
+        )
+        for
+          events <- Ref.make(List.empty[WebSocketEvent])
+          store  <- Ref.make(Map.empty[RideId, FlightStatusRow])
+          _      <- runTick(List(pending), Some(sampleInfo), events, store)
+          ev     <- events.get
+          saved  <- store.get
+        yield assertTrue(
+          ev.size == 1,
+          saved.get(pending.id).exists(r => r.terminal.contains("T2") && r.gate.contains("H14"))
         )
       },
       test("ignores non-airport rides") {

@@ -70,6 +70,10 @@ trait RideRepository {
   ): Task[List[(Instant, BigDecimal)]]
   // Rides in Assigned status with pickup between from and to (for the reminder scheduler)
   def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
+  // Still-active rides (any status except Completed/Cancelled, regardless of driver assignment)
+  // with pickup in (from, to] — used by the flight-status monitor so airport rides get their
+  // gate/terminal/status enriched even before a driver is assigned (i.e. while still Requested).
+  def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]
   // Rides in Assigned status with a driver assigned and pickup in [from, to) — used by the
   // morning confirmation-request scheduler to know which rides still need a confirmation push.
   def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]

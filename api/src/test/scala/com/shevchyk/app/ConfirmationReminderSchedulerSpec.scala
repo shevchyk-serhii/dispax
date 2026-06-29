@@ -52,6 +52,7 @@ object ConfirmationReminderSchedulerSpec extends ZIOSpecDefault:
 
       def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = ZIO.succeed(rides)
       def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]    = ZIO.succeed(Nil)
+      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]      = ZIO.succeed(Nil)
 
       def create(r: Ride): Task[Ride]                                                                             = nope("create")
       def findById(id: RideId): Task[Option[Ride]]                                                                = nope("findById")
