@@ -993,6 +993,10 @@
   "airportArrivalHint": "From airport",
   "flightNumberLabel": "Flight Number",
   "flightNumberHint": "e.g. LH123, BA456",
+  "flightNumberRequired": "Flight number is required",
+  "@flightNumberRequired": {
+    "description": "Validation error shown when an airport-transfer ride is missing its flight number"
+  },
   "flightNumberInvalidFormat": "Enter a valid flight number, e.g. LH429",
   "@flightNumberInvalidFormat": {
     "description": "Validation error when the entered flight number is not a plausible IATA/ICAO code+number"

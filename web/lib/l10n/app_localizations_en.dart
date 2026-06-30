@@ -2061,6 +2061,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get flightNumberHint => 'e.g. LH123, BA456';
 
   @override
+  String get flightNumberRequired => 'Flight number is required';
+
+  @override
   String get flightNumberInvalidFormat =>
       'Enter a valid flight number, e.g. LH429';
 

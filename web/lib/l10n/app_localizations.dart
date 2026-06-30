@@ -3934,6 +3934,12 @@ abstract class AppLocalizations {
   /// **'e.g. LH123, BA456'**
   String get flightNumberHint;
 
+  /// Validation error shown when an airport-transfer ride is missing its flight number
+  ///
+  /// In en, this message translates to:
+  /// **'Flight number is required'**
+  String get flightNumberRequired;
+
   /// Validation error when the entered flight number is not a plausible IATA/ICAO code+number
   ///
   /// In en, this message translates to:

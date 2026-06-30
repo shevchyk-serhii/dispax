@@ -2062,6 +2062,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get flightNumberHint => 'напр. LH123, BA456';
 
   @override
+  String get flightNumberRequired => 'Номер рейсу обов\'язковий';
+
+  @override
   String get flightNumberInvalidFormat =>
       'Введіть дійсний номер рейсу, напр. LH429';
 
