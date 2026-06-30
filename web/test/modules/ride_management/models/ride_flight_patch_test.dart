@@ -1,20 +1,22 @@
-// Locks in the invariant the manual flight-refresh relies on: patching ONLY the flight
-// fields via copyWith must preserve the ride's enrichment (driverName, optimalEntryTime,
-// clientHasAvatar, etaMinutes). The refresh endpoint returns a not-fully-enriched DTO, so
-// the details screen copyWith-patches instead of replacing the whole ride — otherwise the
-// shared RideBloc's copy gets de-enriched and list cards blank those fields.
+// Locks in Ride.withFlightFrom — the single helper all three manual flight-refresh
+// handlers (details screen, driver/dispatcher Heute card, dispatcher pending row) use to
+// patch ONLY the flight fields. It must copy gate/terminal/status/times from the fresh
+// (not-fully-enriched) refresh DTO while preserving driverName/optimalEntryTime/avatar/eta;
+// otherwise pushing the result into the shared RideBloc blanks those on the list cards.
 
+import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/test_fixtures.dart';
 
 void main() {
-  test('copyWith of flight fields preserves enrichment fields', () {
+  group('Ride.withFlightFrom', () {
     final enriched = TestFixtures.ride(
       isAirportTransfer: true,
       isArrival: true,
       flightNumber: 'LH123',
       flightTime: DateTime(2026, 6, 29, 10, 0),
+      flightScheduledTime: DateTime(2026, 6, 29, 10, 0),
       gate: 'G12',
       terminal: '2',
       flightStatus: 'scheduled',
@@ -22,22 +24,46 @@ void main() {
       optimalEntryTime: DateTime(2026, 6, 29, 9, 40),
     ).copyWith(etaMinutes: 7);
 
-    // Patch only the flight fields (as the refresh handler does).
-    final patched = enriched.copyWith(
-      gate: 'H18',
-      terminal: '1',
-      flightStatus: 'landed',
-      flightTime: DateTime(2026, 6, 29, 10, 20),
-    );
+    test('copies the flight fields and preserves enrichment', () {
+      // A fresh refresh DTO: new flight data, but NO enrichment (driverName/eta/...).
+      final fresh = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightNumber: 'LH123',
+        flightTime: DateTime(2026, 6, 29, 10, 20),
+        gate: 'H18',
+        terminal: '1',
+        flightStatus: 'landed',
+      );
 
-    // Flight fields updated...
-    expect(patched.gate, 'H18');
-    expect(patched.terminal, '1');
-    expect(patched.flightStatus, 'landed');
-    expect(patched.flightTime, DateTime(2026, 6, 29, 10, 20));
-    // ...enrichment survives.
-    expect(patched.driverName, 'Anna Driver');
-    expect(patched.optimalEntryTime, DateTime(2026, 6, 29, 9, 40));
-    expect(patched.etaMinutes, 7);
+      final patched = enriched.withFlightFrom(fresh);
+
+      // Flight fields updated from `fresh`...
+      expect(patched.gate, 'H18');
+      expect(patched.terminal, '1');
+      expect(patched.flightStatus, 'landed');
+      expect(patched.flightTime, DateTime(2026, 6, 29, 10, 20));
+      // ...enrichment from the original survives (would be null on a wholesale replace).
+      expect(patched.driverName, 'Anna Driver');
+      expect(patched.optimalEntryTime, DateTime(2026, 6, 29, 9, 40));
+      expect(patched.etaMinutes, 7);
+    });
+
+    test('keeps the existing time when the fresh ride has none (not-found)', () {
+      // notFound refresh: fresh carries no flight time → keep what we had, don't erase.
+      final fresh = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightNumber: 'LH123',
+        gate: 'G12',
+        terminal: '2',
+        flightStatus: 'unknown',
+      );
+
+      final patched = enriched.withFlightFrom(fresh);
+
+      expect(patched.flightTime, DateTime(2026, 6, 29, 10, 0)); // preserved
+      expect(patched.driverName, 'Anna Driver');
+    });
   });
 }

@@ -532,6 +532,23 @@ class Ride {
     return flightProgress(now, flightDepartureTime, flightTime);
   }
 
+  /// Returns this ride with ONLY the flight-tracking fields copied from [fresh]
+  /// (gate, terminal, flightStatus, flightTime, flightDepartureTime), keeping every
+  /// other field — driverName, optimalEntryTime, avatar, eta — intact.
+  ///
+  /// Used after a manual flight refresh: the refresh DTO is not fully enriched, so
+  /// pushing it wholesale into the shared RideBloc would blank those fields on the
+  /// list cards (the confirm-vanish overwrite trap). flightTime/flightDepartureTime
+  /// fall back to the current value when [fresh] has none, so a not-found refresh
+  /// never erases a time we already had.
+  Ride withFlightFrom(Ride fresh) => copyWith(
+    gate: fresh.gate,
+    terminal: fresh.terminal,
+    flightStatus: fresh.flightStatus,
+    flightTime: fresh.flightTime ?? flightTime,
+    flightDepartureTime: fresh.flightDepartureTime ?? flightDepartureTime,
+  );
+
   /// True when the flight is delayed — either the computed delay is positive, or
   /// the airport board explicitly reports a "delayed" status.
   bool get isFlightDelayed {

@@ -770,19 +770,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       final result = await _rideService.refreshFlightStatus(_currentRide.id);
       if (!mounted) return;
       // Patch ONLY the flight fields onto the existing ride — the refresh DTO is not
-      // fully enriched (no driverName/optimalEntryTime/avatar/eta), so replacing the
-      // whole ride would de-enrich the shared RideBloc's copy and blank those on the
-      // list cards (same overwrite trap as the confirm-vanish bug). Mirrors the
-      // FlightStatusUpdated WS handler.
-      final fresh = result.ride;
-      final patched = _currentRide.copyWith(
-        gate: fresh.gate,
-        terminal: fresh.terminal,
-        flightStatus: fresh.flightStatus,
-        flightTime: fresh.flightTime ?? _currentRide.flightTime,
-        flightDepartureTime:
-            fresh.flightDepartureTime ?? _currentRide.flightDepartureTime,
-      );
+      // fully enriched, so replacing the whole ride would de-enrich the shared
+      // RideBloc copy and blank driverName/optimalEntryTime/avatar/eta on the list
+      // cards (the confirm-vanish overwrite trap). See Ride.withFlightFrom.
+      final patched = _currentRide.withFlightFrom(result.ride);
       setState(() => _currentRide = patched);
       // Push the patched ride so other screens (list cards) reflect it too.
       rideBloc.add(RideUpdated(ride: patched));

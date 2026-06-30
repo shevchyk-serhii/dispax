@@ -108,6 +108,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   RideService? _rideService;
   final Map<String, int> _approachingDistances = {};
   final Map<String, int> _etaMinutes = {};
+  // Ride ids whose flight status is currently being manually refreshed (spinner on the card).
+  final Set<String> _refreshingFlightIds = {};
   Timer? _etaTimer;
 
   // ── New: tab + pulse animation ─────────────────────────────────────────────
@@ -541,6 +543,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                     onCallClient: () => _handleCallClient(context, ride),
                     onConfirmRide: () => _handleConfirmRide(context, ride),
                     onRejectRide: () => _handleRejectRide(context, ride),
+                    onRefreshFlight: () => _refreshFlightStatus(context, ride),
+                    isRefreshingFlight: _refreshingFlightIds.contains(ride.id),
                   ),
                 );
               }, childCount: todayRides.length),
@@ -606,6 +610,40 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     );
     _startLocationTracking();
     NavigationHelper.showSnackBar(context, 'Ride started');
+  }
+
+  /// Manual on-demand flight-status refresh for a card in the list (same backend path
+  /// as the 5-minute monitor). Patches ONLY the flight fields onto the ride via copyWith
+  /// — replacing the whole ride would de-enrich the shared RideBloc copy (driverName,
+  /// optimalEntryTime, …) and blank those on the cards. Pushes RideUpdated so the
+  /// BlocBuilder rebuilds the card with the fresh status.
+  Future<void> _refreshFlightStatus(BuildContext context, Ride ride) async {
+    final service = _rideService;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final rideBloc = context.read<RideBloc>();
+    setState(() => _refreshingFlightIds.add(ride.id));
+    try {
+      final result = await service.refreshFlightStatus(ride.id);
+      if (!context.mounted) return;
+      final patched = ride.withFlightFrom(result.ride);
+      rideBloc.add(RideUpdated(ride: patched));
+      NavigationHelper.showSnackBar(context, switch (result.outcome) {
+        'updated' => l10n.flightStatusRefreshed,
+        'notFound' => l10n.flightNotFoundYet,
+        _ => l10n.flightStatusUnchanged,
+      });
+    } catch (_) {
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(
+          context,
+          l10n.failedToRefreshFlightStatus,
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _refreshingFlightIds.remove(ride.id));
+    }
   }
 
   void _handleCompleteRide(BuildContext context, Ride ride) {
@@ -951,6 +989,8 @@ class DriverRideCard extends StatelessWidget {
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
+  final VoidCallback? onRefreshFlight;
+  final bool isRefreshingFlight;
 
   const DriverRideCard({
     super.key,
@@ -962,6 +1002,8 @@ class DriverRideCard extends StatelessWidget {
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
+    this.onRefreshFlight,
+    this.isRefreshingFlight = false,
   });
 
   @override
@@ -1047,7 +1089,12 @@ class DriverRideCard extends StatelessWidget {
               DriverPaymentRow(ride: ride, isDark: isDark),
 
               // Full flight info for airport rides (number + gate/terminal + status).
-              DriverFlightInfoRow(ride: ride, isDark: isDark),
+              DriverFlightInfoRow(
+                ride: ride,
+                isDark: isDark,
+                onRefresh: onRefreshFlight,
+                isRefreshing: isRefreshingFlight,
+              ),
               // Live flight progress (Geplant → … → Gelandet); hidden for
               // non-airport rides and unknown status.
               Builder(
@@ -1395,10 +1442,17 @@ class DriverFlightInfoRow extends StatelessWidget {
   final Ride ride;
   final bool isDark;
 
+  /// Manual "refresh flight status now" action. When null the button is hidden;
+  /// the owning screen holds the loading state and passes [isRefreshing] back in.
+  final VoidCallback? onRefresh;
+  final bool isRefreshing;
+
   const DriverFlightInfoRow({
     super.key,
     required this.ride,
     required this.isDark,
+    this.onRefresh,
+    this.isRefreshing = false,
   });
 
   @override
@@ -1439,6 +1493,26 @@ class DriverFlightInfoRow extends StatelessWidget {
             FlightRadarButton(
               flightNumber: ride.flightNumber!,
               color: secondary,
+            ),
+          if (onRefresh != null && ride.flightNumber != null)
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                onPressed: isRefreshing ? null : onRefresh,
+                tooltip: AppLocalizations.of(context)!.refreshFlightStatus,
+                icon: isRefreshing
+                    ? SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(secondary),
+                        ),
+                      )
+                    : Icon(Icons.refresh, size: 17, color: secondary),
+              ),
             ),
         ],
       ),

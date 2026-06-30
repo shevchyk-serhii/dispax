@@ -59,6 +59,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   String? _selectedTag;
   int _tabIndex = 0; // 0 = Pending, 1 = Assigned
   Timer? _searchDebounce;
+  // Ride ids whose flight status is currently being manually refreshed (spinner on the row).
+  final Set<String> _refreshingFlightIds = {};
 
   /// Tracks whether the bloc was mid hand-off when the *current* state arrived,
   /// so the listener can tell a hand-off result (`handingOff -> loaded/error`)
@@ -443,6 +445,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                               ),
                         isReassign: !isHandedOff,
                         onViewDetails: () => _openRideDetails(context, ride),
+                        onRefreshFlight: () =>
+                            _refreshFlightStatus(context, ride),
+                        isRefreshingFlight: _refreshingFlightIds.contains(
+                          ride.id,
+                        ),
                       );
                     }
                     return Draggable<Ride>(
@@ -482,6 +489,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                           onClose: () => _showCloseRideDialog(context, ride),
                           onHandOff: () => _showHandOffDialog(context, ride),
                           onViewDetails: () => _openRideDetails(context, ride),
+                          onRefreshFlight: () =>
+                              _refreshFlightStatus(context, ride),
+                          isRefreshingFlight: _refreshingFlightIds.contains(
+                            ride.id,
+                          ),
                         ),
                       ),
                     );
@@ -880,6 +892,44 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         });
   }
 
+  /// Manual on-demand flight-status refresh for a pending row (same backend path as the
+  /// 5-minute monitor). Patches ONLY the flight fields via copyWith — replacing the whole
+  /// ride would de-enrich the shared RideBloc copy and blank driverName/eta/etc on the
+  /// cards. Pushes RideUpdated so the BlocBuilder rebuilds the row with the fresh status.
+  Future<void> _refreshFlightStatus(BuildContext context, Ride ride) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final rideBloc = context.read<RideBloc>();
+    final service = RideService(apiClient: context.read<AuthBloc>().apiClient);
+    setState(() => _refreshingFlightIds.add(ride.id));
+    try {
+      final result = await service.refreshFlightStatus(ride.id);
+      if (!mounted) return;
+      final patched = ride.withFlightFrom(result.ride);
+      rideBloc.add(RideUpdated(ride: patched));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(switch (result.outcome) {
+            'updated' => l10n.flightStatusRefreshed,
+            'notFound' => l10n.flightNotFoundYet,
+            _ => l10n.flightStatusUnchanged,
+          }),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.failedToRefreshFlightStatus),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _refreshingFlightIds.remove(ride.id));
+    }
+  }
+
   void _showCloseRideDialog(BuildContext context, Ride ride) {
     showAdaptiveDialog<Map<String, dynamic>>(
       context: context,
@@ -1028,6 +1078,11 @@ class _RideRow extends StatelessWidget {
   /// ride details screen, from which the ride can be edited.
   final VoidCallback? onViewDetails;
 
+  /// Manual "refresh flight status now" action on the flight line. Null hides the
+  /// button; the parent panel holds the loading state and passes [isRefreshingFlight].
+  final VoidCallback? onRefreshFlight;
+  final bool isRefreshingFlight;
+
   const _RideRow({
     super.key,
     required this.ride,
@@ -1038,6 +1093,8 @@ class _RideRow extends StatelessWidget {
     this.onClose,
     this.onHandOff,
     this.onViewDetails,
+    this.onRefreshFlight,
+    this.isRefreshingFlight = false,
   });
 
   @override
@@ -1206,6 +1263,34 @@ class _RideRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (onRefreshFlight != null && ride.flightNumber != null)
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: isRefreshingFlight ? null : onRefreshFlight,
+                        tooltip: AppLocalizations.of(
+                          context,
+                        )!.refreshFlightStatus,
+                        icon: isRefreshingFlight
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.refresh,
+                                size: 16,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                      ),
+                    ),
                 ],
               ),
               // Compact flight progress stepper under the flight line.
