@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/models/ride_estimate.dart';
+import '../../modules/ride_management/models/ride.dart';
 
 enum CreateRideFormStatus { initial, submitting, success, failure }
 
@@ -132,6 +133,47 @@ class CreateRideFormState extends Equatable {
       estimateBusiness: null,
       estimateVan: null,
       estimateUnavailable: false,
+    );
+  }
+
+  /// Pre-fills the form by copying the reusable details of an existing [ride]
+  /// for the "duplicate ride" flow: the new ride is a brand-new request, so we
+  /// copy the client, route, flight/airport details, notes, requirements, tags,
+  /// price and payment method — but NOT the driver, pickup time, or any status/
+  /// tracking state. The pickup time falls back to the [initial] default
+  /// (now + 1h) so the operator picks a fresh time; the status defaults to
+  /// Requested at submission time.
+  factory CreateRideFormState.fromRide(Ride ride) {
+    final base = CreateRideFormState.initial();
+    final notes = ride.notes ?? '';
+    // specialRequirements is stored as a ", "-joined CSV (see the create
+    // submission); split it back into the list the form holds.
+    final requirements = (ride.specialRequirements ?? '')
+        .split(',')
+        .map((r) => r.trim())
+        .where((r) => r.isNotEmpty)
+        .toList();
+    return base.copyWith(
+      selectedClientId: ride.clientId,
+      clientName: ride.clientName,
+      // Treat the copied client as a baseline preselect (like ClientPreselected)
+      // so the unsaved-changes guard does not fire just from duplicating.
+      baselineClientId: ride.clientId,
+      baselineClientName: ride.clientName,
+      fromAddress: ride.from.address,
+      toAddress: ride.to.address,
+      isAirportTransfer: ride.isAirportTransfer,
+      isArrival: ride.isArrival,
+      flightNumber: ride.flightNumber ?? '',
+      selectedGate: ride.gate,
+      selectedTerminal: ride.terminal,
+      notes: notes,
+      showNotes: notes.isNotEmpty,
+      specialRequirements: requirements,
+      tags: List<String>.of(ride.tags),
+      price: ride.price,
+      selectedPaymentMethod:
+          PaymentMethod.fromWire(ride.paymentMethod) ?? PaymentMethod.invoice,
     );
   }
 

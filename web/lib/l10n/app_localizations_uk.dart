@@ -1791,6 +1791,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editAction => 'Редагувати';
 
   @override
+  String get duplicateRideAction => 'Дублювати';
+
+  @override
   String get deactivateAction => 'Деактивувати';
 
   @override

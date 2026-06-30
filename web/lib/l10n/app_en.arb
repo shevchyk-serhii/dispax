@@ -870,6 +870,7 @@
   "invalidEmail": "Invalid email",
   "addButton": "Add",
   "editAction": "Edit",
+  "duplicateRideAction": "Duplicate",
   "deactivateAction": "Deactivate",
   "editClientTitle": "Edit Client",
   "clientUpdatedSuccess": "Client updated successfully",

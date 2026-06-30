@@ -14,6 +14,7 @@ import '../widgets/common/cancel_ride_dialog.dart';
 import '../widgets/common/rate_ride_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'chat_screen.dart';
+import 'create_ride_screen.dart';
 import '../l10n/app_localizations.dart';
 
 class RideDetailsScreen extends StatefulWidget {
@@ -503,6 +504,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                         onEditRide: _canEditRide()
                             ? () => _editRide(context)
                             : null,
+                        onDuplicateRide: () => _duplicateRide(context),
                         onCancelRide: _canCancelRide()
                             ? () => _cancelRide(context)
                             : null,
@@ -582,6 +584,24 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         _currentRide = result;
       });
     }
+  }
+
+  /// Opens the create-ride form pre-filled from the current ride (the
+  /// "duplicate" flow). The new ride is a fresh request: status defaults to
+  /// Requested, no driver, and a fresh pickup time — only the reusable details
+  /// (client, route, flight, notes, tags, price, payment) are copied via
+  /// [FormPrefilledFromRide]. The original ride is left untouched.
+  Future<void> _duplicateRide(BuildContext context) async {
+    final rideBloc = context.read<RideBloc>();
+    final formBloc = CreateRideFormBloc()
+      ..add(FormPrefilledFromRide(_currentRide));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            CreateRideScreen(rideBloc: rideBloc, formBloc: formBloc),
+      ),
+    );
+    await formBloc.close();
   }
 
   Future<void> _cancelRide(BuildContext context) async {

@@ -779,6 +779,7 @@
   "invalidEmail": "Ungültige E-Mail",
   "addButton": "Hinzufügen",
   "editAction": "Bearbeiten",
+  "duplicateRideAction": "Duplizieren",
   "deactivateAction": "Deaktivieren",
   "editClientTitle": "Kunde bearbeiten",
   "clientUpdatedSuccess": "Kunde erfolgreich aktualisiert",

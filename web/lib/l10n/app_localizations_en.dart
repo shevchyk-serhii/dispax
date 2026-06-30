@@ -1791,6 +1791,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editAction => 'Edit';
 
   @override
+  String get duplicateRideAction => 'Duplicate';
+
+  @override
   String get deactivateAction => 'Deactivate';
 
   @override

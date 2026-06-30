@@ -1798,6 +1798,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editAction => 'Bearbeiten';
 
   @override
+  String get duplicateRideAction => 'Duplizieren';
+
+  @override
   String get deactivateAction => 'Deaktivieren';
 
   @override

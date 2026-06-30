@@ -3,11 +3,13 @@ import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RideActionsCard extends StatelessWidget {
   final Ride ride;
   final bool isClientView;
   final VoidCallback? onEditRide;
+  final VoidCallback? onDuplicateRide;
   final VoidCallback? onCancelRide;
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
@@ -20,6 +22,7 @@ class RideActionsCard extends StatelessWidget {
     required this.ride,
     this.isClientView = false,
     this.onEditRide,
+    this.onDuplicateRide,
     this.onCancelRide,
     this.onStartRide,
     this.onCompleteRide,
@@ -161,6 +164,20 @@ class RideActionsCard extends StatelessWidget {
           icon: Icons.edit_outlined,
           label: 'Edit',
           onPressed: onEditRide,
+        ),
+      );
+    }
+
+    // Duplicate is offered for any ride status (incl. completed/cancelled):
+    // re-creating a similar ride is a common follow-up to a past trip.
+    final onDuplicateRide = this.onDuplicateRide;
+    if (onDuplicateRide != null) {
+      actions.add(
+        _buildSecondaryButton(
+          context,
+          icon: Icons.copy_outlined,
+          label: AppLocalizations.of(context)!.duplicateRideAction,
+          onPressed: onDuplicateRide,
         ),
       );
     }

@@ -3424,6 +3424,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get editAction;
 
+  /// No description provided for @duplicateRideAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateRideAction;
+
   /// No description provided for @deactivateAction.
   ///
   /// In en, this message translates to:

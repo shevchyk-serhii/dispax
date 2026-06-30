@@ -779,6 +779,7 @@
   "invalidEmail": "Невірний email",
   "addButton": "Додати",
   "editAction": "Редагувати",
+  "duplicateRideAction": "Дублювати",
   "deactivateAction": "Деактивувати",
   "editClientTitle": "Редагувати клієнта",
   "clientUpdatedSuccess": "Клієнта успішно оновлено",

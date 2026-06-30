@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_state.dart';
+import 'package:dispax/modules/ride_management/models/ride.dart';
+import 'package:dispax/modules/core/models/location.dart';
+import 'package:dispax/modules/ride_management/models/payment_method.dart';
 
 void main() {
   group('CreateRideFormState.isModified', () {
@@ -259,6 +262,98 @@ void main() {
         makeState(fromAddress: 'Airport', toAddress: 'Hotel').isValid,
         isTrue,
       );
+    });
+  });
+
+  group('CreateRideFormState.fromRide (duplicate ride)', () {
+    Ride sourceRide({
+      String? driverId = 'driver-9',
+      RideStatus status = RideStatus.completed,
+      String? notes = 'Two suitcases',
+      String? specialRequirements = 'Child seat, Wheelchair',
+      bool isAirportTransfer = true,
+      bool isArrival = true,
+      String? flightNumber = 'LH123',
+      String? gate = 'H38',
+      String? terminal = 'T2',
+      double? price = 62.5,
+      String? paymentMethod = 'Cash',
+      List<String> tags = const ['VIP', 'recurring'],
+    }) {
+      return Ride(
+        id: 'ride-1',
+        clientId: 'client-7',
+        creatorId: 'creator-3',
+        driverId: driverId,
+        companyId: 'company-1',
+        pickupDateTime: DateTime(2026, 1, 1, 8, 0),
+        from: Location(address: 'Marienplatz', latitude: 48.1, longitude: 11.5),
+        to: Location(address: 'Flughafen', latitude: 48.3, longitude: 11.7),
+        status: status,
+        clientName: 'BMW AG',
+        flightNumber: flightNumber,
+        isAirportTransfer: isAirportTransfer,
+        isArrival: isArrival,
+        gate: gate,
+        terminal: terminal,
+        notes: notes,
+        specialRequirements: specialRequirements,
+        price: price,
+        paymentMethod: paymentMethod,
+        tags: tags,
+      );
+    }
+
+    test('copies the reusable ride details', () {
+      final s = CreateRideFormState.fromRide(sourceRide());
+      expect(s.selectedClientId, 'client-7');
+      expect(s.clientName, 'BMW AG');
+      expect(s.fromAddress, 'Marienplatz');
+      expect(s.toAddress, 'Flughafen');
+      expect(s.isAirportTransfer, isTrue);
+      expect(s.isArrival, isTrue);
+      expect(s.flightNumber, 'LH123');
+      expect(s.selectedGate, 'H38');
+      expect(s.selectedTerminal, 'T2');
+      expect(s.notes, 'Two suitcases');
+      expect(s.showNotes, isTrue);
+      expect(s.specialRequirements, ['Child seat', 'Wheelchair']);
+      expect(s.tags, ['VIP', 'recurring']);
+      expect(s.price, 62.5);
+      expect(s.selectedPaymentMethod, PaymentMethod.cash);
+    });
+
+    test('does NOT copy the driver (new ride is unassigned)', () {
+      final s = CreateRideFormState.fromRide(sourceRide(driverId: 'driver-9'));
+      expect(s.selectedDriverId, isNull);
+    });
+
+    test('uses a fresh pickup time, not the source ride pickup', () {
+      final s = CreateRideFormState.fromRide(sourceRide());
+      // Default is initial() = now + 1h, never the source's 2026-01-01 08:00.
+      expect(s.manualPickupDateTime, isNotNull);
+      expect(s.manualPickupDateTime, isNot(DateTime(2026, 1, 1, 8, 0)));
+      expect(s.manualPickupDateTime!.isAfter(DateTime.now()), isTrue);
+    });
+
+    test('treats the copied client as baseline (not an unsaved change)', () {
+      final s = CreateRideFormState.fromRide(sourceRide());
+      expect(s.baselineClientId, 'client-7');
+      expect(s.baselineClientName, 'BMW AG');
+    });
+
+    test('null notes/requirements collapse to empty, notes stay hidden', () {
+      final s = CreateRideFormState.fromRide(
+        sourceRide(notes: null, specialRequirements: null),
+      );
+      expect(s.notes, '');
+      expect(s.showNotes, isFalse);
+      expect(s.specialRequirements, isEmpty);
+    });
+
+    test('unknown payment method falls back to invoice', () {
+      final s = CreateRideFormState.fromRide(sourceRide(paymentMethod: null));
+      expect(s.selectedPaymentMethod, PaymentMethod.invoice);
     });
   });
 }

@@ -2,12 +2,25 @@ import 'package:equatable/equatable.dart';
 import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/models/ride_estimate.dart';
+import '../../modules/ride_management/models/ride.dart';
 
 abstract class CreateRideFormEvent extends Equatable {
   const CreateRideFormEvent();
 
   @override
   List<Object?> get props => [];
+}
+
+/// Pre-fills the form from an existing [ride] for the "duplicate ride" flow.
+/// Replaces the whole form state with [CreateRideFormState.fromRide] so the
+/// copy is atomic (no ordering pitfalls between individual field events).
+class FormPrefilledFromRide extends CreateRideFormEvent {
+  final Ride ride;
+
+  const FormPrefilledFromRide(this.ride);
+
+  @override
+  List<Object?> get props => [ride];
 }
 
 class ClientNameChanged extends CreateRideFormEvent {

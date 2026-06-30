@@ -40,6 +40,14 @@ class CreateRideFormBloc
     on<PaymentMethodSelected>(_onPaymentMethodSelected);
     on<ScheduleModeToggled>(_onScheduleModeToggled);
     on<EstimateReceived>(_onEstimateReceived);
+    on<FormPrefilledFromRide>(_onFormPrefilledFromRide);
+  }
+
+  void _onFormPrefilledFromRide(
+    FormPrefilledFromRide event,
+    Emitter<CreateRideFormState> emit,
+  ) {
+    emit(CreateRideFormState.fromRide(event.ride));
   }
 
   void _onNotesToggled(NotesToggled event, Emitter<CreateRideFormState> emit) {
