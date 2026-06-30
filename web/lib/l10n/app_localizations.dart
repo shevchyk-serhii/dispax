@@ -1990,6 +1990,12 @@ abstract class AppLocalizations {
   /// **'We couldn\'t find what you were looking for.'**
   String get errorNotFound;
 
+  /// No description provided for @errorLoadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the data'**
+  String get errorLoadingData;
+
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:

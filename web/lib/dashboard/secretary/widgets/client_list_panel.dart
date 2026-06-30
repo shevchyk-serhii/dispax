@@ -5,6 +5,8 @@ import '../../../blocs/client/client_bloc.dart';
 import '../../../blocs/client/client_event.dart';
 import '../../../blocs/client/client_state.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/widgets/error_widget.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/models/user_requests.dart';
 import '../../../constants/app_colors.dart';
@@ -107,28 +109,18 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 }
 
                 if (state.hasError && state.clients.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: AppColors.error,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(state.errorMessage ?? 'An error occurred'),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<ClientBloc>().add(
-                              const ClientLoadRequested(),
-                            );
-                          },
-                          child: Text(l10n.retry),
-                        ),
-                      ],
+                  return ErrorDisplayWidget(
+                    title: l10n.errorLoadingData,
+                    message: friendlyError(
+                      state.error ?? state.errorMessage,
+                      l10n,
                     ),
+                    onRetry: () {
+                      context.read<ClientBloc>().add(
+                        const ClientLoadRequested(),
+                      );
+                    },
+                    retryLabel: l10n.retry,
                   );
                 }
 

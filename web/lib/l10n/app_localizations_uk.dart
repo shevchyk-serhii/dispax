@@ -1010,6 +1010,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get errorNotFound => 'Не вдалося знайти те, що ви шукали.';
 
   @override
+  String get errorLoadingData => 'Не вдалося завантажити дані';
+
+  @override
   String get errorGeneric => 'Щось пішло не так. Будь ласка, повторіть спробу.';
 
   @override

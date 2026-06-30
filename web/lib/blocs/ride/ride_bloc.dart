@@ -41,7 +41,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final rides = await privateRideService.getRidesForUser(event.user);
       emit(RideState.loaded(rides));
     } catch (e) {
-      emit(RideState.error('Failed to load rides: $e'));
+      emit(RideState.error('Failed to load rides: $e', cause: e));
     }
   }
 
@@ -55,7 +55,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final rides = await privateRideService.getRidesForUser(event.user);
       emit(RideState.loaded(rides));
     } catch (e) {
-      emit(RideState.error('Failed to refresh rides: $e'));
+      emit(RideState.error('Failed to refresh rides: $e', cause: e));
     }
   }
 
@@ -118,6 +118,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to create ride: $e',
+          error: e,
         ),
       );
     }
@@ -157,6 +158,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to update ride status: $e',
+          error: e,
         ),
       );
     }
@@ -259,6 +261,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to assign driver: $e',
+          error: e,
         ),
       );
     }
@@ -328,6 +331,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to reassign driver: $e',
+          error: e,
         ),
       );
     }
@@ -350,6 +354,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to confirm ride: $e',
+          error: e,
         ),
       );
     }
@@ -375,6 +380,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to reject ride: $e',
+          error: e,
         ),
       );
     }
@@ -415,6 +421,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to cancel ride: $e',
+          error: e,
         ),
       );
     }
@@ -446,6 +453,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to hand off ride: $e',
+          error: e,
         ),
       );
     }

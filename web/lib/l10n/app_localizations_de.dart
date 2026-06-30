@@ -1016,6 +1016,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wir konnten nicht finden, wonach Sie gesucht haben.';
 
   @override
+  String get errorLoadingData => 'Daten konnten nicht geladen werden';
+
+  @override
   String get errorGeneric =>
       'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.';
 

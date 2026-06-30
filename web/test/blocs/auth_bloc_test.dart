@@ -213,7 +213,11 @@ void main() {
               (s) => s.errorMessage,
               'errorMessage',
               'Invalid email or password',
-            ),
+            )
+            // Phase 3 triage: an intentional DOMAIN message must NOT carry a
+            // typed cause, so the UI shows it verbatim instead of collapsing it
+            // to a generic "something went wrong" via friendlyError.
+            .having((s) => s.error, 'error (domain → none)', isNull),
       ],
     );
 
@@ -230,7 +234,14 @@ void main() {
       ),
       expect: () => [
         AuthState.loading(),
-        isA<AuthState>().having((s) => s.hasError, 'hasError', true),
+        isA<AuthState>()
+            .having((s) => s.hasError, 'hasError', true)
+            // A NETWORK-class failure DOES carry the typed cause → friendlyError.
+            .having(
+              (s) => s.error,
+              'error (network → typed)',
+              isA<ApiException>(),
+            ),
       ],
     );
 

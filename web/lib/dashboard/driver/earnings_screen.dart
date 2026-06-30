@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/driver_earnings.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/core/services/error_messages.dart';
+import '../../l10n/app_localizations.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
@@ -286,13 +288,15 @@ class _EarningsBody extends StatelessWidget {
       return const LoadingWidget();
     }
     if (state.status == EarningsStatus.error && state.data == null) {
+      final l10n = AppLocalizations.of(context)!;
       return ErrorDisplayWidget(
-        title: 'Failed to load earnings',
-        message: state.error ?? 'Unknown error',
+        title: l10n.errorLoadingData,
+        message: friendlyError(state.error ?? state.errorMessage, l10n),
         onRetry: () {
           final user = context.read<AuthBloc>().state.user;
           if (user != null) cubit.load(user.id.toString());
         },
+        retryLabel: l10n.retry,
       );
     }
 

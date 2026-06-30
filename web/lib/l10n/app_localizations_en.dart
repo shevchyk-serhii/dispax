@@ -1010,6 +1010,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotFound => 'We couldn\'t find what you were looking for.';
 
   @override
+  String get errorLoadingData => 'Couldn\'t load the data';
+
+  @override
   String get errorGeneric => 'Something went wrong. Please try again.';
 
   @override

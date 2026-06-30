@@ -453,6 +453,7 @@
   "errorTimeout": "The server took too long to respond. Please try again.",
   "errorServer": "Something went wrong on our side. Please try again in a moment.",
   "errorNotFound": "We couldn't find what you were looking for.",
+  "errorLoadingData": "Couldn't load the data",
   "errorGeneric": "Something went wrong. Please try again.",
   "errorSessionExpired": "Your session has expired. Please sign in again.",
   "unbilledRidesTitle": "Unbilled Rides",

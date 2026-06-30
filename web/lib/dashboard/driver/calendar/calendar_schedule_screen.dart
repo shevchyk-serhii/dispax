@@ -13,6 +13,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/ride_details_screen.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 export '../../../modules/core/widgets/calendar_controls.dart'
     show CalendarViewType;
 import 'month_view_widget.dart';
@@ -272,7 +273,10 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           if (state.hasError) {
             NavigationHelper.showSnackBar(
               context,
-              state.errorMessage ?? '',
+              friendlyError(
+                state.error ?? state.errorMessage,
+                AppLocalizations.of(context)!,
+              ),
               isError: true,
             );
           }

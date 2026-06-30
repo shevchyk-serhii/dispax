@@ -84,7 +84,13 @@ void main() {
         ),
         isA<EarningsState>()
             .having((s) => s.status, 'status', EarningsStatus.error)
-            .having((s) => s.error, 'error', contains('Failed to load')),
+            .having(
+              (s) => s.errorMessage,
+              'errorMessage',
+              contains('Failed to load'),
+            )
+            // The typed cause is carried so the UI can map it via friendlyError.
+            .having((s) => s.error, 'error', isA<ApiException>()),
       ],
     );
 

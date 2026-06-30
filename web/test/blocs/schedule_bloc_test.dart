@@ -60,7 +60,10 @@ void main() {
           bloc.add(const ScheduleLoadDriverSchedule(driverId: 'driver-1')),
       expect: () => [
         ScheduleState.loading(),
-        isA<ScheduleState>().having((s) => s.hasError, 'hasError', true),
+        isA<ScheduleState>()
+            .having((s) => s.hasError, 'hasError', true)
+            // Phase 3: the typed cause is carried so the UI can localize it.
+            .having((s) => s.error, 'error', isA<ApiException>()),
       ],
     );
 

@@ -4,6 +4,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../core/services/error_messages.dart';
 import 'login_form.dart';
 import 'error_message_card.dart';
 
@@ -86,11 +87,18 @@ class LoginCard extends StatelessWidget {
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, authState) {
                     if (authState.hasError) {
+                      // Network-class failures carry a typed cause → map to a
+                      // localized message; intentional domain messages (invalid
+                      // credentials, etc.) have no cause and are shown verbatim.
+                      final l10n = AppLocalizations.of(context)!;
+                      final message = authState.error != null
+                          ? friendlyError(authState.error, l10n)
+                          : (authState.errorMessage ?? '');
                       return Column(
                         children: [
                           const SizedBox(height: AppDimensions.paddingMedium),
                           ErrorMessageCard(
-                            message: authState.errorMessage ?? '',
+                            message: message,
                             onDismiss: onErrorDismiss,
                           ),
                         ],

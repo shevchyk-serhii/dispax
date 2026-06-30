@@ -27,7 +27,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
       final days = await _scheduleService.getDriverSchedule(event.driverId);
       emit(ScheduleState.loaded(days, driverId: event.driverId));
     } catch (e) {
-      emit(ScheduleState.error('Failed to load driver schedule: $e'));
+      emit(ScheduleState.error('Failed to load driver schedule: $e', cause: e));
     }
   }
 
@@ -41,7 +41,9 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
       final days = await _scheduleService.getScheduleForDate(dateStr);
       emit(ScheduleState.loaded(days));
     } catch (e) {
-      emit(ScheduleState.error('Failed to load schedule for date: $e'));
+      emit(
+        ScheduleState.error('Failed to load schedule for date: $e', cause: e),
+      );
     }
   }
 
@@ -59,7 +61,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
       );
       emit(ScheduleState.loaded(days));
     } catch (e) {
-      emit(ScheduleState.error('Failed to load schedule: $e'));
+      emit(ScheduleState.error('Failed to load schedule: $e', cause: e));
     }
   }
 
@@ -84,6 +86,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
         state.copyWith(
           status: ScheduleStateStatus.error,
           errorMessage: 'Failed to create schedule day: $e',
+          error: e,
         ),
       );
     }
@@ -107,6 +110,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
         state.copyWith(
           status: ScheduleStateStatus.error,
           errorMessage: 'Failed to cancel schedule day: $e',
+          error: e,
         ),
       );
     }

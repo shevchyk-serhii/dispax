@@ -26,7 +26,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
       final clients = await privateUserService.getClients();
       emit(ClientState.loaded(clients));
     } catch (e) {
-      emit(ClientState.error('Failed to load clients: $e'));
+      emit(ClientState.error('Failed to load clients: $e', cause: e));
     }
   }
 
@@ -45,6 +45,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         state.copyWith(
           status: ClientStateStatus.error,
           errorMessage: 'Failed to create client: $e',
+          error: e,
         ),
       );
     }
@@ -70,6 +71,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         state.copyWith(
           status: ClientStateStatus.error,
           errorMessage: 'Failed to update client: $e',
+          error: e,
         ),
       );
     }
@@ -92,6 +94,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         state.copyWith(
           status: ClientStateStatus.error,
           errorMessage: 'Failed to deactivate client: $e',
+          error: e,
         ),
       );
     }
