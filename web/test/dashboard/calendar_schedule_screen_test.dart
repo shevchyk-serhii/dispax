@@ -288,6 +288,55 @@ void main() {
     },
   );
 
+  // Regression: the calendar shares the global ScheduleBloc with the dispatcher's
+  // DriverSchedulePanel. It used to dispatch ScheduleLoadDriverSchedule for the
+  // logged-in driver on init — a driver with no own schedule_days emits
+  // loaded([]), which clobbered the 3 drivers the panel had loaded for the date
+  // (the "No drivers scheduled" bug). The calendar never reads scheduleDays, so
+  // that dispatch is dead code; it must not fire.
+  testWidgets('calendar never dispatches ScheduleLoadDriverSchedule on init '
+      '(would clobber the shared ScheduleBloc)', (tester) async {
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(buildApp(_selfDriver()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    verifyNever(
+      () => scheduleBloc.add(any(that: isA<ScheduleLoadDriverSchedule>())),
+    );
+  });
+
+  testWidgets(
+    'selecting a colleague does not dispatch ScheduleLoadDriverSchedule',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildApp(_selfDriver()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      CalendarScheduleScreen.viewTypeNotifierForTest.value =
+          CalendarViewType.day;
+      await tester.pump();
+
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hans Weber').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => scheduleBloc.add(any(that: isA<ScheduleLoadDriverSchedule>())),
+      );
+    },
+  );
+
   // Reference the unused fixture so analysis stays clean if it is later needed.
   test('colleague fixture is well-formed', () {
     expect(_colleague().name, 'Hans Weber');

@@ -118,15 +118,6 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       // If the visibility check fails, gracefully fall back to own schedule only.
       if (mounted) setState(() => _canViewOtherSchedules = false);
     }
-
-    // Load own schedule initially.
-    _loadScheduleFor(myId);
-  }
-
-  void _loadScheduleFor(String driverId) {
-    context.read<ScheduleBloc>().add(
-      ScheduleLoadDriverSchedule(driverId: driverId),
-    );
   }
 
   void _onDriverSelected(String? driverId) {
@@ -143,7 +134,6 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _loadingDriverRides = false;
         _driverRidesError = null;
       });
-      if (myId != null) _loadScheduleFor(myId);
     } else {
       final driver = _colleagues.firstWhere(
         (p) => p.id == driverId,
@@ -158,7 +148,6 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _selectedDriverId = driverId;
         _selectedDriverName = driver.name;
       });
-      _loadScheduleFor(driverId);
       _loadDriverRides(driverId);
     }
   }
