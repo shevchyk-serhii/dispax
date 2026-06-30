@@ -659,6 +659,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Automatisch basierend auf dem Abflugzeitpunkt berechnet';
 
   @override
+  String get addressNotFound =>
+      'Adresse konnte nicht gefunden werden — bitte Schreibweise prüfen.';
+
+  @override
+  String addressOutOfServiceArea(int distanceKm, int radiusKm) {
+    return 'Adresse liegt außerhalb des Liefergebiets (etwa $distanceKm km von München, max. $radiusKm km).';
+  }
+
+  @override
+  String addressOutOfServiceAreaShort(int radiusKm) {
+    return 'Adresse liegt außerhalb des Liefergebiets (max. $radiusKm km von München).';
+  }
+
+  @override
   String get markUnavailable => 'Als nicht verfügbar markieren';
 
   @override

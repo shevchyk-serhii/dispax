@@ -656,6 +656,20 @@ class AppLocalizationsUk extends AppLocalizations {
       'Розраховано автоматично на основі часу відправлення рейсу';
 
   @override
+  String get addressNotFound =>
+      'Не вдалося знайти адресу — перевірте правильність написання.';
+
+  @override
+  String addressOutOfServiceArea(int distanceKm, int radiusKm) {
+    return 'Адреса поза зоною обслуговування (близько $distanceKm км від Мюнхена, макс. $radiusKm км).';
+  }
+
+  @override
+  String addressOutOfServiceAreaShort(int radiusKm) {
+    return 'Адреса поза зоною обслуговування (макс. $radiusKm км від Мюнхена).';
+  }
+
+  @override
   String get markUnavailable => 'Позначити як недоступний';
 
   @override

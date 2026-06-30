@@ -656,6 +656,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Computed automatically based on flight departure';
 
   @override
+  String get addressNotFound =>
+      'Address could not be located — double-check the spelling.';
+
+  @override
+  String addressOutOfServiceArea(int distanceKm, int radiusKm) {
+    return 'Address is outside the service area (about $distanceKm km from Munich, max $radiusKm km).';
+  }
+
+  @override
+  String addressOutOfServiceAreaShort(int radiusKm) {
+    return 'Address is outside the service area (max $radiusKm km from Munich).';
+  }
+
+  @override
   String get markUnavailable => 'Mark Unavailable';
 
   @override
