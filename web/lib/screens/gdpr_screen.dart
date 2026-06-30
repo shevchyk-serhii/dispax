@@ -6,6 +6,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/services/error_messages.dart';
+import '../modules/core/services/api_client.dart';
 
 class GdprScreen extends StatefulWidget {
   const GdprScreen({super.key});
@@ -63,12 +64,11 @@ class _GdprScreenState extends State<GdprScreen> {
           _isLoading = false;
         });
       } else {
-        final requestsStatus = requestsResp?.statusCode ?? '-';
         setState(() {
           _isLoading = false;
-          _error = AppLocalizations.of(context)!.failedToLoadGdprData(
-            consentsResp.statusCode.toString(),
-            requestsStatus.toString(),
+          _error = ApiException(
+            'Failed to load GDPR data',
+            statusCode: consentsResp.statusCode,
           );
         });
       }

@@ -5,31 +5,23 @@
 // mapper. This static test scans lib/ and fails if those anti-patterns reappear,
 // so the cleanup can't silently regress.
 //
-// KNOWN_REMAINING lists the few files not yet migrated (tracked as the tail of
-// Phase 4). They are allow-listed so this test is green today and turns red on
-// any NEW violation. Shrink this list as the tail is finished — never grow it.
+// The whole user-facing tree is migrated: every raw-exception / status-code leak
+// now goes through friendlyError. This test fails if any of those anti-patterns
+// reappears, so the cleanup can't silently regress.
 
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  // Files with a still-pending raw-leak site (Phase 4 tail). Do not add to this.
-  const knownRemaining = <String>{
-    'lib/screens/geofence_screen.dart',
-    'lib/screens/gdpr_screen.dart',
-    'lib/screens/settings_screen.dart',
-  };
-
   // The l10n generated file legitimately defines the `genericError` key.
   bool isExempt(String path) =>
       path.endsWith('app_localizations.dart') ||
       path.contains('/l10n/') ||
       // The mapper itself is allowed to reference the raw exception.
-      path.endsWith('modules/core/services/error_messages.dart') ||
-      knownRemaining.any(path.endsWith);
+      path.endsWith('modules/core/services/error_messages.dart');
 
-  test('no genericError(e.toString()) / raw e.toString() in user-facing UI', () {
+  test('no raw exception / status code leaks in user-facing UI', () {
     final libDir = Directory('lib');
     final offenders = <String>[];
 
@@ -38,14 +30,35 @@ void main() {
     final rawInText = RegExp(
       r"(Text\(|content:\s*Text\(|_error\s*=\s*)[^\n;]*\be\.toString\(\)",
     );
+    // A raw exception interpolated into a string SHOWN to the user, i.e. on a
+    // line that also builds a Text(...) / SnackBar content. A bare `'…: $e'` in
+    // a bloc's internal errorMessage fallback or a debugPrint is fine (the UI
+    // renders the typed cause via friendlyError, never errorMessage), so it is
+    // deliberately NOT flagged.
+    final rawDollarEInText = RegExp(r"(Text\(|content:)[^\n]*'[^'\n]*:\s*\$e'");
+    // An HTTP status code shown to the user (response.statusCode in a string),
+    // except inside an ApiException(...) constructor — that's the sanctioned
+    // path (friendlyError turns the code into a neutral message).
+    final statusInText = RegExp(r'\$\{?(?:response|resp)\.statusCode\}?');
 
     for (final entity in libDir.listSync(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       if (isExempt(entity.path)) continue;
       final src = entity.readAsStringSync();
       for (final (i, line) in src.split('\n').indexed) {
-        if (genericError.hasMatch(line) || rawInText.hasMatch(line)) {
-          offenders.add('${entity.path}:${i + 1}: ${line.trim()}');
+        final trimmed = line.trim();
+        if (genericError.hasMatch(line) ||
+            rawInText.hasMatch(line) ||
+            rawDollarEInText.hasMatch(line)) {
+          offenders.add('${entity.path}:${i + 1}: $trimmed');
+        }
+        // A status code interpolated into a string the USER sees — a Text(...),
+        // a SnackBar content, or an `_error =` assignment. Services that bake
+        // the code into an ApiException.message / a throw / a debugPrint are
+        // fine: friendlyError sanitizes the message and logs aren't UI.
+        final isUiLine = RegExp(r'Text\(|content:|_error\s*=').hasMatch(line);
+        if (isUiLine && statusInText.hasMatch(line)) {
+          offenders.add('${entity.path}:${i + 1}: $trimmed');
         }
       }
     }
@@ -54,7 +67,9 @@ void main() {
       offenders,
       isEmpty,
       reason:
-          'Raw exception leaked to UI. Use friendlyError(e, l10n) instead:\n'
+          'Raw exception / HTTP status leaked to UI. Wrap it: '
+          'friendlyError(e, l10n) or '
+          'friendlyError(ApiException(msg, statusCode: ...), l10n):\n'
           '${offenders.join('\n')}',
     );
   });

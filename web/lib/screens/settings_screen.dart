@@ -19,6 +19,8 @@ import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 import '../dashboard/driver/earnings_screen.dart';
 import '../dashboard/client/client_addresses_screen.dart';
+import '../modules/core/services/error_messages.dart';
+import '../modules/core/services/api_client.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -881,10 +883,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       } else {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${AppLocalizations.of(context)!.failedToUploadPhoto} (${response.statusCode})',
+                '${l10n.failedToUploadPhoto}: '
+                '${friendlyError(ApiException('upload photo', statusCode: response.statusCode), l10n)}',
               ),
             ),
           );
@@ -892,10 +896,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${AppLocalizations.of(context)!.failedToUploadPhoto}: $e',
+              '${l10n.failedToUploadPhoto}: ${friendlyError(e, l10n)}',
             ),
           ),
         );
@@ -1009,7 +1014,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${l10n.failedToChangePassword}: $e'),
+                          content: Text(
+                            '${l10n.failedToChangePassword}: '
+                            '${friendlyError(e, l10n)}',
+                          ),
                         ),
                       );
                     }
@@ -1085,7 +1093,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 } catch (e) {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to update profile: $e')),
+                      SnackBar(content: Text(friendlyError(e, l10n))),
                     );
                   }
                 }
