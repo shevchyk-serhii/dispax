@@ -9,6 +9,7 @@ import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
 import '../../../modules/core/widgets/avatar_circle.dart';
+import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/ride_management/helpers/airport_detection.dart';
 import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
 import '../../../modules/ride_management/helpers/tag_helpers.dart';
@@ -445,6 +446,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                               ),
                         isReassign: !isHandedOff,
                         onViewDetails: () => _openRideDetails(context, ride),
+                        onDuplicate: () =>
+                            NavigationUtils.duplicateRide(context, ride),
                         onRefreshFlight: () =>
                             _refreshFlightStatus(context, ride),
                         isRefreshingFlight: _refreshingFlightIds.contains(
@@ -489,6 +492,8 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                           onClose: () => _showCloseRideDialog(context, ride),
                           onHandOff: () => _showHandOffDialog(context, ride),
                           onViewDetails: () => _openRideDetails(context, ride),
+                          onDuplicate: () =>
+                              NavigationUtils.duplicateRide(context, ride),
                           onRefreshFlight: () =>
                               _refreshFlightStatus(context, ride),
                           isRefreshingFlight: _refreshingFlightIds.contains(
@@ -1078,6 +1083,10 @@ class _RideRow extends StatelessWidget {
   /// ride details screen, from which the ride can be edited.
   final VoidCallback? onViewDetails;
 
+  /// Called when the dispatcher taps "Duplicate" — opens the create-ride form
+  /// pre-filled from this ride. Available for any status.
+  final VoidCallback? onDuplicate;
+
   /// Manual "refresh flight status now" action on the flight line. Null hides the
   /// button; the parent panel holds the loading state and passes [isRefreshingFlight].
   final VoidCallback? onRefreshFlight;
@@ -1093,6 +1102,7 @@ class _RideRow extends StatelessWidget {
     this.onClose,
     this.onHandOff,
     this.onViewDetails,
+    this.onDuplicate,
     this.onRefreshFlight,
     this.isRefreshingFlight = false,
   });
@@ -1440,39 +1450,71 @@ class _RideRow extends StatelessWidget {
     );
   }
 
+  /// Compact icon button that opens the create-ride form pre-filled from this
+  /// ride. Kept to a 32×32 square so it does not crowd the action row.
+  Widget _buildDuplicateButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SizedBox(
+      height: 32,
+      width: 32,
+      child: IconButton(
+        onPressed: onDuplicate,
+        padding: EdgeInsets.zero,
+        iconSize: 18,
+        tooltip: l10n.duplicateRideAction,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        icon: const Icon(Icons.copy_outlined),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (isReassign) {
-      // Soft-red "Reassign" button — full width
-      return SizedBox(
-        width: double.infinity,
-        height: 32,
-        child: OutlinedButton(
-          onPressed: onAction,
-          style: OutlinedButton.styleFrom(
-            // errorStrong (#991B1B) is invisible on the dark surface; use the
-            // light cancelled-text variant in dark per HANDOFF (wire *Dark).
-            foregroundColor: Theme.of(context).brightness == Brightness.dark
-                ? AppColors.rideCancelledTextDark
-                : AppColors.errorStrong,
-            side: const BorderSide(color: AppColors.errorBorder),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      // Soft-red "Reassign" button — full width (with a compact Duplicate icon).
+      return Row(
+        children: [
+          if (onDuplicate != null) ...[
+            _buildDuplicateButton(context),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: SizedBox(
+              height: 32,
+              child: OutlinedButton(
+                onPressed: onAction,
+                style: OutlinedButton.styleFrom(
+                  // errorStrong (#991B1B) is invisible on the dark surface; use
+                  // the light cancelled-text variant in dark per HANDOFF.
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.rideCancelledTextDark
+                      : AppColors.errorStrong,
+                  side: const BorderSide(color: AppColors.errorBorder),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(l10n.reassign),
+              ),
             ),
           ),
-          child: Text(l10n.reassign),
-        ),
+        ],
       );
     } else {
-      // Pending row: [Close] [Hand off] [Assign →]
+      // Pending row: [Duplicate] [Close] [Hand off] [Assign →]
       final colorScheme = Theme.of(context).colorScheme;
       return Row(
         children: [
+          if (onDuplicate != null) ...[
+            _buildDuplicateButton(context),
+            const SizedBox(width: 6),
+          ],
           if (onClose != null)
             SizedBox(
               height: 32,

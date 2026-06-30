@@ -88,4 +88,18 @@ void main() {
       expect(find.byIcon(Icons.play_circle_rounded), findsNothing);
     });
   });
+
+  group('RideQuickActions — Duplicate', () {
+    testWidgets('exposes a Duplicate action for any status', (tester) async {
+      await _pump(tester, _ride(RideStatus.completed));
+
+      final dup = find.byIcon(Icons.copy_outlined);
+      expect(dup, findsOneWidget);
+
+      // Icon-only action carries a tooltip so its purpose is discoverable.
+      final tooltip = find.ancestor(of: dup, matching: find.byType(Tooltip));
+      expect(tooltip, findsOneWidget);
+      expect(tester.widget<Tooltip>(tooltip).message, isNotEmpty);
+    });
+  });
 }

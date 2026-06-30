@@ -15,6 +15,7 @@ Future<void> pumpActionsRow(
   required RideStatus status,
   double width = 360,
   VoidCallback? onShareRide,
+  VoidCallback? onDuplicate,
   Locale? locale,
 }) async {
   final ride = TestFixtures.ride(driverId: 'driver-1', status: status);
@@ -34,6 +35,7 @@ Future<void> pumpActionsRow(
               isDark: false,
               onNavigate: () {},
               onShareRide: onShareRide,
+              onDuplicate: onDuplicate,
               onCallClient: () {},
               onConfirmRide: () {},
               onRejectRide: () {},
@@ -178,6 +180,31 @@ void main() {
     ) async {
       await pumpActionsRow(tester, status: RideStatus.confirmed);
       expect(find.byIcon(Icons.ios_share_rounded), findsNothing);
+    });
+
+    testWidgets('shows a Duplicate button that invokes onDuplicate', (
+      tester,
+    ) async {
+      var duplicated = false;
+      await pumpActionsRow(
+        tester,
+        status: RideStatus.confirmed,
+        onDuplicate: () => duplicated = true,
+      );
+
+      final dupButton = find.byIcon(Icons.copy_outlined);
+      expect(dupButton, findsOneWidget);
+
+      await tester.tap(dupButton);
+      await tester.pump();
+      expect(duplicated, isTrue);
+    });
+
+    testWidgets('hides the Duplicate button when onDuplicate is null', (
+      tester,
+    ) async {
+      await pumpActionsRow(tester, status: RideStatus.confirmed);
+      expect(find.byIcon(Icons.copy_outlined), findsNothing);
     });
 
     testWidgets(

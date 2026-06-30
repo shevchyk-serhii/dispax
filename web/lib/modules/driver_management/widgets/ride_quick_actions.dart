@@ -48,6 +48,14 @@ class RideQuickActions extends StatelessWidget {
           onPressed: () => NavigationUtils.showNavigateToDialog(context, ride),
         ),
         const SizedBox(width: 8),
+        // Duplicate this ride into a new, pre-filled create-ride form.
+        _buildIconAction(
+          icon: Icons.copy_outlined,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          tooltip: l10n.duplicateRideAction,
+          onPressed: () => NavigationUtils.duplicateRide(context, ride),
+        ),
+        const SizedBox(width: 8),
         // Details ghost button
         _buildGhostButton(
           context,

@@ -1150,6 +1150,7 @@ class DriverRideCard extends StatelessWidget {
                 onNavigate: () =>
                     NavigationUtils.showNavigateToDialog(context, ride),
                 onShareRide: () => NavigationUtils.shareRide(context, ride),
+                onDuplicate: () => NavigationUtils.duplicateRide(context, ride),
                 onCallClient: onCallClient,
                 onConfirmRide: onConfirmRide,
                 onRejectRide: onRejectRide,
@@ -2063,6 +2064,7 @@ class DriverRideActionsRow extends StatelessWidget {
   final bool isDark;
   final VoidCallback onNavigate;
   final VoidCallback? onShareRide;
+  final VoidCallback? onDuplicate;
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
@@ -2075,6 +2077,7 @@ class DriverRideActionsRow extends StatelessWidget {
     required this.isDark,
     required this.onNavigate,
     this.onShareRide,
+    this.onDuplicate,
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
@@ -2177,6 +2180,32 @@ class DriverRideActionsRow extends StatelessWidget {
                   size: 18,
                   color: iconColor,
                 ),
+              ),
+            ),
+          ),
+        ],
+        if (onDuplicate != null) ...[
+          const SizedBox(width: 8),
+          Tooltip(
+            message: l10n.duplicateRideAction,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: OutlinedButton(
+                onPressed: onDuplicate,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(
+                    color: AppColors.borderSecondary,
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+                child: Icon(Icons.copy_outlined, size: 18, color: iconColor),
               ),
             ),
           ),

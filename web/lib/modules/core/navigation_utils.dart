@@ -16,6 +16,7 @@ import '../ride_management/widgets/tag_input_field.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../screens/ride_details_screen.dart';
+import '../../screens/create_ride_screen.dart';
 
 class NavigationUtils {
   /// Shows the "Navigate to" picker (pickup / drop-off) and opens Google Maps
@@ -234,6 +235,24 @@ class NavigationUtils {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => RideDetailsScreen(ride: ride)),
     );
+  }
+
+  /// Opens the create-ride form pre-filled from [ride] (the "duplicate" flow).
+  /// The new ride is a fresh request: status defaults to Requested, no driver,
+  /// and a fresh pickup time — only the reusable details (client, route, flight,
+  /// notes, tags, price, payment) are copied via [FormPrefilledFromRide]. The
+  /// original ride is left untouched. Shared by the ride details screen and the
+  /// per-card "Duplicate" actions so the behaviour stays identical everywhere.
+  static Future<void> duplicateRide(BuildContext context, Ride ride) async {
+    final rideBloc = context.read<RideBloc>();
+    final formBloc = CreateRideFormBloc()..add(FormPrefilledFromRide(ride));
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            CreateRideScreen(rideBloc: rideBloc, formBloc: formBloc),
+      ),
+    );
+    await formBloc.close();
   }
 
   /// Creates (or reuses) a public guest tracking link for [ride] and copies it
