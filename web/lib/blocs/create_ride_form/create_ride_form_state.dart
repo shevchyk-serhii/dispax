@@ -143,6 +143,13 @@ class CreateRideFormState extends Equatable {
   /// tracking state. The pickup time falls back to the [initial] default
   /// (now + 1h) so the operator picks a fresh time; the status defaults to
   /// Requested at submission time.
+  ///
+  /// Gate/terminal are deliberately NOT copied: they are flight-tracking values
+  /// populated automatically by the flight monitor (real airport gates like
+  /// "K14" / terminal "T2"), and they are not part of the gate/terminal pickers'
+  /// fixed option lists. Seeding the form dropdowns with an off-list value would
+  /// crash DropdownButtonFormField (no matching item). They are also unused by
+  /// the create request, so dropping them here is loss-free.
   factory CreateRideFormState.fromRide(Ride ride) {
     final base = CreateRideFormState.initial();
     final notes = ride.notes ?? '';
@@ -165,8 +172,6 @@ class CreateRideFormState extends Equatable {
       isAirportTransfer: ride.isAirportTransfer,
       isArrival: ride.isArrival,
       flightNumber: ride.flightNumber ?? '',
-      selectedGate: ride.gate,
-      selectedTerminal: ride.terminal,
       notes: notes,
       showNotes: notes.isNotEmpty,
       specialRequirements: requirements,

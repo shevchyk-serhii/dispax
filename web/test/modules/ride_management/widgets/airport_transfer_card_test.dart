@@ -11,6 +11,10 @@ Future<void> _pump(
   WidgetTester tester, {
   required GlobalKey<FormState> formKey,
   required ValueChanged<String> onChanged,
+  List<String> gates = const [],
+  List<String> terminals = const [],
+  String? selectedGate,
+  String? selectedTerminal,
 }) {
   return tester.pumpWidget(
     MaterialApp(
@@ -26,10 +30,10 @@ Future<void> _pump(
               isArrival: false,
               flightNumber: '',
               onFlightNumberChanged: onChanged,
-              selectedGate: null,
-              selectedTerminal: null,
-              gates: const [],
-              terminals: const [],
+              selectedGate: selectedGate,
+              selectedTerminal: selectedTerminal,
+              gates: gates,
+              terminals: terminals,
               onAirportTransferChanged: (_) {},
               onArrivalChanged: (_) {},
               onGateChanged: (_) {},
@@ -72,6 +76,28 @@ void main() {
       find.text('Gültige Flugnummer eingeben, z.B. LH429'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('an off-list selectedGate/terminal does not crash the dropdowns', (
+    tester,
+  ) async {
+    // Regression: duplicating a tracked ride seeded the gate dropdown with a
+    // real airport gate ("K14") that is not in the fixed option list, tripping
+    // DropdownButtonFormField's "exactly one item" assertion. The card must
+    // render (value falls back to null) instead of throwing.
+    final formKey = GlobalKey<FormState>();
+    await _pump(
+      tester,
+      formKey: formKey,
+      onChanged: (_) {},
+      gates: const ['A1', 'A2', 'A3'],
+      terminals: const ['1', '2', '3'],
+      selectedGate: 'K14',
+      selectedTerminal: 'T2',
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AirportTransferCard), findsOneWidget);
   });
 
   testWidgets('accepts a valid number and an empty field', (tester) async {
