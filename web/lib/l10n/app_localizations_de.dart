@@ -2069,8 +2069,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get flightNumberHint => 'z.B. LH123, BA456';
 
   @override
-  String get flightNumberRequired =>
-      'Flugnummer ist für Flughafentransfers erforderlich';
+  String get flightNumberInvalidFormat =>
+      'Gültige Flugnummer eingeben, z.B. LH429';
 
   @override
   String get gateLabel => 'Gate';

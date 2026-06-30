@@ -911,7 +911,7 @@
   "airportArrivalHint": "З аеропорту",
   "flightNumberLabel": "Номер рейсу",
   "flightNumberHint": "напр. LH123, BA456",
-  "flightNumberRequired": "Номер рейсу обов'язковий для трансферів до аеропорту",
+  "flightNumberInvalidFormat": "Введіть дійсний номер рейсу, напр. LH429",
   "gateLabel": "Гейт",
   "terminalLabel": "Термінал",
   "gateRemote": "Автобусний гейт (віддалена стоянка)",

@@ -993,7 +993,10 @@
   "airportArrivalHint": "From airport",
   "flightNumberLabel": "Flight Number",
   "flightNumberHint": "e.g. LH123, BA456",
-  "flightNumberRequired": "Flight number is required for airport transfers",
+  "flightNumberInvalidFormat": "Enter a valid flight number, e.g. LH429",
+  "@flightNumberInvalidFormat": {
+    "description": "Validation error when the entered flight number is not a plausible IATA/ICAO code+number"
+  },
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
   "gateRemote": "Bus gate (remote stand)",

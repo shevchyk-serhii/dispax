@@ -10,6 +10,7 @@ import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
 import '../ride_management/services/ride_service.dart';
+import '../ride_management/helpers/flight_number_input.dart';
 import '../ride_management/helpers/tag_helpers.dart';
 import '../ride_management/widgets/tag_input_field.dart';
 import '../../blocs/blocs.dart';
@@ -350,12 +351,18 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
+    // Block saving a malformed flight number (empty stays allowed — it clears the field).
+    if (_isAirportTransfer && !FlightNumber.isValid(_flightCtrl.text)) {
+      setState(() => _error = l10n.flightNumberInvalidFormat);
+      return;
+    }
+
     setState(() {
       _saving = true;
       _error = null;
     });
 
-    final l10n = AppLocalizations.of(context)!;
     final apiClient = context.read<AuthBloc>().apiClient;
     // Convert the picked local time to UTC ISO-8601 for the backend.
     final utcIso = _pickupDateTime.toUtc().toIso8601String();
@@ -450,9 +457,17 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _flightCtrl,
+                  // Always upper-case as the user types (LH429, not lh429).
+                  inputFormatters: const [UpperCaseTextFormatter()],
+                  // Repaint so the format error below clears/appears live.
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     labelText: l10n.flightNumberOptionalLabel,
                     border: const OutlineInputBorder(),
+                    // Empty is fine (optional); a non-empty value must be plausible.
+                    errorText: FlightNumber.isValid(_flightCtrl.text)
+                        ? null
+                        : l10n.flightNumberInvalidFormat,
                   ),
                 ),
               ],

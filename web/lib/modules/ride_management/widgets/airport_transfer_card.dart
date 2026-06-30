@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../helpers/flight_number_input.dart';
 import 'clearable_text_field.dart';
 
 class AirportTransferCard extends StatelessWidget {
@@ -143,17 +144,12 @@ class AirportTransferCard extends StatelessWidget {
                     ? Icons.flight_land
                     : Icons.flight_takeoff,
                 prefixIconColor: AppColors.secretaryColor,
+                // Always upper-case as the user types (LH429, not lh429).
+                inputFormatters: const [UpperCaseTextFormatter()],
                 onChanged: onFlightNumberChanged ?? (_) {},
                 validator:
                     flightNumberValidator ??
-                    (isAirportTransfer
-                        ? (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return l10n.flightNumberRequired;
-                            }
-                            return null;
-                          }
-                        : null),
+                    _defaultFlightNumberValidator(l10n),
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
               Row(
@@ -220,5 +216,18 @@ class AirportTransferCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Default validator when no [flightNumberValidator] is supplied: the number is
+  /// optional (empty passes — an airport transfer can be booked before the flight
+  /// is known), but a non-empty value must look like a real flight number.
+  String? Function(String?) _defaultFlightNumberValidator(
+    AppLocalizations l10n,
+  ) {
+    return (value) {
+      final raw = value?.trim() ?? '';
+      if (raw.isEmpty) return null;
+      return FlightNumber.isValid(raw) ? null : l10n.flightNumberInvalidFormat;
+    };
   }
 }

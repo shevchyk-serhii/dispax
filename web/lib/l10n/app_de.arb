@@ -911,7 +911,7 @@
   "airportArrivalHint": "Vom Flughafen",
   "flightNumberLabel": "Flugnummer",
   "flightNumberHint": "z.B. LH123, BA456",
-  "flightNumberRequired": "Flugnummer ist für Flughafentransfers erforderlich",
+  "flightNumberInvalidFormat": "Gültige Flugnummer eingeben, z.B. LH429",
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
   "gateRemote": "Bus-Gate (Außenposition)",

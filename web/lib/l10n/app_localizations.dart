@@ -3934,11 +3934,11 @@ abstract class AppLocalizations {
   /// **'e.g. LH123, BA456'**
   String get flightNumberHint;
 
-  /// No description provided for @flightNumberRequired.
+  /// Validation error when the entered flight number is not a plausible IATA/ICAO code+number
   ///
   /// In en, this message translates to:
-  /// **'Flight number is required for airport transfers'**
-  String get flightNumberRequired;
+  /// **'Enter a valid flight number, e.g. LH429'**
+  String get flightNumberInvalidFormat;
 
   /// No description provided for @gateLabel.
   ///
