@@ -31,7 +31,15 @@ class RideQuickActions extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final statusButton = _buildStatusButton(context, l10n);
 
-    return Row(
+    // Wrap (not Row) so the action group flows onto a second line instead of
+    // overflowing on a narrow screen — overflow-proof by construction, for any
+    // locale/label length (German labels like "Fahrt abschließen" are longer
+    // than English and overflowed a fixed Row). Trade-off: the status button is
+    // no longer right-pinned via a Spacer; it sits inline and wraps when cramped.
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // Icon-only utility actions
         _buildIconAction(
@@ -40,14 +48,12 @@ class RideQuickActions extends StatelessWidget {
           tooltip: l10n.callClientTooltip,
           onPressed: onCallClient ?? () {},
         ),
-        const SizedBox(width: 8),
         _buildIconAction(
           icon: Icons.navigation_rounded,
           color: AppColors.accent,
           tooltip: l10n.navigateTooltip,
           onPressed: () => NavigationUtils.showNavigateToDialog(context, ride),
         ),
-        const SizedBox(width: 8),
         // Duplicate this ride into a new, pre-filled create-ride form.
         _buildIconAction(
           icon: Icons.copy_outlined,
@@ -55,7 +61,6 @@ class RideQuickActions extends StatelessWidget {
           tooltip: l10n.duplicateRideAction,
           onPressed: () => NavigationUtils.duplicateRide(context, ride),
         ),
-        const SizedBox(width: 8),
         // Details ghost button
         _buildGhostButton(
           context,
@@ -63,7 +68,6 @@ class RideQuickActions extends StatelessWidget {
           label: l10n.viewDetailsMenu,
           onPressed: onViewDetails ?? () {},
         ),
-        const Spacer(),
         // Primary status action
         if (statusButton != null) statusButton,
       ],
@@ -170,7 +174,12 @@ class RideQuickActions extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 16),
-      label: Text(label, style: AppStyles.labelMedium),
+      label: Text(
+        label,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+        style: AppStyles.labelMedium,
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,

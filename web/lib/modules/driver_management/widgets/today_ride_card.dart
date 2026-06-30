@@ -256,21 +256,28 @@ class TodayRideCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              RideStatusStyles.getStatusLabel(
-                ride.status,
-                AppLocalizations.of(context)!,
+          // Flexible + ellipsis so a long localized status label (e.g. German
+          // "In Bearbeitung") shrinks instead of stealing width from the chip
+          // group and squeezing the chips into an overflow on a narrow screen.
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(20),
               ),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+              child: Text(
+                RideStatusStyles.getStatusLabel(
+                  ride.status,
+                  AppLocalizations.of(context)!,
+                ),
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
