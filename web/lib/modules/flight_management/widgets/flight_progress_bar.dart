@@ -100,12 +100,18 @@ class FlightProgressBar extends StatelessWidget {
     final ordinal =
         FlightPhases.phaseOrdinalFor(status, isArrival: isArrival) ?? 0;
 
+    // Every cell flexes so the row can never overflow on a narrow card: the step
+    // columns shrink their (bounded, wrapping) labels and the connectors take the
+    // slack. Steps get the larger flex so the dots/labels stay legible.
     final steps = Row(
       children: [
         for (int i = 0; i < chain.length; i++) ...[
-          _buildStep(context, l10n, chain[i], i, ordinal),
+          Expanded(
+            flex: 3,
+            child: _buildStep(context, l10n, chain[i], i, ordinal),
+          ),
           if (i < chain.length - 1)
-            Expanded(child: _connector(context, chain, i, ordinal)),
+            Expanded(flex: 2, child: _connector(context, chain, i, ordinal)),
         ],
       ],
     );
@@ -248,6 +254,9 @@ class FlightProgressBar extends StatelessWidget {
             context,
           ).textTheme.labelSmall?.copyWith(color: color, fontSize: 9),
           textAlign: TextAlign.center,
+          maxLines: 2,
+          softWrap: true,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

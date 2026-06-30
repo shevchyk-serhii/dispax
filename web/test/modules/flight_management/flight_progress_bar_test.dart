@@ -246,4 +246,34 @@ void main() {
       expect(find.textContaining('20'), findsOneWidget);
     });
   });
+
+  group('FlightProgressBar layout', () {
+    // Regression: the steps Row used to size each step to its natural label
+    // width, so the 4-step German departure chain overflowed a ~300px ride card
+    // by 14px (caught only by driver_ride_card_test at width 360). The all-flex
+    // row + wrapping labels must fit any narrow card.
+    testWidgets('departure chain does not overflow a 300px-wide card', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de'),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 300,
+                child: FlightProgressBar.forRide(
+                  _airportRide(isArrival: false, flightStatus: 'departed'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      // A RenderFlex overflow surfaces as an exception during layout.
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
