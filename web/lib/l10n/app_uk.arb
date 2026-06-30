@@ -179,6 +179,7 @@
   "checkpointLanded": "Приземлився",
   "checkpointArrivalsHall": "Зал прильотів",
   "checkpointTerminalExit": "Вихід з терміналу",
+  "passengerCheckpointStatus": "Пасажир: {checkpoint}",
   "markCheckpointButton": "Я тут",
   "airportCheckpointPanelTitle": "Моє місце в терміналі",
   "airportEntryTitle": "Час в'їзду в термінал",

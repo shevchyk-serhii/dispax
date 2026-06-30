@@ -678,5 +678,14 @@ void main() {
       final b = TestFixtures.ride();
       expect(a.hashCode, b.hashCode);
     });
+
+    // A live WS checkpoint update only re-renders if the new Ride is != the old
+    // one — so airportCheckpoint must participate in equality and hashCode.
+    test('a different airportCheckpoint means not equal', () {
+      final a = TestFixtures.ride(airportCheckpoint: 'landed');
+      final b = a.copyWith(airportCheckpoint: 'terminal_exit');
+      expect(a, isNot(b));
+      expect(a.hashCode, isNot(b.hashCode));
+    });
   });
 }

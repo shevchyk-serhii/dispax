@@ -506,6 +506,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkpointTerminalExit => 'Terminal Exit';
 
   @override
+  String passengerCheckpointStatus(String checkpoint) {
+    return 'Passenger: $checkpoint';
+  }
+
+  @override
   String get markCheckpointButton => 'I\'m here';
 
   @override

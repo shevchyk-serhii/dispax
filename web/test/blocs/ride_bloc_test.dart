@@ -651,6 +651,64 @@ void main() {
       );
     });
 
+    group('RideCheckpointReceived (passenger airport status via WS)', () {
+      blocTest<RideBloc, RideState>(
+        'updates the matching ride airportCheckpoint without an HTTP call',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', isAirportTransfer: true),
+          TestFixtures.ride(id: 'ride-2', isAirportTransfer: true),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideCheckpointReceived(
+            rideId: 'ride-1',
+            checkpoint: 'terminal_exit',
+          ),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) =>
+                s.rides.firstWhere((r) => r.id == 'ride-1').airportCheckpoint,
+            'ride-1 checkpoint',
+            'terminal_exit',
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockRideService.getRidesForUser(any()));
+        },
+      );
+
+      blocTest<RideBloc, RideState>(
+        'does not affect other rides',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', isAirportTransfer: true),
+          TestFixtures.ride(id: 'ride-2', isAirportTransfer: true),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideCheckpointReceived(rideId: 'ride-1', checkpoint: 'landed'),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) =>
+                s.rides.firstWhere((r) => r.id == 'ride-2').airportCheckpoint,
+            'ride-2 checkpoint unchanged',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<RideBloc, RideState>(
+        'unknown rideId emits nothing',
+        build: buildBloc,
+        seed: () => RideState.loaded([TestFixtures.ride(id: 'ride-1')]),
+        act: (bloc) => bloc.add(
+          const RideCheckpointReceived(rideId: 'unknown', checkpoint: 'landed'),
+        ),
+        expect: () => [],
+      );
+    });
+
     group('RideAdded deduplication', () {
       // Regression: onRideAdded blindly appended, so a WS RideCreated that
       // raced a getRides() reload produced the same ride twice in the list.

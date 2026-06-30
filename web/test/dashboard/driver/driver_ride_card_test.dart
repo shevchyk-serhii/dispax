@@ -152,6 +152,65 @@ void main() {
     });
   });
 
+  group('PassengerCheckpointRow', () {
+    testWidgets('shows the passenger status for an arrival with a checkpoint', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        airportCheckpoint: 'terminal_exit',
+      );
+
+      await pump(tester, PassengerCheckpointRow(ride: ride, isDark: false));
+
+      // en: "Passenger: Terminal Exit".
+      expect(find.textContaining('Terminal Exit'), findsOneWidget);
+      expect(find.byIcon(Icons.directions_walk), findsOneWidget);
+    });
+
+    testWidgets('self-hides when the passenger has not reported yet', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(isAirportTransfer: true, isArrival: true);
+
+      await pump(tester, PassengerCheckpointRow(ride: ride, isDark: false));
+
+      expect(find.byIcon(Icons.directions_walk), findsNothing);
+    });
+
+    testWidgets('self-hides for a departure even when a checkpoint is set', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: false,
+        airportCheckpoint: 'landed',
+      );
+
+      await pump(tester, PassengerCheckpointRow(ride: ride, isDark: false));
+
+      expect(find.byIcon(Icons.directions_walk), findsNothing);
+    });
+
+    testWidgets('the row appears on the full ride card for an arrival', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        status: RideStatus.assigned,
+        isAirportTransfer: true,
+        isArrival: true,
+        flightNumber: 'LH1671',
+        airportCheckpoint: 'arrivals_hall',
+      );
+
+      await pump(tester, card(ride));
+
+      expect(find.byType(PassengerCheckpointRow), findsOneWidget);
+      expect(find.textContaining('Arrivals Hall'), findsOneWidget);
+    });
+  });
+
   // These shared rows are reused by both the active and later ride cards.
   group('DriverEntryTimeRow', () {
     testWidgets('renders the entry time for an arrival with one', (

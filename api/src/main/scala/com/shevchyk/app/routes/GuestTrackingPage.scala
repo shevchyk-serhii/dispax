@@ -20,10 +20,16 @@ object GuestTrackingPage:
       approaching: String,
       pickup: String,
       dropoff: String,
-      driverLabel: String, // map marker caption for the car ("Your driver")
+      driverLabel: String,   // map marker caption for the car ("Your driver")
       linkExpired: String,
-      etaSuffix: String,   // e.g. " min"
-      loading: String
+      etaSuffix: String,     // e.g. " min"
+      loading: String,
+      // Airport arrival self-report block (passenger taps their progress so the driver knows where to meet).
+      airportPrompt: String, // section heading
+      cpLanded: String,      // "I've landed"
+      cpBaggage: String,     // "At baggage claim"
+      cpExit: String,        // "At the exit"
+      cpThanks: String       // confirmation after a tap
   )
 
   private val strings: Map[String, Strings] = Map(
@@ -40,7 +46,12 @@ object GuestTrackingPage:
       driverLabel = "Ihr Fahrer",
       linkExpired = "Dieser Tracking-Link ist nicht mehr verfügbar.",
       etaSuffix = " Min.",
-      loading = "Wird geladen …"
+      loading = "Wird geladen …",
+      airportPrompt = "Wo befinden Sie sich?",
+      cpLanded = "Gelandet",
+      cpBaggage = "Bei der Gepäckausgabe",
+      cpExit = "Am Ausgang",
+      cpThanks = "Danke! Ihr Fahrer wurde informiert."
     ),
     "en" -> Strings(
       title = "Track your ride",
@@ -55,7 +66,12 @@ object GuestTrackingPage:
       driverLabel = "Your driver",
       linkExpired = "This tracking link is no longer available.",
       etaSuffix = " min",
-      loading = "Loading …"
+      loading = "Loading …",
+      airportPrompt = "Where are you?",
+      cpLanded = "Landed",
+      cpBaggage = "At baggage claim",
+      cpExit = "At the exit",
+      cpThanks = "Thanks! Your driver has been notified."
     ),
     "uk" -> Strings(
       title = "Відстеження поїздки",
@@ -70,7 +86,12 @@ object GuestTrackingPage:
       driverLabel = "Ваш водій",
       linkExpired = "Це посилання для відстеження більше недоступне.",
       etaSuffix = " хв",
-      loading = "Завантаження …"
+      loading = "Завантаження …",
+      airportPrompt = "Де ви зараз?",
+      cpLanded = "Приземлився",
+      cpBaggage = "Біля видачі багажу",
+      cpExit = "Біля виходу",
+      cpThanks = "Дякуємо! Вашого водія сповіщено."
     )
   )
 
@@ -115,7 +136,12 @@ object GuestTrackingPage:
          |    driverLabel: '${jsString(s.driverLabel)}',
          |    linkExpired: '${jsString(s.linkExpired)}',
          |    etaSuffix: '${jsString(s.etaSuffix)}',
-         |    loading: '${jsString(s.loading)}'
+         |    loading: '${jsString(s.loading)}',
+         |    airportPrompt: '${jsString(s.airportPrompt)}',
+         |    cpLanded: '${jsString(s.cpLanded)}',
+         |    cpBaggage: '${jsString(s.cpBaggage)}',
+         |    cpExit: '${jsString(s.cpExit)}',
+         |    cpThanks: '${jsString(s.cpThanks)}'
          |  }""".stripMargin
 
     s"""<!DOCTYPE html>
@@ -146,6 +172,19 @@ object GuestTrackingPage:
        |    .addr .dropoff-dot { background: #dc2626; }
        |    .addr .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #888; }
        |    .addr .value { font-size: 14px; color: #222; }
+       |    /* Airport self-report block: a heading and a row of forward-only checkpoint buttons. */
+       |    #airport { margin-top: 14px; border-top: 1px solid #eee; padding-top: 12px; }
+       |    #airport.hidden { display: none; }
+       |    #airportPrompt { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #888; margin-bottom: 8px; }
+       |    #cpButtons { display: flex; gap: 8px; }
+       |    .cp-btn { flex: 1; appearance: none; border: 1px solid #2563eb; background: #fff; color: #2563eb;
+       |      border-radius: 10px; padding: 10px 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+       |      transition: background .15s, color .15s, opacity .15s; }
+       |    .cp-btn:active { background: #eff6ff; }
+       |    .cp-btn.done { background: #16a34a; border-color: #16a34a; color: #fff; cursor: default; }
+       |    .cp-btn:disabled { opacity: .5; cursor: default; }
+       |    #cpThanks { margin-top: 8px; font-size: 12px; color: #16a34a; font-weight: 600; display: none; }
+       |    #cpThanks.show { display: block; }
        |    #banner { position: absolute; top: 12px; left: 12px; right: 12px; background: #dbeafe; color: #1e3a8a;
        |      border-radius: 12px; padding: 12px 14px; font-weight: 600; display: none; }
        |    #banner.show { display: block; }
@@ -191,6 +230,15 @@ object GuestTrackingPage:
        |    <div class="row"><span id="status"></span><span id="eta"></span></div>
        |    <div class="addr"><span class="dot pickup-dot"></span><div><div class="label" id="pickupLabel"></div><div class="value" id="pickup"></div></div></div>
        |    <div class="addr"><span class="dot dropoff-dot"></span><div><div class="label" id="dropoffLabel"></div><div class="value" id="dropoff"></div></div></div>
+       |    <div id="airport" class="hidden">
+       |      <div id="airportPrompt"></div>
+       |      <div id="cpButtons">
+       |        <button type="button" class="cp-btn" id="cpLanded" data-cp="landed"></button>
+       |        <button type="button" class="cp-btn" id="cpBaggage" data-cp="arrivals_hall"></button>
+       |        <button type="button" class="cp-btn" id="cpExit" data-cp="terminal_exit"></button>
+       |      </div>
+       |      <div id="cpThanks"></div>
+       |    </div>
        |  </div>
        |  <script>
        |  (function () {
@@ -205,6 +253,15 @@ object GuestTrackingPage:
        |    var banner = document.getElementById('banner');
        |    document.getElementById('pickupLabel').textContent = I.pickup;
        |    document.getElementById('dropoffLabel').textContent = I.dropoff;
+       |    document.getElementById('airportPrompt').textContent = I.airportPrompt;
+       |    document.getElementById('cpLanded').textContent = I.cpLanded;
+       |    document.getElementById('cpBaggage').textContent = I.cpBaggage;
+       |    document.getElementById('cpExit').textContent = I.cpExit;
+       |    document.getElementById('cpThanks').textContent = I.cpThanks;
+       |
+       |    // Forward-only checkpoint ordering, mirrors the AirportCheckpoint enum on the backend.
+       |    var CP_ORDER = ['landed', 'arrivals_hall', 'terminal_exit'];
+       |    function cpOrdinal(cp) { var i = CP_ORDER.indexOf(cp); return i; } // -1 when null/unknown
        |
        |    function statusLabel(status, driverAssigned) {
        |      switch (status) {
@@ -298,15 +355,59 @@ object GuestTrackingPage:
        |      card.classList.remove('hidden');
        |    }
        |
+       |    var posting = false;
+       |
+       |    // Reflect the current checkpoint on the buttons: passed ones become "done" (green, disabled),
+       |    // the rest stay tappable. The block is shown only for arrival airport transfers.
+       |    function renderCheckpoints() {
+       |      var box = document.getElementById('airport');
+       |      if (!ride || !ride.isAirportArrival) { box.classList.add('hidden'); return; }
+       |      box.classList.remove('hidden');
+       |      var cur = cpOrdinal(ride.checkpoint);
+       |      var btns = document.querySelectorAll('.cp-btn');
+       |      for (var i = 0; i < btns.length; i++) {
+       |        var b = btns[i];
+       |        var ord = cpOrdinal(b.getAttribute('data-cp'));
+       |        var passed = ord <= cur;
+       |        b.classList.toggle('done', passed);
+       |        b.disabled = passed || posting;
+       |      }
+       |      document.getElementById('cpThanks').classList.toggle('show', cur >= 0);
+       |    }
+       |
+       |    function postCheckpoint(cp) {
+       |      if (posting) return;
+       |      // Optimistic forward-only guard on the client; the server enforces it authoritatively too.
+       |      if (cpOrdinal(cp) <= cpOrdinal(ride && ride.checkpoint)) return;
+       |      posting = true; renderCheckpoints();
+       |      fetch(apiBase + '/api/track/' + encodeURIComponent(T) + '/checkpoint', {
+       |        method: 'POST',
+       |        headers: { 'Content-Type': 'application/json' },
+       |        body: JSON.stringify({ checkpoint: cp })
+       |      }).then(function (r) {
+       |        // 204 = accepted (or idempotent no-op). Advance the local state on success.
+       |        if (r.ok) { ride.checkpoint = cp; }
+       |      }).catch(function (_) {}).then(function () {
+       |        posting = false; renderCheckpoints();
+       |      });
+       |    }
+       |
+       |    var cpBtns = document.querySelectorAll('.cp-btn');
+       |    for (var ci = 0; ci < cpBtns.length; ci++) {
+       |      cpBtns[ci].addEventListener('click', function () { postCheckpoint(this.getAttribute('data-cp')); });
+       |    }
+       |
        |    function applyInitial(dto) {
        |      ride = {
        |        status: dto.status,
        |        pickup: dto.pickup, dropoff: dto.dropoff,
        |        driverLat: dto.driverLocation ? dto.driverLocation.latitude : null,
        |        driverLng: dto.driverLocation ? dto.driverLocation.longitude : null,
-       |        etaMinutes: dto.etaMinutes, driverAssigned: dto.driverAssigned
+       |        etaMinutes: dto.etaMinutes, driverAssigned: dto.driverAssigned,
+       |        isAirportArrival: !!dto.isAirportArrival, checkpoint: dto.checkpoint || null
        |      };
        |      renderCard();
+       |      renderCheckpoints();
        |      if (map && map.loaded()) { drawRoute(); drawDriver(); fitBounds(); }
        |    }
        |
@@ -319,6 +420,11 @@ object GuestTrackingPage:
        |        ride.status = p.newStatus; renderCard();
        |      } else if (type === 'DriverApproaching') {
        |        banner.textContent = I.approaching; banner.classList.add('show');
+       |      } else if (type === 'AirportCheckpointReached') {
+       |        // Someone (this passenger on another device, or staff) advanced the checkpoint — reflect it.
+       |        if (cpOrdinal(p.checkpointType) > cpOrdinal(ride.checkpoint)) {
+       |          ride.checkpoint = p.checkpointType; renderCheckpoints();
+       |        }
        |      }
        |    }
        |

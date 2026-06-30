@@ -3,6 +3,7 @@ package com.shevchyk.ride.infrastructure.http.dto
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.domain.{Location, CompanyId}
 import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
   Ride,
   CreateRideRequest,
   FlightStatusRow,
@@ -105,7 +106,11 @@ case class RideDto(
     confirmedAt: Option[String] = None,
     rejectionReason: Option[String] = None,
     // Free-form operator tags attached to the ride.
-    tags: List[String] = Nil
+    tags: List[String] = Nil,
+    // Passenger-reported airport progress for arrival transfers: "landed" | "arrivals_hall" |
+    // "terminal_exit" (None until the passenger reports). Surfaced so the driver/dispatcher card
+    // can show the live status without an extra request.
+    airportCheckpoint: Option[String] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -507,7 +512,8 @@ object RideDto:
       confirmed = ride.status == RideStatus.Confirmed,
       confirmedAt = ride.confirmedAt.map(_.toString),
       rejectionReason = ride.rejectionReason,
-      tags = ride.tags
+      tags = ride.tags,
+      airportCheckpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString)
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =

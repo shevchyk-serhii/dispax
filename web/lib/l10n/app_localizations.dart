@@ -1066,6 +1066,12 @@ abstract class AppLocalizations {
   /// **'Terminal Exit'**
   String get checkpointTerminalExit;
 
+  /// Ride-card line showing the passenger's self-reported airport progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger: {checkpoint}'**
+  String passengerCheckpointStatus(String checkpoint);
+
   /// No description provided for @markCheckpointButton.
   ///
   /// In en, this message translates to:

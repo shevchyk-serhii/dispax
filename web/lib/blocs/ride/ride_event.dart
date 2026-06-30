@@ -145,6 +145,21 @@ class RideStatusReceived extends RideEvent {
   List<Object> get props => [rideId, newStatus];
 }
 
+/// Locally applies a passenger airport checkpoint received via WebSocket — no HTTP call.
+/// [checkpoint] is the wire value: "landed" | "arrivals_hall" | "terminal_exit".
+class RideCheckpointReceived extends RideEvent {
+  final String rideId;
+  final String checkpoint;
+
+  const RideCheckpointReceived({
+    required this.rideId,
+    required this.checkpoint,
+  });
+
+  @override
+  List<Object> get props => [rideId, checkpoint];
+}
+
 /// Asks the bloc to cancel a ride with the given [reason].
 /// Used by the dispatcher "Close" action on unassigned (Requested) rides.
 class RideCancelRequested extends RideEvent {

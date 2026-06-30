@@ -43,8 +43,19 @@ object TrackApi:
       dropoff: PublicLocation,
       driverLocation: Option[LocationWithTimestamp],
       etaMinutes: Option[Int],
-      driverAssigned: Boolean
+      driverAssigned: Boolean,
+      // True when this is an arrival airport transfer — the guest page shows the self-report
+      // checkpoint buttons only then. Not PII (no flight/airport identity is exposed here).
+      isAirportArrival: Boolean = false,
+      // The passenger's current self-reported checkpoint, so the page can grey out passed buttons:
+      // "landed" | "arrivals_hall" | "terminal_exit" | null.
+      checkpoint: Option[String] = None
   ) derives JsonCodec
+
+  /**
+   * Body for the public passenger self-report. Same shape as the authenticated MarkCheckpointRequest.
+   */
+  final case class PublicCheckpointRequest(checkpoint: String) derives JsonCodec
 
   final case class PublicLocationsResponse(driverLocation: Option[LocationWithTimestamp]) derives JsonCodec
 
@@ -78,13 +89,26 @@ object TrackApi:
     .tag(trackTag)
     .summary("Public driver location for a guest tracking token (no auth)")
 
-  val endpoints = List(createShareLinkEndpoint, getTrackedRideEndpoint, getTrackedLocationsEndpoint)
+  val postCheckpointEndpoint = endpoint.post
+    .in("api" / "track" / path[String]("token") / "checkpoint")
+    .in(jsonBody[PublicCheckpointRequest])
+    .errorOut(notFoundError)
+    .out(statusCode(StatusCode.NoContent))
+    .tag(trackTag)
+    .summary("Passenger self-reports an airport checkpoint via a guest tracking token (no auth)")
+
+  val endpoints = List(
+    createShareLinkEndpoint,
+    getTrackedRideEndpoint,
+    getTrackedLocationsEndpoint,
+    postCheckpointEndpoint
+  )
 
   // -- Server logic --------------------------------------------------------
 
   type TrackEnv =
     com.shevchyk.auth.service.JwtService & RideShareTokenService & RideService & DriverLocationService & EtaService &
-      com.shevchyk.core.config.PublicLinkConfig
+      com.shevchyk.core.config.PublicLinkConfig & com.shevchyk.ride.application.service.AirportCheckpointService
 
   // The public read endpoints map every failure to a generic 404 ApiError — a guest must not be able to tell a wrong
   // token from an expired one from a missing ride (no existence leak).
@@ -108,7 +132,9 @@ object TrackApi:
     ),
     driverLocation = driverLocation,
     etaMinutes = etaMinutes,
-    driverAssigned = ride.driverId.isDefined
+    driverAssigned = ride.driverId.isDefined,
+    isAirportArrival = ride.isArrivalAirportTransfer,
+    checkpoint = ride.airportCheckpoint.map(com.shevchyk.ride.domain.AirportCheckpoint.toDbString)
   )
 
   /**
@@ -164,8 +190,34 @@ object TrackApi:
     token => resolveDriverLocation(token).map(PublicLocationsResponse(_)).mapError(_ => publicNotFound)
   }
 
+  private val postCheckpointServer: ZServerEndpoint[TrackEnv, Any] = postCheckpointEndpoint.zServerLogic {
+    (token, req) =>
+      (for {
+        shareTokenService <- ZIO.service[RideShareTokenService]
+        rideService       <- ZIO.service[RideService]
+        checkpointSvc     <- ZIO.service[com.shevchyk.ride.application.service.AirportCheckpointService]
+        resolved          <- shareTokenService.resolve(token)
+        ride              <- rideService.getRideById(resolved.rideId)
+        checkpoint        <- ZIO
+                               .fromOption(com.shevchyk.ride.domain.AirportCheckpoint.fromString(req.checkpoint))
+                               .orElseFail(RideError.ValidationError(s"Invalid checkpoint: ${req.checkpoint}"))
+        // markedBy = the ride's own client (the passenger); markCheckpoint does not use the value
+        // beyond presence, mirroring the auto-geofence trigger which passes ride.clientId.
+        _                 <- checkpointSvc
+                               .markCheckpoint(ride, checkpoint, ride.clientId)
+                               // Idempotent for the passenger: a double-tap or tapping an already-passed
+                               // checkpoint fails InvalidOperation in the service — swallow it as a 204
+                               // no-op so the guest never sees an error. Any other failure falls through.
+                               .catchSome { case _: RideError.InvalidOperation => ZIO.unit }
+      } yield ())
+        // Hide everything else (bad/expired token, missing ride, validation) behind a generic 404,
+        // consistent with the other guest endpoints (no existence leak).
+        .mapError(_ => publicNotFound)
+  }
+
   val serverEndpoints: List[ZServerEndpoint[TrackEnv, Any]] = List(
     createShareLinkServer,
     getTrackedRideServer,
-    getTrackedLocationsServer
+    getTrackedLocationsServer,
+    postCheckpointServer
   )
