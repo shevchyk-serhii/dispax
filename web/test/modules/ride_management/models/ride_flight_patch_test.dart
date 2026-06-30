@@ -4,7 +4,6 @@
 // (not-fully-enriched) refresh DTO while preserving driverName/optimalEntryTime/avatar/eta;
 // otherwise pushing the result into the shared RideBloc blanks those on the list cards.
 
-import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/test_fixtures.dart';
