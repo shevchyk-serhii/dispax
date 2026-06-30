@@ -69,11 +69,11 @@ resource "google_cloud_run_v2_service" "app" {
     timeout = "3600s" # Максимальний час запиту 1 година (для WebSocket зʼєднань)
 
     scaling {
-      min_instance_count = 0  # Cost optimization (pre-prod): scale to zero when idle.
-                               # NOTE: background daemon fibers (flight monitor, driver
-                               # reminders, ETA guarantee) are frozen/killed while idle —
-                               # acceptable only without live drivers. Raise back to 1
-                               # before going live with real users.
+      # NOTE: min_instance_count and resources.cpu_idle are RUNTIME-OWNED by the
+      # scheduler module (cron flips them on/off) — see lifecycle.ignore_changes
+      # below. The values here are only the baseline used when the service is first
+      # created / fully recreated; the scheduler overrides them on a schedule.
+      min_instance_count = 0  # baseline = scale-to-zero (off-hours / weekends)
       max_instance_count = 10 # Максимум 10 екземплярів при навантаженні
     }
 
@@ -93,13 +93,16 @@ resource "google_cloud_run_v2_service" "app" {
       image = var.image # Docker образ з Artifact Registry
 
       resources {
-        cpu_idle          = true # CPU only allocated during request handling (cost
-                                 # optimization). Throttles background fibers between
-                                 # requests — pre-prod only, see scaling note above.
+        cpu_idle          = true # baseline = CPU throttled (runtime-owned by scheduler,
+                                 # see lifecycle.ignore_changes — cron flips it on/off)
         startup_cpu_boost = true # Faster JVM cold start (matches live config)
         limits = {
-          cpu    = "1"     # 1 vCPU на екземпляр
-          memory = "512Mi" # 512 MB RAM (JVM налаштований на -XX:MaxRAMPercentage=75%)
+          cpu = "1" # 1 vCPU на екземпляр
+          # 1 GiB RAM. 512Mi was too tight for JVM cold start (OOM at ~532Mi during
+          # startup, revision never reached Ready → 500s on a true cold start from
+          # scale-to-zero). Memory is billed only during active request-seconds /
+          # the always-on window, so this costs ~a couple EUR/mo at most.
+          memory = "1Gi"
         }
       }
 
@@ -190,6 +193,16 @@ resource "google_cloud_run_v2_service" "app" {
         failure_threshold = 3  # 3 невдалі спроби → рестарт контейнера
       }
     }
+  }
+
+  # The scheduler module (cron) owns these two fields at runtime — flipping them
+  # on/off on a schedule. Without ignore_changes, the next `terraform apply` would
+  # revert whatever the scheduler last set, and the two systems would drift-war.
+  lifecycle {
+    ignore_changes = [
+      template[0].scaling[0].min_instance_count,
+      template[0].containers[0].resources[0].cpu_idle,
+    ]
   }
 }
 
