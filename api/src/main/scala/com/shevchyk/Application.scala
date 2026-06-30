@@ -177,9 +177,21 @@ object Application extends ZIOAppDefault:
     .binding(host, port)
     .disableRequestStreaming(MaxRequestBytes)
 
+  // ASCII art startup banner, printed to the console as the first log line on boot.
+  val Banner: String =
+    """
+      |  ____  _                          _
+      | |  _ \(_)___ _ __   __ ___  __  __| | ___
+      | | | | | / __| '_ \ / _` \ \/ /  / _` |/ _ \
+      | | |_| | \__ \ |_) | (_| |>  <  | (_| |  __/
+      | |____/|_|___/ .__/ \__,_/_/\_\(_)__,_|\___|
+      |             |_|
+      |""".stripMargin
+
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
-      PushNotificationListener.start *>
+      ZIO.logInfo(Banner) *>
+        PushNotificationListener.start *>
         ReminderScheduler.start *>
         InvoiceReminderScheduler.start *>
         PredictiveEtaMonitor.start *>
