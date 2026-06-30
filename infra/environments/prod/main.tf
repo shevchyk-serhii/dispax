@@ -116,3 +116,16 @@ module "cloud_run" {
 
   depends_on = [module.cloud_sql, module.secrets, module.iam, module.artifact_registry]
 }
+
+# ── МОДУЛЬ: CPU SCHEDULER ─────────────────────────────────────────────────────
+# Перемикає Cloud Run між always-on (Пн–Пт 06:00–23:00) і scale-to-zero (ночі/вихідні)
+# за розкладом, через Cloud Scheduler → Cloud Run Job → `gcloud run services update`.
+# Економія: платимо за always-on тільки в робочі години, решту часу ~€0.
+module "scheduler" {
+  source          = "../../modules/scheduler"
+  project_id      = var.project_id
+  region          = var.region
+  runtime_sa_name = module.iam.cloudrun_sa_name # для actAs при оновленні сервіса
+
+  depends_on = [module.apis, module.cloud_run]
+}

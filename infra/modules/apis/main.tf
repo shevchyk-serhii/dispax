@@ -17,6 +17,7 @@ locals {
     "iam.googleapis.com",                  # IAM — сервісні акаунти і права доступу
     "compute.googleapis.com",              # Compute Engine — VPC, підмережі, мережеві ресурси
     "iamcredentials.googleapis.com",       # IAM Credentials — Workload Identity для GitHub Actions
+    "cloudscheduler.googleapis.com",       # Cloud Scheduler — cron-перемикання CPU/min-instances Cloud Run
   ]
 }
 
