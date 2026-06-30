@@ -1,5 +1,7 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.core.application.EventHub
+
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
@@ -133,7 +135,8 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
 
       def getDriverRides(d: PersonId, c: CompanyId): IO[RideError, List[Ride]] = ZIO.succeed(List(airportRide))
 
-      def getRideById(rideId: RideId): IO[RideError, Ride]                                                       = notImpl
+      // The refresh-flight endpoint loads the ride by id (company-scoped in the handler) before refreshing.
+      def getRideById(rideId: RideId): IO[RideError, Ride]                                                       = ZIO.succeed(airportRide)
       def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]                                = notImpl
       def assignDriver(rideId: RideId, dId: PersonId, o: Boolean): IO[RideError, Ride]                           = notImpl
       def reassignDriver(rideId: RideId, newDriverId: PersonId, o: Boolean): IO[RideError, Ride]                 = notImpl
@@ -312,7 +315,10 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
           scheduledTime: Option[Instant],
           departureTime: Option[Instant]
       ): Task[Boolean] = notImpl("updateFlightStatus")
-      def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                           = notImpl("findFlightStatus")
+      // Re-read after a refresh returns the current stored row (the refresh endpoint surfaces it in the response).
+      def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                           = ZIO.succeed(
+        Option.when(rideId == airportRideId)(flightRow)
+      )
   )
 
   private val clientPerson: Person = Person(
@@ -404,6 +410,8 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
       AirportArrivalTimingConfig.liveLayer ++
+      EventHub.layer ++
+      StubFlightStatusProvider.layer ++
       flightRideRepo
 
   private def run(req: Request): ZIO[Any, Throwable, Response] = ZioHttpInterpreter()
@@ -465,6 +473,29 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
         body.contains("\"gate\":\"G12\""),
         body.contains("\"terminal\":\"2\""),
         body.contains("\"flightStatus\":\"Landed\"")
+      )
+    },
+    // Manual refresh when the flight isn't on the board yet (provider returns None — the DE1811 case): the
+    // endpoint must still 200 with the ride's CURRENT data AND signal outcome=notFound, so the UI can say
+    // "not in the system yet" instead of a misleading "updated". Mutation: collapse the 3-state result to a
+    // bare Option / always report "updated" → this assertion on outcome goes red.
+    test("POST refresh-flight returns outcome=notFound (with current data) when the flight isn't on the board") {
+      for {
+        token <- dispatcherToken
+        req    = Request
+                   .post(
+                     URL.decode(s"/api/rides/${airportRideId.value}/refresh-flight").toOption.get,
+                     Body.empty
+                   )
+                   .addHeader(Header.Authorization.Bearer(token))
+        resp  <- run(req)
+        body  <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        body.contains("\"outcome\":\"notFound\""),
+        // current persisted data is still returned, not an empty DTO
+        body.contains("\"gate\":\"G12\""),
+        body.contains("LH1751")
       )
     }
   ).provideLayer(testJwtService)

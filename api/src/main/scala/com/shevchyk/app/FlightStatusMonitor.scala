@@ -1,13 +1,12 @@
 package com.shevchyk.app
 
 import com.shevchyk.core.application.EventHub
-import com.shevchyk.core.domain.WebSocketEvent
-import com.shevchyk.ride.application.service.FlightStatusProvider
-import com.shevchyk.ride.domain.{FlightInfo, FlightStatus, FlightStatusRow, Ride, RideSpecifics}
+import com.shevchyk.ride.application.service.{FlightStatusProvider, FlightStatusRefresher}
+import com.shevchyk.ride.domain.Ride
 import com.shevchyk.ride.repository.RideRepository
 import zio.*
 
-import java.time.{Instant, ZoneId}
+import java.time.Instant
 
 /**
  * Background flight-status monitor.
@@ -25,7 +24,6 @@ object FlightStatusMonitor:
 
   // How far ahead to look for airport-transfer pickups worth tracking.
   private val LookAheadMinutes = 180L
-  private val BerlinZone       = ZoneId.of("Europe/Berlin")
 
   type Env = RideRepository & FlightStatusProvider & EventHub
 
@@ -52,64 +50,11 @@ object FlightStatusMonitor:
       _           <- ZIO.foreachParDiscard(airportRides)(ride => evaluate(ride, rideRepo, provider, eventHub))
     yield ()
 
+  // The per-ride work — persist + broadcast on change — lives in the shared [[FlightStatusRefresher]]
+  // (in the `ride` module) so the manual "refresh now" endpoint goes through the exact same path.
   private def evaluate(
       ride: Ride,
       rideRepo: RideRepository,
       provider: FlightStatusProvider,
       eventHub: EventHub
-  ): ZIO[Any, Throwable, Unit] =
-    ride.specifics match
-      // Only look up when a flight number is known — an airport transfer may have none yet.
-      case Some(RideSpecifics.AirportTransfer(_, Some(flightNumber), isArrival)) if flightNumber.trim.nonEmpty =>
-        val date = ride.scheduledTime.getOrElse(ride.pickupDateTime).atZone(BerlinZone).toLocalDate
-        provider.lookup(flightNumber, date, isArrival).flatMap {
-          case None       => ZIO.unit // not found / source down → nothing to update this tick
-          case Some(info) =>
-            val newRow = toRow(info)
-            rideRepo.findFlightStatus(ride.id).flatMap { current =>
-              // Publish + persist only when the live data actually differs from what's stored.
-              if current.contains(newRow) then ZIO.unit
-              else
-                rideRepo.updateFlightStatus(
-                  ride.id,
-                  gate = newRow.gate,
-                  terminal = newRow.terminal,
-                  flightStatus = newRow.flightStatus,
-                  flightTime = newRow.flightTime,
-                  scheduledTime = newRow.scheduledTime,
-                  departureTime = newRow.departureTime
-                ) *>
-                  eventHub.publish(
-                    WebSocketEvent.FlightStatusUpdated(
-                      rideId = ride.id.value,
-                      clientId = ride.clientId.value,
-                      companyId = ride.companyId.value,
-                      flightNumber = info.flightNumber,
-                      status = FlightStatus.toWire(info.status),
-                      gate = newRow.gate,
-                      terminal = newRow.terminal,
-                      estimatedTime = newRow.flightTime.map(_.toString),
-                      departureTime = newRow.departureTime.map(_.toString)
-                    )
-                  ) *>
-                  ZIO.logInfo(
-                    s"Flight ${info.flightNumber} for ride ${ride.id.value}: status=${FlightStatus.toWire(info.status)}"
-                  )
-            }
-        }
-      case _                                                                                                   => ZIO.unit
-
-  /**
-   * Project the provider's [[FlightInfo]] onto the persisted [[FlightStatusRow]] (board has no gate → None).
-   */
-  private def toRow(info: FlightInfo): FlightStatusRow = FlightStatusRow(
-    gate = info.gate,
-    terminal = info.terminal,
-    flightStatus = Some(FlightStatus.toWire(info.status)),
-    // flightTime is the latest known (estimated, else scheduled); scheduledTime keeps the on-time instant
-    // separately so the card can show the delay = flightTime - scheduledTime.
-    flightTime = info.estimatedTime.orElse(info.scheduledTime),
-    scheduledTime = info.scheduledTime,
-    // Origin take-off (arrivals only), so the card can animate the en-route progress toward landing.
-    departureTime = info.departureTime
-  )
+  ): ZIO[Any, Throwable, Unit] = FlightStatusRefresher.refresh(ride, rideRepo, provider, eventHub).unit

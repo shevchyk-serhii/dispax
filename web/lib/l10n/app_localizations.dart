@@ -2350,6 +2350,36 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get refresh;
 
+  /// Tooltip for the manual flight-status refresh button on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh flight status'**
+  String get refreshFlightStatus;
+
+  /// No description provided for @flightStatusRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight status updated'**
+  String get flightStatusRefreshed;
+
+  /// No description provided for @flightStatusUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get flightStatusUnchanged;
+
+  /// No description provided for @flightNotFoundYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight not in the system yet'**
+  String get flightNotFoundYet;
+
+  /// No description provided for @failedToRefreshFlightStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to refresh flight status'**
+  String get failedToRefreshFlightStatus;
+
   /// No description provided for @youreOnline.
   ///
   /// In en, this message translates to:

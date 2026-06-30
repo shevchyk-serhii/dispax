@@ -268,6 +268,32 @@ class RideService {
     throw ApiException.fromResponse(response, 'Failed to assign driver');
   }
 
+  /// Trigger an on-demand flight-status refresh for a ride (same path as the 5-minute
+  /// background monitor): the backend re-reads the board, persists any change and
+  /// broadcasts it. Returns the up-to-date ride plus the outcome — "updated" /
+  /// "unchanged" / "notFound" — so the UI can message the result precisely (a flight
+  /// not yet on the board is "notFound", not a failure).
+  Future<({Ride ride, String outcome})> refreshFlightStatus(
+    String rideId,
+  ) async {
+    final response = await privateApiClient.post(
+      '/rides/$rideId/refresh-flight',
+      <String, dynamic>{},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return (
+        ride: Ride.fromJson(json['ride'] as Map<String, dynamic>),
+        outcome: (json['outcome'] as String?) ?? 'unchanged',
+      );
+    }
+    throw ApiException.fromResponse(
+      response,
+      'Failed to refresh flight status',
+    );
+  }
+
   Future<Ride> confirmRide(String rideId) async {
     final response = await privateApiClient.put(
       '/rides/$rideId/confirm',
