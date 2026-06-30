@@ -313,8 +313,6 @@ void main() {
       expect(s.isAirportTransfer, isTrue);
       expect(s.isArrival, isTrue);
       expect(s.flightNumber, 'LH123');
-      expect(s.selectedGate, 'H38');
-      expect(s.selectedTerminal, 'T2');
       expect(s.notes, 'Two suitcases');
       expect(s.showNotes, isTrue);
       expect(s.specialRequirements, ['Child seat', 'Wheelchair']);
@@ -326,6 +324,17 @@ void main() {
     test('does NOT copy the driver (new ride is unassigned)', () {
       final s = CreateRideFormState.fromRide(sourceRide(driverId: 'driver-9'));
       expect(s.selectedDriverId, isNull);
+    });
+
+    test('does NOT copy gate/terminal (off-list values crash the picker)', () {
+      // Real airport gates ("K14") / terminals ("T2") come from the flight
+      // monitor and are not in the form's fixed gate/terminal option lists;
+      // copying them would crash DropdownButtonFormField. They must stay null.
+      final s = CreateRideFormState.fromRide(
+        sourceRide(gate: 'K14', terminal: 'T2'),
+      );
+      expect(s.selectedGate, isNull);
+      expect(s.selectedTerminal, isNull);
     });
 
     test('uses a fresh pickup time, not the source ride pickup', () {

@@ -169,7 +169,13 @@ class AirportTransferCard extends StatelessWidget {
                           vertical: 8,
                         ),
                       ),
-                      initialValue: selectedGate,
+                      // Only seed the dropdown with a value that is actually in
+                      // the option list; an off-list value (e.g. a real airport
+                      // gate like "K14" copied from a tracked ride) would trip
+                      // DropdownButtonFormField's "exactly one item" assertion.
+                      initialValue: gates.contains(selectedGate)
+                          ? selectedGate
+                          : null,
                       items: gates
                           .map(
                             (gate) => DropdownMenuItem(
@@ -197,7 +203,9 @@ class AirportTransferCard extends StatelessWidget {
                           vertical: 8,
                         ),
                       ),
-                      initialValue: selectedTerminal,
+                      initialValue: terminals.contains(selectedTerminal)
+                          ? selectedTerminal
+                          : null,
                       items: terminals
                           .map(
                             (terminal) => DropdownMenuItem(
