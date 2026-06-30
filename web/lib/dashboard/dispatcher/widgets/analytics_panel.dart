@@ -234,13 +234,13 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         _buildMetricRow(
           'Active Drivers',
           drivers.toString(),
-          AppColors.driverColor,
+          colorScheme.primary,
           colorScheme,
         ),
         _buildMetricRow(
           'Total Clients',
           clients.toString(),
-          AppColors.clientColor,
+          colorScheme.primary,
           colorScheme,
         ),
 

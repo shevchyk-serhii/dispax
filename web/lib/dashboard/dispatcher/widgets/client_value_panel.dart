@@ -189,7 +189,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
             _buildSummaryCard(
               'Clients',
               totalClients.toString(),
-              AppColors.clientColor,
+              colorScheme.primary,
               colorScheme,
             ),
             const SizedBox(width: 12),
