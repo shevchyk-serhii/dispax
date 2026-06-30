@@ -1482,13 +1482,20 @@ class DriverFlightInfoRow extends StatelessWidget {
             const SizedBox(width: 6),
           ],
           Expanded(
-            child: Text(
-              flightLine,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12.5, color: secondary),
+            child: Padding(
+              // Nudge the text down so its first line is centered against the
+              // 32×32 action buttons, keeping the whole row visually aligned.
+              padding: const EdgeInsets.only(top: 7),
+              child: Text(
+                flightLine,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12.5, color: secondary),
+              ),
             ),
           ),
+          // Flightradar + refresh: equal-sized 32×32 buttons grouped together so
+          // they line up with each other and with the first line of the flight text.
           if (ride.flightNumber != null)
             FlightRadarButton(
               flightNumber: ride.flightNumber!,
@@ -1532,11 +1539,15 @@ class FlightRadarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Tooltip(
-      message: l10n.trackFlightLive,
-      child: InkResponse(
-        radius: 18,
-        onTap: () async {
+    // Same 32×32 footprint as the refresh IconButton next to it, so the two
+    // flight actions line up with each other and with the flight text row.
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: l10n.trackFlightLive,
+        onPressed: () async {
           final ok = await FlightTracker.open(flightNumber);
           if (!ok && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1544,10 +1555,7 @@ class FlightRadarButton extends StatelessWidget {
             );
           }
         },
-        child: Padding(
-          padding: const EdgeInsets.only(left: 6),
-          child: Icon(Icons.radar, size: 16, color: color),
-        ),
+        icon: Icon(Icons.radar, size: 16, color: color),
       ),
     );
   }

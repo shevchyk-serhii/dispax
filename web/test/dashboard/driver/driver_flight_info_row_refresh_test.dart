@@ -70,7 +70,13 @@ void main() {
       );
       expect(find.byIcon(Icons.refresh), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      await tester.tap(find.byType(IconButton));
+      // Tap the refresh button specifically (the one holding the spinner) — the radar
+      // button is a separate IconButton, so byType(IconButton) is ambiguous now.
+      final refreshButton = find.ancestor(
+        of: find.byType(CircularProgressIndicator),
+        matching: find.byType(IconButton),
+      );
+      await tester.tap(refreshButton);
       await tester.pump();
       expect(taps, 0); // disabled → no callback
     });
@@ -84,6 +90,38 @@ void main() {
         DriverFlightInfoRow(ride: plain, isDark: false, onRefresh: () {}),
       );
       expect(find.byIcon(Icons.refresh), findsNothing);
+    });
+
+    // The Flightradar (radar) and refresh actions must line up: same 32×32 box and
+    // the same vertical center. Mutation: give either button a different size/footprint
+    // (e.g. drop the radar's SizedBox(32) wrapper) → centers/heights diverge → red.
+    testWidgets('flightradar and refresh actions are equal-sized and aligned', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        DriverFlightInfoRow(ride: airportRide, isDark: false, onRefresh: () {}),
+      );
+
+      final radar = tester.getRect(find.byIcon(Icons.radar));
+      final refresh = tester.getRect(find.byIcon(Icons.refresh));
+      // Both flight-action icons share the same vertical center (aligned with each other).
+      expect((radar.center.dy - refresh.center.dy).abs(), lessThan(0.5));
+
+      // Both actions render inside an equal-sized 32×32 IconButton footprint.
+      final radarBox = tester.getSize(
+        find.ancestor(
+          of: find.byIcon(Icons.radar),
+          matching: find.byType(IconButton),
+        ),
+      );
+      final refreshBox = tester.getSize(
+        find.ancestor(
+          of: find.byIcon(Icons.refresh),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(radarBox, refreshBox);
     });
   });
 }
