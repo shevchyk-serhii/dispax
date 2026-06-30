@@ -32,7 +32,11 @@ case class UserDto(
     createdAt: Option[String] = None,
     roles: List[String] = Nil,
     preferredLanguage: Option[String] = None,
-    mustChangePassword: Boolean = false
+    mustChangePassword: Boolean = false,
+    // true when the person has a profile photo. Carried on login (and other UserDto
+    // responses) so the app bar shows the avatar immediately, not just after a
+    // separate /users/profile refresh. Raw bytes are served via GET /api/users/{id}/avatar.
+    hasAvatar: Boolean = false
 ) derives JsonCodec
 
 case class CreateUserRequest(
@@ -172,5 +176,6 @@ object UserDto:
     companyId = person.companyId.map(_.value),
     roles = person.effectiveRoles.map(PersonRole.toWire).toList,
     preferredLanguage = person.preferredLanguage,
-    mustChangePassword = person.mustChangePassword
+    mustChangePassword = person.mustChangePassword,
+    hasAvatar = person.avatarPresent
   )
