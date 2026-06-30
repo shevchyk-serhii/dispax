@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
+import '../../modules/core/services/error_messages.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
@@ -149,9 +150,18 @@ class _ClientBookScreenContentState extends State<_ClientBookScreenContent> {
               ctx.read<CreateRideFormBloc>().add(const FormCleared());
               widget.onCreated?.call();
             } else if (state.status == RideStateStatus.error) {
+              // The RideBloc is shared with the rest of the app, so a background
+              // load failure also lands here. Only show the booking error when
+              // THIS screen's submit is in flight (form is `submitting`).
+              final formSubmitting =
+                  ctx.read<CreateRideFormBloc>().state.status ==
+                  CreateRideFormStatus.submitting;
+              if (!formSubmitting) return;
               ScaffoldMessenger.of(ctx).showSnackBar(
                 SnackBar(
-                  content: Text(state.errorMessage ?? l10n.failedToCreateRide),
+                  content: Text(
+                    friendlyError(state.error ?? state.errorMessage, l10n),
+                  ),
                   backgroundColor: AppColors.error,
                   duration: const Duration(seconds: 8),
                 ),

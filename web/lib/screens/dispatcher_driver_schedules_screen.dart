@@ -8,6 +8,7 @@ import '../modules/core/services/api_client.dart';
 import '../modules/schedule_management/models/schedule_day.dart';
 import '../modules/schedule_management/services/schedule_service.dart';
 import '../constants/app_colors.dart';
+import '../modules/core/services/error_messages.dart';
 
 /// Dispatcher/Admin screen: pick any driver in the company and view that
 /// driver's full schedule. Reads are served by GET /api/schedules/driver/{id},
@@ -32,7 +33,7 @@ class _DispatcherDriverSchedulesScreenState
 
   bool _loadingDrivers = true;
   bool _loadingSchedule = false;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -69,7 +70,7 @@ class _DispatcherDriverSchedulesScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e;
           _loadingDrivers = false;
         });
       }
@@ -94,7 +95,7 @@ class _DispatcherDriverSchedulesScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e;
           _loadingSchedule = false;
         });
       }
@@ -244,7 +245,7 @@ class _DispatcherDriverSchedulesScreenState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
-              _error ?? '',
+              friendlyError(_error, l10n),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.error),
             ),

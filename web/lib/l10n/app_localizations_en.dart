@@ -1000,6 +1000,31 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get errorNetwork =>
+      'Couldn\'t reach the server. Please check your internet connection and try again.';
+
+  @override
+  String get errorTimeout =>
+      'The server took too long to respond. Please try again.';
+
+  @override
+  String get errorServer =>
+      'Something went wrong on our side. Please try again in a moment.';
+
+  @override
+  String get errorNotFound => 'We couldn\'t find what you were looking for.';
+
+  @override
+  String get errorLoadingData => 'Couldn\'t load the data';
+
+  @override
+  String get errorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get errorSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
   String get unbilledRidesTitle => 'Unbilled Rides';
 
   @override

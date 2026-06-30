@@ -43,7 +43,15 @@ class InitializationBloc
       emit(const InitializationCompleted());
     } catch (e) {
       debugPrint('Error during initialization: $e');
-      emit(InitializationError('Initialization failed: ${e.toString()}'));
+      // Neutral, non-technical message — the splash renders before localization
+      // is ready, and the raw cause must not leak into the UI (it's logged
+      // above and carried on [InitializationError.error] for diagnostics).
+      emit(
+        InitializationError(
+          'Something went wrong while starting the app. Please try again.',
+          error: e,
+        ),
+      );
     }
   }
 }

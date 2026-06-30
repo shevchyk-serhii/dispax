@@ -24,7 +24,7 @@ class SavedPlacesBloc extends Bloc<SavedPlacesEvent, SavedPlacesState> {
       final places = await _addressService.getAddresses(event.clientId);
       emit(SavedPlacesState.loaded(places));
     } catch (e) {
-      emit(SavedPlacesState.error('Failed to load saved places: $e'));
+      emit(SavedPlacesState.error('Failed to load saved places: $e', cause: e));
     }
   }
 
@@ -44,7 +44,7 @@ class SavedPlacesBloc extends Bloc<SavedPlacesEvent, SavedPlacesState> {
       final places = await _addressService.getAddresses(event.clientId);
       emit(SavedPlacesState.loaded(places));
     } catch (e) {
-      emit(SavedPlacesState.error('Failed to save place: $e'));
+      emit(SavedPlacesState.error('Failed to save place: $e', cause: e));
     }
   }
 
@@ -63,7 +63,7 @@ class SavedPlacesBloc extends Bloc<SavedPlacesEvent, SavedPlacesState> {
       final places = await _addressService.getAddresses(event.clientId);
       emit(SavedPlacesState.loaded(places));
     } catch (e) {
-      emit(SavedPlacesState.error('Failed to update place: $e'));
+      emit(SavedPlacesState.error('Failed to update place: $e', cause: e));
     }
   }
 
@@ -77,7 +77,7 @@ class SavedPlacesBloc extends Bloc<SavedPlacesEvent, SavedPlacesState> {
       final places = await _addressService.getAddresses(event.clientId);
       emit(SavedPlacesState.loaded(places));
     } catch (e) {
-      emit(SavedPlacesState.error('Failed to delete place: $e'));
+      emit(SavedPlacesState.error('Failed to delete place: $e', cause: e));
     }
   }
 

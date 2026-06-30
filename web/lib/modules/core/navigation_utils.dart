@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,6 +18,7 @@ import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../screens/ride_details_screen.dart';
 import '../../screens/create_ride_screen.dart';
+import 'services/api_client.dart';
 
 class NavigationUtils {
   /// Shows the "Navigate to" picker (pickup / drop-off) and opens Google Maps
@@ -80,7 +82,7 @@ class NavigationUtils {
       if (context.mounted) {
         NavigationHelper.showSnackBar(
           context,
-          l10n.couldNotOpenNavigation(e.toString()),
+          l10n.couldNotOpenNavigation(friendlyError(e, l10n)),
           isError: true,
         );
       }
@@ -292,7 +294,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   late bool _isAirportTransfer;
   late List<String> _tags;
   bool _saving = false;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -409,13 +411,16 @@ class _EditRideDialogState extends State<_EditRideDialog> {
         if (mounted) Navigator.of(context).pop(updated);
       } else {
         setState(() {
-          _error = l10n.serverErrorMessage(response.statusCode.toString());
+          _error = ApiException(
+            'Update ride failed',
+            statusCode: response.statusCode,
+          );
           _saving = false;
         });
       }
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e;
         _saving = false;
       });
     }
@@ -424,7 +429,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     return AlertDialog(
       title: Text(l10n.editRideDialogTitle),
       content: SizedBox(

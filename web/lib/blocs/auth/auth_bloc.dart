@@ -200,7 +200,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       }
     } catch (e) {
-      emit(AuthState.error('Initialization error: $e'));
+      emit(AuthState.error('Initialization error: $e', cause: e));
     }
   }
 
@@ -286,7 +286,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthState.error('Invalid email or password'));
       }
     } catch (e) {
-      emit(AuthState.error('Login error: $e'));
+      emit(AuthState.error('Login error: $e', cause: e));
     }
   }
 
@@ -317,6 +317,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           status: AuthStatus.mustChangePassword,
           user: state.user,
           errorMessage: 'Failed to change password: $e',
+          error: e,
         ),
       );
       return;
@@ -339,7 +340,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _clearSession();
       emit(AuthState.unauthenticated());
     } catch (e) {
-      emit(AuthState.error('Logout error: $e'));
+      emit(AuthState.error('Logout error: $e', cause: e));
     }
   }
 
@@ -455,6 +456,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           status: AuthStatus.error,
           errorMessage: 'Biometric authentication error: $e',
+          error: e,
         ),
       );
     }
@@ -508,6 +510,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           status: AuthStatus.error,
           errorMessage: 'Biometric setup error: $e',
+          error: e,
         ),
       );
     }

@@ -71,7 +71,10 @@ void main() {
       act: (bloc) => bloc.add(const ClientLoadRequested()),
       expect: () => [
         ClientState.loading(),
-        isA<ClientState>().having((s) => s.hasError, 'hasError', true),
+        isA<ClientState>()
+            .having((s) => s.hasError, 'hasError', true)
+            // Phase 3: typed cause carried for friendlyError.
+            .having((s) => s.error, 'error', isA<ApiException>()),
       ],
     );
 

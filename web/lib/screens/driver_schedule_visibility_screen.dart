@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,7 +32,7 @@ class _DriverScheduleVisibilityScreenState
   /// driverId → canViewOtherSchedules flag (populated from API; absent = false)
   Map<String, bool> _visibilityMap = {};
   bool _loading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -80,7 +81,7 @@ class _DriverScheduleVisibilityScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e;
           _loading = false;
         });
       }
@@ -100,7 +101,9 @@ class _DriverScheduleVisibilityScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToUpdateVisibilityError(e.toString())),
+            content: Text(
+              l10n.failedToUpdateVisibilityError(friendlyError(e, l10n)),
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -163,7 +166,7 @@ class _DriverScheduleVisibilityScreenState
     if (_loading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     if (error != null) {
       return Center(
         child: Column(

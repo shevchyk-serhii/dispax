@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../modules/core/services/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/blocs.dart';
@@ -780,7 +781,7 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
         if (mounted) {
           messenger.showSnackBar(
             SnackBar(
-              content: Text(l10n.failedToSubmitRating(e.toString())),
+              content: Text(l10n.failedToSubmitRating(friendlyError(e, l10n))),
               backgroundColor: AppColors.error,
             ),
           );

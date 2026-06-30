@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class AnalyticsPanel extends StatefulWidget {
   const AnalyticsPanel({super.key});
@@ -18,7 +19,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>>? _dailyStats;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -50,7 +51,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -77,7 +78,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                             color: AppColors.error,
                           ),
                           const SizedBox(height: 12),
-                          Text(_error ?? ''),
+                          Text(friendlyError(_error, l10n)),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _loadStats,

@@ -8,6 +8,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -19,7 +20,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   List<Ride> _unpaidRides = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -56,7 +57,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -172,7 +173,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.genericError(e.toString())),
+          content: Text(friendlyError(e, l10n)),
           backgroundColor: AppColors.error,
         ),
       );
@@ -234,7 +235,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     if (error != null) {
       return Center(
         child: Column(

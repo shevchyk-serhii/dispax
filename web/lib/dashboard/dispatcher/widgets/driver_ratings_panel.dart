@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class DriverRatingsPanel extends StatefulWidget {
   const DriverRatingsPanel({super.key});
@@ -17,7 +18,7 @@ class DriverRatingsPanel extends StatefulWidget {
 class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
   List<Map<String, dynamic>>? _data;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -41,14 +42,15 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final error = _error;
+    final l10n = AppLocalizations.of(context)!;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     return Column(
       children: [
         _buildHeader(),
@@ -70,7 +72,6 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
                           return ElevatedButton(
                             onPressed: _loadData,
                             child: Text(l10n.retry),

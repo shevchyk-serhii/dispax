@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../modules/core/services/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../l10n/app_localizations.dart';
@@ -408,7 +409,9 @@ class MyRidesTab extends StatelessWidget {
         if (context.mounted) {
           final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToCancelRide(e.toString()))),
+            SnackBar(
+              content: Text(l10n.failedToCancelRide(friendlyError(e, l10n))),
+            ),
           );
         }
       }

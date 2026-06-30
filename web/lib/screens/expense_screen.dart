@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../modules/core/models/expense.dart';
 import '../modules/core/services/expense_service.dart';
 import '../dashboard/superadmin/widgets/billing_widgets.dart';
+import '../modules/core/services/error_messages.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});
@@ -17,7 +18,7 @@ class ExpenseScreen extends StatefulWidget {
 class _ExpenseScreenState extends State<ExpenseScreen> {
   List<Expense> _expenses = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   late ExpenseService _expenseService;
 
   /// Current month label derived at build time.
@@ -63,7 +64,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -166,7 +167,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.genericError(e.toString()))),
+                      SnackBar(content: Text(friendlyError(e, l10n))),
                     );
                   }
                 }
@@ -216,9 +217,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       } catch (e) {
         if (mounted) {
           final errL10n = AppLocalizations.of(context)!;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errL10n.genericError(e.toString()))),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(friendlyError(e, errL10n))));
         }
       }
     }
@@ -264,7 +265,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error ?? ''),
+                      Text(friendlyError(_error, l10n)),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadExpenses,

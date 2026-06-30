@@ -8,6 +8,7 @@ import '../constants/app_dimensions.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/models/ride_template.dart';
 import '../modules/core/models/person.dart';
+import '../modules/core/services/error_messages.dart';
 
 class RideTemplatesScreen extends StatefulWidget {
   const RideTemplatesScreen({super.key});
@@ -20,7 +21,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
   List<RideTemplate> _templates = [];
   List<Person> _clients = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -58,7 +59,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -73,7 +74,9 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.failedToDeactivateTemplate(e.toString())),
+          content: Text(
+            l10n.failedToDeactivateTemplate(friendlyError(e, l10n)),
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -119,7 +122,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.genericError(e.toString())),
+          content: Text(friendlyError(e, l10n)),
           backgroundColor: AppColors.error,
         ),
       );
@@ -324,7 +327,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                   if (!mounted) return;
                   messenger.showSnackBar(
                     SnackBar(
-                      content: Text(l10n.genericError(e.toString())),
+                      content: Text(friendlyError(e, l10n)),
                       backgroundColor: AppColors.error,
                     ),
                   );
@@ -410,7 +413,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error ?? '', textAlign: TextAlign.center),
+            Text(friendlyError(_error, l10n), textAlign: TextAlign.center),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
           ],

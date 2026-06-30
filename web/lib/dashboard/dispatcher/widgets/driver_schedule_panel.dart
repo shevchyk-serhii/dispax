@@ -9,6 +9,8 @@ import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/widgets/error_widget.dart';
 import '../utils/conflict_detector.dart';
 import 'assignment_dialog.dart';
 import 'bulk_reassign_dialog.dart';
@@ -190,31 +192,15 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
               }
 
               if (scheduleState.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        scheduleState.errorMessage ?? 'Error loading schedules',
-                      ),
-                      const SizedBox(height: 12),
-                      Builder(
-                        builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
-                          return ElevatedButton(
-                            onPressed: _loadSchedule,
-                            child: Text(l10n.retry),
-                          );
-                        },
-                      ),
-                    ],
+                final l10n = AppLocalizations.of(context)!;
+                return ErrorDisplayWidget(
+                  title: l10n.errorLoadingData,
+                  message: friendlyError(
+                    scheduleState.error ?? scheduleState.errorMessage,
+                    l10n,
                   ),
+                  onRetry: _loadSchedule,
+                  retryLabel: l10n.retry,
                 );
               }
 

@@ -8,6 +8,8 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/services/api_client.dart';
 
 class PayrollScreen extends StatefulWidget {
   const PayrollScreen({super.key});
@@ -24,7 +26,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
   Map<String, dynamic>? _payrollData;
   bool _isLoading = false;
   bool _isLoadingDrivers = true;
-  String? _error;
+  Object? _error;
   double _commissionPercent = 20.0;
 
   @override
@@ -49,7 +51,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
       if (mounted) {
         setState(() {
           _isLoadingDrivers = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -80,14 +82,17 @@ class _PayrollScreenState extends State<PayrollScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load payroll data';
+          _error = ApiException(
+            'Failed to load payroll data',
+            statusCode: response.statusCode,
+          );
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -308,7 +313,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           if (_error != null)
             Center(
               child: Text(
-                _error ?? '',
+                friendlyError(_error, l10n),
                 style: const TextStyle(color: AppColors.error),
               ),
             ),

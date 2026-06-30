@@ -5,6 +5,7 @@ import '../blocs/auth/auth_bloc.dart';
 import '../blocs/auth/auth_event.dart';
 import '../blocs/auth/auth_state.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
 import '../modules/core/models/person.dart';
 
 /// Full-screen gate shown right after a user logs in with a temporary password.
@@ -66,7 +67,11 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           final busy = state.isLoading;
-          final errorMessage = state.errorMessage;
+          // Network-class change-password failures carry a typed cause → map to
+          // a localized message; domain messages (none here today) show verbatim.
+          final errorMessage = state.error != null
+              ? friendlyError(state.error, l10n)
+              : state.errorMessage;
           return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,9 @@ import '../../../constants/app_constants.dart';
 
 class UnauthorizedException extends ApiException {
   UnauthorizedException() : super('Unauthorized: session expired');
+
+  @override
+  AppErrorKind get kind => AppErrorKind.unauthorized;
 }
 
 class ApiClient {
@@ -82,19 +86,23 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      debugPrint('❌ TimeoutException: $e');
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } on SocketException catch (e) {
       debugPrint('❌ SocketException: $e');
-      throw ApiException(_networkErrorMessage(e));
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } on HttpException catch (e) {
       debugPrint('❌ HttpException: $e');
-      throw ApiException('HTTP error: $e');
+      throw ApiException('HTTP error: $e', cause: e);
     } on FormatException catch (e) {
       debugPrint('❌ FormatException: $e');
-      throw ApiException('Format error: $e');
+      throw ApiException('Format error: $e', cause: e);
     } catch (e) {
       debugPrint('❌ General Exception: $e');
       throw ApiException(
         'Failed to perform GET request to $_baseUrl$endpoint: $e',
+        cause: e,
       );
     }
   }
@@ -114,8 +122,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform POST request: $e');
+      throw ApiException('Failed to perform POST request: $e', cause: e);
     }
   }
 
@@ -134,8 +146,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform PUT request: $e');
+      throw ApiException('Failed to perform PUT request: $e', cause: e);
     }
   }
 
@@ -157,8 +173,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform PATCH request: $e');
+      throw ApiException('Failed to perform PATCH request: $e', cause: e);
     }
   }
 
@@ -173,8 +193,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform DELETE request: $e');
+      throw ApiException('Failed to perform DELETE request: $e', cause: e);
     }
   }
 
@@ -213,11 +237,14 @@ class ApiClient {
       } else {
         throw ApiException('Login failed with status: ${response.statusCode}');
       }
+    } on TimeoutException catch (e) {
+      debugPrint('❌ TimeoutException (login): $e');
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } on SocketException catch (e) {
       debugPrint('❌ SocketException (login): $e');
-      throw ApiException(_networkErrorMessage(e));
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Login failed: $e');
+      throw ApiException('Login failed: $e', cause: e);
     }
   }
 
@@ -251,8 +278,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to upload file: $e');
+      throw ApiException('Failed to upload file: $e', cause: e);
     }
   }
 
@@ -280,7 +311,10 @@ class ApiClient {
       rethrow;
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Failed to fetch bytes from $_baseUrl$endpoint: $e');
+      throw ApiException(
+        'Failed to fetch bytes from $_baseUrl$endpoint: $e',
+        cause: e,
+      );
     }
   }
 
@@ -312,9 +346,31 @@ class ApiClient {
   }
 }
 
+/// Coarse classification of a failure, derived from the HTTP status code or the
+/// underlying cause. The UI maps this to a short, localized, non-technical
+/// message (see `friendlyError` in `error_messages.dart`) instead of surfacing
+/// the raw [ApiException.message], which may contain the backend URL, the
+/// exception class name, or a stack-trace-like tail.
+enum AppErrorKind {
+  network,
+  timeout,
+  unauthorized,
+  notFound,
+  conflict,
+  validation,
+  server,
+  unknown,
+}
+
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
+
+  /// The original lower-level error this exception wrapped (e.g. a
+  /// [TimeoutException] or [SocketException]), when known. Carried so [kind]
+  /// can classify network/timeout failures — for which [statusCode] is null and
+  /// [message] is just a wrapped string — without re-parsing the message text.
+  final Object? cause;
 
   /// Structured schedule-conflict details from the backend (see ApiError
   /// .scheduleConflict on the server): the conflicting ride's id, client, route
@@ -323,7 +379,36 @@ class ApiException implements Exception {
   /// fallback [message]. Null for every other error.
   final ScheduleConflictInfo? scheduleConflict;
 
-  ApiException(this.message, {this.statusCode, this.scheduleConflict});
+  ApiException(
+    this.message, {
+    this.statusCode,
+    this.cause,
+    this.scheduleConflict,
+  });
+
+  /// Classifies this failure for the UI. Status code wins when present;
+  /// otherwise the wrapped [cause] (or the message, as a last resort) is used to
+  /// tell a timeout from a generic network drop. Never surfaces the raw text.
+  AppErrorKind get kind {
+    final code = statusCode;
+    if (code != null) {
+      if (code == 401) return AppErrorKind.unauthorized;
+      if (code == 404) return AppErrorKind.notFound;
+      if (code == 409) return AppErrorKind.conflict;
+      if (code >= 500) return AppErrorKind.server;
+      if (code >= 400) return AppErrorKind.validation;
+    }
+    final c = cause;
+    if (c is TimeoutException) return AppErrorKind.timeout;
+    if (c is SocketException) return AppErrorKind.network;
+    // Fall back to the message only when no structured signal is available
+    // (e.g. an exception constructed before causes were threaded through).
+    if (c == null) {
+      if (message.contains('TimeoutException')) return AppErrorKind.timeout;
+      if (message.contains('SocketException')) return AppErrorKind.network;
+    }
+    return AppErrorKind.unknown;
+  }
 
   /// Builds an exception from a failed [http.Response], surfacing the server's
   /// own error message instead of a bare status code. The backend returns

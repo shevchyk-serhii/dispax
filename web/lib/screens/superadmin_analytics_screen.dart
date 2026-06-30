@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -117,7 +118,11 @@ class AnalyticsLoaded extends SuperAdminAnalyticsState {
 
 class AnalyticsError extends SuperAdminAnalyticsState {
   final String message;
-  AnalyticsError(this.message);
+
+  /// Typed cause, for `friendlyError`. Null when [message] is a fixed domain
+  /// string.
+  final Object? error;
+  AnalyticsError(this.message, {this.error});
 }
 
 class SuperAdminAnalyticsBloc
@@ -174,7 +179,7 @@ class SuperAdminAnalyticsBloc
       );
       emit(AnalyticsLoaded(bundle));
     } catch (e) {
-      emit(AnalyticsError(e.toString()));
+      emit(AnalyticsError('Failed to load analytics', error: e));
     }
   }
 }
@@ -230,7 +235,7 @@ class _AnalyticsView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Error: ${state.message}',
+                        friendlyError(state.error ?? state.message, l10n),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),

@@ -15,6 +15,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_styles.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   final Person client;
@@ -28,7 +29,7 @@ class ClientDetailScreen extends StatefulWidget {
 class _ClientDetailScreenState extends State<ClientDetailScreen> {
   List<Ride>? _rides;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   late Person _client;
 
   @override
@@ -56,7 +57,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -230,7 +231,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     if (error != null) {
       return Center(
         child: Column(

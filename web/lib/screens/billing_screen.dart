@@ -4,6 +4,7 @@ import '../modules/billing/pdf_download_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_download_web.dart';
 import '../modules/billing/pdf_preview_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_preview_web.dart';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
@@ -430,7 +431,7 @@ class _BillingScreenState extends State<BillingScreen>
                   await _loadInvoices();
                 } catch (e) {
                   messenger.showSnackBar(
-                    SnackBar(content: Text(l10n.genericError(e.toString()))),
+                    SnackBar(content: Text(friendlyError(e, l10n))),
                   );
                 }
               },
@@ -972,7 +973,7 @@ class _BillingScreenState extends State<BillingScreen>
                   await _loadCompanies();
                 } catch (e) {
                   messenger.showSnackBar(
-                    SnackBar(content: Text(l10n.genericError(e.toString()))),
+                    SnackBar(content: Text(friendlyError(e, l10n))),
                   );
                 }
               },
@@ -1012,7 +1013,7 @@ class _BillingScreenState extends State<BillingScreen>
                 await _loadCompanies();
               } catch (e) {
                 messenger.showSnackBar(
-                  SnackBar(content: Text(l10n.genericError(e.toString()))),
+                  SnackBar(content: Text(friendlyError(e, l10n))),
                 );
               }
             },
@@ -1119,9 +1120,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
       widget.onRefresh();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.genericError(e.toString()))),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(friendlyError(e, l10n))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1138,9 +1137,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
     try {
       bytes = await widget.invoiceService.downloadPdf(inv.id);
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.genericError(e.toString()))),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(friendlyError(e, l10n))));
       return;
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -1351,9 +1348,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                         );
                       } catch (e) {
                         messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(btnL10n.genericError(e.toString())),
-                          ),
+                          SnackBar(content: Text(friendlyError(e, btnL10n))),
                         );
                       } finally {
                         if (mounted) setState(() => _loading = false);

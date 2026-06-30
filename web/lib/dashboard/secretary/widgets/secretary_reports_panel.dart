@@ -7,6 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class SecretaryReportsPanel extends StatefulWidget {
   const SecretaryReportsPanel({super.key});
@@ -18,7 +19,7 @@ class SecretaryReportsPanel extends StatefulWidget {
 class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -103,7 +104,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     if (error != null) {
       return Center(
         child: Column(

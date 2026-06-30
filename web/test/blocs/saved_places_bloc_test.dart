@@ -79,7 +79,10 @@ void main() {
               (s) => s.errorMessage,
               'errorMessage',
               contains('Failed to load saved places'),
-            ),
+            )
+            // Phase 3: typed cause carried (no display site today, asserted at
+            // the bloc level — see the error-ux plan's SavedPlaces note).
+            .having((s) => s.error, 'error', isNotNull),
       ],
     );
 

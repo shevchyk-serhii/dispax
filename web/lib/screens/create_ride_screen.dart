@@ -6,6 +6,7 @@ import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/helpers/create_ride_form_helper.dart';
 import '../modules/ride_management/helpers/conflict_dialog_text.dart';
 import '../modules/core/services/api_client.dart' show ScheduleConflictInfo;
+import '../modules/core/services/error_messages.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
@@ -156,13 +157,26 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
                 Navigator.of(context).pop();
               }
             } else if (state.status == RideStateStatus.error) {
+              // Only react to an error from THIS screen's own submit. The
+              // RideBloc is shared across the dashboard, so a background load
+              // failure (e.g. the dispatcher's pending-rides timeout) also
+              // reaches here; without this guard it surfaced this create form's
+              // error banner over an unrelated screen. Our submit is in flight
+              // exactly while the form is `submitting`.
+              final formSubmitting =
+                  context.read<CreateRideFormBloc>().state.status ==
+                  CreateRideFormStatus.submitting;
+              if (!formSubmitting) return;
               // Leave the submitting state so the "Create Ride" button
               // re-enables and the user can fix the field and retry.
               context.read<CreateRideFormBloc>().add(const SubmissionFailed());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    state.errorMessage ?? listenerL10n.failedToCreateRide,
+                    friendlyError(
+                      state.error ?? state.errorMessage,
+                      listenerL10n,
+                    ),
                   ),
                   backgroundColor: AppColors.error,
                   duration: const Duration(seconds: 8),

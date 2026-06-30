@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/core/services/api_client.dart' show ApiException;
 import '../../modules/core/models/person.dart';
 
 enum AuthStatus {
@@ -17,6 +18,14 @@ class AuthState extends Equatable {
   final AuthStatus status;
   final Person? user;
   final String? errorMessage;
+
+  /// Typed cause for NETWORK-class auth failures (login/logout/init/biometric
+  /// transport errors). Null for intentional DOMAIN messages (invalid
+  /// credentials, session expired, "no user to change password for", a biometric
+  /// plugin reason) — those are already human-readable and must NOT be collapsed
+  /// to a generic message. The display sites use `state.error` to decide: typed
+  /// cause → `friendlyError`; otherwise show [errorMessage] verbatim.
+  final Object? error;
   final bool biometricEnabled;
   final bool biometricAvailable;
 
@@ -24,6 +33,7 @@ class AuthState extends Equatable {
     this.status = AuthStatus.initial,
     this.user,
     this.errorMessage,
+    this.error,
     this.biometricEnabled = false,
     this.biometricAvailable = false,
   });
@@ -74,14 +84,18 @@ class AuthState extends Equatable {
     );
   }
 
+  /// [cause] should be set ONLY for network-class failures (so the UI maps it
+  /// via `friendlyError`); leave it null for intentional domain messages.
   factory AuthState.error(
     String message, {
+    Object? cause,
     bool biometricEnabled = false,
     bool biometricAvailable = false,
   }) {
     return AuthState(
       status: AuthStatus.error,
       errorMessage: message,
+      error: cause,
       biometricEnabled: biometricEnabled,
       biometricAvailable: biometricAvailable,
     );
@@ -91,6 +105,7 @@ class AuthState extends Equatable {
     AuthStatus? status,
     Person? user,
     String? errorMessage,
+    Object? error,
     bool? biometricEnabled,
     bool? biometricAvailable,
   }) {
@@ -98,6 +113,7 @@ class AuthState extends Equatable {
       status: status ?? this.status,
       user: user ?? this.user,
       errorMessage: errorMessage,
+      error: error,
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
       biometricAvailable: biometricAvailable ?? this.biometricAvailable,
     );
@@ -114,6 +130,7 @@ class AuthState extends Equatable {
     status,
     user,
     errorMessage,
+    error is ApiException ? (error as ApiException).kind : error?.runtimeType,
     biometricEnabled,
     biometricAvailable,
   ];
