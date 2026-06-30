@@ -274,6 +274,20 @@
     }
   },
   "pickupTimeComputedAuto": "Розраховано автоматично на основі часу відправлення рейсу",
+  "addressNotFound": "Не вдалося знайти адресу — перевірте правильність написання.",
+  "addressOutOfServiceArea": "Адреса поза зоною обслуговування (близько {distanceKm} км від Мюнхена, макс. {radiusKm} км).",
+  "@addressOutOfServiceArea": {
+    "placeholders": {
+      "distanceKm": {"type": "int"},
+      "radiusKm": {"type": "int"}
+    }
+  },
+  "addressOutOfServiceAreaShort": "Адреса поза зоною обслуговування (макс. {radiusKm} км від Мюнхена).",
+  "@addressOutOfServiceAreaShort": {
+    "placeholders": {
+      "radiusKm": {"type": "int"}
+    }
+  },
   "markUnavailable": "Позначити як недоступний",
   "driverUnavailable": "Водій недоступний",
   "unavailabilityReason": "Причина",

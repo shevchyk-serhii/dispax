@@ -298,6 +298,20 @@
     }
   },
   "pickupTimeComputedAuto": "Computed automatically based on flight departure",
+  "addressNotFound": "Address could not be located — double-check the spelling.",
+  "addressOutOfServiceArea": "Address is outside the service area (about {distanceKm} km from Munich, max {radiusKm} km).",
+  "@addressOutOfServiceArea": {
+    "placeholders": {
+      "distanceKm": {"type": "int"},
+      "radiusKm": {"type": "int"}
+    }
+  },
+  "addressOutOfServiceAreaShort": "Address is outside the service area (max {radiusKm} km from Munich).",
+  "@addressOutOfServiceAreaShort": {
+    "placeholders": {
+      "radiusKm": {"type": "int"}
+    }
+  },
   "markUnavailable": "Mark Unavailable",
   "driverUnavailable": "Driver Unavailable",
   "unavailabilityReason": "Reason",

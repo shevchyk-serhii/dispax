@@ -1318,6 +1318,24 @@ abstract class AppLocalizations {
   /// **'Computed automatically based on flight departure'**
   String get pickupTimeComputedAuto;
 
+  /// No description provided for @addressNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Address could not be located — double-check the spelling.'**
+  String get addressNotFound;
+
+  /// No description provided for @addressOutOfServiceArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Address is outside the service area (about {distanceKm} km from Munich, max {radiusKm} km).'**
+  String addressOutOfServiceArea(int distanceKm, int radiusKm);
+
+  /// No description provided for @addressOutOfServiceAreaShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Address is outside the service area (max {radiusKm} km from Munich).'**
+  String addressOutOfServiceAreaShort(int radiusKm);
+
   /// No description provided for @markUnavailable.
   ///
   /// In en, this message translates to:

@@ -274,6 +274,20 @@
     }
   },
   "pickupTimeComputedAuto": "Automatisch basierend auf dem Abflugzeitpunkt berechnet",
+  "addressNotFound": "Adresse konnte nicht gefunden werden — bitte Schreibweise prüfen.",
+  "addressOutOfServiceArea": "Adresse liegt außerhalb des Liefergebiets (etwa {distanceKm} km von München, max. {radiusKm} km).",
+  "@addressOutOfServiceArea": {
+    "placeholders": {
+      "distanceKm": {"type": "int"},
+      "radiusKm": {"type": "int"}
+    }
+  },
+  "addressOutOfServiceAreaShort": "Adresse liegt außerhalb des Liefergebiets (max. {radiusKm} km von München).",
+  "@addressOutOfServiceAreaShort": {
+    "placeholders": {
+      "radiusKm": {"type": "int"}
+    }
+  },
   "markUnavailable": "Als nicht verfügbar markieren",
   "driverUnavailable": "Fahrer nicht verfügbar",
   "unavailabilityReason": "Grund",
