@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
 
 class GdprScreen extends StatefulWidget {
   const GdprScreen({super.key});
@@ -17,7 +18,7 @@ class _GdprScreenState extends State<GdprScreen> {
   List<Map<String, dynamic>> _consents = [];
   List<Map<String, dynamic>> _requests = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -75,7 +76,7 @@ class _GdprScreenState extends State<GdprScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -99,7 +100,7 @@ class _GdprScreenState extends State<GdprScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.genericError(e.toString()))));
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e, l10n))));
     }
   }
 
@@ -118,9 +119,9 @@ class _GdprScreenState extends State<GdprScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.exportFailed(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.exportFailed(friendlyError(e, l10n)))),
+      );
     }
   }
 
@@ -162,7 +163,7 @@ class _GdprScreenState extends State<GdprScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.genericError(e.toString()))));
+      ).showSnackBar(SnackBar(content: Text(friendlyError(e, l10n))));
     }
   }
 
@@ -186,7 +187,7 @@ class _GdprScreenState extends State<GdprScreen> {
                 children: [
                   Icon(Icons.error_outline, size: 48, color: AppColors.error),
                   const SizedBox(height: 12),
-                  Text(_error ?? ''),
+                  Text(friendlyError(_error, l10n)),
                   ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),
                 ],
               ),

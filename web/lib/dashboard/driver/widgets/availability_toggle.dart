@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../modules/core/services/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
@@ -69,7 +70,7 @@ class _AvailabilityToggleState extends State<AvailabilityToggle> {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToUpdate(e.toString())),
+            content: Text(l10n.failedToUpdate(friendlyError(e, l10n))),
             backgroundColor: AppColors.error,
           ),
         );

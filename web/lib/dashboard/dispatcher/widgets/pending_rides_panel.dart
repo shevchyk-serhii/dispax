@@ -1538,7 +1538,7 @@ class _DriverSelectionSheet extends StatefulWidget {
 
 class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
   List<Person>? _drivers;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -1551,7 +1551,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
       final drivers = await widget.userService.getDrivers();
       if (mounted) setState(() => _drivers = drivers);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e);
     }
   }
 
@@ -1621,7 +1621,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
     if (_error != null) {
       return Center(
         child: Text(
-          'Error: $_error',
+          friendlyError(_error, l10n),
           style: const TextStyle(color: AppColors.error),
         ),
       );

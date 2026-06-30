@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class DriverScorecardPanel extends StatefulWidget {
   const DriverScorecardPanel({super.key});
@@ -17,7 +18,7 @@ class DriverScorecardPanel extends StatefulWidget {
 class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
   List<Map<String, dynamic>>? _data;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   String _sortBy = 'rides';
 
   @override
@@ -42,7 +43,7 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -82,6 +83,7 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildHeader(),
@@ -99,11 +101,10 @@ class _DriverScorecardPanelState extends State<DriverScorecardPanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error ?? ''),
+                      Text(friendlyError(_error, l10n)),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
                           return ElevatedButton(
                             onPressed: _loadData,
                             child: Text(l10n.retry),

@@ -8,6 +8,7 @@ import '../constants/app_dimensions.dart';
 import '../constants/app_styles.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/models/geofence.dart';
+import '../modules/core/services/error_messages.dart';
 
 class GeofenceScreen extends StatefulWidget {
   const GeofenceScreen({super.key});
@@ -192,9 +193,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(
-                context,
-              )!.failedToDeleteGeofence(e.toString()),
+              AppLocalizations.of(context)!.failedToDeleteGeofence(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
             ),
           ),
         );
@@ -234,9 +235,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.genericError(e.toString()),
-            ),
+            content: Text(friendlyError(e, AppLocalizations.of(context)!)),
           ),
         );
       }

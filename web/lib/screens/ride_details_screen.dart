@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
@@ -621,7 +622,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         rideBloc.add(RideUpdated(ride: cancelledRide));
         _showSuccessMessage(l10n.rideCancelledSuccess);
       } catch (e) {
-        _showErrorMessage(l10n.failedToCancelRide(e.toString()));
+        _showErrorMessage(l10n.failedToCancelRide(friendlyError(e, l10n)));
       } finally {
         setState(() => _isLoading = false);
       }
@@ -652,7 +653,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         });
         _showSuccessMessage(l10n.thankYouForRating);
       } catch (e) {
-        _showErrorMessage(l10n.failedToSubmitRating(e.toString()));
+        _showErrorMessage(l10n.failedToSubmitRating(friendlyError(e, l10n)));
       } finally {
         setState(() => _isLoading = false);
       }
@@ -708,7 +709,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
       _showSuccessMessage(l10n.rideStatusUpdatedSuccess);
     } catch (e) {
-      _showErrorMessage(l10n.failedToUpdateRideStatus(e.toString()));
+      _showErrorMessage(l10n.failedToUpdateRideStatus(friendlyError(e, l10n)));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -729,7 +730,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
       _showSuccessMessage(l10n.driverAssignedSuccess);
     } catch (e) {
-      _showErrorMessage(l10n.failedToAssignDriver(e.toString()));
+      _showErrorMessage(l10n.failedToAssignDriver(friendlyError(e, l10n)));
     } finally {
       setState(() => _isLoading = false);
     }

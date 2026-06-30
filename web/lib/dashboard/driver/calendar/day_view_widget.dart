@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../modules/core/services/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -230,7 +231,9 @@ class DayViewWidget extends StatelessWidget {
           if (context.mounted) {
             NavigationHelper.showSnackBar(
               context,
-              AppLocalizations.of(context)!.failedToSetPrice(e.toString()),
+              AppLocalizations.of(context)!.failedToSetPrice(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
               isError: true,
             );
           }

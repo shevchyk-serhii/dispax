@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,7 +18,7 @@ class AdminUsersScreen extends StatefulWidget {
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   // Internal filter key — compared with API role strings (lowercase)
   String _roleFilterKey = 'all';
   final _searchController = TextEditingController();
@@ -59,7 +60,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -148,7 +149,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.failedToChangeRole(e.toString()),
+              AppLocalizations.of(context)!.failedToChangeRole(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
             ),
             backgroundColor: AppColors.error,
           ),
@@ -182,7 +185,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.failedToChangeStatus(e.toString()),
+              AppLocalizations.of(context)!.failedToChangeStatus(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
             ),
             backgroundColor: AppColors.error,
           ),
@@ -276,9 +281,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(
-                            context,
-                          )!.failedToCreateUser(e.toString()),
+                          AppLocalizations.of(context)!.failedToCreateUser(
+                            friendlyError(e, AppLocalizations.of(context)!),
+                          ),
                         ),
                         backgroundColor: AppColors.error,
                       ),
@@ -296,6 +301,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildHeader(),
@@ -315,7 +321,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error ?? ''),
+                      Text(friendlyError(_error, l10n)),
                       const SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _loadUsers,

@@ -732,7 +732,7 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToUpdate(e.toString())),
+            content: Text(l10n.failedToUpdate(friendlyError(e, l10n))),
             backgroundColor: AppColors.error,
           ),
         );

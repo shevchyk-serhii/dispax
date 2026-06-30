@@ -6,6 +6,7 @@ import '../constants/app_colors.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../modules/ride_management/services/ride_service.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
 
 class RideExportScreen extends StatefulWidget {
   const RideExportScreen({super.key});
@@ -17,7 +18,7 @@ class RideExportScreen extends StatefulWidget {
 class _RideExportScreenState extends State<RideExportScreen> {
   List<Ride> _rides = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   String _filterStatus = 'All';
   DateTimeRange? _dateRange;
   late RideService _rideService;
@@ -45,7 +46,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -154,7 +155,7 @@ class _RideExportScreenState extends State<RideExportScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error ?? ''),
+                      Text(friendlyError(_error, l10n)),
                       ElevatedButton(
                         onPressed: _loadRides,
                         child: Text(l10n.retry),

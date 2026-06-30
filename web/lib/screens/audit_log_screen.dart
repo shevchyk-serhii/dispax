@@ -7,6 +7,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/core/models/audit_entry.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
 
 class AuditLogScreen extends StatefulWidget {
   const AuditLogScreen({super.key});
@@ -19,7 +20,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   List<AuditEntry> _entries = [];
   List<AuditEntry> _filteredEntries = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   String _entityTypeFilter = 'All';
   final _searchController = TextEditingController();
 
@@ -53,7 +54,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -125,7 +126,7 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     return Column(
       children: [
         _buildHeader(l10n),

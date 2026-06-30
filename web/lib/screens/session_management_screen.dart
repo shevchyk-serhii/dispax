@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
+import '../modules/core/services/api_client.dart';
 
 class SessionManagementScreen extends StatefulWidget {
   const SessionManagementScreen({super.key});
@@ -17,7 +19,7 @@ class SessionManagementScreen extends StatefulWidget {
 class _SessionManagementScreenState extends State<SessionManagementScreen> {
   List<Map<String, dynamic>> _sessions = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -45,14 +47,17 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load sessions (${resp.statusCode})';
+          _error = ApiException(
+            'Failed to load sessions',
+            statusCode: resp.statusCode,
+          );
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -92,9 +97,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.genericError(e.toString()),
-          ),
+          content: Text(friendlyError(e, AppLocalizations.of(context)!)),
         ),
       );
     }
@@ -137,9 +140,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.genericError(e.toString()),
-          ),
+          content: Text(friendlyError(e, AppLocalizations.of(context)!)),
         ),
       );
     }
@@ -179,7 +180,7 @@ class _SessionManagementScreenState extends State<SessionManagementScreen> {
                 children: [
                   Icon(Icons.error_outline, size: 48, color: AppColors.error),
                   const SizedBox(height: 12),
-                  Text(_error ?? ''),
+                  Text(friendlyError(_error, l10n)),
                   ElevatedButton(
                     onPressed: _loadSessions,
                     child: Text(l10n.retry),

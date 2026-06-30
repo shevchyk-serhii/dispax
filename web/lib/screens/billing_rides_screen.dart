@@ -5,6 +5,7 @@ import '../modules/billing/pdf_download_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_download_web.dart';
 import '../modules/billing/pdf_preview_stub.dart'
     if (dart.library.html) '../modules/billing/pdf_preview_web.dart';
+import '../modules/core/services/error_messages.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
@@ -38,7 +39,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
   bool _loadingCompanies = true;
   bool _loadingRides = false;
   bool _creating = false;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -66,7 +67,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       if (mounted) {
         setState(() {
           _loadingCompanies = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -93,7 +94,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       if (mounted) {
         setState(() {
           _loadingRides = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -144,9 +145,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       _showCreatedDialog(filled);
     } catch (e) {
       if (mounted) setState(() => _creating = false);
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.genericError(e.toString()))),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(friendlyError(e, l10n))));
     }
   }
 
@@ -190,7 +189,9 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
               } catch (e) {
                 messenger.showSnackBar(
                   SnackBar(
-                    content: Text(btnL10n.pdfDownloadError(e.toString())),
+                    content: Text(
+                      btnL10n.pdfDownloadError(friendlyError(e, btnL10n)),
+                    ),
                   ),
                 );
               }
@@ -211,7 +212,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       bytes = await _invoiceService.downloadPdf(invoice.id);
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.pdfDownloadError(e.toString()))),
+        SnackBar(content: Text(l10n.pdfDownloadError(friendlyError(e, l10n)))),
       );
       return;
     }
@@ -264,7 +265,9 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
       );
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.receiptDownloadError(e.toString()))),
+        SnackBar(
+          content: Text(l10n.receiptDownloadError(friendlyError(e, l10n))),
+        ),
       );
       return;
     }
@@ -377,7 +380,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final error = _error;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     if (error != null) {
       return Center(
         child: Padding(

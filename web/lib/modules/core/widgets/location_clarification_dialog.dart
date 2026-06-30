@@ -5,6 +5,7 @@ import '../../core/services/location_clarification_service.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class LocationClarificationDialog extends StatefulWidget {
   final Ride ride;
@@ -72,7 +73,7 @@ class _LocationClarificationDialogState
       }
     } catch (e) {
       setState(() {
-        _errorMessage = l10n.genericError(e.toString());
+        _errorMessage = friendlyError(e, l10n);
         _isLoading = false;
       });
     }
