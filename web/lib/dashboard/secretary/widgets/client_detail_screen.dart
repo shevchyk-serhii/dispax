@@ -84,6 +84,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        // Override the global theme's CircleBorder: an extended FAB is a pill,
+        // and a circle clip would cut off both the icon and the label.
+        shape: const StadiumBorder(),
         onPressed: () async {
           final rideBloc = context.read<RideBloc>();
           final authBloc = context.read<AuthBloc>();
