@@ -8,7 +8,9 @@ import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
+import '../../../modules/core/services/error_messages.dart';
 import '../../../modules/core/widgets/avatar_circle.dart';
+import '../../../modules/core/widgets/error_widget.dart';
 import '../../../modules/ride_management/helpers/airport_detection.dart';
 import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
 import '../../../modules/ride_management/helpers/tag_helpers.dart';
@@ -387,13 +389,34 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         Expanded(
           child: BlocBuilder<RideBloc, RideState>(
             buildWhen: (prev, curr) =>
-                prev.rides != curr.rides || prev.isLoading != curr.isLoading,
+                prev.rides != curr.rides ||
+                prev.isLoading != curr.isLoading ||
+                prev.status != curr.status,
             builder: (context, state) {
               if (state.isLoading) {
                 return Center(child: CircularProgressIndicator.adaptive());
               }
 
               final rides = _applyFiltersAndSort(state.rides);
+
+              // A load failure must NOT masquerade as an empty list. Without
+              // this branch the panel fell through to `_buildEmptyState()` and
+              // showed a green "No rides" check on a timeout — hiding the error
+              // and offering no way to retry.
+              if (state.hasError && rides.isEmpty) {
+                final l10n = AppLocalizations.of(context)!;
+                return ErrorDisplayWidget(
+                  title: l10n.failedToLoadRides,
+                  message: friendlyError(
+                    state.error ?? state.errorMessage,
+                    l10n,
+                  ),
+                  onRetry: () => context.read<RideBloc>().add(
+                    const RideLoadPendingRequested(),
+                  ),
+                  retryLabel: l10n.retry,
+                );
+              }
 
               if (rides.isEmpty) {
                 return _buildEmptyState();

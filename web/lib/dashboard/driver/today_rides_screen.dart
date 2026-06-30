@@ -9,6 +9,7 @@ import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
 import '../../modules/core/services/api_client.dart';
+import '../../modules/core/services/error_messages.dart';
 import '../../modules/core/widgets/avatar_circle.dart';
 import '../../modules/flight_management/flight_tracker.dart';
 import '../../modules/flight_management/widgets/flight_progress_bar.dart';
@@ -314,13 +315,14 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
           Expanded(
             child: BlocListener<RideBloc, RideState>(
               listener: (context, state) {
-                if (state.hasError) {
-                  NavigationHelper.showSnackBar(
-                    context,
-                    rideErrorMessageOrFallback(state.errorMessage, context),
-                    isError: true,
-                  );
-                }
+                // A load error is shown inline by _buildTabContent
+                // (ErrorDisplayWidget with a Retry) when the list is empty. We
+                // deliberately do NOT also raise a SnackBar here: the RideBloc
+                // is shared across the dashboard (this screen is the dispatcher's
+                // "My Rides" tab in an IndexedStack), so a background failure
+                // from another tab — e.g. the pending-rides timeout — would pop
+                // an error toast over an unrelated screen.
+
                 // Restore tracking if the ride is already in progress (after screen reload)
                 if (state.status == RideStateStatus.loaded &&
                     !_trackingStarted) {
@@ -503,10 +505,12 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     }
 
     if (rideState.hasError && rideState.rides.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       return ErrorDisplayWidget(
-        title: "Failed to load today's rides",
-        message: rideErrorMessageOrFallback(rideState.errorMessage, context),
+        title: l10n.failedToLoadRides,
+        message: friendlyError(rideState.error ?? rideState.errorMessage, l10n),
         onRetry: () => refreshRides(context),
+        retryLabel: l10n.retry,
       );
     }
 

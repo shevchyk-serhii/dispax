@@ -4,6 +4,10 @@ class ErrorDisplayWidget extends StatelessWidget {
   final String title;
   final String message;
   final VoidCallback? onRetry;
+
+  /// Label for the retry button. Optional so callers can localize it; falls back
+  /// to "Try again" for the (few) existing call sites that don't pass one.
+  final String? retryLabel;
   final IconData? icon;
 
   const ErrorDisplayWidget({
@@ -11,6 +15,7 @@ class ErrorDisplayWidget extends StatelessWidget {
     this.title = 'Error loading data',
     required this.message,
     this.onRetry,
+    this.retryLabel,
     this.icon = Icons.error_outline,
   });
 
@@ -44,7 +49,7 @@ class ErrorDisplayWidget extends StatelessWidget {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: onRetry,
-                child: const Text('Try again'),
+                child: Text(retryLabel ?? 'Try again'),
               ),
             ],
           ],

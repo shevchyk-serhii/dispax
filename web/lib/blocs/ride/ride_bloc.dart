@@ -172,7 +172,10 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final pending = await privateRideService.getPendingRides();
       emit(RideState.loaded(_mergePending(pending)));
     } catch (e) {
-      emit(RideState.error('Failed to load pending rides: $e'));
+      // Carry the typed cause so the UI can render a localized, non-technical
+      // message (e.g. a timeout) via friendlyError, instead of the raw wrapped
+      // string. The string is kept only as a debug/fallback.
+      emit(RideState.error('Failed to load pending rides: $e', cause: e));
     }
   }
 

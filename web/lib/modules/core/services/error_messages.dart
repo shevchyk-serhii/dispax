@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../../../l10n/app_localizations.dart';
 import 'api_client.dart';
 
@@ -12,21 +10,21 @@ import 'api_client.dart';
 /// [ApiException.kind] and returns text safe to put in a SnackBar, banner, or
 /// [ErrorDisplayWidget].
 ///
-/// In release builds the result is always a clean, non-technical sentence — it
-/// never leaks the backend URL, the exception class name, an HTTP status code,
-/// or a stack-trace tail. In debug builds a short technical tail is appended so
-/// developers running against a local backend still see the cause.
+/// The result is always a clean, non-technical sentence — it never leaks the
+/// backend URL, the exception class name, an HTTP status code, or a stack-trace
+/// tail, in any build. Developers who need the raw cause have it in the logs
+/// (the ApiClient `debugPrint`s every failure) and on the exception itself; the
+/// UI must stay clean, so a technical tail is opt-in only.
 ///
-/// [includeDebugDetail] defaults to [kDebugMode]; pass `false` to assert the
-/// exact release-mode output in tests (which themselves run in debug mode).
+/// Set [includeDebugDetail] to append a `[debug]` technical tail — intended for
+/// diagnostic surfaces, never for production UI. Defaults to `false`.
 String friendlyError(
   Object? error,
   AppLocalizations l10n, {
-  bool? includeDebugDetail,
+  bool includeDebugDetail = false,
 }) {
   final base = _baseMessage(error, l10n);
-  final withDetail = includeDebugDetail ?? kDebugMode;
-  if (withDetail && error != null) {
+  if (includeDebugDetail && error != null) {
     final technical = _technicalDetail(error);
     if (technical != null && technical.isNotEmpty) {
       return '$base\n\n[debug] $technical';

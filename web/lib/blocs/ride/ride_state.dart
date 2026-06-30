@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../modules/core/services/api_client.dart' show ScheduleConflictInfo;
+import '../../modules/core/services/api_client.dart'
+    show ApiException, ScheduleConflictInfo;
 import '../../modules/ride_management/models/ride.dart';
 
 enum RideStateStatus {
@@ -30,6 +31,14 @@ class RideState extends Equatable {
   final RideStateStatus status;
   final List<Ride> rides;
   final String? errorMessage;
+
+  /// The typed cause behind an error state, when available (e.g. the
+  /// [ApiException] from a failed load). The UI passes this to `friendlyError`
+  /// to render a short, localized, non-technical message — rather than the raw
+  /// [errorMessage], which may carry the backend URL or a wrapped exception.
+  /// Optional and additive: emit sites that still set only [errorMessage] keep
+  /// working unchanged.
+  final Object? error;
   final String? deletingRideId;
 
   /// Set together with [RideStateStatus.reassignConflict]: identifies the ride
@@ -49,6 +58,7 @@ class RideState extends Equatable {
     this.status = RideStateStatus.initial,
     this.rides = const [],
     this.errorMessage,
+    this.error,
     this.deletingRideId,
     this.conflictRideId,
     this.conflictDriverId,
@@ -67,8 +77,12 @@ class RideState extends Equatable {
     return RideState(status: RideStateStatus.loaded, rides: rides);
   }
 
-  factory RideState.error(String message) {
-    return RideState(status: RideStateStatus.error, errorMessage: message);
+  factory RideState.error(String message, {Object? cause}) {
+    return RideState(
+      status: RideStateStatus.error,
+      errorMessage: message,
+      error: cause,
+    );
   }
 
   RideState copyWith({
@@ -85,6 +99,7 @@ class RideState extends Equatable {
     // [conflictRideId]/[conflictDriverId], flipping `hasAssignConflict` to false
     // and breaking the "assign anyway" override dialog mid-flow.
     Object? errorMessage = _unset,
+    Object? error = _unset,
     Object? deletingRideId = _unset,
     Object? conflictRideId = _unset,
     Object? conflictDriverId = _unset,
@@ -96,6 +111,7 @@ class RideState extends Equatable {
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
+      error: identical(error, _unset) ? this.error : error,
       deletingRideId: identical(deletingRideId, _unset)
           ? this.deletingRideId
           : deletingRideId as String?,
@@ -141,6 +157,11 @@ class RideState extends Equatable {
     status,
     rides,
     errorMessage,
+    // ApiException has no value equality, so keying props on the object by
+    // identity would defeat Equatable. Use a stable surrogate (its kind) so two
+    // states carrying the same kind of error compare equal; errorMessage above
+    // already distinguishes different messages.
+    error is ApiException ? (error as ApiException).kind : error?.runtimeType,
     deletingRideId,
     conflictRideId,
     conflictDriverId,
