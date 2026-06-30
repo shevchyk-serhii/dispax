@@ -423,6 +423,12 @@
   "clientsRailLabel": "Clients",
   "datevRailLabel": "DATEV",
   "genericError": "Fehler: {error}",
+  "errorNetwork": "Server nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+  "errorTimeout": "Der Server hat zu lange gebraucht. Bitte versuchen Sie es erneut.",
+  "errorServer": "Auf unserer Seite ist etwas schiefgelaufen. Bitte versuchen Sie es gleich noch einmal.",
+  "errorNotFound": "Wir konnten nicht finden, wonach Sie gesucht haben.",
+  "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+  "errorSessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
   "@genericError": {
     "placeholders": {
       "error": {"type": "String"}

@@ -26,8 +26,11 @@ class RideService {
       } else {
         throw ApiException('Failed to fetch rides: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching rides: $e');
+      throw ApiException('Error fetching rides: $e', cause: e);
     }
   }
 
@@ -53,8 +56,11 @@ class RideService {
           'Failed to fetch user rides: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching user rides: $e');
+      throw ApiException('Error fetching user rides: $e', cause: e);
     }
   }
 
@@ -81,9 +87,11 @@ class RideService {
           'Failed to fetch driver earnings: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      if (e is UnauthorizedException) rethrow;
-      throw ApiException('Error fetching driver earnings: $e');
+      throw ApiException('Error fetching driver earnings: $e', cause: e);
     }
   }
 
@@ -106,9 +114,10 @@ class RideService {
         );
       }
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching driver rides: $e');
+      throw ApiException('Error fetching driver rides: $e', cause: e);
     }
   }
 
@@ -124,8 +133,11 @@ class RideService {
       } else {
         throw ApiException('Failed to fetch ride: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching ride: $e');
+      throw ApiException('Error fetching ride: $e', cause: e);
     }
   }
 
@@ -144,7 +156,7 @@ class RideService {
       // don't re-wrap it into an opaque "Error creating ride: ApiException: ..."
       rethrow;
     } catch (e) {
-      throw ApiException('Error creating ride: $e');
+      throw ApiException('Error creating ride: $e', cause: e);
     }
   }
 
@@ -187,8 +199,11 @@ class RideService {
       } else {
         throw ApiException('Failed to update ride: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error updating ride: $e');
+      throw ApiException('Error updating ride: $e', cause: e);
     }
   }
 
@@ -207,8 +222,11 @@ class RideService {
           'Failed to update ride status: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error updating ride status: $e');
+      throw ApiException('Error updating ride status: $e', cause: e);
     }
   }
 
@@ -224,8 +242,11 @@ class RideService {
           'Failed to fetch client rides: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching client rides: $e');
+      throw ApiException('Error fetching client rides: $e', cause: e);
     }
   }
 
@@ -239,10 +260,17 @@ class RideService {
       } else {
         throw ApiException(
           'Failed to fetch pending rides: ${response.statusCode}',
+          statusCode: response.statusCode,
         );
       }
+    } on ApiException {
+      // Already carries the cause/kind from the ApiClient (e.g. a timeout or a
+      // 4xx with the server's message). Don't re-wrap it into an opaque
+      // "Error fetching pending rides: ApiException: ..." — that double nesting
+      // is exactly what leaked to the dispatcher's screen.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching pending rides: $e');
+      throw ApiException('Error fetching pending rides: $e', cause: e);
     }
   }
 
@@ -395,8 +423,11 @@ class RideService {
       if (response.statusCode != 200) {
         throw ApiException('Failed to cancel ride: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error cancelling ride: $e');
+      throw ApiException('Error cancelling ride: $e', cause: e);
     }
   }
 
@@ -412,9 +443,10 @@ class RideService {
       }
       throw ApiException.fromResponse(response, 'Failed to set ride price');
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error setting ride price: $e');
+      throw ApiException('Error setting ride price: $e', cause: e);
     }
   }
 
@@ -446,9 +478,10 @@ class RideService {
         'Failed to fetch rides by drivers',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching rides by drivers: $e');
+      throw ApiException('Error fetching rides by drivers: $e', cause: e);
     }
   }
 
@@ -461,8 +494,11 @@ class RideService {
       if (response.statusCode != 204) {
         throw ApiException('Failed to mark checkpoint: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error marking airport checkpoint: $e');
+      throw ApiException('Error marking airport checkpoint: $e', cause: e);
     }
   }
 
@@ -497,9 +533,10 @@ class RideService {
       }
       throw ApiException.fromResponse(response, 'Failed to hand off ride');
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error handing off ride: $e');
+      throw ApiException('Error handing off ride: $e', cause: e);
     }
   }
 
@@ -518,9 +555,10 @@ class RideService {
         'Failed to fetch partner companies',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching partner companies: $e');
+      throw ApiException('Error fetching partner companies: $e', cause: e);
     }
   }
 
@@ -543,9 +581,10 @@ class RideService {
         'Failed to create partner company',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error creating partner company: $e');
+      throw ApiException('Error creating partner company: $e', cause: e);
     }
   }
 
@@ -564,9 +603,10 @@ class RideService {
         'Failed to fetch external drivers',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching external drivers: $e');
+      throw ApiException('Error fetching external drivers: $e', cause: e);
     }
   }
 
@@ -591,9 +631,10 @@ class RideService {
         'Failed to create external driver',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error creating external driver: $e');
+      throw ApiException('Error creating external driver: $e', cause: e);
     }
   }
 
@@ -627,9 +668,10 @@ class RideService {
         'Failed to upgrade provisional client',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error upgrading provisional client: $e');
+      throw ApiException('Error upgrading provisional client: $e', cause: e);
     }
   }
 

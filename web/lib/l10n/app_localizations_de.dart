@@ -1000,6 +1000,30 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get errorNetwork =>
+      'Server nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
+
+  @override
+  String get errorTimeout =>
+      'Der Server hat zu lange gebraucht. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get errorServer =>
+      'Auf unserer Seite ist etwas schiefgelaufen. Bitte versuchen Sie es gleich noch einmal.';
+
+  @override
+  String get errorNotFound =>
+      'Wir konnten nicht finden, wonach Sie gesucht haben.';
+
+  @override
+  String get errorGeneric =>
+      'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get errorSessionExpired =>
+      'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
+
+  @override
   String get unbilledRidesTitle => 'Nicht fakturierte Fahrten';
 
   @override

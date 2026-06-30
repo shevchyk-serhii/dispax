@@ -995,6 +995,28 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get errorNetwork =>
+      'Не вдалося з\'єднатися із сервером. Перевірте підключення до інтернету та повторіть спробу.';
+
+  @override
+  String get errorTimeout =>
+      'Сервер відповідав надто довго. Будь ласка, повторіть спробу.';
+
+  @override
+  String get errorServer =>
+      'Сталася помилка на нашому боці. Спробуйте ще раз за мить.';
+
+  @override
+  String get errorNotFound => 'Не вдалося знайти те, що ви шукали.';
+
+  @override
+  String get errorGeneric => 'Щось пішло не так. Будь ласка, повторіть спробу.';
+
+  @override
+  String get errorSessionExpired =>
+      'Ваша сесія завершилася. Будь ласка, увійдіть знову.';
+
+  @override
   String get unbilledRidesTitle => 'Нерозрахованих поїздок';
 
   @override
