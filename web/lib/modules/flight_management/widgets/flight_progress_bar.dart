@@ -335,23 +335,34 @@ class _EnRoutePlaneState extends State<_EnRoutePlane> {
           0.0,
           double.infinity,
         );
+        final fraction = _fraction;
+        // The plane traces a shallow arc: climb → cruise → descend, with the
+        // nose tilted along the path tangent. Horizontal travel stays in the
+        // AnimatedPositioned (so the per-minute nudge glides); the vertical arc
+        // and tilt are applied as static Transforms on the icon for this frame.
+        final arcOffset = FlightArc.offsetPx(fraction);
+        final tilt = FlightArc.tiltRadians(fraction, travel);
         return Stack(
           clipBehavior: Clip.none,
           children: [
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              left: _fraction * travel,
+              left: fraction * travel,
               top: 0,
               bottom: 0,
               child: Center(
-                // Pointing right, toward "Gelandet".
-                child: Transform.rotate(
-                  angle: 1.5708, // 90° — flight icon points up by default
-                  child: Icon(
-                    Icons.flight,
-                    size: _iconSize,
-                    color: widget.color,
+                child: Transform.translate(
+                  offset: Offset(0, arcOffset), // lift along the arc
+                  // Base 90° points the flight icon right (toward "Gelandet");
+                  // tilt is added so the nose follows the climb/descent.
+                  child: Transform.rotate(
+                    angle: 1.5708 + tilt,
+                    child: Icon(
+                      Icons.flight,
+                      size: _iconSize,
+                      color: widget.color,
+                    ),
                   ),
                 ),
               ),

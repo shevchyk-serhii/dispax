@@ -3,6 +3,8 @@
 // orthogonal/off-ramp statuses that have no chain position, and the German MUC
 // label aliases.
 
+import 'dart:math' as math;
+
 import 'package:dispax/modules/flight_management/flight_phases.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -100,6 +102,59 @@ void main() {
       expect(FlightPhases.isTerminalOffRamp('delayed'), isFalse);
       expect(FlightPhases.isTerminalOffRamp('unknown'), isFalse);
       expect(FlightPhases.isTerminalOffRamp(null), isFalse);
+    });
+  });
+
+  group('FlightArc — en-route arc geometry', () {
+    test('offset is zero at take-off and landing, peaks (upward) at mid-cruise', () {
+      // Endpoints sit on the line: the plane starts/ends on the connector.
+      expect(FlightArc.offsetPx(0.0), 0.0);
+      expect(FlightArc.offsetPx(1.0), closeTo(0.0, 1e-9));
+      // Apex is the most negative (upward) point, equal to the full arc height.
+      expect(FlightArc.offsetPx(0.5), closeTo(-FlightArc.arcHeightPx, 1e-9));
+      // And it is genuinely above the endpoints throughout the cruise.
+      expect(FlightArc.offsetPx(0.25), lessThan(0.0));
+      expect(FlightArc.offsetPx(0.75), lessThan(0.0));
+    });
+
+    test('offset never exceeds the arc-height budget (stays within headroom)', () {
+      for (final f in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0]) {
+        expect(FlightArc.offsetPx(f).abs(), lessThanOrEqualTo(FlightArc.arcHeightPx + 1e-9));
+      }
+    });
+
+    test('clamps out-of-range fractions to the segment', () {
+      expect(FlightArc.offsetPx(-0.5), 0.0); // before take-off → at start node
+      expect(FlightArc.offsetPx(1.5), closeTo(0.0, 1e-9)); // past landing → at end node
+    });
+
+    test('tilt points the nose UP just after take-off and DOWN on approach', () {
+      const travel = 100.0;
+      // Base icon angle is +90° (points right). Negative tilt rotates the nose
+      // up; positive tilt rotates it down.
+      expect(FlightArc.tiltRadians(0.1, travel), lessThan(0.0)); // climbing
+      expect(FlightArc.tiltRadians(0.9, travel), greaterThan(0.0)); // descending
+    });
+
+    test('tilt is level (zero) at the cruise apex', () {
+      expect(FlightArc.tiltRadians(0.5, 100.0), closeTo(0.0, 1e-9));
+    });
+
+    test('tilt is anti-symmetric about the apex (climb mirrors descent)', () {
+      const travel = 100.0;
+      expect(
+        FlightArc.tiltRadians(0.2, travel),
+        closeTo(-FlightArc.tiltRadians(0.8, travel), 1e-9),
+      );
+    });
+
+    test('a wider segment flattens the tilt (gentler climb for the same height)', () {
+      // Same arc height spread over more horizontal travel → shallower tangent.
+      final steep = FlightArc.tiltRadians(0.1, 40).abs();
+      final gentle = FlightArc.tiltRadians(0.1, 400).abs();
+      expect(gentle, lessThan(steep));
+      // Sanity: both are real tilts within a quarter turn.
+      expect(steep, lessThan(math.pi / 2));
     });
   });
 }

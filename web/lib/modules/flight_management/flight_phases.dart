@@ -15,6 +15,8 @@
 /// [phaseOrdinalFor]; the caller decides how to render them.
 library;
 
+import 'dart:math' as math;
+
 enum FlightPhase { scheduled, boarding, departed, enRoute, landed }
 
 class FlightPhases {
@@ -101,5 +103,44 @@ class FlightPhases {
         s.contains('gestrichen') ||
         s.contains('divert') ||
         s.contains('umgeleitet');
+  }
+}
+
+/// Pure geometry for the en-route airplane's flight path along the "Im Flug" →
+/// "Gelandet" connector. Instead of sliding flat, the plane traces a shallow
+/// parabolic arc — climbing after take-off, cruising at the apex, descending
+/// into landing — with its nose tilted to match the path tangent (up on the
+/// climb, level at cruise, down on approach).
+///
+/// Kept Flutter-free and pure so the invariants are unit-tested directly; the
+/// widget only multiplies these by pixels and feeds them to Transform.
+class FlightArc {
+  /// Peak climb height of the arc, in logical pixels. Kept small so the apex
+  /// stays within the progress-bar row's vertical headroom (no clipping/overflow).
+  static const double arcHeightPx = 8;
+
+  /// Vertical offset of the plane at [fraction] in [0, 1], in logical pixels.
+  /// Negative = upward (screen y grows downward). Zero at both endpoints
+  /// (take-off and landing sit on the line), peaking at the mid-cruise point.
+  ///
+  ///   offset(f) = -arcHeightPx · sin(π · f)
+  static double offsetPx(double fraction) {
+    final f = fraction.clamp(0.0, 1.0);
+    return -arcHeightPx * math.sin(math.pi * f);
+  }
+
+  /// Extra nose tilt (radians) to add on top of the icon's base orientation so
+  /// the plane points along the arc's tangent: nose-up just after take-off,
+  /// level at the apex, nose-down on approach.
+  ///
+  /// The path is (x = travel·f, y = offset(f)); the tangent angle is
+  /// atan2(dy/df, dx/df). dy/df = -arcHeightPx·π·cos(π·f); dx/df = travel.
+  /// [travelPx] is the horizontal span the plane crosses (segment width minus
+  /// the icon), so the tilt is proportioned to the on-screen aspect ratio.
+  static double tiltRadians(double fraction, double travelPx) {
+    final f = fraction.clamp(0.0, 1.0);
+    final dy = -arcHeightPx * math.pi * math.cos(math.pi * f);
+    final dx = travelPx <= 0 ? 1.0 : travelPx;
+    return math.atan2(dy, dx);
   }
 }
