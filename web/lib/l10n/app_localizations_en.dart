@@ -1218,6 +1218,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refresh => 'Refresh';
 
   @override
+  String get refreshFlightStatus => 'Refresh flight status';
+
+  @override
+  String get flightStatusRefreshed => 'Flight status updated';
+
+  @override
+  String get flightStatusUnchanged => 'Already up to date';
+
+  @override
+  String get flightNotFoundYet => 'Flight not in the system yet';
+
+  @override
+  String get failedToRefreshFlightStatus => 'Failed to refresh flight status';
+
+  @override
   String get youreOnline => 'You\'re online';
 
   @override

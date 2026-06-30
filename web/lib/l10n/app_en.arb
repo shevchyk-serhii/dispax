@@ -588,6 +588,14 @@
   },
   "noCompletedRides": "No completed rides yet",
   "refresh": "Refresh",
+  "refreshFlightStatus": "Refresh flight status",
+  "@refreshFlightStatus": {
+    "description": "Tooltip for the manual flight-status refresh button on the ride flight card"
+  },
+  "flightStatusRefreshed": "Flight status updated",
+  "flightStatusUnchanged": "Already up to date",
+  "flightNotFoundYet": "Flight not in the system yet",
+  "failedToRefreshFlightStatus": "Failed to refresh flight status",
   "youreOnline": "You're online",
   "youreOffline": "You're offline",
   "discardChangesTitle": "Discard changes?",

@@ -1,5 +1,7 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.core.application.EventHub
+
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
@@ -313,6 +315,8 @@ object DriverRidesFlightPostgresSpec extends ZIOSpecDefault:
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
       AirportArrivalTimingConfig.liveLayer ++
+      EventHub.layer ++
+      StubFlightStatusProvider.layer ++
       rideRepoLayer
 
   private def run(req: Request, xa: Transactor[Task]): ZIO[Any, Throwable, Response] = ZioHttpInterpreter()

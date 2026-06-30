@@ -8,7 +8,18 @@ import '../../../l10n/app_localizations.dart';
 class RideFlightCard extends StatelessWidget {
   final Ride ride;
 
-  const RideFlightCard({super.key, required this.ride});
+  /// Manual "refresh flight status now" action (kicks the backend to re-read the
+  /// board for this ride). When null, the refresh button is hidden. The owning
+  /// screen holds the async/loading state and passes [isRefreshing] back in.
+  final VoidCallback? onRefresh;
+  final bool isRefreshing;
+
+  const RideFlightCard({
+    super.key,
+    required this.ride,
+    this.onRefresh,
+    this.isRefreshing = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +141,25 @@ class RideFlightCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (onRefresh != null) ...[
+                  const Spacer(),
+                  IconButton(
+                    onPressed: isRefreshing ? null : onRefresh,
+                    tooltip: l10n.refreshFlightStatus,
+                    icon: isRefreshing
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.refresh),
+                  ),
+                ],
               ],
             ),
 

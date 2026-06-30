@@ -34,6 +34,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   late Ride _currentRide;
   late RideService _rideService;
   bool _isLoading = false;
+  bool _isRefreshingFlight = false;
 
   @override
   void initState() {
@@ -436,7 +437,15 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       const SizedBox(height: 16),
 
                       if (_currentRide.isAirportTransfer) ...[
-                        RideFlightCard(ride: _currentRide),
+                        RideFlightCard(
+                          ride: _currentRide,
+                          isRefreshing: _isRefreshingFlight,
+                          // Clients can't refresh (the endpoint is staff-only), so don't
+                          // offer them a button that would only 403.
+                          onRefresh: widget.isClientView
+                              ? null
+                              : _refreshFlightStatus,
+                        ),
                         const SizedBox(height: 16),
                       ],
 
@@ -750,6 +759,43 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
           ),
         ) ??
         false;
+  }
+
+  Future<void> _refreshFlightStatus() async {
+    final l10n = AppLocalizations.of(context)!;
+    // Capture the RideBloc before the async gap so the reference stays valid.
+    final rideBloc = context.read<RideBloc>();
+    setState(() => _isRefreshingFlight = true);
+    try {
+      final result = await _rideService.refreshFlightStatus(_currentRide.id);
+      if (!mounted) return;
+      // Patch ONLY the flight fields onto the existing ride — the refresh DTO is not
+      // fully enriched (no driverName/optimalEntryTime/avatar/eta), so replacing the
+      // whole ride would de-enrich the shared RideBloc's copy and blank those on the
+      // list cards (same overwrite trap as the confirm-vanish bug). Mirrors the
+      // FlightStatusUpdated WS handler.
+      final fresh = result.ride;
+      final patched = _currentRide.copyWith(
+        gate: fresh.gate,
+        terminal: fresh.terminal,
+        flightStatus: fresh.flightStatus,
+        flightTime: fresh.flightTime ?? _currentRide.flightTime,
+        flightDepartureTime:
+            fresh.flightDepartureTime ?? _currentRide.flightDepartureTime,
+      );
+      setState(() => _currentRide = patched);
+      // Push the patched ride so other screens (list cards) reflect it too.
+      rideBloc.add(RideUpdated(ride: patched));
+      _showSuccessMessage(switch (result.outcome) {
+        'updated' => l10n.flightStatusRefreshed,
+        'notFound' => l10n.flightNotFoundYet,
+        _ => l10n.flightStatusUnchanged,
+      });
+    } catch (_) {
+      if (mounted) _showErrorMessage(l10n.failedToRefreshFlightStatus);
+    } finally {
+      if (mounted) setState(() => _isRefreshingFlight = false);
+    }
   }
 
   void _showSuccessMessage(String message) {

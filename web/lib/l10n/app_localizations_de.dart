@@ -1223,6 +1223,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get refresh => 'Aktualisieren';
 
   @override
+  String get refreshFlightStatus => 'Flugstatus aktualisieren';
+
+  @override
+  String get flightStatusRefreshed => 'Flugstatus aktualisiert';
+
+  @override
+  String get flightStatusUnchanged => 'Bereits aktuell';
+
+  @override
+  String get flightNotFoundYet => 'Flug noch nicht im System';
+
+  @override
+  String get failedToRefreshFlightStatus =>
+      'Flugstatus konnte nicht aktualisiert werden';
+
+  @override
   String get youreOnline => 'Sie sind online';
 
   @override

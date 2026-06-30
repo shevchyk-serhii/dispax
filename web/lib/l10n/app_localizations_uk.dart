@@ -1217,6 +1217,21 @@ class AppLocalizationsUk extends AppLocalizations {
   String get refresh => 'Оновити';
 
   @override
+  String get refreshFlightStatus => 'Оновити статус рейсу';
+
+  @override
+  String get flightStatusRefreshed => 'Статус рейсу оновлено';
+
+  @override
+  String get flightStatusUnchanged => 'Вже актуально';
+
+  @override
+  String get flightNotFoundYet => 'Рейсу ще немає в системі';
+
+  @override
+  String get failedToRefreshFlightStatus => 'Не вдалося оновити статус рейсу';
+
+  @override
   String get youreOnline => 'Ви онлайн';
 
   @override

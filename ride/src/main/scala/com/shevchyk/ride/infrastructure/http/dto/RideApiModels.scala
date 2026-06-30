@@ -168,6 +168,16 @@ case class RideStatusUpdateResponse(
     status: String
 ) derives JsonCodec
 
+// Result of a manual flight-status refresh: the up-to-date ride plus which of the three
+// outcomes occurred, so the UI can show the right message:
+//   "updated"  – the board had newer data, persisted + broadcast
+//   "unchanged"– the board matched what we already had
+//   "notFound" – the flight is not on the board yet (or the ride has no usable flight number)
+case class RefreshFlightResponse(
+    ride: RideDto,
+    outcome: String
+) derives JsonCodec
+
 case class UpdateRideDetailsApiRequest(
     from: Option[LocationDto] = None,
     to: Option[LocationDto] = None,
@@ -352,6 +362,7 @@ case class CheckpointStateResponse(
 given sttp.tapir.Schema[PaymentStatus]                  = sttp.tapir.Schema.string
 given sttp.tapir.Schema[PaymentMethod]                  = sttp.tapir.Schema.string
 given sttp.tapir.Schema[RideDto]                        = sttp.tapir.Schema.derived[RideDto]
+given sttp.tapir.Schema[RefreshFlightResponse]          = sttp.tapir.Schema.derived[RefreshFlightResponse]
 given sttp.tapir.Schema[CreateRideApiRequest]           = sttp.tapir.Schema.derived[CreateRideApiRequest]
 given sttp.tapir.Schema[RideStatusUpdateRequest]        = sttp.tapir.Schema.derived[RideStatusUpdateRequest]
 given sttp.tapir.Schema[AssignDriverRequest]            = sttp.tapir.Schema.derived[AssignDriverRequest]

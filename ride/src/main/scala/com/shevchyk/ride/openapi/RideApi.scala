@@ -6,12 +6,15 @@ import com.shevchyk.core.config.AirportArrivalTimingConfig
 import com.shevchyk.core.domain.{ExternalDriverId, PartnerCompanyId, Person, PersonId}
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.application.EventHub
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
   AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  FlightStatusProvider,
+  FlightStatusRefresher,
   RideEstimateService,
   RideService
 }
@@ -57,7 +60,7 @@ object RideApi:
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
       RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService &
-      AirportTimingService & RideRepository & AirportArrivalTimingConfig
+      AirportTimingService & RideRepository & AirportArrivalTimingConfig & FlightStatusProvider & EventHub
 
   // ======================================================================
   // Endpoint descriptions
@@ -155,6 +158,12 @@ object RideApi:
     .out(jsonBody[RideDto])
     .tag(rideTag)
     .summary("Get a ride by id")
+
+  val refreshFlightEndpoint = secureEndpoint.post
+    .in("api" / "rides" / path[String]("rideId") / "refresh-flight")
+    .out(jsonBody[RefreshFlightResponse])
+    .tag(rideTag)
+    .summary("Refresh a ride's flight status now (on-demand, same as the background monitor)")
 
   val listRidesEndpoint = secureEndpoint.get
     .in("api" / "rides")
@@ -283,6 +292,7 @@ object RideApi:
     handOffRideEndpoint,
     updateRideEndpoint,
     getRideEndpoint,
+    refreshFlightEndpoint,
     listRidesEndpoint,
     estimateRideEndpoint,
     updateClientLocationEndpoint,
@@ -674,6 +684,46 @@ object RideApi:
       clientName = clientPerson.map(_.name),
       clientHasAvatar = clientPerson.exists(_.avatarPresent),
       clientProvisional = clientPerson.exists(_.provisional)
+    )
+  }
+
+  private val refreshFlightServer: ZServerEndpoint[RideEnv, Any] = refreshFlightEndpoint.serverLogic { user => rideId =>
+    for {
+      // Anyone who works the ride and sees its card may trigger a refresh — it only re-reads the
+      // public flight board and never mutates booking data.
+      _            <- checkRole(user, "DISPATCHER", "DRIVER", "SECRETARY")
+      parsedRideId <- parseRideId(rideId)
+      companyId    <- requireCompanyId(user.companyId)
+      service      <- ZIO.service[RideService]
+      personRepo   <- ZIO.service[PersonRepository]
+      rideRepo     <- ZIO.service[RideRepository]
+      provider     <- ZIO.service[FlightStatusProvider]
+      eventHub     <- ZIO.service[EventHub]
+      ride         <- service.getRideById(parsedRideId).mapError(fromRideError)
+      // Company isolation: hide cross-tenant rides as not found instead of leaking their existence.
+      _            <- ZIO
+                        .fail(RideError.RideNotFound(parsedRideId))
+                        .when(ride.companyId != companyId)
+                        .mapError(fromRideError)
+      result       <- FlightStatusRefresher.refresh(ride, rideRepo, provider, eventHub).mapError(fromRideError)
+      outcome       =
+        result match
+          case FlightStatusRefresher.RefreshResult.Updated(_) => "updated"
+          case FlightStatusRefresher.RefreshResult.Unchanged  => "unchanged"
+          case FlightStatusRefresher.RefreshResult.NotFound   => "notFound"
+      // Re-read the persisted flight row so the response reflects the latest stored data (incl. an
+      // unchanged or not-found case, where we still return the current row, not an empty one).
+      flightRow    <- rideRepo.findFlightStatus(parsedRideId).mapError(fromRideError)
+      clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+    } yield RefreshFlightResponse(
+      ride = RideDto.fromDomain(
+        ride,
+        flight = flightRow,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
+      ),
+      outcome = outcome
     )
   }
 
@@ -1182,6 +1232,7 @@ object RideApi:
     setRidePriceServer,
     getRidesByDriversServer,
     getRideServer,
+    refreshFlightServer,
     listRidesServer,
     updateClientLocationServer,
     getRideLocationsServer,

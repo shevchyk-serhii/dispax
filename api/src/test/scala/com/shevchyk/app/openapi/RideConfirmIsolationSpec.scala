@@ -1,5 +1,7 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.core.application.EventHub
+
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
@@ -320,6 +322,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       GeocodingService.noop ++
       AirportTimingService.noopLayer ++
       AirportArrivalTimingConfig.liveLayer ++
+      EventHub.layer ++
+      StubFlightStatusProvider.layer ++
       StubRideRepository.layer
 
   // ---------------------------------------------------------------------------

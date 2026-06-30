@@ -4,6 +4,7 @@
 // (so a raw "unknown" wire value shows the neutral "Unbekannt", not "unknown").
 
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/ride_management/widgets/ride_flight_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +77,57 @@ void main() {
 
       expect(find.text('Abflugzeit'), findsOneWidget);
       expect(find.text('Ankunftszeit'), findsNothing);
+    });
+  });
+
+  group('RideFlightCard refresh button', () {
+    Ride airportRide() => TestFixtures.ride(
+      isAirportTransfer: true,
+      isArrival: true,
+      flightNumber: 'DE1811',
+      flightTime: DateTime(2026, 6, 29, 23, 5),
+      flightStatus: 'unknown',
+    );
+
+    testWidgets('is hidden when no onRefresh is provided', (tester) async {
+      await _pump(tester, RideFlightCard(ride: airportRide()));
+      expect(find.byIcon(Icons.refresh), findsNothing);
+    });
+
+    testWidgets('shows the button and fires onRefresh when tapped', (
+      tester,
+    ) async {
+      var tapped = 0;
+      await _pump(
+        tester,
+        RideFlightCard(ride: airportRide(), onRefresh: () => tapped++),
+      );
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pump();
+      expect(tapped, 1);
+    });
+
+    testWidgets('shows a spinner and disables the button while refreshing', (
+      tester,
+    ) async {
+      var tapped = 0;
+      await _pump(
+        tester,
+        RideFlightCard(
+          ride: airportRide(),
+          isRefreshing: true,
+          onRefresh: () => tapped++,
+        ),
+      );
+      // Refresh icon is replaced by a spinner, and the button is disabled.
+      expect(find.byIcon(Icons.refresh), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      expect(tapped, 0); // disabled → no callback
     });
   });
 }
