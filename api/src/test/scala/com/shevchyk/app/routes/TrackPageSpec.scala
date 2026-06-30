@@ -75,6 +75,26 @@ object TrackPageSpec extends ZIOSpecDefault:
             html.contains("makeMarkerEl(SVG_FLAG, 'dropoff-marker', I.dropoff")
           )
         },
+        test("airport self-report block: buttons, POST endpoint and forward-only guard are present") {
+          val html = GuestTrackingPage.render("t", "en", "pk.test")
+          assertTrue(
+            html.contains("id=\"airport\""),            // self-report container
+            html.contains("data-cp=\"landed\""),        // landed button
+            html.contains("data-cp=\"arrivals_hall\""), // baggage button
+            html.contains("data-cp=\"terminal_exit\""), // exit button
+            html.contains("/checkpoint"),               // POST endpoint
+            html.contains("'POST'"),                    // it is a POST
+            html.contains("AirportCheckpointReached"),  // live WS handling
+            html.contains("CP_ORDER")                   // forward-only ordering
+          )
+        },
+        test("airport self-report labels are localized (de/en/uk)") {
+          assertTrue(
+            GuestTrackingPage.render("t", "de", "").contains("Am Ausgang"),
+            GuestTrackingPage.render("t", "en", "").contains("At the exit"),
+            GuestTrackingPage.render("t", "uk", "").contains("Біля виходу")
+          )
+        },
         test("a hostile token cannot break out of the JS string literal") {
           // The </script> and quote chars must be neutralized so they can't terminate the inline script.
           val html = GuestTrackingPage.render("a'</script><b>", "en", "")

@@ -1095,6 +1095,8 @@ class DriverRideCard extends StatelessWidget {
                 onRefresh: onRefreshFlight,
                 isRefreshing: isRefreshingFlight,
               ),
+              // Passenger's self-reported airport progress (landed / baggage / exit).
+              PassengerCheckpointRow(ride: ride, isDark: isDark),
               // Live flight progress (Geplant → … → Gelandet); hidden for
               // non-airport rides and unknown status.
               Builder(
@@ -1521,6 +1523,69 @@ class DriverFlightInfoRow extends StatelessWidget {
                     : Icon(Icons.refresh, size: 17, color: secondary),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Passenger's self-reported airport progress for an arrival transfer
+/// ("Passenger: Landed / Arrivals Hall / Terminal Exit"). Driven by the
+/// `airportCheckpoint` field on the ride, updated live via the
+/// AirportCheckpointReached WebSocket event. Renders nothing for departures,
+/// non-airport rides, or when the passenger hasn't reported yet.
+class PassengerCheckpointRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const PassengerCheckpointRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  /// Maps the wire checkpoint value to its localized display name.
+  static String? localizedCheckpoint(AppLocalizations l10n, String? wire) {
+    switch (wire) {
+      case 'landed':
+        return l10n.checkpointLanded;
+      case 'arrivals_hall':
+        return l10n.checkpointArrivalsHall;
+      case 'terminal_exit':
+        return l10n.checkpointTerminalExit;
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final name = localizedCheckpoint(l10n, ride.airportCheckpoint);
+    if (!ride.isArrivalAirportTransfer || name == null) {
+      return const SizedBox.shrink();
+    }
+
+    final accent = isDark ? AppColors.successStrong : AppColors.success;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.directions_walk, size: 15, color: accent),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              l10n.passengerCheckpointStatus(name),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );

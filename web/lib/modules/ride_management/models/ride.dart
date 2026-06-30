@@ -466,7 +466,10 @@ class Ride {
         other.status == status &&
         other.pickupDateTime == pickupDateTime &&
         other.from == from &&
-        other.to == to;
+        other.to == to &&
+        // Included so a live WebSocket checkpoint update yields a != Ride and the
+        // BLoC actually re-emits (otherwise the row never refreshes on the card).
+        other.airportCheckpoint == airportCheckpoint;
   }
 
   @override
@@ -476,7 +479,8 @@ class Ride {
         status.hashCode ^
         pickupDateTime.hashCode ^
         from.hashCode ^
-        to.hashCode;
+        to.hashCode ^
+        airportCheckpoint.hashCode;
   }
 
   @override

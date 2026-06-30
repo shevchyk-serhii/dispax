@@ -25,6 +25,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideConfirmRequested>(onConfirmRequested);
     on<RideRejectRequested>(onRejectRequested);
     on<RideStatusReceived>(onStatusReceived);
+    on<RideCheckpointReceived>(onCheckpointReceived);
     on<RideCancelRequested>(onCancelRequested);
     on<RideHandOffRequested>(onHandOffRequested);
   }
@@ -386,6 +387,20 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     // A live WebSocket update proves the system is responsive, so settle back
     // to a clean loaded state instead of preserving a stale error status (and
     // its message) left over from an earlier failed operation.
+    emit(RideState.loaded(updatedRides));
+  }
+
+  void onCheckpointReceived(
+    RideCheckpointReceived event,
+    Emitter<RideState> emit,
+  ) {
+    if (state.rides.isEmpty) return;
+    final idx = state.rides.indexWhere((r) => r.id == event.rideId);
+    if (idx == -1) return;
+    final updatedRides = List<Ride>.from(state.rides);
+    updatedRides[idx] = updatedRides[idx].copyWith(
+      airportCheckpoint: event.checkpoint,
+    );
     emit(RideState.loaded(updatedRides));
   }
 

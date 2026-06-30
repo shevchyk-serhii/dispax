@@ -197,6 +197,13 @@
   "checkpointLanded": "Landed",
   "checkpointArrivalsHall": "Arrivals Hall",
   "checkpointTerminalExit": "Terminal Exit",
+  "passengerCheckpointStatus": "Passenger: {checkpoint}",
+  "@passengerCheckpointStatus": {
+    "description": "Ride-card line showing the passenger's self-reported airport progress.",
+    "placeholders": {
+      "checkpoint": {"type": "String"}
+    }
+  },
   "markCheckpointButton": "I'm here",
   "airportCheckpointPanelTitle": "My location in terminal",
   "airportEntryTitle": "Airport Entry Time",

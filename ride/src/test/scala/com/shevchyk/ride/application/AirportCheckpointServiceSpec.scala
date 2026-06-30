@@ -184,6 +184,52 @@ object AirportCheckpointServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layersWithHub),
+        test("ride in Assigned status succeeds (passenger reports before pickup)") {
+          ZIO.scoped {
+            for {
+              hub   <- ZIO.service[EventHub]
+              sub   <- hub.subscribe
+              repo  <- ZIO.service[RideRepository]
+              svc   <- ZIO.service[AirportCheckpointService]
+              ride  <- repo.create(makeInProgressArrivalRide().copy(status = RideStatus.Assigned))
+              _     <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId)
+              saved <- repo.findById(ride.id)
+              event <- sub.take
+            } yield assertTrue(
+              saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed)),
+              event.asInstanceOf[WebSocketEvent.AirportCheckpointReached].checkpointType == "landed"
+            )
+          }
+        }.provide(layersWithHub),
+        test("ride in Confirmed status succeeds (passenger reports before pickup)") {
+          ZIO.scoped {
+            for {
+              hub   <- ZIO.service[EventHub]
+              sub   <- hub.subscribe
+              repo  <- ZIO.service[RideRepository]
+              svc   <- ZIO.service[AirportCheckpointService]
+              ride  <- repo.create(makeInProgressArrivalRide().copy(status = RideStatus.Confirmed))
+              _     <- svc.markCheckpoint(ride, AirportCheckpoint.TerminalExit, clientId)
+              saved <- repo.findById(ride.id)
+              event <- sub.take
+            } yield assertTrue(
+              saved.exists(_.airportCheckpoint.contains(AirportCheckpoint.TerminalExit)),
+              event.asInstanceOf[WebSocketEvent.AirportCheckpointReached].checkpointType == "terminal_exit"
+            )
+          }
+        }.provide(layersWithHub),
+        test("ride still Requested rejected with InvalidOperation (no driver yet)") {
+          for {
+            repo   <- ZIO.service[RideRepository]
+            svc    <- ZIO.service[AirportCheckpointService]
+            ride    = makeInProgressArrivalRide().copy(status = RideStatus.Requested, driverId = None)
+            _      <- repo.create(ride)
+            result <- svc.markCheckpoint(ride, AirportCheckpoint.Landed, clientId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidOperation])
+            case _                   => false
+          })
+        }.provide(layersWithHub),
         test("ride not an arrival airport transfer rejected with InvalidOperation") {
           for {
             repo   <- ZIO.service[RideRepository]

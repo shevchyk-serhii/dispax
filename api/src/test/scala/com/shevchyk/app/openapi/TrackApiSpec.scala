@@ -3,7 +3,7 @@ package com.shevchyk.app.openapi
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.ride.application.service.LocationWithTimestamp
-import com.shevchyk.ride.domain.{Ride, RideStatus}
+import com.shevchyk.ride.domain.{AirportCheckpoint, Ride, RideSpecifics, RideStatus}
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import sttp.tapir.ztapir.*
 import zio.*
@@ -71,6 +71,48 @@ object TrackApiSpec extends ZIOSpecDefault:
           !json.contains("clientId"),
           !json.contains("driverId")
         )
+      },
+      test("toPublicDto surfaces isAirportArrival and the current checkpoint for an arrival transfer") {
+        val arrivalRide = ride.copy(
+          specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true)),
+          airportCheckpoint = Some(AirportCheckpoint.ArrivalsHall)
+        )
+        val dto         = TrackApi.toPublicDto(arrivalRide, None, None)
+        assertTrue(dto.isAirportArrival, dto.checkpoint.contains("arrivals_hall"))
+      },
+      test("toPublicDto: a non-airport ride is not flagged as arrival and has no checkpoint") {
+        val dto = TrackApi.toPublicDto(ride.copy(specifics = None), None, None)
+        assertTrue(!dto.isAirportArrival, dto.checkpoint.isEmpty)
+      },
+      test("POST /api/track/{token}/checkpoint returns 204 on success") {
+        val ok     = TrackApi.postCheckpointEndpoint.zServerLogic[Any]((_, _) => ZIO.unit)
+        val routes = ZioHttpInterpreter().toHttp(List(ok))
+        for {
+          resp <- routes.runZIO(
+                    Request
+                      .post(
+                        URL.decode("/api/track/sometoken/checkpoint").toOption.get,
+                        Body.fromString("""{"checkpoint":"landed"}""")
+                      )
+                      .addHeader(Header.ContentType(MediaType.application.json))
+                  )
+        } yield assertTrue(resp.status == Status.NoContent)
+      },
+      test("POST /api/track/{token}/checkpoint maps a failure to 404 (no existence leak)") {
+        val failing = TrackApi.postCheckpointEndpoint.zServerLogic[Any]((_, _) =>
+          ZIO.fail(ApiError("Tracking link not found or expired"))
+        )
+        val routes  = ZioHttpInterpreter().toHttp(List(failing))
+        for {
+          resp <- routes.runZIO(
+                    Request
+                      .post(
+                        URL.decode("/api/track/whatever/checkpoint").toOption.get,
+                        Body.fromString("""{"checkpoint":"landed"}""")
+                      )
+                      .addHeader(Header.ContentType(MediaType.application.json))
+                  )
+        } yield assertTrue(resp.status == Status.NotFound)
       },
       test("GET /api/track/{token} maps a failure to 404, not 400 (no existence leak, page treats 404 as expired)") {
         // Interpret the real endpoint description with a logic that always fails — the status comes from the

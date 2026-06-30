@@ -81,10 +81,16 @@ class AirportCheckpointServiceImpl(
       markedBy: PersonId
   ): IO[RideError, Unit] =
     for
-      // Pre-conditions: must be an in-progress arrival airport transfer
+      // Pre-conditions: must be an active arrival airport transfer. The passenger self-reports
+      // landing/baggage/exit *before* boarding the car, so the ride is typically still Assigned or
+      // Confirmed (driver en route to meet) rather than InProgress. These three states are also
+      // exactly the ones where a driver is assigned, so the published event reaches a recipient.
       _               <- ZIO
-                           .fail(RideError.InvalidOperation("Checkpoints only apply to in-progress arrival airport transfers"))
-                           .when(!ride.isArrivalAirportTransfer || ride.status != RideStatus.InProgress)
+                           .fail(RideError.InvalidOperation("Checkpoints only apply to active arrival airport transfers"))
+                           .when(
+                             !ride.isArrivalAirportTransfer ||
+                               !AirportCheckpointService.CheckpointAllowedStatuses.contains(ride.status)
+                           )
       // Fast-fail in-memory pre-check (snapshot ordinal; cheap optimistic guard)
       currentOrdinal   = ride.airportCheckpoint.map(_.ordinal).getOrElse(-1)
       requestedOrdinal = requestedCheckpoint.ordinal
@@ -125,6 +131,18 @@ class AirportCheckpointServiceImpl(
     yield ()
 
 object AirportCheckpointService:
+
+  /**
+   * Ride states in which a passenger may report an airport checkpoint. These are the active states after a driver has
+   * been assigned (Assigned/Confirmed before pickup, InProgress after), so the published AirportCheckpointReached event
+   * always has a driver recipient. Terminal states (Completed/Cancelled/HandedOff) and Requested (no driver yet) are
+   * excluded.
+   */
+  private[service] val CheckpointAllowedStatuses: Set[RideStatus] = Set(
+    RideStatus.Assigned,
+    RideStatus.Confirmed,
+    RideStatus.InProgress
+  )
 
   val layer: ZLayer[RideRepository & EventHub & AirportConfigService, Nothing, AirportCheckpointService] = ZLayer
     .fromFunction(AirportCheckpointServiceImpl.apply)

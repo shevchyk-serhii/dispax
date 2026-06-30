@@ -328,6 +328,15 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
         }
         return;
       }
+      if (event.isAirportCheckpointReached && statusRideId != null) {
+        final cp = event.checkpointType;
+        if (cp != null) {
+          context.read<RideBloc>().add(
+            RideCheckpointReceived(rideId: statusRideId, checkpoint: cp),
+          );
+        }
+        return;
+      }
       if (event.isRideAssigned || event.isRideCreated) {
         _refreshRides();
       }

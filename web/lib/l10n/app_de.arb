@@ -179,6 +179,7 @@
   "checkpointLanded": "Gelandet",
   "checkpointArrivalsHall": "Ankunftshalle",
   "checkpointTerminalExit": "Terminalausgang",
+  "passengerCheckpointStatus": "Passagier: {checkpoint}",
   "markCheckpointButton": "Ich bin hier",
   "airportCheckpointPanelTitle": "Mein Standort im Terminal",
   "airportEntryTitle": "Terminal-Einfahrtszeit",
