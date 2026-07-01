@@ -547,6 +547,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String airportScheduledVsActual(String scheduled, String actual) {
+    return 'Planmäßig $scheduled → $actual';
+  }
+
+  @override
   String get airportTravelTime => 'Fahrzeit:';
 
   @override

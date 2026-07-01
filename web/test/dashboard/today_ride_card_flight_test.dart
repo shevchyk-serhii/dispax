@@ -60,6 +60,46 @@ void main() {
   });
 
   testWidgets(
+    'shows scheduled vs actual and a delay line when the flight deviated from plan',
+    (tester) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightScheduledTime: DateTime(2026, 3, 15, 9, 0),
+        flightTime: DateTime(2026, 3, 15, 9, 30),
+      );
+
+      await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
+      await tester.pump();
+
+      // en default → "Scheduled 09:00 → 09:30" and "+30 min delay" (two lines,
+      // one Text under a single "Flight" label).
+      expect(find.textContaining('09:00'), findsOneWidget);
+      expect(find.textContaining('09:30'), findsOneWidget);
+      expect(find.textContaining('Scheduled'), findsOneWidget);
+      expect(find.textContaining('delay'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'falls back to a single landing line when there is no scheduled time',
+    (tester) async {
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightTime: DateTime(2026, 3, 15, 9, 30),
+      );
+
+      await tester.pumpWidget(wrap(TodayRideCard(ride: ride)));
+      await tester.pump();
+
+      // No scheduled time known -> unchanged single-line "Landing at 09:30".
+      expect(find.textContaining('Landing at 09:30'), findsOneWidget);
+      expect(find.textContaining('Scheduled'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'shows the recommended terminal-entry time for an arrival with optimalEntryTime',
     (tester) async {
       final ride = TestFixtures.airportRide(

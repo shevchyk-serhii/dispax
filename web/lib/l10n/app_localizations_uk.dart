@@ -545,6 +545,11 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String airportScheduledVsActual(String scheduled, String actual) {
+    return 'За розкладом $scheduled → $actual';
+  }
+
+  @override
   String get airportTravelTime => 'Час у дорозі:';
 
   @override

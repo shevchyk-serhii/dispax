@@ -1126,6 +1126,12 @@ abstract class AppLocalizations {
   /// **'+{minutes} min delay'**
   String airportFlightDelay(int minutes);
 
+  /// No description provided for @airportScheduledVsActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled {scheduled} → {actual}'**
+  String airportScheduledVsActual(String scheduled, String actual);
+
   /// No description provided for @airportTravelTime.
   ///
   /// In en, this message translates to:

@@ -1706,6 +1706,59 @@ class DriverArrivalTimeRow extends StatelessWidget {
         : AppColors.textSecondary;
     final delay = ride.flightDelayMinutes;
     final showDelay = ride.isFlightDelayed;
+    final scheduledLine = l10n.airportScheduledLine(ride);
+
+    final baseTextStyle = TextStyle(fontSize: 12.5, color: secondary);
+    final delayTextStyle = TextStyle(
+      color: AppColors.error,
+      fontWeight: FontWeight.w600,
+    );
+
+    // When we know both the scheduled and actual time and they differ, show
+    // "Planmäßig HH:mm → HH:mm" on its own line, with the delay (if any) on a
+    // second line below — the two-line layout the user asked for. Otherwise
+    // fall back to the original single-line "Landung/Gelandet um HH:mm [• delay]"
+    // (covers the common no-scheduled-time / on-time cases unchanged).
+    final Widget textColumn;
+    if (scheduledLine != null) {
+      textColumn = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            scheduledLine,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: baseTextStyle,
+          ),
+          if (delay != null && delay > 0)
+            Text(
+              l10n.airportFlightDelay(delay),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: baseTextStyle.merge(delayTextStyle),
+            ),
+        ],
+      );
+    } else {
+      textColumn = Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: l10n.airportArrivalText(ride)),
+            if (showDelay)
+              TextSpan(
+                text: delay != null && delay > 0
+                    ? '  •  ${l10n.airportFlightDelay(delay)}'
+                    : '  •  ${l10n.flightStatusDelayed}',
+                style: delayTextStyle,
+              ),
+          ],
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: baseTextStyle,
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -1714,28 +1767,7 @@ class DriverArrivalTimeRow extends StatelessWidget {
         children: [
           Icon(Icons.flight_land, size: 15, color: secondary),
           const SizedBox(width: 6),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: l10n.airportArrivalText(ride)),
-                  if (showDelay)
-                    TextSpan(
-                      text: delay != null && delay > 0
-                          ? '  •  ${l10n.airportFlightDelay(delay)}'
-                          : '  •  ${l10n.flightStatusDelayed}',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12.5, color: secondary),
-            ),
-          ),
+          Expanded(child: textColumn),
         ],
       ),
     );

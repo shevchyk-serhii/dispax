@@ -51,6 +51,23 @@ class TodayRideCard extends StatelessWidget {
     return '$base  •  $suffix';
   }
 
+  /// Two-line variant shown when we know both the scheduled and actual flight
+  /// time and they differ: "Planmäßig HH:mm → HH:mm" then, only if the flight
+  /// is actually late, "+N Min Verspätung" on its own line. [RideInfoRow]'s text
+  /// has no maxLines cap, so embedding a newline renders both lines under the
+  /// single "Flight" label instead of duplicating the label across two rows.
+  /// Returns null when there's nothing to show beyond the existing [_landingText].
+  static String? _scheduledVsActualText(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheduledLine = l10n.airportScheduledLine(ride);
+    if (scheduledLine == null) return null;
+    final delay = ride.flightDelayMinutes;
+    if (delay != null && delay > 0) {
+      return '$scheduledLine\n${l10n.airportFlightDelay(delay)}';
+    }
+    return scheduledLine;
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
@@ -325,12 +342,16 @@ class TodayRideCard extends StatelessWidget {
             ),
           ],
           // Flight arrival/landing time ("Landung um HH:mm"), with a delay suffix when late.
-          // The live flight time comes from the airport board on the ride DTO.
+          // The live flight time comes from the airport board on the ride DTO. When both the
+          // scheduled and actual time are known and differ, shows "Planmäßig HH:mm → HH:mm"
+          // plus a separate delay line instead of the single-line fallback.
           if (ride.isAirportTransfer && ride.flightTime != null) ...[
             const SizedBox(height: 12),
             RideInfoRow(
               icon: Icons.flight_land,
-              text: _landingText(context, ride),
+              text:
+                  _scheduledVsActualText(context, ride) ??
+                  _landingText(context, ride),
               label: 'Flight',
             ),
           ],

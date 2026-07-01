@@ -209,6 +209,13 @@
       "minutes": {"type": "int"}
     }
   },
+  "airportScheduledVsActual": "Planmäßig {scheduled} → {actual}",
+  "@airportScheduledVsActual": {
+    "placeholders": {
+      "scheduled": {"type": "String"},
+      "actual": {"type": "String"}
+    }
+  },
   "airportTravelTime": "Fahrzeit:",
   "airportParkingSavings": "Parkersparnis: {amount}",
   "@airportParkingSavings": {

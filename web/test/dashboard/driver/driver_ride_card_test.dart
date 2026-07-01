@@ -251,21 +251,60 @@ void main() {
       expect(find.byIcon(Icons.flight_land), findsOneWidget);
     });
 
-    testWidgets('shows the delay in minutes when the flight is late', (
+    testWidgets(
+      'shows scheduled vs actual on two lines when the flight deviated from plan',
+      (tester) async {
+        final ride = TestFixtures.ride(
+          isAirportTransfer: true,
+          isArrival: true,
+          flightScheduledTime: DateTime(2026, 6, 27, 14, 0),
+          flightTime: DateTime(2026, 6, 27, 14, 30),
+        );
+
+        await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+        // en default → line 1 "Scheduled 14:00 → 14:30", line 2 "+30 min delay".
+        expect(find.textContaining('14:00'), findsOneWidget);
+        expect(find.textContaining('14:30'), findsOneWidget);
+        expect(find.textContaining('30'), findsWidgets);
+        expect(find.textContaining('Scheduled'), findsOneWidget);
+        expect(find.textContaining('delay'), findsOneWidget);
+      },
+    );
+
+    testWidgets('falls back to single line when there is no scheduled time', (
       tester,
     ) async {
       final ride = TestFixtures.ride(
         isAirportTransfer: true,
         isArrival: true,
-        flightScheduledTime: DateTime(2026, 6, 27, 14, 0),
-        flightTime: DateTime(2026, 6, 27, 14, 30),
+        flightTime: DateTime(2026, 6, 27, 14, 5),
+        flightStatus: 'delayed',
       );
 
       await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
 
-      // "Landing at 14:30 • +30 min delay" (en).
-      expect(find.textContaining('30'), findsWidgets);
-      expect(find.textContaining('delay'), findsOneWidget);
+      // No scheduled time known -> single-line fallback: "Landing at 14:05 • Delayed".
+      expect(find.textContaining('Landing at 14:05'), findsOneWidget);
+      expect(find.textContaining('Scheduled'), findsNothing);
+    });
+
+    testWidgets('shows a single line without a scheduled row when on time', (
+      tester,
+    ) async {
+      final onTime = DateTime(2026, 6, 27, 14, 5);
+      final ride = TestFixtures.ride(
+        isAirportTransfer: true,
+        isArrival: true,
+        flightScheduledTime: onTime,
+        flightTime: onTime,
+      );
+
+      await pump(tester, DriverArrivalTimeRow(ride: ride, isDark: false));
+
+      expect(find.textContaining('Landing at 14:05'), findsOneWidget);
+      expect(find.textContaining('Scheduled'), findsNothing);
+      expect(find.textContaining('delay'), findsNothing);
     });
 
     testWidgets('self-hides without a flight time', (tester) async {
