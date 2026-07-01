@@ -34,30 +34,30 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
       case _                                                                                      => (false, m)
   }
 
-  def create(ride: Ride): Task[Ride]                                                                 = notImpl("create")
-  def findByStatus(status: RideStatus): Task[List[Ride]]                                             = notImpl("findByStatus")
-  def findAll(): Task[List[Ride]]                                                                    = notImpl("findAll")
-  def findByClientId(clientId: PersonId): Task[List[Ride]]                                           = notImpl("findByClientId")
-  def findByDriverId(driverId: PersonId): Task[List[Ride]]                                           = notImpl("findByDriverId")
+  def create(ride: Ride): Task[Ride]                       = notImpl("create")
+  def findByStatus(status: RideStatus): Task[List[Ride]]   = notImpl("findByStatus")
+  def findAll(): Task[List[Ride]]                          = notImpl("findAll")
+  def findByClientId(clientId: PersonId): Task[List[Ride]] = notImpl("findByClientId")
+  def findByDriverId(driverId: PersonId): Task[List[Ride]] = notImpl("findByDriverId")
 
-  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]]           = notImpl(
+  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]] = notImpl(
     "findByDriverIdAndCompany"
   )
 
-  def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]]           = notImpl(
+  def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]] = notImpl(
     "findByClientIdAndCompany"
   )
 
-  def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]]             = notImpl(
+  def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]] = notImpl(
     "findByStatusAndCompany"
   )
-  def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                                        = notImpl("findByCompanyId")
+  def findByCompanyId(companyId: CompanyId): Task[List[Ride]]                            = notImpl("findByCompanyId")
 
-  def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]]      = notImpl(
+  def findByCompanyIdPaginated(companyId: CompanyId, offset: Int, limit: Int): Task[List[Ride]] = notImpl(
     "findByCompanyIdPaginated"
   )
 
-  def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]]         = notImpl(
+  def findByDriverIdPaginated(driverId: PersonId, offset: Int, limit: Int): Task[List[Ride]] = notImpl(
     "findByDriverIdPaginated"
   )
 
@@ -67,24 +67,24 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
       offset: Int,
       limit: Int
   ): Task[List[Ride]] = notImpl("findByDriverIdAndCompanyPaginated")
-  def update(ride: Ride): Task[Ride]                                                                 = notImpl("update")
-  def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]                   = notImpl("updateIfStatus")
+  def update(ride: Ride): Task[Ride]                                                         = notImpl("update")
+  def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean]           = notImpl("updateIfStatus")
 
-  def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean]       = notImpl(
+  def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean] = notImpl(
     "markPaidIfCompleted"
   )
-  def delete(id: RideId, companyId: CompanyId): Task[Unit]                                           = notImpl("delete")
+  def delete(id: RideId, companyId: CompanyId): Task[Unit]                                     = notImpl("delete")
 
-  def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]]                    = notImpl(
+  def countByCompanyGroupedByStatus(companyId: CompanyId): Task[Map[String, Int]] = notImpl(
     "countByCompanyGroupedByStatus"
   )
-  def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                                    = notImpl("sumRevenueByCompany")
+  def sumRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                 = notImpl("sumRevenueByCompany")
 
-  def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal]                               = notImpl(
+  def sumTodayRevenueByCompany(companyId: CompanyId): Task[BigDecimal] = notImpl(
     "sumTodayRevenueByCompany"
   )
 
-  def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double]                              = notImpl(
+  def avgAssignmentMinutesByCompany(companyId: CompanyId): Task[Double] = notImpl(
     "avgAssignmentMinutesByCompany"
   )
 
@@ -107,23 +107,23 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
       bucket: TimeBucket
   ): Task[List[(Instant, BigDecimal)]] = notImpl("earningsBucketsByDriver")
 
-  def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                        = notImpl(
+  def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = notImpl(
     "findAssignedRidesInWindow"
   )
 
-  def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                          = notImpl(
+  def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = notImpl(
     "findActiveRidesInWindow"
   )
 
-  def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                     = notImpl(
+  def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = notImpl(
     "findRidesNeedingConfirmation"
   )
-  def clearReminders(rideId: RideId): Task[Unit]                                                     = notImpl("clearReminders")
-  def countAllRidesByStatus(): Task[Map[String, Int]]                                                = notImpl("countAllRidesByStatus")
-  def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                                    = notImpl("sumAllRevenue")
-  def countRidesByCompany(from: Instant, to: Instant): Task[Map[UUID, Int]]                          = notImpl("countRidesByCompany")
+  def clearReminders(rideId: RideId): Task[Unit]                                 = notImpl("clearReminders")
+  def countAllRidesByStatus(): Task[Map[String, Int]]                            = notImpl("countAllRidesByStatus")
+  def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                = notImpl("sumAllRevenue")
+  def countRidesByCompany(from: Instant, to: Instant): Task[Map[UUID, Int]]      = notImpl("countRidesByCompany")
 
-  def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[UUID, BigDecimal]]           = notImpl(
+  def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[UUID, BigDecimal]] = notImpl(
     "sumRevenueByCompanyPlatform"
   )
 
@@ -136,8 +136,8 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
       scheduledTime: Option[Instant],
       departureTime: Option[Instant]
   ): Task[Boolean] = notImpl("updateFlightStatus")
-  def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                                = notImpl("findFlightStatus")
-  def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]]                 = ZIO.succeed(Map.empty)
+  def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]]                      = notImpl("findFlightStatus")
+  def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]]       = ZIO.succeed(Map.empty)
 
 object CheckpointRideRepository:
 
