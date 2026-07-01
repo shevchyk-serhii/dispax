@@ -1806,9 +1806,14 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
             ),
           ),
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: loadColor.withAlpha(40),
-              child: Icon(Icons.person, color: loadColor),
+            // Show the driver's profile photo when set, falling back to initials.
+            // Use the sheet's own UserService client, not context.read<AuthBloc>:
+            // this sheet is shown via showModalBottomSheet, so it lives outside
+            // the panel's BlocProvider tree and has no AuthBloc above it.
+            leading: AvatarCircle(
+              user: driver,
+              apiClient: widget.userService.privateApiClient,
+              radius: 20,
             ),
             title: Row(
               children: [
