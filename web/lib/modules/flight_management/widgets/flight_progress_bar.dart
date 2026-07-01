@@ -40,9 +40,9 @@ class FlightProgressBar extends StatelessWidget {
   final bool compact;
 
   /// Origin take-off / (estimated) landing instants for an arrival. When both are
-  /// present and the flight is en route, an airplane icon crawls along the
-  /// "Im Flug → Gelandet" segment at `(now − departure) / (arrival − departure)`.
-  /// Null on either → no airplane (the plain connector is shown).
+  /// present, an airplane icon crawls across the WHOLE bar at
+  /// `(now − departure) / (arrival − departure)` — parked at "Planmäßig" before
+  /// take-off and at "Gelandet" after landing. Null on either → no airplane.
   final DateTime? departureTime;
   final DateTime? arrivalTime;
 
@@ -103,7 +103,7 @@ class FlightProgressBar extends StatelessWidget {
     // Every cell flexes so the row can never overflow on a narrow card: the step
     // columns shrink their (bounded, wrapping) labels and the connectors take the
     // slack. Steps get the larger flex so the dots/labels stay legible.
-    final steps = Row(
+    final stepsRow = Row(
       children: [
         for (int i = 0; i < chain.length; i++) ...[
           Expanded(
@@ -115,6 +115,38 @@ class FlightProgressBar extends StatelessWidget {
         ],
       ],
     );
+
+    // A single airplane glides across the WHOLE bar by flight time (departure →
+    // landing), overlaid on the row of steps. It parks at the left ("Planmäßig")
+    // before take-off and at the right ("Gelandet") after landing; in between it
+    // follows `(now − departure) / (arrival − departure)`. Only shown for an
+    // arrival with a known [departureTime, arrivalTime] window.
+    final showPlane = isArrival && departureTime != null && arrivalTime != null;
+    final steps = showPlane
+        ? Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // The plane rides on the connector line, so reserve the connector's
+              // row height and vertically center the step dots against it.
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  // Sit the plane over the connector line (dot is 26 tall; the
+                  // line runs through its vertical center at ~13px).
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: _BarPlane(
+                      departureTime: departureTime!,
+                      arrivalTime: arrivalTime!,
+                      color: _delayed ? _delayedColor : _current,
+                    ),
+                  ),
+                ),
+              ),
+              stepsRow,
+            ],
+          )
+        : stepsRow;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,49 +199,17 @@ class FlightProgressBar extends StatelessWidget {
   }
 
   /// The line between step [i] and [i+1]. Completed segments (before the current
-  /// step) are green; the rest grey. On the arrival "Im Flug → Gelandet" segment,
-  /// while the flight is en route and we know the take-off/landing window, an
-  /// airplane icon crawls across it toward landing.
+  /// step) are green; the rest grey. The moving airplane is overlaid across the
+  /// whole bar in [build] (not per-connector), so this stays a plain line.
   Widget _connector(
     BuildContext context,
     List<FlightPhase> chain,
     int i,
     int ordinal,
   ) {
-    final line = Container(
+    return Container(
       height: 2,
       color: i < ordinal ? _completed : Colors.grey[300],
-    );
-
-    // Only on the en-route → landed segment, and only while the flight is ACTUALLY
-    // en route (this is the current step, i == ordinal). The monitor fills the
-    // take-off time even before departure (and flightTime falls back to scheduled),
-    // so without this phase gate a still-"Planmäßig" or already-"Gelandet" arrival
-    // would park a plane on the Im-Flug node.
-    final isEnRouteSegment =
-        isArrival &&
-        i == ordinal &&
-        chain[i] == FlightPhase.enRoute &&
-        i + 1 < chain.length &&
-        chain[i + 1] == FlightPhase.landed;
-    final hasWindow = departureTime != null && arrivalTime != null;
-    if (!isEnRouteSegment || !hasWindow) return line;
-
-    // Overlay the moving airplane on top of the (pending) en-route line.
-    return SizedBox(
-      height: 18,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          line,
-          _EnRoutePlane(
-            departureTime: departureTime!,
-            arrivalTime: arrivalTime!,
-            color: _delayed ? _delayedColor : _current,
-          ),
-        ],
-      ),
     );
   }
 
@@ -278,28 +278,29 @@ class FlightProgressBar extends StatelessWidget {
   }
 }
 
-/// A small airplane that sits on the en-route connector at the flight's current
-/// progress `(now − departure) / (arrival − departure)` and glides forward as
-/// time passes. Progress is read from the wall clock on each build and nudged
+/// A small airplane that crawls across the WHOLE progress bar at the flight's
+/// current progress `(now − departure) / (arrival − departure)` and glides forward
+/// as time passes. Progress is read from the wall clock on each build and nudged
 /// once a minute by a [Timer] (the per-minute jump is smoothed by a one-shot
 /// [AnimatedPositioned], so there is no continuously-running animation to hang
-/// `pumpAndSettle`). Clamped to the segment, so it parks at "Gelandet" once due.
-class _EnRoutePlane extends StatefulWidget {
+/// `pumpAndSettle`). Clamped to [0, 1]: it parks at the left ("Planmäßig") before
+/// take-off and at the right ("Gelandet") once the flight is due.
+class _BarPlane extends StatefulWidget {
   final DateTime departureTime;
   final DateTime arrivalTime;
   final Color color;
 
-  const _EnRoutePlane({
+  const _BarPlane({
     required this.departureTime,
     required this.arrivalTime,
     required this.color,
   });
 
   @override
-  State<_EnRoutePlane> createState() => _EnRoutePlaneState();
+  State<_BarPlane> createState() => _BarPlaneState();
 }
 
-class _EnRoutePlaneState extends State<_EnRoutePlane> {
+class _BarPlaneState extends State<_BarPlane> {
   static const double _iconSize = 16;
   Timer? _ticker;
 
@@ -320,12 +321,15 @@ class _EnRoutePlaneState extends State<_EnRoutePlane> {
 
   double get _fraction =>
       // Shared with Ride.flightProgressFraction — the tested math drives the pixels.
+      // Fallback 0 (park at "Planmäßig") when the window is unknown, NOT 1 — the
+      // plane now spans all phases, so an unknown window must not teleport it to
+      // "Gelandet". flightProgress already clamps to [0, 1].
       Ride.flightProgress(
         DateTime.now(),
         widget.departureTime,
         widget.arrivalTime,
       ) ??
-      1;
+      0;
 
   @override
   Widget build(BuildContext context) {

@@ -136,26 +136,101 @@ void main() {
     });
   });
 
-  group('FlightProgressBar en-route airplane', () {
-    testWidgets(
-      'arrival en route with a known take-off window shows the airplane',
-      (tester) async {
-        final now = DateTime.now();
-        await _pump(
-          tester,
-          FlightProgressBar.forRide(
-            _airportRide(
-              isArrival: true,
-              flightStatus: 'en_route',
-              flightDepartureTime: now.subtract(const Duration(hours: 1)),
-              flightTime: now.add(const Duration(hours: 1)),
-            ),
-          ),
-        );
-        await tester.pump(); // settle the one-shot AnimatedPositioned
-        expect(find.byIcon(Icons.flight), findsOneWidget);
-      },
-    );
+  group('FlightProgressBar airplane (spans the whole bar by flight time)', () {
+    // Pump the bar at a fixed width and return the plane's x measured from the
+    // bar's own left edge (0..300), so assertions are independent of where the
+    // centered bar sits on the test surface.
+    Future<double> planeCenterX(WidgetTester tester, Ride ride) async {
+      await _pump(
+        tester,
+        Center(
+          child: SizedBox(width: 300, child: FlightProgressBar.forRide(ride)),
+        ),
+      );
+      // Settle the one-shot AnimatedPositioned (300ms) — needed when the same
+      // tester is re-pumped with a new window within one test (the plane then
+      // animates from its previous x to the new one).
+      await tester.pump(const Duration(milliseconds: 350));
+      final barLeft = tester.getTopLeft(find.byType(FlightProgressBar)).dx;
+      return tester.getCenter(find.byIcon(Icons.flight)).dx - barLeft;
+    }
+
+    testWidgets('en-route arrival with a window shows the airplane mid-bar', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final x = await planeCenterX(
+        tester,
+        _airportRide(
+          isArrival: true,
+          flightStatus: 'en_route',
+          // Halfway through the flight → plane around the middle of the 300px bar.
+          flightDepartureTime: now.subtract(const Duration(hours: 1)),
+          flightTime: now.add(const Duration(hours: 1)),
+        ),
+      );
+      expect(x, greaterThan(100));
+      expect(x, lessThan(200));
+    });
+
+    testWidgets('not-yet-departed (scheduled) arrival parks the plane at the '
+        'left ("Planmäßig")', (tester) async {
+      final now = DateTime.now();
+      final x = await planeCenterX(
+        tester,
+        _airportRide(
+          isArrival: true,
+          flightStatus: 'scheduled',
+          // Departure is in the future → progress clamps to 0 → parked far left.
+          flightDepartureTime: now.add(const Duration(hours: 1)),
+          flightTime: now.add(const Duration(hours: 3)),
+        ),
+      );
+      expect(x, lessThan(60));
+    });
+
+    testWidgets('landed arrival parks the plane at the right ("Gelandet")', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final x = await planeCenterX(
+        tester,
+        _airportRide(
+          isArrival: true,
+          flightStatus: 'landed',
+          // Arrival is in the past → progress clamps to 1 → parked far right.
+          flightDepartureTime: now.subtract(const Duration(hours: 2)),
+          flightTime: now.subtract(const Duration(minutes: 10)),
+        ),
+      );
+      expect(x, greaterThan(240));
+    });
+
+    testWidgets('the plane moves forward as the flight progresses (mutation '
+        'guard: not pinned to one segment)', (tester) async {
+      final now = DateTime.now();
+      // Early in the flight (10% in).
+      final early = await planeCenterX(
+        tester,
+        _airportRide(
+          isArrival: true,
+          flightStatus: 'en_route',
+          flightDepartureTime: now.subtract(const Duration(minutes: 12)),
+          flightTime: now.add(const Duration(minutes: 108)),
+        ),
+      );
+      // Late in the flight (90% in).
+      final late = await planeCenterX(
+        tester,
+        _airportRide(
+          isArrival: true,
+          flightStatus: 'en_route',
+          flightDepartureTime: now.subtract(const Duration(minutes: 108)),
+          flightTime: now.add(const Duration(minutes: 12)),
+        ),
+      );
+      expect(late, greaterThan(early + 100));
+    });
 
     testWidgets('no airplane when the take-off time is unknown', (
       tester,
@@ -168,43 +243,6 @@ void main() {
             flightStatus: 'en_route',
             flightTime: DateTime.now().add(const Duration(hours: 1)),
             // no flightDepartureTime
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.byIcon(Icons.flight), findsNothing);
-    });
-
-    testWidgets('no airplane for a not-yet-departed (scheduled) arrival even '
-        'with a window', (tester) async {
-      // The monitor fills the take-off time before departure, so a scheduled
-      // arrival has a full window — but the plane must not appear until "Im Flug".
-      final now = DateTime.now();
-      await _pump(
-        tester,
-        FlightProgressBar.forRide(
-          _airportRide(
-            isArrival: true,
-            flightStatus: 'scheduled',
-            flightDepartureTime: now.add(const Duration(hours: 1)),
-            flightTime: now.add(const Duration(hours: 3)),
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.byIcon(Icons.flight), findsNothing);
-    });
-
-    testWidgets('no airplane once the flight has landed', (tester) async {
-      final now = DateTime.now();
-      await _pump(
-        tester,
-        FlightProgressBar.forRide(
-          _airportRide(
-            isArrival: true,
-            flightStatus: 'landed',
-            flightDepartureTime: now.subtract(const Duration(hours: 2)),
-            flightTime: now.subtract(const Duration(minutes: 10)),
           ),
         ),
       );
