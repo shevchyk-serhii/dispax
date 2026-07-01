@@ -253,7 +253,8 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                                 // falling back to initials.
                                 leading: AvatarCircle(
                                   user: client,
-                                  apiClient: widget.userService.privateApiClient,
+                                  apiClient:
+                                      widget.userService.privateApiClient,
                                   radius: 20,
                                 ),
                                 title: Text(client.name),
