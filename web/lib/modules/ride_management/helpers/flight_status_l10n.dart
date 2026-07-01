@@ -84,4 +84,19 @@ extension RideFlightStatusL10n on AppLocalizations {
         ? airportLandedAt(time)
         : airportLandingAt(time);
   }
+
+  /// "Scheduled HH:mm → HH:mm" line shown above the arrival line when the flight actually
+  /// deviated from its plan. Null when there's no scheduled time (source didn't publish one)
+  /// or the flight is exactly on time to the minute (nothing useful to show — comparing the
+  /// formatted minute, not the raw DateTime, so a sub-minute difference doesn't render a
+  /// misleading "14:00 → 14:00" line).
+  String? airportScheduledLine(Ride ride) {
+    final scheduled = ride.flightScheduledTime;
+    final actual = ride.flightTime;
+    if (scheduled == null || actual == null) return null;
+    final scheduledText = DateFormat.Hm().format(scheduled);
+    final actualText = DateFormat.Hm().format(actual);
+    if (scheduledText == actualText) return null;
+    return airportScheduledVsActual(scheduledText, actualText);
+  }
 }

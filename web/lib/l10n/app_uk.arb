@@ -209,6 +209,13 @@
       "minutes": {"type": "int"}
     }
   },
+  "airportScheduledVsActual": "За розкладом {scheduled} → {actual}",
+  "@airportScheduledVsActual": {
+    "placeholders": {
+      "scheduled": {"type": "String"},
+      "actual": {"type": "String"}
+    }
+  },
   "airportTravelTime": "Час у дорозі:",
   "airportParkingSavings": "Економія на паркуванні: {amount}",
   "@airportParkingSavings": {
