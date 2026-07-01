@@ -19,12 +19,7 @@ import '../flight_phases.dart';
 ///    and a "+N min" badge is appended; a raw `delayed` status with no known
 ///    position defaults the active step to "scheduled";
 ///  - `unknown`/missing/non-airport → nothing is rendered.
-class FlightProgressBar extends StatelessWidget {
-  static const Color _completed = Color(0xFF4CAF50); // green
-  static const Color _current = Color(0xFFFF9800); // amber
-  static const Color _pending = Color(0xFF9E9E9E); // grey
-  static const Color _delayedColor = Color(0xFFD32F2F); // red
-
+class FlightProgressBar extends StatefulWidget {
   /// Backend wire status (e.g. "scheduled", "en_route", "landed", "delayed").
   final String? status;
   final bool isArrival;
@@ -83,11 +78,51 @@ class FlightProgressBar extends StatelessWidget {
         status!.toLowerCase().trim().contains('delay');
   }
 
-  bool get _delayed => isDelayed || (delayMinutes != null && delayMinutes! > 0);
+  @override
+  State<FlightProgressBar> createState() => _FlightProgressBarState();
+}
+
+class _FlightProgressBarState extends State<FlightProgressBar> {
+  static const Color _completed = Color(0xFF4CAF50); // green
+  static const Color _current = Color(0xFFFF9800); // amber
+  static const Color _pending = Color(0xFF9E9E9E); // grey
+  static const Color _delayedColor = Color(0xFFD32F2F); // red
+
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    // A delayed flight is placed on the bar by the wall clock (its airplane and
+    // phase highlight both track [flightProgress]); re-read the clock once a
+    // minute so "Im Flug"/"Gelandet" light up (and the plane advances) as time
+    // passes, without any per-frame animation. Only needed when the time-driven
+    // path is active — i.e. a known [departureTime, arrivalTime] window.
+    if (widget.departureTime != null && widget.arrivalTime != null) {
+      _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  bool get _delayed =>
+      widget.isDelayed ||
+      (widget.delayMinutes != null && widget.delayMinutes! > 0);
 
   @override
   Widget build(BuildContext context) {
-    if (!isVisible) return const SizedBox.shrink();
+    final status = widget.status;
+    final isArrival = widget.isArrival;
+    final departureTime = widget.departureTime;
+    final arrivalTime = widget.arrivalTime;
+
+    if (!widget.isVisible) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context)!;
 
     if (FlightPhases.isTerminalOffRamp(status)) {
@@ -95,17 +130,25 @@ class FlightProgressBar extends StatelessWidget {
     }
 
     final chain = FlightPhases.chainFor(isArrival: isArrival);
-    // Active step: the chain position of the status. A delayed flight has no
-    // phase of its own; MUC never gives it a take-off time, so we place it by
-    // the only time signal available — has its landing time arrived? — instead
-    // of always defaulting to "Planmäßig".
+
+    // The single time fraction (0..1) that drives BOTH the airplane's position
+    // and — for a delayed flight — the active phase, so they never disagree.
+    // Null when the full [departure, arrival] window is unknown.
+    final progress = (departureTime != null && arrivalTime != null)
+        ? Ride.flightProgress(DateTime.now(), departureTime, arrivalTime)
+        : null;
+
+    // Active step: a confirmed MUC status wins; a delayed flight is placed by
+    // `progress` (full window) or the landing-time fallback (arrival only), so the
+    // highlight tracks the moving airplane instead of freezing on "Planmäßig".
     final landingReached =
-        arrivalTime != null && !DateTime.now().isBefore(arrivalTime!);
+        arrivalTime != null && !DateTime.now().isBefore(arrivalTime);
     final ordinal =
         FlightPhases.activeOrdinalFor(
           status,
           isArrival: isArrival,
           landingReached: landingReached,
+          progress: progress,
         ) ??
         0;
 
@@ -128,9 +171,8 @@ class FlightProgressBar extends StatelessWidget {
     // A single airplane glides across the WHOLE bar by flight time (departure →
     // landing), overlaid on the row of steps. It parks at the left ("Planmäßig")
     // before take-off and at the right ("Gelandet") after landing; in between it
-    // follows `(now − departure) / (arrival − departure)`. Only shown for an
-    // arrival with a known [departureTime, arrivalTime] window.
-    final showPlane = isArrival && departureTime != null && arrivalTime != null;
+    // follows `progress`. Only shown for an arrival with a known window.
+    final showPlane = isArrival && progress != null;
     final steps = showPlane
         ? Stack(
             clipBehavior: Clip.none,
@@ -145,8 +187,7 @@ class FlightProgressBar extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: _BarPlane(
-                      departureTime: departureTime!,
-                      arrivalTime: arrivalTime!,
+                      fraction: progress,
                       color: _delayed ? _delayedColor : _current,
                     ),
                   ),
@@ -163,7 +204,7 @@ class FlightProgressBar extends StatelessWidget {
       children: [steps, if (_delayed) _buildDelayBadge(l10n)],
     );
 
-    if (compact) return content;
+    if (widget.compact) return content;
 
     return Card(
       elevation: 1,
@@ -179,7 +220,7 @@ class FlightProgressBar extends StatelessWidget {
         Icon(Icons.cancel_outlined, size: 16, color: color),
         const SizedBox(width: 6),
         Text(
-          l10n.localizedFlightStatus(status),
+          l10n.localizedFlightStatus(widget.status),
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: color,
             fontWeight: FontWeight.w700,
@@ -190,7 +231,7 @@ class FlightProgressBar extends StatelessWidget {
   }
 
   Widget _buildDelayBadge(AppLocalizations l10n) {
-    final minutes = delayMinutes;
+    final minutes = widget.delayMinutes;
     // Only render a "+N min" when we actually know the delta; a bare delayed
     // status still tints the step but has nothing to quantify.
     if (minutes == null || minutes <= 0) return const SizedBox.shrink();
@@ -287,58 +328,19 @@ class FlightProgressBar extends StatelessWidget {
   }
 }
 
-/// A small airplane that crawls across the WHOLE progress bar at the flight's
-/// current progress `(now − departure) / (arrival − departure)` and glides forward
-/// as time passes. Progress is read from the wall clock on each build and nudged
-/// once a minute by a [Timer] (the per-minute jump is smoothed by a one-shot
-/// [AnimatedPositioned], so there is no continuously-running animation to hang
-/// `pumpAndSettle`). Clamped to [0, 1]: it parks at the left ("Planmäßig") before
-/// take-off and at the right ("Gelandet") once the flight is due.
-class _BarPlane extends StatefulWidget {
-  final DateTime departureTime;
-  final DateTime arrivalTime;
+/// A small airplane at the flight's current [fraction] (0..1) across the WHOLE
+/// progress bar. Stateless: the fraction is computed by the parent (which owns
+/// the per-minute ticker), and the per-tick jump is smoothed by a one-shot
+/// [AnimatedPositioned] — so there is no continuously-running animation to hang
+/// `pumpAndSettle`. 0 parks it at "Planmäßig", 1 at "Gelandet".
+class _BarPlane extends StatelessWidget {
+  static const double _iconSize = 16;
+
+  /// Flight progress in [0, 1] (the same value that drives the phase highlight).
+  final double fraction;
   final Color color;
 
-  const _BarPlane({
-    required this.departureTime,
-    required this.arrivalTime,
-    required this.color,
-  });
-
-  @override
-  State<_BarPlane> createState() => _BarPlaneState();
-}
-
-class _BarPlaneState extends State<_BarPlane> {
-  static const double _iconSize = 16;
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    // Re-read the clock every minute; the plane creeps imperceptibly between ticks.
-    _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  double get _fraction =>
-      // Shared with Ride.flightProgressFraction — the tested math drives the pixels.
-      // Fallback 0 (park at "Planmäßig") when the window is unknown, NOT 1 — the
-      // plane now spans all phases, so an unknown window must not teleport it to
-      // "Gelandet". flightProgress already clamps to [0, 1].
-      Ride.flightProgress(
-        DateTime.now(),
-        widget.departureTime,
-        widget.arrivalTime,
-      ) ??
-      0;
+  const _BarPlane({required this.fraction, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -348,7 +350,6 @@ class _BarPlaneState extends State<_BarPlane> {
           0.0,
           double.infinity,
         );
-        final fraction = _fraction;
         // The plane traces a shallow arc: climb → cruise → descend, with the
         // nose tilted along the path tangent. Horizontal travel stays in the
         // AnimatedPositioned (so the per-minute nudge glides); the vertical arc
@@ -371,11 +372,7 @@ class _BarPlaneState extends State<_BarPlane> {
                   // tilt is added so the nose follows the climb/descent.
                   child: Transform.rotate(
                     angle: 1.5708 + tilt,
-                    child: Icon(
-                      Icons.flight,
-                      size: _iconSize,
-                      color: widget.color,
-                    ),
+                    child: Icon(Icons.flight, size: _iconSize, color: color),
                   ),
                 ),
               ),

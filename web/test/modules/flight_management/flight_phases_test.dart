@@ -248,6 +248,58 @@ void main() {
       },
     );
 
+    group('delayed arrival placed by the flight-progress fraction', () {
+      // The full [departure, arrival] window is known, so the phase tracks the
+      // SAME fraction that positions the airplane. Arrival chain: [0]=Planmäßig,
+      // [1]=Im Flug, [2]=Gelandet.
+      test('progress >= 1 (past landing) lights up "Gelandet" (last step)', () {
+        expect(
+          FlightPhases.activeOrdinalFor(
+            'delayed',
+            isArrival: true,
+            progress: 1.0,
+          ),
+          2,
+        );
+      });
+
+      test('mid-flight progress lights up "Im Flug"', () {
+        expect(
+          FlightPhases.activeOrdinalFor(
+            'Verspätet',
+            isArrival: true,
+            progress: 0.5,
+          ),
+          1,
+        );
+      });
+
+      test('progress 0 (not yet departed) stays on "Planmäßig"', () {
+        expect(
+          FlightPhases.activeOrdinalFor(
+            'delayed',
+            isArrival: true,
+            progress: 0.0,
+          ),
+          0,
+        );
+      });
+
+      test('a confirmed status still wins over the fraction (early landing '
+          'shows Gelandet, not a time-derived step)', () {
+        // landed with progress < 1 (clock before estimated arrival): the real
+        // status must win, so it stays "Gelandet", never falls back to Im Flug.
+        expect(
+          FlightPhases.activeOrdinalFor(
+            'landed',
+            isArrival: true,
+            progress: 0.3,
+          ),
+          2,
+        );
+      });
+    });
+
     test('off-ramp and unknown return null', () {
       expect(
         FlightPhases.activeOrdinalFor(

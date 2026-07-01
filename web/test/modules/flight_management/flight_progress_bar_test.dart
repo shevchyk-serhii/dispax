@@ -160,6 +160,33 @@ void main() {
       expect(labelColor(tester, 'Im Flug'), red);
       expect(labelColor(tester, 'Gelandet'), const Color(0xFF9E9E9E));
     });
+
+    testWidgets('delayed arrival with a full window past landing lights up '
+        '"Gelandet" — the phase follows the plane', (tester) async {
+      // The user-reported case: the plane sits at the right (estimated landing
+      // passed) but "Im Flug"/"Gelandet" stayed grey. With a full window the
+      // phase now tracks the same progress fraction as the plane: progress >= 1
+      // → "Gelandet" is the active (red, delayed) step, in sync with the plane.
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'delayed',
+            flightDepartureTime: now.subtract(const Duration(hours: 2)),
+            flightTime: now.subtract(
+              const Duration(minutes: 10),
+            ), // landed-by-time
+          ),
+        ),
+      );
+      const green = Color(0xFF4CAF50);
+      const red = Color(0xFFD32F2F);
+      expect(labelColor(tester, 'Planmäßig'), green);
+      expect(labelColor(tester, 'Im Flug'), green); // completed
+      expect(labelColor(tester, 'Gelandet'), red); // current, delayed
+    });
   });
 
   group('FlightProgressBar airplane (spans the whole bar by flight time)', () {

@@ -101,19 +101,24 @@ class FlightPhases {
   /// still somewhere on its journey, so rather than always defaulting to step 0
   /// ("Planmäßig") we place it by time.
   ///
-  /// For an arrival, the only time signal MUC gives a delayed flight is its
-  /// landing time (`flightTime` = estimated ?? scheduled) — take-off/departure
-  /// time is never published (verified against live delayed arrivals). So:
-  ///   • [landingReached] (now >= landing time) and not yet landed
-  ///        → the flight is airborne / on final approach → the "in the air" step
-  ///          (enRoute on arrivals, the last step on departures);
-  ///   • otherwise → step 0 (scheduled). Before the landing time we genuinely
-  ///     cannot tell airborne from still-on-the-ground, so it stays "Planmäßig".
+  /// A confirmed MUC status ([phaseOrdinalFor] non-null) always wins outright, so
+  /// a flight that lands early still shows "Gelandet", never a time-derived step.
+  ///
+  /// Only a `delayed` status (no phase of its own) is placed by time, so its bar
+  /// tracks the moving airplane instead of freezing on "Planmäßig":
+  ///   • [progress] (the SAME `flightProgress(now, departure, arrival)` fraction
+  ///     that positions the plane) is used when the full window is known —
+  ///     `>= 1` → landed (plane parked at "Gelandet"); `> 0` → enRoute ("Im Flug");
+  ///     `0` → scheduled ("Planmäßig"). One input, so phase and plane never drift.
+  ///   • otherwise fall back to the arrival-only signal [landingReached]
+  ///     (now >= landing time, no take-off time published) → the "in the air" step;
+  ///   • else step 0 (scheduled).
   /// Off-ramp/unknown statuses return `null`.
   static int? activeOrdinalFor(
     String? wireStatus, {
     required bool isArrival,
     bool landingReached = false,
+    double? progress,
   }) {
     final positioned = phaseOrdinalFor(wireStatus, isArrival: isArrival);
     if (positioned != null) return positioned;
@@ -123,14 +128,25 @@ class FlightPhases {
     final isDelayed = s.contains('delay') || s.contains('verspät');
     if (!isDelayed) return null;
 
-    if (landingReached) {
-      final chain = chainFor(isArrival: isArrival);
-      // The "in the air" step: enRoute for arrivals, the final step otherwise.
-      final airborne = isArrival
-          ? chain.indexOf(FlightPhase.enRoute)
-          : chain.length - 1;
-      return airborne < 0 ? 0 : airborne;
+    final chain = chainFor(isArrival: isArrival);
+    // The "in the air" step: enRoute for arrivals, the final step otherwise.
+    final airborne = isArrival
+        ? chain.indexOf(FlightPhase.enRoute)
+        : chain.length - 1;
+    final airborneStep = airborne < 0 ? 0 : airborne;
+
+    // Full window known → derive the step from the same fraction the plane uses,
+    // so the highlight stays in lock-step with the airplane.
+    if (progress != null) {
+      if (progress >= 1.0) return chain.length - 1; // landed / final step
+      if (progress > 0) return airborneStep; // en route / in the air
+      return 0; // not yet departed → scheduled
     }
+
+    // Arrival-only fallback (take-off time unknown): the landing time is the only
+    // signal — once it has passed the flight is airborne / on final approach.
+    if (landingReached) return airborneStep;
+
     // Delayed but the landing time has not arrived yet → first step.
     return 0;
   }
