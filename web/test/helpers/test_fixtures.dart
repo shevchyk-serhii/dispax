@@ -25,6 +25,7 @@ class TestFixtures {
     VehicleInfo? vehicleInfo,
     String? preferredLanguage,
     bool mustChangePassword = false,
+    bool hasAvatar = false,
   }) {
     return Person(
       id: id,
@@ -37,6 +38,7 @@ class TestFixtures {
       vehicleInfo: vehicleInfo,
       preferredLanguage: preferredLanguage,
       mustChangePassword: mustChangePassword,
+      hasAvatar: hasAvatar,
     );
   }
 

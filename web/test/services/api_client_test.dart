@@ -155,6 +155,44 @@ void main() {
       );
     });
 
+    group('getBytes (binary endpoints, e.g. avatar)', () {
+      test(
+        'sends Accept: */* (not application/json) so an image endpoint does '
+        'not reject it with 406',
+        () async {
+          late Map<String, String> capturedHeaders;
+          final client = MockClient((request) async {
+            capturedHeaders = request.headers;
+            return http.Response.bytes([0xFF, 0xD8, 0xFF], 200); // JPEG magic
+          });
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
+          apiClient.setAuthToken('t');
+
+          final bytes = await apiClient.getBytes('/users/1/avatar');
+
+          expect(capturedHeaders['Accept'], '*/*');
+          // Must NOT claim to accept only JSON — that is what caused the 406.
+          expect(capturedHeaders['Accept'], isNot('application/json'));
+          expect(bytes, isNotNull);
+          expect(bytes!.length, 3);
+        },
+      );
+
+      test('returns null on 404 (no avatar) so the caller can fall back', () async {
+        final client = MockClient((_) async => http.Response('', 404));
+        final apiClient = ApiClient(
+          client: client,
+          baseUrl: 'http://localhost:8080/api',
+        );
+        apiClient.setAuthToken('t');
+
+        expect(await apiClient.getBytes('/users/1/avatar'), isNull);
+      });
+    });
+
     group('RideService shares ApiClient without closing it', () {
       test('dispose on RideService does not close a shared ApiClient', () async {
         // Regression: services that receive an external ApiClient must not
