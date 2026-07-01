@@ -293,8 +293,15 @@ class ApiClient {
   Future<Uint8List?> getBytes(String endpoint) async {
     try {
       final uri = Uri.parse('$_baseUrl$endpoint');
+      // The avatar endpoint serves image bytes, not JSON. privateHeaders sends
+      // 'Accept: application/json', which makes the server's content negotiation
+      // reject the request with 406 Not Acceptable. Override Accept to allow any
+      // media type so the raw bytes come through.
+      final headers = Map<String, String>.from(privateHeaders)
+        ..['Accept'] = '*/*'
+        ..remove('Content-Type');
       final response = await privateClient
-          .get(uri, headers: privateHeaders)
+          .get(uri, headers: headers)
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 401) {
         _handleUnauthorized();

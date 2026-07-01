@@ -38,6 +38,12 @@ void main() {
     when(() => mockStorage.read(any())).thenAnswer((_) async => null);
     when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
     when(() => mockStorage.delete(any())).thenAnswer((_) async {});
+    // Default: the background profile refresh dispatched after a restored session
+    // returns the stored user unchanged. Individual tests override to assert the
+    // refresh applies server-side changes (e.g. a newly-set hasAvatar).
+    when(() => mockApiClient.get('/users/profile')).thenAnswer(
+      (_) async => http.Response(jsonEncode(TestFixtures.person().toJson()), 200),
+    );
     when(
       () => mockWebSocketService.connect(
         any(),
@@ -272,6 +278,8 @@ void main() {
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthInitializeRequested()),
+      // authenticated(restored) then a second authenticated after the background
+      // /users/profile refresh dispatched by _onInitializeRequested.
       expect: () => [
         AuthState.loading(),
         isA<AuthState>().having(
@@ -279,6 +287,41 @@ void main() {
           'status',
           AuthStatus.authenticated,
         ),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.authenticated,
+        ),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'AuthInitializeRequested refreshes a stale stored user from /users/profile '
+      '(picks up a hasAvatar set after the last login)',
+      build: () {
+        // Stored session is stale: it was saved by a login before the avatar
+        // existed, so hasAvatar is false.
+        final stored = TestFixtures.person(hasAvatar: false);
+        when(
+          () => mockStorage.read(AuthBloc.privateUserKey),
+        ).thenAnswer((_) async => jsonEncode(stored.toJson()));
+        when(
+          () => mockStorage.read(AuthBloc.privateTokenKey),
+        ).thenAnswer((_) async => 'test-token');
+        // The backend now reports the avatar is present.
+        final fresh = TestFixtures.person(hasAvatar: true);
+        when(() => mockApiClient.get('/users/profile')).thenAnswer(
+          (_) async => http.Response(jsonEncode(fresh.toJson()), 200),
+        );
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(const AuthInitializeRequested()),
+      // loading → authenticated(stale, hasAvatar:false) → authenticated(fresh,
+      // hasAvatar:true) after the background refresh.
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>().having((s) => s.user?.hasAvatar, 'hasAvatar', false),
+        isA<AuthState>().having((s) => s.user?.hasAvatar, 'hasAvatar', true),
       ],
     );
 
@@ -460,7 +503,15 @@ void main() {
 
     test('ApiClient 401 on an authenticated session forces logout with a '
         '"session expired" message', () async {
-      final httpClient = MockClient((_) async => http.Response('', 401));
+      // /users/profile must succeed (the background refresh dispatched on session
+      // restore); only /rides returns 401 to drive the forced-logout under test.
+      final person = TestFixtures.person();
+      final httpClient = MockClient((request) async {
+        if (request.url.path.endsWith('/users/profile')) {
+          return http.Response(jsonEncode(person.toJson()), 200);
+        }
+        return http.Response('', 401);
+      });
       final realApiClient = ApiClient(
         client: httpClient,
         baseUrl: 'http://localhost:8080/api',
@@ -474,7 +525,6 @@ void main() {
       );
       // The forced-logout guard only fires for an authenticated session, so
       // drive the bloc to authenticated via AuthInitializeRequested first.
-      final person = TestFixtures.person();
       when(
         () => mockStorage.read(AuthBloc.privateUserKey),
       ).thenAnswer((_) async => jsonEncode(person.toJson()));

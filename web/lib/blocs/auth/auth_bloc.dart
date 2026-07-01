@@ -191,6 +191,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                   biometricAvailable: biometricAvailable,
                 ),
         );
+
+        // The stored user is a snapshot from the last login and can be stale
+        // (e.g. a profile photo uploaded later, or any field added to the DTO
+        // after that login — hasAvatar). Re-fetch /users/profile in the
+        // background so the restored session reflects the current backend state
+        // without requiring an explicit logout→login. Non-fatal: if the refresh
+        // fails (offline), the restored stored user stays in place.
+        if (!user.mustChangePassword) {
+          add(const AuthProfileRefreshRequested());
+        }
       } else {
         emit(
           AuthState.unauthenticated(
