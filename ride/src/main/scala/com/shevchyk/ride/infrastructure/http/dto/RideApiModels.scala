@@ -77,6 +77,9 @@ case class RideDto(
     // The driver card renders it as "Einfahrt um HH:mm". None when not an arrival or no config/arrival time.
     optimalEntryTime: Option[String] = None,
     driverName: Option[String] = None,
+    // true when the assigned driver has a profile photo (mirrors clientHasAvatar).
+    // Default false: unassigned rides / endpoints that don't resolve the driver.
+    driverHasAvatar: Boolean = false,
     driverLocation: Option[LocationDto] = None,
     driverApproaching: Boolean = false,
     driverDistanceMeters: Option[Int] = None,
@@ -417,6 +420,7 @@ object RideDto:
       clientHasAvatar: Boolean = false,
       clientProvisional: Boolean = false,
       driverName: Option[String] = None,
+      driverHasAvatar: Boolean = false,
       etaMinutes: Option[Int] = None,
       driverRating: Option[Double] = None,
       driverRatingCount: Option[Int] = None,
@@ -487,6 +491,7 @@ object RideDto:
       flightStatus = flight.flatMap(_.flightStatus),
       optimalEntryTime = optimalEntryTime.map(_.toString),
       driverName = driverName,
+      driverHasAvatar = driverHasAvatar,
       driverLocation = driverLoc,
       driverApproaching = approaching,
       driverDistanceMeters = distanceMeters,

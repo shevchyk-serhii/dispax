@@ -73,6 +73,10 @@ class Ride {
   /// Sourced from the backend RideDto (derived from the client's Person).
   final bool clientHasAvatar;
 
+  /// Whether the assigned driver has a profile photo (mirrors [clientHasAvatar]).
+  /// False when no driver is assigned or the endpoint didn't resolve one.
+  final bool driverHasAvatar;
+
   /// True when the ride was booked without a real client — a provisional
   /// placeholder was created by the backend (from-chat flow). The card renders
   /// the route instead of the placeholder name until the client is linked.
@@ -150,6 +154,7 @@ class Ride {
     this.status = RideStatus.requested,
     required this.clientName,
     this.clientHasAvatar = false,
+    this.driverHasAvatar = false,
     this.clientProvisional = false,
     this.flightNumber,
     this.flightTime,
@@ -209,6 +214,7 @@ class Ride {
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
       clientHasAvatar: json['clientHasAvatar'] as bool? ?? false,
+      driverHasAvatar: json['driverHasAvatar'] as bool? ?? false,
       clientProvisional: json['clientProvisional'] as bool? ?? false,
       flightNumber: json['flightNumber'],
       // Convert to local like pickupDateTime, so airport flight times are not
@@ -284,6 +290,7 @@ class Ride {
       'status': status.value,
       'clientName': clientName,
       'clientHasAvatar': clientHasAvatar,
+      'driverHasAvatar': driverHasAvatar,
       'clientProvisional': clientProvisional,
       'flightNumber': flightNumber,
       'flightTime': flightTime?.toUtc().toIso8601String(),
@@ -340,6 +347,7 @@ class Ride {
     RideStatus? status,
     String? clientName,
     bool? clientHasAvatar,
+    bool? driverHasAvatar,
     bool? clientProvisional,
     String? flightNumber,
     Object? flightTime = _sentinel,
@@ -394,6 +402,7 @@ class Ride {
       status: status ?? this.status,
       clientName: clientName ?? this.clientName,
       clientHasAvatar: clientHasAvatar ?? this.clientHasAvatar,
+      driverHasAvatar: driverHasAvatar ?? this.driverHasAvatar,
       clientProvisional: clientProvisional ?? this.clientProvisional,
       flightNumber: flightNumber ?? this.flightNumber,
       flightTime: flightTime == _sentinel
@@ -675,7 +684,13 @@ class Ride {
     final id = driverId;
     final name = driverName;
     if (id == null || name == null) return null;
-    return Person(id: id, name: name, email: '', role: PersonRole.driver);
+    return Person(
+      id: id,
+      name: name,
+      email: '',
+      role: PersonRole.driver,
+      hasAvatar: driverHasAvatar,
+    );
   }
 
   Person get client {
