@@ -95,10 +95,19 @@ class FlightProgressBar extends StatelessWidget {
     }
 
     final chain = FlightPhases.chainFor(isArrival: isArrival);
-    // Active step: the chain position of the status, or 0 (scheduled) when the
-    // status is delayed/unpositioned.
+    // Active step: the chain position of the status. A delayed flight has no
+    // phase of its own; MUC never gives it a take-off time, so we place it by
+    // the only time signal available — has its landing time arrived? — instead
+    // of always defaulting to "Planmäßig".
+    final landingReached =
+        arrivalTime != null && !DateTime.now().isBefore(arrivalTime!);
     final ordinal =
-        FlightPhases.phaseOrdinalFor(status, isArrival: isArrival) ?? 0;
+        FlightPhases.activeOrdinalFor(
+          status,
+          isArrival: isArrival,
+          landingReached: landingReached,
+        ) ??
+        0;
 
     // Every cell flexes so the row can never overflow on a narrow card: the step
     // columns shrink their (bounded, wrapping) labels and the connectors take the

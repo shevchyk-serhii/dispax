@@ -94,6 +94,47 @@ class FlightPhases {
     _ => phase,
   };
 
+  /// The chain index the bar should light up as the *active* step.
+  ///
+  /// A status with a chain position (scheduled/boarding/…/landed) wins outright.
+  /// A `delayed` status carries no phase of its own — but a delayed flight is
+  /// still somewhere on its journey, so rather than always defaulting to step 0
+  /// ("Planmäßig") we place it by time.
+  ///
+  /// For an arrival, the only time signal MUC gives a delayed flight is its
+  /// landing time (`flightTime` = estimated ?? scheduled) — take-off/departure
+  /// time is never published (verified against live delayed arrivals). So:
+  ///   • [landingReached] (now >= landing time) and not yet landed
+  ///        → the flight is airborne / on final approach → the "in the air" step
+  ///          (enRoute on arrivals, the last step on departures);
+  ///   • otherwise → step 0 (scheduled). Before the landing time we genuinely
+  ///     cannot tell airborne from still-on-the-ground, so it stays "Planmäßig".
+  /// Off-ramp/unknown statuses return `null`.
+  static int? activeOrdinalFor(
+    String? wireStatus, {
+    required bool isArrival,
+    bool landingReached = false,
+  }) {
+    final positioned = phaseOrdinalFor(wireStatus, isArrival: isArrival);
+    if (positioned != null) return positioned;
+    if (isTerminalOffRamp(wireStatus)) return null;
+
+    final s = wireStatus?.toLowerCase().trim() ?? '';
+    final isDelayed = s.contains('delay') || s.contains('verspät');
+    if (!isDelayed) return null;
+
+    if (landingReached) {
+      final chain = chainFor(isArrival: isArrival);
+      // The "in the air" step: enRoute for arrivals, the final step otherwise.
+      final airborne = isArrival
+          ? chain.indexOf(FlightPhase.enRoute)
+          : chain.length - 1;
+      return airborne < 0 ? 0 : airborne;
+    }
+    // Delayed but the landing time has not arrived yet → first step.
+    return 0;
+  }
+
   /// True for terminal off-ramp statuses (`cancelled`/`diverted`) that abort the
   /// normal chain — the bar renders a single label instead of steps.
   static bool isTerminalOffRamp(String? wireStatus) {

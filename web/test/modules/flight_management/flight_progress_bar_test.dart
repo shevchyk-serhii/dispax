@@ -134,6 +134,32 @@ void main() {
       // Landed is still pending (grey), not the current step.
       expect(labelColor(tester, 'Gelandet'), const Color(0xFF9E9E9E));
     });
+
+    testWidgets('delayed arrival past its landing time lights up "Im Flug" '
+        '(red), not "Planmäßig"', (tester) async {
+      // Regression for the LH2091 card, built from the REAL delayed-arrival DTO
+      // shape verified against live MUC data: NO departure time, NO estimate —
+      // only a (past) scheduled landing time. It used to default to "Planmäßig";
+      // now that the landing time has arrived it must sit on "Im Flug", red.
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'delayed',
+            // flightTime = the landing time, already in the past. No departure.
+            flightTime: now.subtract(const Duration(minutes: 10)),
+          ),
+        ),
+      );
+      const green = Color(0xFF4CAF50);
+      const red = Color(0xFFD32F2F);
+      // scheduled completed (green), enRoute is the current (red, delayed) step.
+      expect(labelColor(tester, 'Planmäßig'), green);
+      expect(labelColor(tester, 'Im Flug'), red);
+      expect(labelColor(tester, 'Gelandet'), const Color(0xFF9E9E9E));
+    });
   });
 
   group('FlightProgressBar airplane (spans the whole bar by flight time)', () {
