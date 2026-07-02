@@ -41,7 +41,11 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
     new RideRepository:
       private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected RideRepository.$m")
 
-      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]   = ZIO.succeed(rides)
+      // Mirrors the real SQL bounds (`pickup_datetime > from AND pickup_datetime <= to`) so the
+      // monitor's window choice — not just its per-ride logic — is exercised by these tests.
+      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]   = ZIO.succeed(
+        rides.filter(r => r.pickupDateTime.isAfter(from) && !r.pickupDateTime.isAfter(to))
+      )
       def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = nope(
         "findAssignedRidesInWindow"
       )
@@ -234,6 +238,38 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
               status == "delayed" && term.contains("T1")
             case _                                                                     => false
         )
+      },
+      test("keeps enriching an active ride whose pickup time has already passed (delayed flight)") {
+        // A delayed arrival: the scheduled pickup is 30 minutes gone but the ride is still
+        // Assigned (plane in the air). The monitor must keep tracking it — the delay is exactly
+        // when the gate/status/landing-time updates matter most.
+        val delayedPickup = airportRide("LH123", isArrival = true, pickupInMinutes = -30)
+        for
+          events <- Ref.make(List.empty[WebSocketEvent])
+          store  <- Ref.make(Map.empty[RideId, FlightStatusRow])
+          _      <- runTick(List(delayedPickup), Some(sampleInfo), events, store)
+          ev     <- events.get
+          saved  <- store.get
+        yield assertTrue(
+          ev.size == 1,
+          saved.get(delayedPickup.id).exists(r => r.terminal.contains("T2") && r.gate.contains("H14"))
+        )
+      },
+      test("does not track an active ride whose pickup is beyond the look-back window") {
+        // Bounds the look-back: a ride stuck in an active status for many hours (never completed)
+        // must eventually stop generating scrapes on every tick.
+        val stale = airportRide(
+          "LH123",
+          isArrival = true,
+          pickupInMinutes = -(FlightStatusMonitor.LookBackMinutes + 60)
+        )
+        for
+          events <- Ref.make(List.empty[WebSocketEvent])
+          store  <- Ref.make(Map.empty[RideId, FlightStatusRow])
+          _      <- runTick(List(stale), Some(sampleInfo), events, store)
+          ev     <- events.get
+          saved  <- store.get
+        yield assertTrue(ev.isEmpty, saved.isEmpty)
       },
       test("enriches a still-unassigned (Requested) airport ride") {
         // The dispatcher should see the gate/terminal before assigning a driver, so the
