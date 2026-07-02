@@ -909,10 +909,18 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   /// On return, reload the pending list so any edits are reflected.
   void _openRideDetails(BuildContext context, Ride ride) {
     final rideBloc = context.read<RideBloc>();
+    // RideDetailsScreen mounts under the root Navigator, which does not
+    // inherit the dashboard's BlocProvider<RideBloc> — re-provide it via
+    // .value (same fix as ClientMapScreen.route) so actions on that screen
+    // (e.g. Duplicate) can read the bloc instead of throwing
+    // ProviderNotFoundException.
     Navigator.of(context)
         .push(
           MaterialPageRoute<void>(
-            builder: (_) => RideDetailsScreen(ride: ride),
+            builder: (_) => BlocProvider<RideBloc>.value(
+              value: rideBloc,
+              child: RideDetailsScreen(ride: ride),
+            ),
           ),
         )
         .then((_) {
