@@ -1745,6 +1745,7 @@
   "@shareSince": {"placeholders": {"date": {"type": "String"}}},
   "shareActionFailed": "Не вдалося виконати дію: {error}",
   "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
+  "sharedCalendarAvailable": "Доступний",
   "sharedCalendarBusy": "Зайнято",
   "sharedCalendarShift": "Зміна",
   "sharedCalendarEmptyDay": "Немає змін чи зайнятих слотів",

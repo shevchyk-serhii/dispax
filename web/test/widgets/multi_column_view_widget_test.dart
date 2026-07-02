@@ -383,8 +383,71 @@ void main() {
         expect(find.text('Hans Müller'), findsOneWidget);
         expect(find.text('Anna External'), findsOneWidget);
         expect(find.text('External GmbH'), findsOneWidget);
-        expect(find.textContaining('Shift 08:00–16:00'), findsOneWidget);
+        // The shift stretches as an availability region on the day timeline…
+        expect(
+          find.byKey(const ValueKey('share-shift-region-08:00')),
+          findsOneWidget,
+        );
+        expect(find.text('08:00–16:00'), findsOneWidget);
+        expect(find.text('Available'), findsOneWidget);
+        // …with the busy slot lying on top of it as a block.
+        expect(
+          find.byKey(const ValueKey('share-busy-block-0')),
+          findsOneWidget,
+        );
         expect(find.textContaining('Busy'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the availability region is time-proportional: an 8h shift spans ~8/17 of the timeline',
+      (tester) async {
+        tester.view.physicalSize = const Size(1800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final day = DateTime(2026, 6, 22);
+        when(
+          () => shareService.getSharedCalendar(
+            'grant-1',
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer(
+          (_) async => SharedCalendar(
+            grantId: 'grant-1',
+            grantorName: 'Anna External',
+            shifts: [
+              SharedShift(
+                date: day,
+                startTime: '14:00',
+                endTime: '22:00',
+                status: 'Scheduled',
+              ),
+            ],
+            busySlots: const [],
+          ),
+        );
+
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(name: 'Hans Müller')],
+            selectedDay: day,
+            externalShares: [_externalGrant()],
+            shareService: shareService,
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final region = tester.getSize(
+          find.byKey(const ValueKey('share-shift-region-14:00')),
+        );
+        // 8 hours of a 17-hour window (06:00–23:00): the band must be a large
+        // stretched region (hundreds of px on this viewport), not a one-line
+        // chip like before.
+        expect(region.height, greaterThan(100));
       },
     );
 

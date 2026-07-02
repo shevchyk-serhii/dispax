@@ -1857,6 +1857,7 @@
   "@shareSince": {"placeholders": {"date": {"type": "String"}}},
   "shareActionFailed": "Action failed: {error}",
   "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
+  "sharedCalendarAvailable": "Available",
   "sharedCalendarBusy": "Busy",
   "sharedCalendarShift": "Shift",
   "sharedCalendarEmptyDay": "No shifts or busy slots",

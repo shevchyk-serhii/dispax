@@ -1745,6 +1745,7 @@
   "@shareSince": {"placeholders": {"date": {"type": "String"}}},
   "shareActionFailed": "Aktion fehlgeschlagen: {error}",
   "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
+  "sharedCalendarAvailable": "Verfügbar",
   "sharedCalendarBusy": "Belegt",
   "sharedCalendarShift": "Schicht",
   "sharedCalendarEmptyDay": "Keine Schichten oder belegten Zeiten",
