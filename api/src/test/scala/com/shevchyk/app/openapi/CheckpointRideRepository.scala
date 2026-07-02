@@ -115,7 +115,7 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
     "findActiveRidesInWindow"
   )
 
-  def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]               = notImpl(
+  def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = notImpl(
     "findRidesNeedingConfirmation"
   )
 
