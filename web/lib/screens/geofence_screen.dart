@@ -1095,9 +1095,11 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         ? l10n.driverEnteredGeofence(alert.geofenceName)
         : l10n.driverLeftGeofence(alert.geofenceName);
 
-    final driverLabel = alert.driverId.length > 8
-        ? '${alert.driverId.substring(0, 8)}…'
-        : alert.driverId;
+    final driverLabel =
+        alert.driverName ??
+        (alert.driverId.length > 8
+            ? '${alert.driverId.substring(0, 8)}…'
+            : alert.driverId);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

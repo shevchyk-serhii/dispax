@@ -10,6 +10,9 @@ import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
+import zio.json.*
+
+import java.time.Instant
 
 /**
  * Tapir descriptions and server logic for the emergency-reassignment endpoints. Replaces the hand-written zio-http
@@ -22,6 +25,43 @@ object EmergencyApi:
   import ApiSchemas.given
 
   private val emergencyTag = "Emergency"
+
+  /**
+   * `EmergencyReassignment` enriched with the driver display names so the UI never has to show a bare UUID. Names are
+   * resolved at read time; a name is `None` when the person no longer exists (or no new driver is set).
+   */
+  final case class EmergencyReassignmentDto(
+      id: EmergencyReassignmentId,
+      rideId: RideId,
+      companyId: CompanyId,
+      originalDriverId: PersonId,
+      newDriverId: Option[PersonId],
+      reason: EmergencyReason,
+      notes: Option[String],
+      reassignedBy: PersonId,
+      createdAt: Instant,
+      status: ReassignmentStatus,
+      originalDriverName: Option[String],
+      newDriverName: Option[String]
+  ) derives JsonCodec
+
+  object EmergencyReassignmentDto:
+
+    def fromDomain(r: EmergencyReassignment, names: Map[PersonId, String]): EmergencyReassignmentDto =
+      EmergencyReassignmentDto(
+        id = r.id,
+        rideId = r.rideId,
+        companyId = r.companyId,
+        originalDriverId = r.originalDriverId,
+        newDriverId = r.newDriverId,
+        reason = r.reason,
+        notes = r.notes,
+        reassignedBy = r.reassignedBy,
+        createdAt = r.createdAt,
+        status = r.status,
+        originalDriverName = names.get(r.originalDriverId),
+        newDriverName = r.newDriverId.flatMap(names.get)
+      )
 
   type EmergencyEnv =
     JwtService & EmergencyReassignmentRepository & BlacklistRepository & RideService & PersonRepository & AuditService &
@@ -38,7 +78,7 @@ object EmergencyApi:
 
   val listReassignmentsEndpoint = secureEndpoint.get
     .in("api" / "emergency" / "reassignments")
-    .out(jsonBody[List[EmergencyReassignment]])
+    .out(jsonBody[List[EmergencyReassignmentDto]])
     .tag(emergencyTag)
     .summary("List emergency reassignments for the company (dispatcher)")
 
@@ -149,7 +189,10 @@ object EmergencyApi:
         repo          <- ZIO.service[EmergencyReassignmentRepository]
         companyId     <- requireCompanyId(user.companyId)
         reassignments <- repo.findByCompanyId(companyId).mapError(internal)
-      } yield reassignments
+        names         <- PersonNameLookup
+                           .names(reassignments.flatMap(r => r.originalDriverId :: r.newDriverId.toList))
+                           .mapError(internal)
+      } yield reassignments.map(EmergencyReassignmentDto.fromDomain(_, names))
     }
 
   private val suggestDriversServer: ZServerEndpoint[EmergencyEnv, Any] = suggestDriversEndpoint

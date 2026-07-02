@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/json_parse.dart';
 
 class EmergencyReassignmentScreen extends StatefulWidget {
   const EmergencyReassignmentScreen({super.key});
@@ -440,10 +441,15 @@ class _EmergencyReassignmentScreenState
     final status = r['status'] as String? ?? 'PENDING';
     final notes = r['notes'] as String?;
     final createdAt = r['createdAt'] as String? ?? '';
-    final originalDriverId =
-        r['originalDriverId']?['value'] ?? r['originalDriverId'] ?? '';
-    final newDriverId = r['newDriverId']?['value'] ?? r['newDriverId'];
-    final rideId = r['rideId']?['value'] ?? r['rideId'] ?? '';
+    final originalDriverId = JsonParse.optionalId(r, 'originalDriverId') ?? '';
+    final newDriverId = JsonParse.optionalId(r, 'newDriverId');
+    final originalDriverLabel =
+        r['originalDriverName'] as String? ??
+        _shortId(originalDriverId.toString());
+    final newDriverLabel = newDriverId == null
+        ? null
+        : r['newDriverName'] as String? ?? _shortId(newDriverId.toString());
+    final rideId = JsonParse.optionalId(r, 'rideId') ?? '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -495,17 +501,15 @@ class _EmergencyReassignmentScreenState
               style: const TextStyle(fontSize: 12),
             ),
             Text(
-              l10n.emergencyOriginalDriverLabel(
-                _shortId(originalDriverId.toString()),
-              ),
+              l10n.emergencyOriginalDriverLabel(originalDriverLabel),
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            if (newDriverId != null)
+            if (newDriverLabel != null)
               Text(
-                l10n.emergencyNewDriverLabel(_shortId(newDriverId.toString())),
+                l10n.emergencyNewDriverLabel(newDriverLabel),
                 style: const TextStyle(fontSize: 12, color: AppColors.success),
               ),
             if (notes != null && notes.isNotEmpty)

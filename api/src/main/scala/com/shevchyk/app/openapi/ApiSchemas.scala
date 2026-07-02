@@ -1,7 +1,10 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.app.openapi.BlacklistApi.BlacklistEntryDto
 import com.shevchyk.app.openapi.CompanySettingsApi.TariffDto
-import com.shevchyk.app.openapi.RidePoolApi.PoolDetailResponse
+import com.shevchyk.app.openapi.EmergencyApi.EmergencyReassignmentDto
+import com.shevchyk.app.openapi.GeofenceApi.GeofenceAlertDto
+import com.shevchyk.app.openapi.RidePoolApi.{PoolDetailResponse, RidePoolDto, RidePoolMemberDto}
 import com.shevchyk.app.openapi.UserApi.{
   AvatarUploadResponse,
   DailyStatsEntry,
@@ -80,7 +83,12 @@ object ApiSchemas:
   given Schema[UpdateNotificationPreferenceRequest] = Schema.derived
   given Schema[CreatePoolRequest]                   = Schema.derived
   given Schema[AddToPoolRequest]                    = Schema.derived
+  given Schema[RidePoolDto]                         = Schema.derived
+  given Schema[RidePoolMemberDto]                   = Schema.derived
   given Schema[PoolDetailResponse]                  = Schema.derived
+  given Schema[BlacklistEntryDto]                   = Schema.derived
+  given Schema[EmergencyReassignmentDto]            = Schema.derived
+  given Schema[GeofenceAlertDto]                    = Schema.derived
 
   // -- UserApi stats / response bodies --------------------------------------
   given Schema[RideStatsResponse]      = Schema.derived
