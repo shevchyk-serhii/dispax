@@ -1747,6 +1747,7 @@
   "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
   "sharedCalendarBusy": "Зайнято",
   "sharedCalendarShift": "Зміна",
+  "sharedCalendarEmptyDay": "Немає змін чи зайнятих слотів",
   "sharedCalendarEmptyWeek": "Цього тижня немає змін чи зайнятих слотів",
   "sharedCalendarTimesHint": "Час змін — як надано компанією {company}",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},

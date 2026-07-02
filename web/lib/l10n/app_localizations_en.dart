@@ -3713,6 +3713,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sharedCalendarShift => 'Shift';
 
   @override
+  String get sharedCalendarEmptyDay => 'No shifts or busy slots';
+
+  @override
   String get sharedCalendarEmptyWeek => 'No shifts or busy slots this week';
 
   @override

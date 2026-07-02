@@ -3736,6 +3736,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sharedCalendarShift => 'Schicht';
 
   @override
+  String get sharedCalendarEmptyDay => 'Keine Schichten oder belegten Zeiten';
+
+  @override
   String get sharedCalendarEmptyWeek =>
       'Keine Schichten oder belegten Zeiten in dieser Woche';
 

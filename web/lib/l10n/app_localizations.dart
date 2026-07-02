@@ -6928,6 +6928,12 @@ abstract class AppLocalizations {
   /// **'Shift'**
   String get sharedCalendarShift;
 
+  /// No description provided for @sharedCalendarEmptyDay.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts or busy slots'**
+  String get sharedCalendarEmptyDay;
+
   /// No description provided for @sharedCalendarEmptyWeek.
   ///
   /// In en, this message translates to:
