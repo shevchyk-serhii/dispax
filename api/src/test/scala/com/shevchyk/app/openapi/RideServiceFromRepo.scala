@@ -97,7 +97,8 @@ object RideServiceFromRepo:
       def reassignDriver(
           rideId: RideId,
           newDriverId: PersonId,
-          overrideScheduleConflict: Boolean
+          overrideScheduleConflict: Boolean,
+          allowPastRide: Boolean = false
       ): IO[RideError, Ride] = notImpl("reassignDriver")
       def markPayment(rideId: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]              = notImpl(
         "markPayment"

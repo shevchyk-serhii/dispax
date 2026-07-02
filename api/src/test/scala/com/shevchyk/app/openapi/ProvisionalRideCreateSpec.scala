@@ -135,7 +135,12 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
       def getRideById(rideId: RideId): IO[RideError, Ride]                                                       = notImpl
       def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]                                = notImpl
       def assignDriver(rideId: RideId, dId: PersonId, o: Boolean): IO[RideError, Ride]                           = notImpl
-      def reassignDriver(rideId: RideId, newDriverId: PersonId, o: Boolean): IO[RideError, Ride]                 = notImpl
+      def reassignDriver(
+          rideId: RideId,
+          newDriverId: PersonId,
+          o: Boolean,
+          allowPastRide: Boolean = false
+      ): IO[RideError, Ride] = notImpl
       def updateRideDetails(
           rideId: RideId,
           req: UpdateRideDetailsRequest,

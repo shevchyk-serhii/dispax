@@ -114,7 +114,8 @@ object EmergencyReassignIsolationSpec extends ZIOSpecDefault:
       def reassignDriver(
           rideId: RideId,
           newDriverId: PersonId,
-          overrideScheduleConflict: Boolean = false
+          overrideScheduleConflict: Boolean = false,
+          allowPastRide: Boolean = false
       ): IO[RideError, Ride] =
         reassignedRef.set(true) *> {
           rides.get(rideId) match

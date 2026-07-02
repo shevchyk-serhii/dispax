@@ -182,7 +182,8 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
         def reassignDriver(
             rideId: RideId,
             newDriverId: PersonId,
-            overrideScheduleConflict: Boolean
+            overrideScheduleConflict: Boolean,
+            allowPastRide: Boolean = false
         ): IO[RideError, Ride] = notImpl
         def markPayment(rideId: RideId, ps: PaymentStatus, pm: Option[PaymentMethod]): IO[RideError, Ride]           = notImpl
         def getUnpaidCompletedRides(companyId: CompanyId): IO[RideError, List[Ride]]                                 = notImpl

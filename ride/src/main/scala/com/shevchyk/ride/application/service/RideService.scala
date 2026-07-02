@@ -96,10 +96,16 @@ trait RideService:
       companyId: Option[CompanyId]
   ): IO[RideError, Ride]
 
+  /**
+   * Hand an Assigned/Confirmed ride to a different driver. A ride whose scheduled pickup time has already passed cannot
+   * be reassigned (clock-skew tolerance per [[RidePolicy]]) — except for the emergency-reassignment flow, which sets
+   * `allowPastRide = true` because it exists precisely for rides going wrong right now.
+   */
   def reassignDriver(
       rideId: RideId,
       newDriverId: PersonId,
-      overrideScheduleConflict: Boolean = false
+      overrideScheduleConflict: Boolean = false,
+      allowPastRide: Boolean = false
   ): IO[RideError, Ride]
 
   def markPayment(
@@ -1032,12 +1038,22 @@ class RideServiceImpl(
   def reassignDriver(
       rideId: RideId,
       newDriverId: PersonId,
-      overrideScheduleConflict: Boolean = false
+      overrideScheduleConflict: Boolean = false,
+      allowPastRide: Boolean = false
   ): IO[RideError, Ride] =
     for {
       ride <- getRideById(rideId)
       _    <-
         ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned)).when(!ride.canBeReassigned).unit
+
+      // A ride whose pickup time has already passed must not be handed to a new driver — reassignment only makes
+      // sense for rides still ahead. The emergency-reassignment flow bypasses this (allowPastRide = true): it exists
+      // precisely for a ride going wrong right now, i.e. at/after its pickup time. ASAP rides (no scheduledTime)
+      // stay reassignable.
+      _    <-
+        failRule("past_ride", "A ride scheduled in the past cannot be reassigned")
+          .when(!allowPastRide && ride.scheduledTime.exists(RidePolicy.isInThePast(_)))
+          .unit
 
       driverOpt <- personRepository.findById(newDriverId).mapDatabaseError
       driver    <- ZIO.fromOption(driverOpt).orElseFail(RideError.DriverNotFound(newDriverId))

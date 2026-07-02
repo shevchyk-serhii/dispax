@@ -101,8 +101,10 @@ object EmergencyApi:
                 _            <- ZIO
                                   .fail(internal(new RuntimeException("New driver is blacklisted for this client")))
                                   .when(blocked)
+                // allowPastRide: an emergency (accident, breakdown) typically strikes a ride at/after its pickup
+                // time, so the regular past-ride reassignment guard must not block this flow.
                 _            <- rideService
-                                  .reassignDriver(ride.id, newDriverPid)
+                                  .reassignDriver(ride.id, newDriverPid, allowPastRide = true)
                                   .mapError(e => internal(new RuntimeException(e.toString)))
                 _            <- emergRepo
                                   .updateStatus(created.id, ReassignmentStatus.REASSIGNED, Some(newDriverPid))
