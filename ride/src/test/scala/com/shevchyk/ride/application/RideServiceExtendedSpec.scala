@@ -16,7 +16,7 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
@@ -359,6 +359,43 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             reassigned.driverId.contains(testDriver2Id) &&
               reassigned.status == RideStatus.Assigned
           )
+        }.provide(standardLayers),
+        test("fails when the ride's pickup time is already in the past") {
+          for {
+            service  <- ZIO.service[RideService]
+            repo     <- ZIO.service[RideRepository]
+            assigned <- createAssignedRide(service)
+            _        <- repo.update(assigned.copy(scheduledTime = Some(java.time.Instant.now().minusSeconds(3600))))
+            result   <- service.reassignDriver(assigned.id, testDriver2Id).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("past_ride", _) => true
+                case _                                               => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("allowPastRide bypasses the past-ride guard (emergency flow)") {
+          for {
+            service    <- ZIO.service[RideService]
+            repo       <- ZIO.service[RideRepository]
+            assigned   <- createAssignedRide(service)
+            _          <- repo.update(assigned.copy(scheduledTime = Some(java.time.Instant.now().minusSeconds(3600))))
+            reassigned <- service.reassignDriver(assigned.id, testDriver2Id, allowPastRide = true)
+          } yield assertTrue(
+            reassigned.driverId.contains(testDriver2Id) &&
+              reassigned.status == RideStatus.Assigned
+          )
+        }.provide(standardLayers),
+        test("reassigns a ride whose pickup time is still in the future") {
+          for {
+            service    <- ZIO.service[RideService]
+            repo       <- ZIO.service[RideRepository]
+            assigned   <- createAssignedRide(service)
+            _          <- repo.update(assigned.copy(scheduledTime = Some(java.time.Instant.now().plusSeconds(3600))))
+            reassigned <- service.reassignDriver(assigned.id, testDriver2Id)
+          } yield assertTrue(reassigned.driverId.contains(testDriver2Id))
         }.provide(standardLayers),
         test("fails when ride not in assignable state (Completed)") {
           for {

@@ -139,7 +139,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       def reassignDriver(
           rideId: RideId,
           newDriverId: PersonId,
-          overrideScheduleConflict: Boolean
+          overrideScheduleConflict: Boolean,
+          allowPastRide: Boolean = false
       ): IO[RideError, Ride] = notImplemented
       def handOffToExternal(
           rideId: RideId,

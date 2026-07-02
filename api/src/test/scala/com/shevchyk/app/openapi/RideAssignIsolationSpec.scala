@@ -160,7 +160,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       def reassignDriver(
           rideId: RideId,
           newDriverId: PersonId,
-          overrideScheduleConflict: Boolean
+          overrideScheduleConflict: Boolean,
+          allowPastRide: Boolean = false
       ): IO[RideError, Ride] =
         reassignedRef.set(true) *> {
           rides.get(rideId) match
@@ -499,7 +500,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       def reassignDriver(
           rideId: RideId,
           newDriverId: PersonId,
-          overrideScheduleConflict: Boolean
+          overrideScheduleConflict: Boolean,
+          allowPastRide: Boolean = false
       ): IO[RideError, Ride] = notImplemented
       def updateRideDetails(
           rideId: RideId,
