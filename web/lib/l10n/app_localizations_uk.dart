@@ -341,6 +341,10 @@ class AppLocalizationsUk extends AppLocalizations {
       'Користувача попросять змінити його під час першого входу.';
 
   @override
+  String get tempPasswordRules =>
+      'Щонайменше 8 символів із великою літерою, малою літерою та цифрою';
+
+  @override
   String get setNewPassword => 'Встановити новий пароль';
 
   @override
@@ -3627,4 +3631,165 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get linkClient => 'Додати клієнта';
+
+  @override
+  String get calendarSharingTitle => 'Спільний доступ до календаря';
+
+  @override
+  String get calendarSharingMenuItem => 'Доступ до календаря';
+
+  @override
+  String get shareInvitesSection => 'Мої коди запрошень';
+
+  @override
+  String get shareCreateInvite => 'Створити код запрошення';
+
+  @override
+  String get shareInviteExpiry1Day => '1 день';
+
+  @override
+  String get shareInviteExpiry7Days => '7 днів';
+
+  @override
+  String get shareInviteExpiry30Days => '30 днів';
+
+  @override
+  String get shareInviteCreatedTitle => 'Код запрошення створено';
+
+  @override
+  String get shareInviteCreatedHint =>
+      'Надішліть цей код водієві або диспетчеру іншої компанії. Він вводить його у своєму застосунку в розділі «Доступ до календаря».';
+
+  @override
+  String get shareCopyCode => 'Скопіювати код';
+
+  @override
+  String get shareCodeCopied => 'Код скопійовано в буфер обміну';
+
+  @override
+  String get shareRevoke => 'Відкликати';
+
+  @override
+  String get shareGrantedSection => 'Хто бачить мій календар';
+
+  @override
+  String get shareSharedWithMeSection => 'Поділилися зі мною';
+
+  @override
+  String get shareEnterCode => 'Ввести код';
+
+  @override
+  String get shareRedeemTitle => 'Підключити спільний календар';
+
+  @override
+  String get shareRedeemHint => 'Вставте код запрошення або посилання';
+
+  @override
+  String get shareRedeemConnect => 'Підключити';
+
+  @override
+  String shareRedeemSuccess(String name) {
+    return 'Підключено до $name';
+  }
+
+  @override
+  String get shareUnlink => 'Відʼєднати';
+
+  @override
+  String get shareNoInvites => 'Немає активних кодів запрошень';
+
+  @override
+  String get shareNoGrants => 'Ви ні з ким не поділилися своїм календарем';
+
+  @override
+  String get shareNoSharedWithMe => 'З вами не поділилися жодним календарем';
+
+  @override
+  String shareValidUntil(String date) {
+    return 'Дійсний до $date';
+  }
+
+  @override
+  String shareSince(String date) {
+    return 'З $date';
+  }
+
+  @override
+  String shareActionFailed(String error) {
+    return 'Не вдалося виконати дію: $error';
+  }
+
+  @override
+  String get sharedCalendarAvailable => 'Доступний';
+
+  @override
+  String get sharedCalendarBusy => 'Зайнято';
+
+  @override
+  String get sharedCalendarShift => 'Зміна';
+
+  @override
+  String get sharedCalendarEmptyDay => 'Немає змін чи зайнятих слотів';
+
+  @override
+  String get sharedCalendarEmptyWeek =>
+      'Цього тижня немає змін чи зайнятих слотів';
+
+  @override
+  String sharedCalendarTimesHint(String company) {
+    return 'Час змін — як надано компанією $company';
+  }
+
+  @override
+  String get sharedWithMeGroupLabel => 'Поділилися зі мною';
+
+  @override
+  String get myCompanyGroupLabel => 'Моя компанія';
+
+  @override
+  String get addShiftTooltip => 'Додати зміну';
+
+  @override
+  String get addShiftTitle => 'Нова зміна';
+
+  @override
+  String get shiftDateLabel => 'Дата';
+
+  @override
+  String get shiftStartLabel => 'Початок';
+
+  @override
+  String get shiftEndLabel => 'Кінець';
+
+  @override
+  String get shiftRepeatUntilLabel => 'Повторювати щодня до (необовʼязково)';
+
+  @override
+  String get shiftNoteLabel => 'Нотатка (необовʼязково)';
+
+  @override
+  String get shiftCreateButton => 'Створити';
+
+  @override
+  String shiftsCreatedSnack(int count) {
+    return 'Створено змін: $count';
+  }
+
+  @override
+  String get shiftTimeOrderError => 'Початок має бути раніше за кінець';
+
+  @override
+  String get shiftCancelTitle => 'Скасувати цю зміну?';
+
+  @override
+  String get shiftCancelButton => 'Скасувати зміну';
+
+  @override
+  String get shiftCancelledSnack => 'Зміну скасовано';
+
+  @override
+  String get shiftsStripLabel => 'Зміни';
+
+  @override
+  String get noShiftsForDay => 'Немає змін';
 }

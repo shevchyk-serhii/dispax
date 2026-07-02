@@ -454,6 +454,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           when widget.isClientView)
                         RidePersonCard(
                           person: driver,
+                          apiClient: context.read<AuthBloc>().apiClient,
                           isDriver: true,
                           onCall: () => _makePhoneCall(driver.phone),
                           onMessage: () => _sendMessage(driver.phone),
@@ -461,6 +462,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       else if (!widget.isClientView)
                         RidePersonCard(
                           person: _currentRide.client,
+                          apiClient: context.read<AuthBloc>().apiClient,
                           isDriver: false,
                           onCall: () =>
                               _makePhoneCall(_currentRide.client.phone),

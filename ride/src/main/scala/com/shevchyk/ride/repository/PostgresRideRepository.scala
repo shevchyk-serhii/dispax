@@ -826,6 +826,20 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  override def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE driver_id = ${driverId.value}
+             AND status <> 'Cancelled'
+             AND pickup_datetime >= $from
+             AND pickup_datetime < $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   // ---------------------------------------------------------------------------
   // Platform-level (cross-tenant) analytics — SuperAdmin only.
   // No company_id filter in these queries; names make the cross-tenant intent explicit.

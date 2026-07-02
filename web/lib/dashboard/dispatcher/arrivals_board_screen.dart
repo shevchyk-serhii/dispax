@@ -7,6 +7,7 @@ import '../../modules/flight_management/flight_tracker.dart';
 import '../../modules/flight_management/models/muc_flight.dart';
 import '../../modules/flight_management/services/arrivals_board_service.dart';
 import '../../modules/flight_management/widgets/flight_progress_bar.dart';
+import '../../modules/ride_management/helpers/flight_number_input.dart';
 import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 
 /// Dispatcher arrivals board: the live MUC arrivals (flight, origin, scheduled/estimated
@@ -27,6 +28,11 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
   final _searchController = TextEditingController();
   bool _searching = false;
 
+  /// Live filter text — as the user types, the board list narrows to matching
+  /// rows (a suggestion UX without extra network). Submit still does the exact
+  /// /flights/lookup, which finds flights the day board misses and adds the gate.
+  String _filter = '';
+
   // The board list has no gate (it lives on each flight's detail page). We lazily look it up for the
   // rows that actually get built (ListView.builder builds ~visible only), cache by flight number, and
   // re-render the row with the resolved gate. Requested-but-not-yet-resolved numbers are tracked so a
@@ -39,12 +45,37 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
     super.initState();
     _date = DateTime.now();
     _future = _load();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    // Idempotent: the controller also notifies on selection/focus changes, and
+    // a setState for the same text would fight the _searching spinner rebuilds.
+    final next = _searchController.text;
+    if (next == _filter) return;
+    setState(() => _filter = next);
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// True when [flight] matches the live [_filter]: normalized contains-match on
+  /// the flight number, case-insensitive contains on airline/origin.
+  bool _matchesFilter(MucFlight flight) {
+    final query = _filter.trim();
+    if (query.isEmpty) return true;
+    final normalized = FlightNumber.normalize(query);
+    if (normalized.isNotEmpty &&
+        FlightNumber.normalize(flight.flightNumber).contains(normalized)) {
+      return true;
+    }
+    final lower = query.toLowerCase();
+    return (flight.airline?.toLowerCase().contains(lower) ?? false) ||
+        (flight.origin?.toLowerCase().contains(lower) ?? false);
   }
 
   ArrivalsBoardService get _service =>
@@ -211,7 +242,9 @@ class _ArrivalsBoardScreenState extends State<ArrivalsBoardScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final flights = snapshot.data ?? const <MucFlight>[];
+          final flights = (snapshot.data ?? const <MucFlight>[])
+              .where(_matchesFilter)
+              .toList();
           if (flights.isEmpty) {
             // ListView so pull-to-refresh works even when empty.
             return ListView(

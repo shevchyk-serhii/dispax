@@ -515,37 +515,40 @@ object RideApi:
   private val getClientRidesServer: ZServerEndpoint[RideEnv, Any] = getClientRidesEndpoint.serverLogic {
     user => clientId =>
       for {
-        clientPid    <- parsePersonId(clientId)
-        _            <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
-        companyId    <- requireCompanyId(user.companyId)
-        service      <- ZIO.service[RideService]
-        personRepo   <- ZIO.service[PersonRepository]
-        ratingRepo   <- ZIO.service[RideRatingRepository]
-        rides        <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
-        clientPerson <- personRepo.findById(clientPid).mapError(fromRideError)
+        clientPid     <- parsePersonId(clientId)
+        _             <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
+        companyId     <- requireCompanyId(user.companyId)
+        service       <- ZIO.service[RideService]
+        personRepo    <- ZIO.service[PersonRepository]
+        ratingRepo    <- ZIO.service[RideRatingRepository]
+        rides         <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
+        clientPerson  <- personRepo.findById(clientPid).mapError(fromRideError)
         // Resolve every distinct driver name once in parallel instead of one sequential
         // findById per ride (was N+1).
-        driverIds     = rides.flatMap(_.driverId).distinct
-        driverNames  <- ZIO
-                          .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name)))
-                          .map(_.toMap)
-                          .mapError(fromRideError)
-        ratingStats  <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
-        rideDtos      = rides.map { r =>
-                          val driverName          = r.driverId.flatMap(driverNames.getOrElse(_, None))
-                          val (rating, rateCount) = r.driverId
-                            .flatMap(ratingStats.get)
-                            .map { case (avg, n) => (Some(avg), Some(n)) }
-                            .getOrElse((None, None))
-                          RideDto.fromDomain(
-                            r,
-                            clientName = clientPerson.map(_.name),
-                            clientHasAvatar = clientPerson.exists(_.avatarPresent),
-                            driverName = driverName,
-                            driverRating = rating,
-                            driverRatingCount = rateCount
-                          )
-                        }
+        driverIds      = rides.flatMap(_.driverId).distinct
+        // Resolve each driver once (parallel) as a full Person so we can surface
+        // both the name and whether they have a profile photo (avatarPresent).
+        driverPersons <- ZIO
+                           .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p))
+                           .map(_.toMap)
+                           .mapError(fromRideError)
+        ratingStats   <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        rideDtos       = rides.map { r =>
+                           val driverPerson        = r.driverId.flatMap(driverPersons.getOrElse(_, None))
+                           val (rating, rateCount) = r.driverId
+                             .flatMap(ratingStats.get)
+                             .map { case (avg, n) => (Some(avg), Some(n)) }
+                             .getOrElse((None, None))
+                           RideDto.fromDomain(
+                             r,
+                             clientName = clientPerson.map(_.name),
+                             clientHasAvatar = clientPerson.exists(_.avatarPresent),
+                             driverName = driverPerson.map(_.name),
+                             driverHasAvatar = driverPerson.exists(_.avatarPresent),
+                             driverRating = rating,
+                             driverRatingCount = rateCount
+                           )
+                         }
       } yield rideDtos
   }
 
@@ -1179,11 +1182,14 @@ object RideApi:
         // Business logic (parallel fetch + date-filter) lives in the service layer.
         filtered     <- service.getRidesByDrivers(driverPids, fromDateOpt, toDateOpt, companyId).mapError(fromRideError)
         // DTO enrichment: client names and per-driver rating stats (presentational, not business logic).
-        clientIds     = filtered.map(_.clientId).distinct
+        // Resolve both client and driver Persons in one bulk fetch so the cards
+        // can show each one's name and profile photo (avatarPresent) without N+1.
+        peopleIds     = (filtered.map(_.clientId) ++ filtered.flatMap(_.driverId)).distinct
         persons      <- ZIO
-                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                          .foreachPar(peopleIds)(id => personRepo.findById(id).map(p => id -> p))
                           .mapError(fromRideError)
-        clientMap     = persons.collect { case (id, Some(p)) => id -> p }.toMap
+        personMap     = persons.collect { case (id, Some(p)) => id -> p }.toMap
+        clientMap     = personMap
         ratingStats  <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
         // Live flight gate/terminal/status (kept fresh by FlightStatusMonitor) for airport rides,
         // loaded in one bulk query so the dispatcher "My Rides" cards can show it without an N+1.
@@ -1201,6 +1207,8 @@ object RideApi:
           clientName = clientMap.get(r.clientId).map(_.name),
           clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
           clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
+          driverName = r.driverId.flatMap(personMap.get).map(_.name),
+          driverHasAvatar = r.driverId.flatMap(personMap.get).exists(_.avatarPresent),
           driverRating = rating,
           driverRatingCount = count,
           flight = flight,

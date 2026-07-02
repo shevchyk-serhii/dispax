@@ -342,6 +342,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The user will be asked to change it on first login.';
 
   @override
+  String get tempPasswordRules =>
+      'At least 8 characters with an uppercase letter, a lowercase letter, and a digit';
+
+  @override
   String get setNewPassword => 'Set new password';
 
   @override
@@ -3618,4 +3622,164 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkClient => 'Add client details';
+
+  @override
+  String get calendarSharingTitle => 'Calendar Sharing';
+
+  @override
+  String get calendarSharingMenuItem => 'Calendar Sharing';
+
+  @override
+  String get shareInvitesSection => 'My invite codes';
+
+  @override
+  String get shareCreateInvite => 'Create invite code';
+
+  @override
+  String get shareInviteExpiry1Day => '1 day';
+
+  @override
+  String get shareInviteExpiry7Days => '7 days';
+
+  @override
+  String get shareInviteExpiry30Days => '30 days';
+
+  @override
+  String get shareInviteCreatedTitle => 'Invite code created';
+
+  @override
+  String get shareInviteCreatedHint =>
+      'Send this code to a driver or dispatcher of another company. They enter it in their app under Calendar Sharing.';
+
+  @override
+  String get shareCopyCode => 'Copy code';
+
+  @override
+  String get shareCodeCopied => 'Code copied to clipboard';
+
+  @override
+  String get shareRevoke => 'Revoke';
+
+  @override
+  String get shareGrantedSection => 'Who sees my calendar';
+
+  @override
+  String get shareSharedWithMeSection => 'Shared with me';
+
+  @override
+  String get shareEnterCode => 'Enter code';
+
+  @override
+  String get shareRedeemTitle => 'Connect a shared calendar';
+
+  @override
+  String get shareRedeemHint => 'Paste the invite code or link';
+
+  @override
+  String get shareRedeemConnect => 'Connect';
+
+  @override
+  String shareRedeemSuccess(String name) {
+    return 'Connected to $name';
+  }
+
+  @override
+  String get shareUnlink => 'Unlink';
+
+  @override
+  String get shareNoInvites => 'No active invite codes';
+
+  @override
+  String get shareNoGrants => 'You have not shared your calendar with anyone';
+
+  @override
+  String get shareNoSharedWithMe => 'No calendars have been shared with you';
+
+  @override
+  String shareValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String shareSince(String date) {
+    return 'Since $date';
+  }
+
+  @override
+  String shareActionFailed(String error) {
+    return 'Action failed: $error';
+  }
+
+  @override
+  String get sharedCalendarAvailable => 'Available';
+
+  @override
+  String get sharedCalendarBusy => 'Busy';
+
+  @override
+  String get sharedCalendarShift => 'Shift';
+
+  @override
+  String get sharedCalendarEmptyDay => 'No shifts or busy slots';
+
+  @override
+  String get sharedCalendarEmptyWeek => 'No shifts or busy slots this week';
+
+  @override
+  String sharedCalendarTimesHint(String company) {
+    return 'Shift times as provided by $company';
+  }
+
+  @override
+  String get sharedWithMeGroupLabel => 'Shared with me';
+
+  @override
+  String get myCompanyGroupLabel => 'My company';
+
+  @override
+  String get addShiftTooltip => 'Add shift';
+
+  @override
+  String get addShiftTitle => 'New shift';
+
+  @override
+  String get shiftDateLabel => 'Date';
+
+  @override
+  String get shiftStartLabel => 'Start';
+
+  @override
+  String get shiftEndLabel => 'End';
+
+  @override
+  String get shiftRepeatUntilLabel => 'Repeat daily until (optional)';
+
+  @override
+  String get shiftNoteLabel => 'Note (optional)';
+
+  @override
+  String get shiftCreateButton => 'Create';
+
+  @override
+  String shiftsCreatedSnack(int count) {
+    return 'Shifts created: $count';
+  }
+
+  @override
+  String get shiftTimeOrderError => 'Start time must be before end time';
+
+  @override
+  String get shiftCancelTitle => 'Cancel this shift?';
+
+  @override
+  String get shiftCancelButton => 'Cancel shift';
+
+  @override
+  String get shiftCancelledSnack => 'Shift cancelled';
+
+  @override
+  String get shiftsStripLabel => 'Shifts';
+
+  @override
+  String get noShiftsForDay => 'No shifts';
 }

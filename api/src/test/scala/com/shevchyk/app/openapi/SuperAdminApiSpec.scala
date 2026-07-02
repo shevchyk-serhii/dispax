@@ -203,6 +203,11 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
       def findRidesNeedingConfirmation(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]           = ZIO.succeed(
         Nil
       )
+      def findByDriverIdInWindow(
+          driverId: PersonId,
+          from: java.time.Instant,
+          to: java.time.Instant
+      ): Task[List[Ride]] = ZIO.succeed(Nil)
       def clearReminders(rideId: RideId): Task[Unit]                                                               = ZIO.unit
       def countAllRidesByStatus(): Task[Map[String, Int]]                                                          = ZIO.succeed(Map.empty)
       def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                          = ZIO.succeed(BigDecimal(0))

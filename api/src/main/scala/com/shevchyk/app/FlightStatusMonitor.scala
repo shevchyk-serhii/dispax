@@ -25,6 +25,13 @@ object FlightStatusMonitor:
   // How far ahead to look for airport-transfer pickups worth tracking.
   private val LookAheadMinutes = 180L
 
+  // How far BACK to keep tracking a still-active ride after its scheduled pickup has passed. A
+  // delayed arrival (plane still in the air past the planned pickup) or an InProgress transfer
+  // must not drop out of the window the moment `now` crosses `pickup_datetime` — that is exactly
+  // when live gate/status/landing-time updates matter most. Bounded so a ride stuck in an active
+  // status forever stops generating scrapes eventually. Package-private for the spec.
+  private[app] val LookBackMinutes = 360L
+
   type Env = RideRepository & FlightStatusProvider & EventHub
 
   def start: ZIO[Env, Nothing, Unit] =
@@ -42,10 +49,11 @@ object FlightStatusMonitor:
       provider    <- ZIO.service[FlightStatusProvider]
       eventHub    <- ZIO.service[EventHub]
       now          = Instant.now()
+      windowFrom   = now.minusSeconds(LookBackMinutes * 60L)
       windowTo     = now.plusSeconds(LookAheadMinutes * 60L)
       // Includes still-unassigned (Requested) rides so a dispatcher sees the gate/terminal in
       // the pending list before assigning a driver — not only after assignment.
-      rides       <- rideRepo.findActiveRidesInWindow(now, windowTo)
+      rides       <- rideRepo.findActiveRidesInWindow(windowFrom, windowTo)
       airportRides = rides.filter(_.isAirportTransfer)
       _           <- ZIO.foreachParDiscard(airportRides)(ride => evaluate(ride, rideRepo, provider, eventHub))
     yield ()

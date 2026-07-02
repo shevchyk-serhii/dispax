@@ -18,6 +18,7 @@ import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 import '../dashboard/driver/earnings_screen.dart';
+import 'calendar_sharing_screen.dart';
 import '../dashboard/client/client_addresses_screen.dart';
 import '../modules/core/services/error_messages.dart';
 import '../modules/core/services/api_client.dart';
@@ -136,6 +137,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (user?.role == PersonRole.driver) ...[
                   const SizedBox(height: 8),
                   _buildEarningsSection(),
+                  const SizedBox(height: 8),
+                  _buildCalendarSharingSection(),
                 ],
                 if (user?.role == PersonRole.client) ...[
                   const SizedBox(height: 8),
@@ -483,6 +486,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const EarningsScreen()),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── Calendar sharing section (driver only) ────────────────────────────────
+
+  Widget _buildCalendarSharingSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(l10n.calendarSharingTitle),
+        _buildSettingsCard([
+          _buildNavRow(
+            icon: Icons.ios_share,
+            label: l10n.calendarSharingMenuItem,
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CalendarSharingScreen(withAppBar: true),
+              ),
             ),
           ),
         ]),

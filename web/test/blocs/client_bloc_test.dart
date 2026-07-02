@@ -93,7 +93,11 @@ void main() {
       seed: () => ClientState.loaded([testClient]),
       act: (bloc) => bloc.add(
         const ClientCreateRequested(
-          request: CreateUserRequest(name: 'New', email: 'new@test.com'),
+          request: CreateUserRequest(
+            name: 'New',
+            email: 'new@test.com',
+            password: 'Temp1234',
+          ),
         ),
       ),
       expect: () => [
@@ -115,7 +119,11 @@ void main() {
       seed: () => ClientState.loaded([testClient]),
       act: (bloc) => bloc.add(
         const ClientCreateRequested(
-          request: CreateUserRequest(name: 'X', email: 'x@test.com'),
+          request: CreateUserRequest(
+            name: 'X',
+            email: 'x@test.com',
+            password: 'Temp1234',
+          ),
         ),
       ),
       expect: () => [

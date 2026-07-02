@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
 import 'widgets/ride_badges.dart';
@@ -28,6 +29,11 @@ class WeekViewWidget extends StatelessWidget {
   /// week block opens the ride details screen.
   final Function(Ride)? onRideSelected;
 
+  /// The displayed driver's work shifts. Each shift renders as a translucent
+  /// background band behind the ride blocks of its day, so availability is
+  /// visible at a glance. Cancelled shifts must be filtered out by the caller.
+  final List<ScheduleDay> shifts;
+
   const WeekViewWidget({
     super.key,
     required this.selectedDay,
@@ -36,6 +42,7 @@ class WeekViewWidget extends StatelessWidget {
     this.driverIdFilter,
     this.ridesOverride,
     this.onRideSelected,
+    this.shifts = const [],
   });
 
   @override
@@ -247,6 +254,7 @@ class WeekViewWidget extends StatelessWidget {
   Widget buildDayColumn(BuildContext context, DateTime day, List<Ride> rides) {
     final colorScheme = Theme.of(context).colorScheme;
     final dayRides = getRidesForDay(rides, day);
+    final dayShifts = getShiftsForDay(day);
 
     return Container(
       decoration: BoxDecoration(
@@ -269,11 +277,70 @@ class WeekViewWidget extends StatelessWidget {
             ),
           ),
 
+          // Shift bands go under the ride blocks: they mark availability, the
+          // rides sit on top of them.
+          ...dayShifts.map((shift) => buildShiftBand(context, shift)),
+
           ...dayRides.map((ride) => buildRideBlock(context, ride)),
         ],
       ),
     );
   }
+
+  /// The grid shows 06:00–23:00 (17 rows of 40 px). Converts an "HH:mm[:ss]"
+  /// shift time to a vertical offset, clamped into the visible range.
+  static double _timeToOffset(String raw) {
+    final parts = raw.split(':');
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    final fraction = (hour - 6) + minute / 60.0;
+    return (fraction.clamp(0.0, 17.0)) * 40.0;
+  }
+
+  /// Translucent availability band for one shift, rendered behind the rides.
+  Widget buildShiftBand(BuildContext context, ScheduleDay shift) {
+    final top = _timeToOffset(shift.startTime);
+    final bottom = _timeToOffset(shift.endTime);
+    final height = bottom - top;
+    if (height <= 0) return const SizedBox.shrink();
+
+    return Positioned(
+      key: ValueKey('shift-band-${shift.id}'),
+      top: top,
+      left: 1,
+      right: 1,
+      height: height,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(4),
+          border: Border(left: BorderSide(color: AppColors.success, width: 3)),
+        ),
+        padding: const EdgeInsets.only(left: 6, top: 2),
+        alignment: Alignment.topLeft,
+        child: Text(
+          '${_hhmm(shift.startTime)}–${_hhmm(shift.endTime)}',
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            color: AppColors.success,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _hhmm(String raw) =>
+      raw.length >= 5 ? raw.substring(0, 5) : raw;
+
+  List<ScheduleDay> getShiftsForDay(DateTime day) => shifts
+      .where(
+        (s) =>
+            s.date.year == day.year &&
+            s.date.month == day.month &&
+            s.date.day == day.day,
+      )
+      .toList();
 
   Widget buildRideBlock(BuildContext context, Ride ride) {
     final startHour = ride.pickupDateTime.hour;

@@ -28,6 +28,7 @@ import '../../screens/gdpr_screen.dart';
 import '../../screens/session_management_screen.dart';
 import '../../screens/driver_schedule_visibility_screen.dart';
 import '../../screens/dispatcher_driver_schedules_screen.dart';
+import '../../screens/calendar_sharing_screen.dart';
 import '../../screens/driver_map_screen.dart';
 import '../driver/today_rides_screen.dart';
 import '../driver/calendar/calendar_schedule_screen.dart';
@@ -79,9 +80,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // the driver dashboard, where Settings is the final destination).
   static const int _settingsTabIndex = 19;
   // Screen index for driver's own schedule (only when canDrive).
-  // DispatcherDriverSchedulesScreen sits at 29, Manage Clients at 30 and the arrivals
-  // board at 31, so the canDrive-gated driver screens shift to 32..34.
-  static const int _myScheduleScreenIndex = 34;
+  // DispatcherDriverSchedulesScreen sits at 29, Manage Clients at 30, the arrivals
+  // board at 31 and Calendar Sharing at 32, so the canDrive-gated driver screens
+  // shift to 33..35.
+  static const int _myScheduleScreenIndex = 35;
 
   @override
   void initState() {
@@ -226,10 +228,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
   // Arrivals board (index 31): always available — added unconditionally before the
   // canDrive-gated driver screens so its index never shifts with canDrive.
   static const int _arrivalsBoardScreenIndex = 31;
+  // Calendar Sharing (index 32): always available — cross-company sharing of the
+  // caller's personal calendar; added unconditionally so its index never shifts.
+  static const int _calendarSharingScreenIndex = 32;
   // Screen indices for driver screens added at the end of the list (only when canDrive).
-  // These must not collide with the hard-coded indices 0..31.
-  static const int _driverMapScreenIndex = 32;
-  static const int _driverMyRidesScreenIndex = 33;
+  // These must not collide with the hard-coded indices 0..32.
+  static const int _driverMapScreenIndex = 33;
+  static const int _driverMyRidesScreenIndex = 34;
 
   // All screens in order
   List<Widget> _buildAllScreens(bool canDrive) {
@@ -296,11 +301,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         child: const ClientListPanel(),
       ), // 30: Manage Clients
       const ArrivalsBoardScreen(), // 31: MUC arrivals board
-      // Driver screens — only meaningful when canDrive; appended at indices 32..34
+      const CalendarSharingScreen(), // 32: cross-company calendar sharing
+      // Driver screens — only meaningful when canDrive; appended at indices 33..35
       // so existing hard-coded indices are never renumbered.
-      if (canDrive) const DriverMapScreen(), // 32
-      if (canDrive) const TodayRidesScreen(), // 33
-      if (canDrive) const CalendarScheduleScreen(), // 34: My Schedule
+      if (canDrive) const DriverMapScreen(), // 33
+      if (canDrive) const TodayRidesScreen(), // 34
+      if (canDrive) const CalendarScheduleScreen(), // 35: My Schedule
     ];
   }
 
@@ -538,6 +544,12 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         Icons.event_note,
         l10n.driverSchedules,
         _driverSchedulesScreenIndex,
+        color,
+      ),
+      _MoreMenuItem(
+        Icons.ios_share,
+        l10n.calendarSharingMenuItem,
+        _calendarSharingScreenIndex,
         color,
       ),
       _MoreMenuItem(
