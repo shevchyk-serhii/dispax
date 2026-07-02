@@ -126,6 +126,38 @@ void main() {
     });
   });
 
+  group('MapboxService.buildGeocodeUri', () {
+    // Regression: without a proximity bias Mapbox resolved "Hbf Muenchen" to
+    // an Austrian street 361 km away, so the create-ride reachability check
+    // flagged central Munich addresses as outside the service area.
+    test('biases the geocode towards the Munich service-zone center', () {
+      final uri = MapboxService.buildGeocodeUri('Hbf Muenchen', token: 't');
+
+      expect(
+        uri.queryParameters['proximity'],
+        '${MapboxService.defaultLongitude},${MapboxService.defaultLatitude}',
+      );
+    });
+
+    test('requests a single best match from the places dataset', () {
+      final uri = MapboxService.buildGeocodeUri('Hbf Muenchen', token: 't');
+
+      expect(uri.queryParameters['limit'], '1');
+      expect(uri.queryParameters['access_token'], 't');
+      expect(uri.path, contains('/geocoding/v5/mapbox.places/'));
+    });
+
+    test('percent-encodes the address into the path', () {
+      final uri = MapboxService.buildGeocodeUri(
+        'Münchner Str. 1, Grünwald',
+        token: 't',
+      );
+
+      expect(uri.toString(), contains('M%C3%BCnchner%20Str.%201'));
+      expect(uri.path, endsWith('.json'));
+    });
+  });
+
   group('MapboxService.parseGeocodeSuggestions', () {
     test('returns the place_name of each feature, in order', () {
       final data = {

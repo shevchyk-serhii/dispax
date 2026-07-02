@@ -85,6 +85,20 @@ class MapboxService {
     }
   }
 
+  /// Builds the forward-geocoding request URI. Biased towards Munich via
+  /// `proximity` (the same bias [suggestAddresses] uses) so ambiguous queries
+  /// like "Hbf Muenchen" resolve near the service zone instead of a global
+  /// best match on another continent. Deliberately no `country` filter: the
+  /// 100 km service zone reaches into Austria, and proximity alone is enough.
+  static Uri buildGeocodeUri(String address, {String? token}) {
+    final encoded = Uri.encodeComponent(address);
+    return Uri.parse(
+      'https://api.mapbox.com/geocoding/v5/mapbox.places/$encoded.json'
+      '?access_token=${token ?? _accessToken}&limit=1'
+      '&proximity=$defaultLongitude,$defaultLatitude',
+    );
+  }
+
   static Future<List<double>?> geocodeAddress(String address) async {
     if (_accessToken.isEmpty) {
       _logGeocodeFailure(
@@ -94,11 +108,7 @@ class MapboxService {
     }
 
     try {
-      final encoded = Uri.encodeComponent(address);
-      final url = Uri.parse(
-        'https://api.mapbox.com/geocoding/v5/mapbox.places/$encoded.json'
-        '?access_token=$_accessToken&limit=1',
-      );
+      final url = buildGeocodeUri(address);
 
       final response = await http.get(url).timeout(const Duration(seconds: 10));
 
