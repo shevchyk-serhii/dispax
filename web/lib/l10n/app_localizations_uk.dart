@@ -3738,4 +3738,51 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get myCompanyGroupLabel => 'Моя компанія';
+
+  @override
+  String get addShiftTooltip => 'Додати зміну';
+
+  @override
+  String get addShiftTitle => 'Нова зміна';
+
+  @override
+  String get shiftDateLabel => 'Дата';
+
+  @override
+  String get shiftStartLabel => 'Початок';
+
+  @override
+  String get shiftEndLabel => 'Кінець';
+
+  @override
+  String get shiftRepeatUntilLabel => 'Повторювати щодня до (необовʼязково)';
+
+  @override
+  String get shiftNoteLabel => 'Нотатка (необовʼязково)';
+
+  @override
+  String get shiftCreateButton => 'Створити';
+
+  @override
+  String shiftsCreatedSnack(int count) {
+    return 'Створено змін: $count';
+  }
+
+  @override
+  String get shiftTimeOrderError => 'Початок має бути раніше за кінець';
+
+  @override
+  String get shiftCancelTitle => 'Скасувати цю зміну?';
+
+  @override
+  String get shiftCancelButton => 'Скасувати зміну';
+
+  @override
+  String get shiftCancelledSnack => 'Зміну скасовано';
+
+  @override
+  String get shiftsStripLabel => 'Зміни';
+
+  @override
+  String get noShiftsForDay => 'Немає змін';
 }

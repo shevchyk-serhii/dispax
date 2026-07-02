@@ -1864,5 +1864,21 @@
   "sharedCalendarTimesHint": "Shift times as provided by {company}",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
   "sharedWithMeGroupLabel": "Shared with me",
-  "myCompanyGroupLabel": "My company"
+  "myCompanyGroupLabel": "My company",
+"addShiftTooltip": "Add shift",
+  "addShiftTitle": "New shift",
+  "shiftDateLabel": "Date",
+  "shiftStartLabel": "Start",
+  "shiftEndLabel": "End",
+  "shiftRepeatUntilLabel": "Repeat daily until (optional)",
+  "shiftNoteLabel": "Note (optional)",
+  "shiftCreateButton": "Create",
+  "shiftsCreatedSnack": "Shifts created: {count}",
+  "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftTimeOrderError": "Start time must be before end time",
+  "shiftCancelTitle": "Cancel this shift?",
+  "shiftCancelButton": "Cancel shift",
+  "shiftCancelledSnack": "Shift cancelled",
+  "shiftsStripLabel": "Shifts",
+  "noShiftsForDay": "No shifts"
 }

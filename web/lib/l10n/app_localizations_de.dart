@@ -3752,4 +3752,51 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get myCompanyGroupLabel => 'Meine Firma';
+
+  @override
+  String get addShiftTooltip => 'Schicht hinzufügen';
+
+  @override
+  String get addShiftTitle => 'Neue Schicht';
+
+  @override
+  String get shiftDateLabel => 'Datum';
+
+  @override
+  String get shiftStartLabel => 'Beginn';
+
+  @override
+  String get shiftEndLabel => 'Ende';
+
+  @override
+  String get shiftRepeatUntilLabel => 'Täglich wiederholen bis (optional)';
+
+  @override
+  String get shiftNoteLabel => 'Notiz (optional)';
+
+  @override
+  String get shiftCreateButton => 'Erstellen';
+
+  @override
+  String shiftsCreatedSnack(int count) {
+    return 'Schichten erstellt: $count';
+  }
+
+  @override
+  String get shiftTimeOrderError => 'Beginn muss vor dem Ende liegen';
+
+  @override
+  String get shiftCancelTitle => 'Diese Schicht stornieren?';
+
+  @override
+  String get shiftCancelButton => 'Schicht stornieren';
+
+  @override
+  String get shiftCancelledSnack => 'Schicht storniert';
+
+  @override
+  String get shiftsStripLabel => 'Schichten';
+
+  @override
+  String get noShiftsForDay => 'Keine Schichten';
 }

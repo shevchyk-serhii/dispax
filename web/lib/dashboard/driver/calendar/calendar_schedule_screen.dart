@@ -23,6 +23,7 @@ import 'week_view_widget.dart';
 import 'day_view_widget.dart';
 import 'multi_column_view_widget.dart';
 import 'shared_calendar_view.dart';
+import 'widgets/shift_strip.dart';
 
 class CalendarScheduleScreen extends StatefulWidget {
   const CalendarScheduleScreen({super.key});
@@ -354,6 +355,23 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
                         );
                       },
                     ),
+                    // Work-schedule strip: the selected driver's shifts for the
+                    // selected day, with create/cancel for self (and for any
+                    // company driver when the viewer is dispatcher/admin).
+                    ValueListenableBuilder<DateTime>(
+                      valueListenable: selectedDayNotifier,
+                      builder: (context, selectedDay, child) {
+                        return ValueListenableBuilder<CalendarViewType>(
+                          valueListenable: viewTypeNotifier,
+                          builder: (context, viewType, child) {
+                            if (viewType == CalendarViewType.multiColumn) {
+                              return const SizedBox.shrink();
+                            }
+                            return _buildShiftStrip(selectedDay);
+                          },
+                        );
+                      },
+                    ),
                     Expanded(
                       child: ValueListenableBuilder<CalendarViewType>(
                         valueListenable: viewTypeNotifier,
@@ -450,6 +468,31 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         items: items,
         onChanged: _onDriverSelected,
       ),
+    );
+  }
+
+  /// The shift strip for the currently selected person: self by default, or
+  /// the colleague picked in the AppBar dropdown. Creating/cancelling shifts
+  /// is allowed for oneself and, for dispatchers/admins, for any company
+  /// driver. Hidden while an external shared calendar is displayed (that view
+  /// is read-only and already renders shifts itself).
+  Widget _buildShiftStrip(DateTime selectedDay) {
+    final user = context.read<AuthBloc>().state.user;
+    final myId = user?.id;
+    final targetDriverId = _selectedDriverId ?? myId;
+    if (targetDriverId == null) return const SizedBox.shrink();
+
+    final viewingSelf = _selectedDriverId == null;
+    final isDispatcherOrAdmin =
+        user != null &&
+        (user.hasRole(PersonRole.dispatcher) || user.hasRole(PersonRole.admin));
+    final canManage = viewingSelf || isDispatcherOrAdmin;
+
+    return ShiftStrip(
+      driverId: targetDriverId,
+      selectedDay: selectedDay,
+      canManage: canManage,
+      service: _scheduleService,
     );
   }
 

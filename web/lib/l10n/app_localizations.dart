@@ -6957,6 +6957,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My company'**
   String get myCompanyGroupLabel;
+
+  /// No description provided for @addShiftTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add shift'**
+  String get addShiftTooltip;
+
+  /// No description provided for @addShiftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New shift'**
+  String get addShiftTitle;
+
+  /// No description provided for @shiftDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get shiftDateLabel;
+
+  /// No description provided for @shiftStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get shiftStartLabel;
+
+  /// No description provided for @shiftEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get shiftEndLabel;
+
+  /// No description provided for @shiftRepeatUntilLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat daily until (optional)'**
+  String get shiftRepeatUntilLabel;
+
+  /// No description provided for @shiftNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get shiftNoteLabel;
+
+  /// No description provided for @shiftCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get shiftCreateButton;
+
+  /// No description provided for @shiftsCreatedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts created: {count}'**
+  String shiftsCreatedSnack(int count);
+
+  /// No description provided for @shiftTimeOrderError.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time must be before end time'**
+  String get shiftTimeOrderError;
+
+  /// No description provided for @shiftCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this shift?'**
+  String get shiftCancelTitle;
+
+  /// No description provided for @shiftCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel shift'**
+  String get shiftCancelButton;
+
+  /// No description provided for @shiftCancelledSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift cancelled'**
+  String get shiftCancelledSnack;
+
+  /// No description provided for @shiftsStripLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts'**
+  String get shiftsStripLabel;
+
+  /// No description provided for @noShiftsForDay.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts'**
+  String get noShiftsForDay;
 }
 
 class _AppLocalizationsDelegate
