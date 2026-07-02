@@ -35,7 +35,10 @@ void main() {
   setUp(() {
     service = _MockArrivalsBoardService();
     when(
-      () => service.getArrivals(date: any(named: 'date')),
+      () => service.getArrivals(
+        date: any(named: 'date'),
+        isArrival: any(named: 'isArrival'),
+      ),
     ).thenAnswer((_) async => [boardRow]);
     // Default: rows lazily look up their gate; individual tests override this.
     when(

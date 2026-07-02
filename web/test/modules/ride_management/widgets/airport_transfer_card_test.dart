@@ -1,11 +1,17 @@
 // Widget tests for the flight-number field in AirportTransferCard:
 // (1) it upper-cases as the user types, (2) it rejects a malformed number on
-// validation but accepts a valid one (and accepts empty — the number is optional).
+// validation but accepts a valid one (and accepts empty — the number is optional),
+// (3) a provided board service surfaces flight-number suggestions.
 
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/flight_management/models/muc_flight.dart';
+import 'package:dispax/modules/flight_management/services/arrivals_board_service.dart';
 import 'package:dispax/modules/ride_management/widgets/airport_transfer_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockArrivalsBoardService extends Mock implements ArrivalsBoardService {}
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -15,6 +21,7 @@ Future<void> _pump(
   List<String> terminals = const [],
   String? selectedGate,
   String? selectedTerminal,
+  ArrivalsBoardService? flightSuggestionService,
 }) {
   return tester.pumpWidget(
     MaterialApp(
@@ -38,6 +45,7 @@ Future<void> _pump(
               onArrivalChanged: (_) {},
               onGateChanged: (_) {},
               onTerminalChanged: (_) {},
+              flightSuggestionService: flightSuggestionService,
             ),
           ),
         ),
@@ -113,5 +121,43 @@ void main() {
     // Empty → still valid (the number is optional).
     await tester.enterText(find.byType(TextFormField), '');
     expect(formKey.currentState!.validate(), isTrue);
+  });
+
+  testWidgets('a provided board service surfaces flight-number suggestions', (
+    tester,
+  ) async {
+    final service = _MockArrivalsBoardService();
+    when(
+      () => service.getArrivals(
+        date: any(named: 'date'),
+        isArrival: any(named: 'isArrival'),
+      ),
+    ).thenAnswer(
+      (_) async => const [
+        MucFlight(flightNumber: 'LH429', status: 'scheduled'),
+        MucFlight(flightNumber: 'BA111', status: 'scheduled'),
+      ],
+    );
+
+    final formKey = GlobalKey<FormState>();
+    await _pump(
+      tester,
+      formKey: formKey,
+      onChanged: (_) {},
+      flightSuggestionService: service,
+    );
+
+    // Focus → lazy board fetch; then type to open the suggestions overlay.
+    await tester.tap(find.byType(TextFormField));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'LH4');
+    await tester.pump();
+
+    // The card is a departure (isArrival: false) → the fetch must say so.
+    verify(
+      () => service.getArrivals(date: any(named: 'date'), isArrival: false),
+    ).called(1);
+    expect(find.text('LH429'), findsOneWidget);
+    expect(find.text('BA111'), findsNothing);
   });
 }

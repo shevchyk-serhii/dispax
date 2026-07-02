@@ -19,8 +19,9 @@ import java.util.UUID
  * Endpoint-level HTTP tests for the dispatcher arrivals board (`GET /api/flights/arrivals`).
  *
  * Routes are exercised via ZioHttpInterpreter against an in-memory [[FlightStatusProvider]] double — no network I/O.
- * The board is seeded with two arrivals and one departure; the endpoint must return only the arrivals and must reject a
- * non-dispatcher role with 403.
+ * The board is seeded with two arrivals and one departure; the endpoint must return arrivals by default, departures
+ * when `isArrival=false`, must be open to all internal roles (driver/secretary/dispatcher/admin) and must reject the
+ * CLIENT role with 403.
  */
 object FlightApiSpec extends ZIOSpecDefault:
 
@@ -39,6 +40,22 @@ object FlightApiSpec extends ZIOSpecDefault:
     name = "Client",
     email = "client@acme.de",
     role = PersonRole.Client,
+    companyId = Some(companyId)
+  )
+
+  private val secretary: Person = Person(
+    id = PersonId(UUID.fromString("000000EE-0000-0000-0000-000000000001")),
+    name = "Secretary",
+    email = "secretary@acme.de",
+    role = PersonRole.Secretary,
+    companyId = Some(companyId)
+  )
+
+  private val driver: Person = Person(
+    id = PersonId(UUID.fromString("000000FF-0000-0000-0000-000000000001")),
+    name = "Driver",
+    email = "driver@acme.de",
+    role = PersonRole.Driver,
     companyId = Some(companyId)
   )
 
@@ -146,6 +163,75 @@ object FlightApiSpec extends ZIOSpecDefault:
         resp.status == Status.Ok,
         bodyStr.contains("LH123"),
         bodyStr.contains("BA456")
+      )
+    },
+    test("dispatcher GET with isArrival=false → 200 with the departure only") {
+      for {
+        token   <- generateToken(dispatcher)
+        req      = Request
+                     .get(URL.decode("/api/flights/arrivals?date=2026-06-27&isArrival=false").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        bodyStr.contains("LH999"),
+        !bodyStr.contains("LH123"),
+        !bodyStr.contains("BA456")
+      )
+    },
+    test("dispatcher GET with explicit isArrival=true → 200 with arrivals only") {
+      for {
+        token   <- generateToken(dispatcher)
+        req      = Request
+                     .get(URL.decode("/api/flights/arrivals?isArrival=true").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        bodyStr.contains("LH123"),
+        bodyStr.contains("BA456"),
+        !bodyStr.contains("LH999")
+      )
+    },
+    test("secretary GET /api/flights/arrivals → 200") {
+      for {
+        token   <- generateToken(secretary)
+        req      = Request
+                     .get(URL.decode("/api/flights/arrivals").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        bodyStr.contains("LH123")
+      )
+    },
+    test("driver GET /api/flights/arrivals → 200") {
+      for {
+        token   <- generateToken(driver)
+        req      = Request
+                     .get(URL.decode("/api/flights/arrivals").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        bodyStr.contains("LH123")
+      )
+    },
+    test("secretary GET /api/flights/lookup → 200") {
+      for {
+        token   <- generateToken(secretary)
+        req      = Request
+                     .get(URL.decode("/api/flights/lookup?flightNumber=LH123&isArrival=true").toOption.get)
+                     .addHeader(Header.Authorization.Bearer(token))
+        resp    <- run(req)
+        bodyStr <- resp.body.asString
+      } yield assertTrue(
+        resp.status == Status.Ok,
+        bodyStr.contains("LH123")
       )
     },
     test("client (non-dispatcher) → 403") {

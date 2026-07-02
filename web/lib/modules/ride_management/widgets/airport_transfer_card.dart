@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../flight_management/services/arrivals_board_service.dart';
 import '../helpers/flight_number_input.dart';
-import 'clearable_text_field.dart';
+import 'flight_number_autocomplete_field.dart';
 
 class AirportTransferCard extends StatelessWidget {
   final bool isAirportTransfer;
@@ -20,6 +21,12 @@ class AirportTransferCard extends StatelessWidget {
   final ValueChanged<String?> onTerminalChanged;
   final String? Function(String?)? flightNumberValidator;
 
+  /// Date the flight-number suggestions are fetched for (defaults to today).
+  final DateTime? flightDate;
+
+  /// Board service override for the flight-number suggestions (tests).
+  final ArrivalsBoardService? flightSuggestionService;
+
   const AirportTransferCard({
     super.key,
     required this.isAirportTransfer,
@@ -35,6 +42,8 @@ class AirportTransferCard extends StatelessWidget {
     required this.onGateChanged,
     required this.onTerminalChanged,
     this.flightNumberValidator,
+    this.flightDate,
+    this.flightSuggestionService,
   });
 
   @override
@@ -136,7 +145,7 @@ class AirportTransferCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppDimensions.paddingMedium),
-              ClearableTextField(
+              FlightNumberAutocompleteField(
                 value: flightNumber,
                 labelText: l10n.flightNumberLabel,
                 hintText: l10n.flightNumberHint,
@@ -144,8 +153,9 @@ class AirportTransferCard extends StatelessWidget {
                     ? Icons.flight_land
                     : Icons.flight_takeoff,
                 prefixIconColor: AppColors.secretaryColor,
-                // Always upper-case as the user types (LH429, not lh429).
-                inputFormatters: const [UpperCaseTextFormatter()],
+                isArrival: isArrival,
+                flightDate: flightDate,
+                service: flightSuggestionService,
                 onChanged: onFlightNumberChanged ?? (_) {},
                 validator:
                     flightNumberValidator ??
