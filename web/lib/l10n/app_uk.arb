@@ -826,6 +826,8 @@
   "ridesCountLabel": "поїздок",
   "preferredDriverAssigned": "Призначений бажаний водій",
   "noRidesYet": "Поїздок ще немає",
+  "clientCompanyFieldLabel": "Компанія",
+  "clientCompanyNone": "Без компанії",
   "vipClientLabel": "VIP-клієнт",
   "vipClientHelpText": "Пріоритетне обслуговування та бажаний водій",
   "driverLabel": "Водій: {name}",

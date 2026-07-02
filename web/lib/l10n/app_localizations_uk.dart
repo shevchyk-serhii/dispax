@@ -1878,6 +1878,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get noRidesYet => 'Поїздок ще немає';
 
   @override
+  String get clientCompanyFieldLabel => 'Компанія';
+
+  @override
+  String get clientCompanyNone => 'Без компанії';
+
+  @override
   String get vipClientLabel => 'VIP-клієнт';
 
   @override

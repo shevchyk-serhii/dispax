@@ -1877,6 +1877,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noRidesYet => 'No rides yet';
 
   @override
+  String get clientCompanyFieldLabel => 'Company';
+
+  @override
+  String get clientCompanyNone => 'No company';
+
+  @override
   String get vipClientLabel => 'VIP Client';
 
   @override

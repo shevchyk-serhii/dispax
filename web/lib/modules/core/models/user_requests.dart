@@ -37,12 +37,18 @@ class UpdateUserRequest {
   final bool? isVip;
   final String? preferredDriverId;
 
+  /// Business client-company link. Tri-state, matching the backend contract:
+  /// null = leave unchanged, '' (empty string) = clear the link,
+  /// a UUID string = assign the client to that company.
+  final String? clientCompanyId;
+
   const UpdateUserRequest({
     this.name,
     this.email,
     this.phone,
     this.isVip,
     this.preferredDriverId,
+    this.clientCompanyId,
   });
 
   Map<String, dynamic> toJson() {
@@ -52,6 +58,7 @@ class UpdateUserRequest {
       if (phone != null) 'phone': phone,
       if (isVip != null) 'isVip': isVip,
       if (preferredDriverId != null) 'preferredDriverId': preferredDriverId,
+      if (clientCompanyId != null) 'clientCompanyId': clientCompanyId,
     };
   }
 }

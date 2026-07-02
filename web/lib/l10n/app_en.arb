@@ -920,6 +920,8 @@
   "ridesCountLabel": "rides",
   "preferredDriverAssigned": "Preferred driver assigned",
   "noRidesYet": "No rides yet",
+  "clientCompanyFieldLabel": "Company",
+  "clientCompanyNone": "No company",
   "vipClientLabel": "VIP Client",
   "vipClientHelpText": "Priority service and preferred driver",
   "driverLabel": "Driver: {name}",

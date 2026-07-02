@@ -1,6 +1,6 @@
 package com.shevchyk.auth.domain
 
-import com.shevchyk.core.domain.{Person, PersonRole, UserStatus}
+import com.shevchyk.core.domain.{ClientCompanyId, Person, PersonRole, UserStatus}
 import sttp.tapir.Schema
 import zio.json.*
 import java.util.UUID
@@ -36,7 +36,11 @@ case class UserDto(
     // true when the person has a profile photo. Carried on login (and other UserDto
     // responses) so the app bar shows the avatar immediately, not just after a
     // separate /users/profile refresh. Raw bytes are served via GET /api/users/{id}/avatar.
-    hasAvatar: Boolean = false
+    hasAvatar: Boolean = false,
+    // Carried so the client list card keeps the VIP badge and the client-company link
+    // after an update — the app replaces the list row with this response.
+    isVip: Boolean = false,
+    clientCompanyId: Option[UUID] = None
 ) derives JsonCodec
 
 case class CreateUserRequest(
@@ -61,16 +65,26 @@ case class UpdateUserRequest(
     phone: Option[String] = None,
     status: Option[String] = None,
     roles: Option[List[String]] = None,
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    isVip: Option[Boolean] = None,
+    // Link to a billing client-company. Tri-state: absent = leave unchanged, "" = clear the
+    // link, UUID string = set it (validated against the caller's tenant in AuthService).
+    clientCompanyId: Option[String] = None
 ) derives JsonCodec:
 
   /**
-   * Apply the patch onto an existing person. The `role`, `status` and `roles` fields are passed in already
-   * parsed/validated by the caller (they require effectful validation); the remaining fields are merged from this
-   * request. `preferredLanguage` is silently ignored if it is not one of the supported locale codes (en/de/uk) —
+   * Apply the patch onto an existing person. The `role`, `status`, `roles` and `clientCompanyId` fields are passed in
+   * already parsed/validated by the caller (they require effectful validation); the remaining fields are merged from
+   * this request. `preferredLanguage` is silently ignored if it is not one of the supported locale codes (en/de/uk) —
    * unknown values are never written to the database.
    */
-  def applyTo(current: Person, role: PersonRole, status: UserStatus, rolesSet: Set[PersonRole]): Person =
+  def applyTo(
+      current: Person,
+      role: PersonRole,
+      status: UserStatus,
+      rolesSet: Set[PersonRole],
+      clientCompanyId: Option[ClientCompanyId]
+  ): Person =
     val validatedLang = preferredLanguage.filter(supportedLanguageCodes.contains)
     current.copy(
       email = email.getOrElse(current.email),
@@ -79,7 +93,9 @@ case class UpdateUserRequest(
       phone = phone.orElse(current.phone),
       status = status,
       roles = rolesSet,
-      preferredLanguage = validatedLang.orElse(current.preferredLanguage)
+      preferredLanguage = validatedLang.orElse(current.preferredLanguage),
+      isVip = isVip.getOrElse(current.isVip),
+      clientCompanyId = clientCompanyId
     )
 
 object UpdateUserRequest:
@@ -177,5 +193,7 @@ object UserDto:
     roles = person.effectiveRoles.map(PersonRole.toWire).toList,
     preferredLanguage = person.preferredLanguage,
     mustChangePassword = person.mustChangePassword,
-    hasAvatar = person.avatarPresent
+    hasAvatar = person.avatarPresent,
+    isVip = person.isVip,
+    clientCompanyId = person.clientCompanyId.map(_.value)
   )

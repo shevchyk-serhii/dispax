@@ -6,7 +6,13 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.CompanyId
-import com.shevchyk.core.repository.{InMemorySessionRepository, PersonRepository, SessionRepository}
+import com.shevchyk.core.repository.{
+  ClientCompanyRepository,
+  InMemoryClientCompanyRepository,
+  InMemorySessionRepository,
+  PersonRepository,
+  SessionRepository
+}
 import java.util.UUID
 import zio.*
 import zio.test.*
@@ -20,6 +26,7 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
       ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
+      ZLayer.succeed[ClientCompanyRepository](new InMemoryClientCompanyRepository) ++
       (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
 
   // Variant exposing the PersonRepository for tests that still inspect the persisted row directly.
@@ -28,6 +35,7 @@ object AuthFlowIntegrationSpec extends ZIOSpecDefault {
     val auth =
       (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
         ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
+        ZLayer.succeed[ClientCompanyRepository](new InMemoryClientCompanyRepository) ++
         (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
     repo ++ auth
   }
