@@ -103,9 +103,22 @@ import com.shevchyk.ride.repository.{
   TariffRepository,
   TimeBucket
 }
-import com.shevchyk.schedule.application.{ScheduleDayLookupAdapter, ScheduleService => ScheduleSvc}
-import com.shevchyk.schedule.domain.{DriverUnavailability, DriverScheduleVisibility, ScheduleDay, ScheduleError}
+import com.shevchyk.schedule.application.{
+  CalendarShareService,
+  ScheduleDayLookupAdapter,
+  ScheduleService => ScheduleSvc
+}
+import com.shevchyk.schedule.domain.{
+  CalendarShareGrant,
+  CalendarShareInvite,
+  DriverUnavailability,
+  DriverScheduleVisibility,
+  ScheduleDay,
+  ScheduleError
+}
 import com.shevchyk.schedule.repository.{
+  CalendarShareGrantRepository,
+  CalendarShareInviteRepository,
   DriverScheduleVisibilityRepository,
   DriverUnavailabilityRepository,
   ScheduleDayRepository
@@ -753,6 +766,15 @@ object TestApplication extends ZIOAppDefault:
               )
               .toList
           )
+          def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]]          = ridesRef.get
+            .map(
+              _.values
+                .filter(r =>
+                  r.driverId.contains(driverId) && r.status != RideStatus.Cancelled &&
+                    !r.pickupDateTime.isBefore(from) && r.pickupDateTime.isBefore(to)
+                )
+                .toList
+            )
           def clearReminders(id: RideId): Task[Unit]                                                            = ZIO.unit
           // Platform-level analytics (SuperAdmin) — stub implementations
           def countAllRidesByStatus(): Task[Map[String, Int]]                                                   = ridesRef.get
@@ -1752,6 +1774,77 @@ object TestApplication extends ZIOAppDefault:
         }
       ),
       ScheduleSvc.layer,
+      // Calendar sharing (cross-company): in-memory repos + adapter + service
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[com.shevchyk.core.domain.CalendarShareInviteId, CalendarShareInvite]).map {
+          store =>
+            registerReset(store.set(Map.empty))
+            new CalendarShareInviteRepository:
+              import com.shevchyk.core.domain.CalendarShareInviteId
+              import java.time.Instant
+              def create(invite: CalendarShareInvite): Task[CalendarShareInvite]                                = store
+                .update(_.updated(invite.id, invite))
+                .as(invite)
+              def findByToken(token: String): Task[Option[CalendarShareInvite]]                                 = store.get.map(
+                _.values.find(_.token == token)
+              )
+              def findActiveByGrantor(grantorPersonId: PersonId, now: Instant): Task[List[CalendarShareInvite]] =
+                store.get.map(
+                  _.values.filter(i => i.grantorPersonId == grantorPersonId && i.isActive(now)).toList
+                )
+              def revoke(id: CalendarShareInviteId, grantorPersonId: PersonId, now: Instant): Task[Boolean]     = store
+                .modify { invites =>
+                  invites.get(id).filter(i => i.grantorPersonId == grantorPersonId && i.revokedAt.isEmpty) match
+                    case Some(invite) => (true, invites.updated(id, invite.copy(revokedAt = Some(now))))
+                    case None         => (false, invites)
+                }
+        }
+      ),
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[com.shevchyk.core.domain.CalendarShareGrantId, CalendarShareGrant]).map {
+          store =>
+            registerReset(store.set(Map.empty))
+            new CalendarShareGrantRepository:
+              import com.shevchyk.core.domain.CalendarShareGrantId
+              import java.time.Instant
+              def create(grant: CalendarShareGrant): Task[CalendarShareGrant]                            = store.modifyZIO { grants =>
+                val duplicate = grants.values.exists(g =>
+                  g.grantorPersonId == grant.grantorPersonId &&
+                    g.granteePersonId == grant.granteePersonId && g.revokedAt.isEmpty
+                )
+                if duplicate then ZIO.fail(new RuntimeException("duplicate active grant"))
+                else ZIO.succeed((grant, grants.updated(grant.id, grant)))
+              }
+              def findById(id: CalendarShareGrantId): Task[Option[CalendarShareGrant]]                   = store.get.map(_.get(id))
+              def findActivePair(grantorPersonId: PersonId, granteePersonId: PersonId)
+                  : Task[Option[CalendarShareGrant]] = store.get.map(
+                _.values.find(g =>
+                  g.grantorPersonId == grantorPersonId && g.granteePersonId == granteePersonId && g.revokedAt.isEmpty
+                )
+              )
+              def findActiveByGrantor(grantorPersonId: PersonId): Task[List[CalendarShareGrant]]         = store.get.map(
+                _.values.filter(g => g.grantorPersonId == grantorPersonId && g.revokedAt.isEmpty).toList
+              )
+              def findActiveByGrantee(granteePersonId: PersonId): Task[List[CalendarShareGrant]]         = store.get.map(
+                _.values.filter(g => g.granteePersonId == granteePersonId && g.revokedAt.isEmpty).toList
+              )
+              def countActiveByGrantor(grantorPersonId: PersonId): Task[Int]                             = store.get.map(
+                _.values.count(g => g.grantorPersonId == grantorPersonId && g.revokedAt.isEmpty)
+              )
+              def revoke(id: CalendarShareGrantId, partyPersonId: PersonId, now: Instant): Task[Boolean] = store
+                .modify { grants =>
+                  grants
+                    .get(id)
+                    .filter(g =>
+                      (g.grantorPersonId == partyPersonId || g.granteePersonId == partyPersonId) && g.revokedAt.isEmpty
+                    ) match
+                    case Some(grant) => (true, grants.updated(id, grant.copy(revokedAt = Some(now))))
+                    case None        => (false, grants)
+                }
+        }
+      ),
+      com.shevchyk.ride.application.service.RideBusySlotAdapter.layer,
+      CalendarShareService.layer,
       // Notification
       inMemoryNotificationRepositoryLayer,
       resettableNotificationPreferenceRepositoryLayer,

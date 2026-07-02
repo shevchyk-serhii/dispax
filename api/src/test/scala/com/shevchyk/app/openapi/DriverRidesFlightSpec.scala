@@ -298,6 +298,9 @@ object DriverRidesFlightSpec extends ZIOSpecDefault:
       def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                = notImpl(
         "findRidesNeedingConfirmation"
       )
+      def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]]  = notImpl(
+        "findByDriverIdInWindow"
+      )
       def clearReminders(rideId: RideId): Task[Unit]                                                = notImpl("clearReminders")
       def countAllRidesByStatus(): Task[Map[String, Int]]                                           = notImpl("countAllRidesByStatus")
       def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                               = notImpl("sumAllRevenue")

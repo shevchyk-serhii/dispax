@@ -253,6 +253,7 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
       def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                                      = notImpl("q")
       def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                                        = notImpl("r")
       def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                                   = notImpl("s")
+      def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]]                     = notImpl("s2")
       def clearReminders(rideId: RideId): Task[Unit]                                                                   = notImpl("t")
       def countAllRidesByStatus(): Task[Map[String, Int]]                                                              = notImpl("u")
       def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                                                  = notImpl("v")

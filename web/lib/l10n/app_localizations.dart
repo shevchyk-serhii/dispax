@@ -6759,6 +6759,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add client details'**
   String get linkClient;
+
+  /// No description provided for @calendarSharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Sharing'**
+  String get calendarSharingTitle;
+
+  /// No description provided for @calendarSharingMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Sharing'**
+  String get calendarSharingMenuItem;
+
+  /// No description provided for @shareInvitesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'My invite codes'**
+  String get shareInvitesSection;
+
+  /// No description provided for @shareCreateInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Create invite code'**
+  String get shareCreateInvite;
+
+  /// No description provided for @shareInviteExpiry1Day.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day'**
+  String get shareInviteExpiry1Day;
+
+  /// No description provided for @shareInviteExpiry7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get shareInviteExpiry7Days;
+
+  /// No description provided for @shareInviteExpiry30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'30 days'**
+  String get shareInviteExpiry30Days;
+
+  /// No description provided for @shareInviteCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code created'**
+  String get shareInviteCreatedTitle;
+
+  /// No description provided for @shareInviteCreatedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this code to a driver or dispatcher of another company. They enter it in their app under Calendar Sharing.'**
+  String get shareInviteCreatedHint;
+
+  /// No description provided for @shareCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get shareCopyCode;
+
+  /// No description provided for @shareCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied to clipboard'**
+  String get shareCodeCopied;
+
+  /// No description provided for @shareRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get shareRevoke;
+
+  /// No description provided for @shareGrantedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Who sees my calendar'**
+  String get shareGrantedSection;
+
+  /// No description provided for @shareSharedWithMeSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with me'**
+  String get shareSharedWithMeSection;
+
+  /// No description provided for @shareEnterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code'**
+  String get shareEnterCode;
+
+  /// No description provided for @shareRedeemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a shared calendar'**
+  String get shareRedeemTitle;
+
+  /// No description provided for @shareRedeemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the invite code or link'**
+  String get shareRedeemHint;
+
+  /// No description provided for @shareRedeemConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get shareRedeemConnect;
+
+  /// No description provided for @shareRedeemSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {name}'**
+  String shareRedeemSuccess(String name);
+
+  /// No description provided for @shareUnlink.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get shareUnlink;
+
+  /// No description provided for @shareNoInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'No active invite codes'**
+  String get shareNoInvites;
+
+  /// No description provided for @shareNoGrants.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not shared your calendar with anyone'**
+  String get shareNoGrants;
+
+  /// No description provided for @shareNoSharedWithMe.
+  ///
+  /// In en, this message translates to:
+  /// **'No calendars have been shared with you'**
+  String get shareNoSharedWithMe;
+
+  /// No description provided for @shareValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String shareValidUntil(String date);
+
+  /// No description provided for @shareSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Since {date}'**
+  String shareSince(String date);
+
+  /// No description provided for @shareActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed: {error}'**
+  String shareActionFailed(String error);
+
+  /// No description provided for @sharedCalendarBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get sharedCalendarBusy;
+
+  /// No description provided for @sharedCalendarShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get sharedCalendarShift;
+
+  /// No description provided for @sharedCalendarEmptyWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts or busy slots this week'**
+  String get sharedCalendarEmptyWeek;
+
+  /// No description provided for @sharedCalendarTimesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift times as provided by {company}'**
+  String sharedCalendarTimesHint(String company);
+
+  /// No description provided for @sharedWithMeGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with me'**
+  String get sharedWithMeGroupLabel;
+
+  /// No description provided for @myCompanyGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'My company'**
+  String get myCompanyGroupLabel;
 }
 
 class _AppLocalizationsDelegate

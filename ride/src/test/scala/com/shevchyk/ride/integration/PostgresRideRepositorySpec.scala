@@ -850,6 +850,30 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.externalDriverId.contains(edId),
           found.get.partnerCompanyId.contains(pcId)
         )
+      },
+      test("findByDriverIdInWindow: half-open window, driver filter, Cancelled excluded") {
+        val from                                                                  = Instant.parse("2026-07-01T00:00:00Z")
+        val to                                                                    = Instant.parse("2026-07-08T00:00:00Z")
+        def rideAt(pickup: Instant, driver: Option[PersonId], status: RideStatus) = makeRide(
+          driver = driver,
+          status = status
+        ).copy(pickupDateTime = pickup)
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          inside = rideAt(Instant.parse("2026-07-02T08:00:00Z"), Some(driverId), RideStatus.Assigned)
+          atFrom = rideAt(from, Some(driverId), RideStatus.Requested)
+          _     <- repo.create(inside)
+          _     <- repo.create(atFrom)
+          // At `to` — excluded (half-open); Cancelled, driverless and out-of-window rides — excluded too.
+          _     <- repo.create(rideAt(to, Some(driverId), RideStatus.Assigned))
+          _     <- repo.create(rideAt(Instant.parse("2026-07-03T08:00:00Z"), Some(driverId), RideStatus.Cancelled))
+          _     <- repo.create(rideAt(Instant.parse("2026-07-03T09:00:00Z"), None, RideStatus.Requested))
+          _     <- repo.create(rideAt(Instant.parse("2026-06-01T08:00:00Z"), Some(driverId), RideStatus.Completed))
+          found <- repo.findByDriverIdInWindow(driverId, from, to)
+        } yield assertTrue(found.map(_.id).toSet == Set(inside.id, atFrom.id))
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"
