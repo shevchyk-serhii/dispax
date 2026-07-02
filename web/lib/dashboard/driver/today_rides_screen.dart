@@ -478,7 +478,15 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
           onRefresh: () => refreshRides(context),
         );
       case _TodayTab.history:
-        return _EmbeddedHistoryTab(rideState: myRideState);
+        // Unlike Today/Upcoming, History is company-wide for a dispatcher: a
+        // dispatcher who doesn't personally drive would otherwise never see
+        // any of the company's completed/cancelled rides here. A driver still
+        // gets their own-rides scoping.
+        final isDispatcher =
+            context.read<AuthBloc>().state.user?.isDispatcher ?? false;
+        return _EmbeddedHistoryTab(
+          rideState: isDispatcher ? rideState : myRideState,
+        );
       case _TodayTab.today:
         return buildBody(context, myRideState);
     }
@@ -2036,8 +2044,9 @@ class _EmbeddedHistoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // [rideState] is already scoped to the current user's own rides by the
-    // parent, so History only shows the user's own completed/cancelled rides.
+    // For a driver, [rideState] is already scoped to their own rides by the
+    // parent. For a dispatcher, the parent passes the full company
+    // [rideState] instead, so History shows every completed/cancelled ride.
     if (rideState.isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
