@@ -8,6 +8,7 @@ import '../../../modules/core/navigation_helper.dart';
 import '../../../modules/core/services/api_client.dart';
 import '../../../modules/core/widgets/calendar_controls.dart';
 import '../../../modules/schedule_management/models/calendar_share.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../modules/schedule_management/services/calendar_share_service.dart';
 import '../../../modules/schedule_management/services/schedule_service.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
@@ -66,6 +67,14 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   /// colleague's driverId.
   static const String _sharePrefix = 'share:';
 
+  /// Work shifts of the currently selected person (self or the picked
+  /// colleague), shared between the shift strip and the grid views. Cancelled
+  /// shifts are already filtered out.
+  List<ScheduleDay> _shifts = [];
+
+  /// Guards against out-of-order shift responses when switching drivers.
+  int _shiftsRequestSeq = 0;
+
   // Rides for the currently selected colleague. Null while "My Schedule" is
   // selected — in that case the calendar reads the shared RideBloc (which is
   // loaded for the logged-in user and kept live across the dashboard tabs).
@@ -92,6 +101,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     _shareService = CalendarShareService(apiClient: _apiClient);
     _initVisibility();
     _loadSharedWithMe();
+    _loadShifts();
   }
 
   /// Cross-company shares are independent of the intra-company visibility
@@ -102,6 +112,35 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       if (mounted) setState(() => _sharedWithMe = shares);
     } catch (_) {
       if (mounted) setState(() => _sharedWithMe = []);
+    }
+  }
+
+  /// Loads the work shifts of the currently selected person (self by default,
+  /// or the colleague picked in the dropdown) so both the shift strip and the
+  /// calendar grid views can render them. Cancelled shifts are dropped here so
+  /// every consumer sees the same working set. Degrades to empty on failure —
+  /// the shifts are an overlay, never worth blocking the calendar.
+  Future<void> _loadShifts() async {
+    final targetDriverId =
+        _selectedDriverId ?? context.read<AuthBloc>().state.user?.id;
+    if (targetDriverId == null || targetDriverId.startsWith(_sharePrefix)) {
+      if (mounted) setState(() => _shifts = []);
+      return;
+    }
+    final seq = ++_shiftsRequestSeq;
+    try {
+      final shifts = await _scheduleService.getDriverSchedule(targetDriverId);
+      if (mounted && seq == _shiftsRequestSeq) {
+        setState(() {
+          _shifts = shifts
+              .where((s) => s.status != ScheduleDayStatus.cancelled)
+              .toList();
+        });
+      }
+    } catch (_) {
+      if (mounted && seq == _shiftsRequestSeq) {
+        setState(() => _shifts = []);
+      }
     }
   }
 
@@ -163,6 +202,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _driverRides = null;
         _loadingDriverRides = false;
         _driverRidesError = null;
+        _shifts = [];
       });
       return;
     }
@@ -178,6 +218,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _loadingDriverRides = false;
         _driverRidesError = null;
       });
+      _loadShifts();
     } else {
       final driver = _colleagues.firstWhere(
         (p) => p.id == driverId,
@@ -194,6 +235,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _selectedDriverName = driver.name;
       });
       _loadDriverRides(driverId);
+      _loadShifts();
     }
   }
 
@@ -493,6 +535,8 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       selectedDay: selectedDay,
       canManage: canManage,
       service: _scheduleService,
+      shifts: _shifts,
+      onChanged: _loadShifts,
     );
   }
 
@@ -531,6 +575,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          shifts: _shifts,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -544,6 +589,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          shifts: _shifts,
           onRideSelected: _openRideDetails,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
@@ -558,6 +604,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          shifts: _shifts,
           onRideSelected: _openRideDetails,
         );
       case CalendarViewType.multiColumn:

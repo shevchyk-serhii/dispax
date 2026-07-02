@@ -25,12 +25,23 @@ class ShiftStrip extends StatefulWidget {
 
   final ScheduleService service;
 
+  /// The driver's shifts (all days), loaded and owned by the parent screen so
+  /// the calendar grid views can render the same data. The strip filters them
+  /// to [selectedDay].
+  final List<ScheduleDay> shifts;
+
+  /// Invoked after a shift is created or cancelled so the owner can reload
+  /// [shifts] (and any grid rendering derived from them).
+  final Future<void> Function() onChanged;
+
   const ShiftStrip({
     super.key,
     required this.driverId,
     required this.selectedDay,
     required this.canManage,
     required this.service,
+    required this.shifts,
+    required this.onChanged,
   });
 
   @override
@@ -38,54 +49,11 @@ class ShiftStrip extends StatefulWidget {
 }
 
 class _ShiftStripState extends State<ShiftStrip> {
-  List<ScheduleDay> _shifts = [];
-  bool _loading = true;
-
-  /// Guards against out-of-order responses when switching drivers quickly.
-  int _requestSeq = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(covariant ShiftStrip oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.driverId != widget.driverId) {
-      _load();
-    }
-  }
-
-  Future<void> _load() async {
-    final seq = ++_requestSeq;
-    setState(() => _loading = true);
-    try {
-      final shifts = await widget.service.getDriverSchedule(widget.driverId);
-      if (mounted && seq == _requestSeq) {
-        setState(() {
-          _shifts = shifts;
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      // The strip is auxiliary — degrade to empty rather than blocking the
-      // calendar with an error state.
-      if (mounted && seq == _requestSeq) {
-        setState(() {
-          _shifts = [];
-          _loading = false;
-        });
-      }
-    }
-  }
-
   bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   List<ScheduleDay> get _dayShifts =>
-      _shifts
+      widget.shifts
           .where(
             (s) =>
                 _sameDay(s.date, widget.selectedDay) &&
@@ -141,7 +109,7 @@ class _ShiftStripState extends State<ShiftStrip> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.shiftsCreatedSnack(created))));
-      await _load();
+      await widget.onChanged();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -182,7 +150,7 @@ class _ShiftStripState extends State<ShiftStrip> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.shiftCancelledSnack)));
-      await _load();
+      await widget.onChanged();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -213,13 +181,7 @@ class _ShiftStripState extends State<ShiftStrip> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  if (_loading)
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (shifts.isEmpty)
+                  if (shifts.isEmpty)
                     Text(
                       l10n.noShiftsForDay,
                       style: TextStyle(

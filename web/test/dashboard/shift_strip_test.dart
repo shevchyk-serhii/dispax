@@ -1,6 +1,5 @@
 import 'package:dispax/dashboard/driver/calendar/widgets/shift_strip.dart';
 import 'package:dispax/l10n/app_localizations.dart';
-import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import 'package:dispax/modules/schedule_management/services/schedule_service.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +10,7 @@ class _MockScheduleService extends Mock implements ScheduleService {}
 
 void main() {
   late _MockScheduleService service;
+  late int onChangedCalls;
   final day = DateTime(2026, 7, 3);
 
   ScheduleDay shift({
@@ -35,24 +35,25 @@ void main() {
 
   setUp(() {
     service = _MockScheduleService();
-    when(
-      () => service.getDriverSchedule('driver-1'),
-    ).thenAnswer((_) async => [shift()]);
+    onChangedCalls = 0;
   });
 
-  Widget wrap({bool canManage = true}) => MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    locale: const Locale('en'),
-    home: Scaffold(
-      body: ShiftStrip(
-        driverId: 'driver-1',
-        selectedDay: day,
-        canManage: canManage,
-        service: service,
-      ),
-    ),
-  );
+  Widget wrap({bool canManage = true, List<ScheduleDay>? shifts}) =>
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: Scaffold(
+          body: ShiftStrip(
+            driverId: 'driver-1',
+            selectedDay: day,
+            canManage: canManage,
+            service: service,
+            shifts: shifts ?? [shift()],
+            onChanged: () async => onChangedCalls++,
+          ),
+        ),
+      );
 
   testWidgets('renders the shifts of the selected day as chips', (
     tester,
@@ -64,14 +65,14 @@ void main() {
   });
 
   testWidgets('cancelled shifts and other days are excluded', (tester) async {
-    when(() => service.getDriverSchedule('driver-1')).thenAnswer(
-      (_) async => [
-        shift(id: 's1', status: ScheduleDayStatus.cancelled),
-        shift(id: 's2', date: DateTime(2026, 7, 4), start: '10:00'),
-      ],
+    await tester.pumpWidget(
+      wrap(
+        shifts: [
+          shift(id: 's1', status: ScheduleDayStatus.cancelled),
+          shift(id: 's2', date: DateTime(2026, 7, 4), start: '10:00'),
+        ],
+      ),
     );
-
-    await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
     expect(find.text('08:00–16:00'), findsNothing);
@@ -79,39 +80,39 @@ void main() {
     expect(find.text('No shifts'), findsOneWidget);
   });
 
-  testWidgets('creating a shift with the dialog defaults calls the service', (
-    tester,
-  ) async {
-    when(
-      () => service.createScheduleDay(
-        driverId: any(named: 'driverId'),
-        date: any(named: 'date'),
-        startTime: any(named: 'startTime'),
-        endTime: any(named: 'endTime'),
-        notes: any(named: 'notes'),
-      ),
-    ).thenAnswer((_) async => shift());
+  testWidgets(
+    'creating a shift with the dialog defaults calls the service and onChanged',
+    (tester) async {
+      when(
+        () => service.createScheduleDay(
+          driverId: any(named: 'driverId'),
+          date: any(named: 'date'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+          notes: any(named: 'notes'),
+        ),
+      ).thenAnswer((_) async => shift());
 
-    await tester.pumpWidget(wrap());
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(wrap());
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.add_circle_outline));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Create'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
 
-    verify(
-      () => service.createScheduleDay(
-        driverId: 'driver-1',
-        date: '2026-07-03',
-        startTime: '08:00',
-        endTime: '16:00',
-        notes: null,
-      ),
-    ).called(1);
-    // The strip reloads after a successful create.
-    verify(() => service.getDriverSchedule('driver-1')).called(2);
-  });
+      verify(
+        () => service.createScheduleDay(
+          driverId: 'driver-1',
+          date: '2026-07-03',
+          startTime: '08:00',
+          endTime: '16:00',
+          notes: null,
+        ),
+      ).called(1);
+      expect(onChangedCalls, 1);
+    },
+  );
 
   testWidgets('tapping a chip cancels the shift after confirmation', (
     tester,
@@ -129,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => service.cancelScheduleDay('shift-1')).called(1);
-    verify(() => service.getDriverSchedule('driver-1')).called(2);
+    expect(onChangedCalls, 1);
   });
 
   testWidgets('read-only mode hides the add button and disables chips', (
@@ -144,19 +145,5 @@ void main() {
     await tester.tap(find.text('08:00–16:00'));
     await tester.pumpAndSettle();
     expect(find.text('Cancel shift'), findsNothing);
-  });
-
-  testWidgets('a failing load degrades to the empty label, not an error', (
-    tester,
-  ) async {
-    when(
-      () => service.getDriverSchedule('driver-1'),
-    ).thenThrow(ApiException('boom'));
-
-    await tester.pumpWidget(wrap());
-    await tester.pumpAndSettle();
-
-    expect(find.text('No shifts'), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 }
