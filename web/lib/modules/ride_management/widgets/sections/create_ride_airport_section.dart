@@ -119,6 +119,9 @@ class CreateRideAirportSection extends StatelessWidget {
           isAirportTransfer: isAirportTransfer,
           isArrival: isArrival,
           flightNumber: flightNumber,
+          // Suggestion date: the flight time when known (doubles as the arrival
+          // time for arrival rides), otherwise the manual pickup date, else today.
+          flightDate: flightDepartureTime ?? manualPickupDateTime,
           onFlightNumberChanged: (value) {
             context.read<CreateRideFormBloc>().add(FlightNumberChanged(value));
           },

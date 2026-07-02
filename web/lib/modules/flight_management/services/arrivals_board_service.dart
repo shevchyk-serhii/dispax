@@ -21,6 +21,11 @@ class ArrivalsBoardService {
     return instance;
   }
 
+  /// Like [instance] but null when the service has not been configured yet.
+  /// For widgets that degrade gracefully to no-suggestions instead of crashing
+  /// (e.g. the flight-number autocomplete in widget tests or logged-out states).
+  static ArrivalsBoardService? get instanceOrNull => _instance;
+
   static void configure(ApiClient apiClient) {
     _instance = ArrivalsBoardService._internal(apiClient);
   }
@@ -54,13 +59,20 @@ class ArrivalsBoardService {
     }
   }
 
-  /// Today's arrivals (or [date] when given, ISO yyyy-MM-dd). Returns [] on failure.
-  Future<List<MucFlight>> getArrivals({String? date}) async {
+  /// Today's board (or [date] when given, ISO yyyy-MM-dd) for the given direction
+  /// (arrivals by default, departures with [isArrival] false). Returns [] on failure.
+  Future<List<MucFlight>> getArrivals({
+    String? date,
+    bool isArrival = true,
+  }) async {
     try {
-      final path = date == null
-          ? '/flights/arrivals'
-          : '/flights/arrivals?date=$date';
-      final response = await _apiClient.get(path);
+      final params = <String>[
+        'isArrival=$isArrival',
+        if (date != null) 'date=$date',
+      ];
+      final response = await _apiClient.get(
+        '/flights/arrivals?${params.join('&')}',
+      );
       if (response.statusCode == 200) {
         final list = jsonDecode(response.body) as List<dynamic>;
         return list
