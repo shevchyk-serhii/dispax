@@ -1752,5 +1752,21 @@
   "sharedCalendarTimesHint": "Час змін — як надано компанією {company}",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
   "sharedWithMeGroupLabel": "Поділилися зі мною",
-  "myCompanyGroupLabel": "Моя компанія"
+  "myCompanyGroupLabel": "Моя компанія",
+"addShiftTooltip": "Додати зміну",
+  "addShiftTitle": "Нова зміна",
+  "shiftDateLabel": "Дата",
+  "shiftStartLabel": "Початок",
+  "shiftEndLabel": "Кінець",
+  "shiftRepeatUntilLabel": "Повторювати щодня до (необовʼязково)",
+  "shiftNoteLabel": "Нотатка (необовʼязково)",
+  "shiftCreateButton": "Створити",
+  "shiftsCreatedSnack": "Створено змін: {count}",
+  "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftTimeOrderError": "Початок має бути раніше за кінець",
+  "shiftCancelTitle": "Скасувати цю зміну?",
+  "shiftCancelButton": "Скасувати зміну",
+  "shiftCancelledSnack": "Зміну скасовано",
+  "shiftsStripLabel": "Зміни",
+  "noShiftsForDay": "Немає змін"
 }

@@ -1752,5 +1752,21 @@
   "sharedCalendarTimesHint": "Schichtzeiten wie von {company} angegeben",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
   "sharedWithMeGroupLabel": "Für mich freigegeben",
-  "myCompanyGroupLabel": "Meine Firma"
+  "myCompanyGroupLabel": "Meine Firma",
+"addShiftTooltip": "Schicht hinzufügen",
+  "addShiftTitle": "Neue Schicht",
+  "shiftDateLabel": "Datum",
+  "shiftStartLabel": "Beginn",
+  "shiftEndLabel": "Ende",
+  "shiftRepeatUntilLabel": "Täglich wiederholen bis (optional)",
+  "shiftNoteLabel": "Notiz (optional)",
+  "shiftCreateButton": "Erstellen",
+  "shiftsCreatedSnack": "Schichten erstellt: {count}",
+  "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftTimeOrderError": "Beginn muss vor dem Ende liegen",
+  "shiftCancelTitle": "Diese Schicht stornieren?",
+  "shiftCancelButton": "Schicht stornieren",
+  "shiftCancelledSnack": "Schicht storniert",
+  "shiftsStripLabel": "Schichten",
+  "noShiftsForDay": "Keine Schichten"
 }
