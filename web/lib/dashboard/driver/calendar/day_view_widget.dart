@@ -10,6 +10,7 @@ import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../constants/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
 import 'widgets/ride_calendar_card.dart';
 
 class DayViewWidget extends StatelessWidget {
@@ -27,12 +28,18 @@ class DayViewWidget extends StatelessWidget {
   /// already scoped to the chosen driver, so [driverIdFilter] is a no-op for it.
   final List<Ride>? ridesOverride;
 
+  /// The displayed driver's work shifts; the ones falling on [selectedDay]
+  /// render as availability chips under the day header. Cancelled shifts must
+  /// be filtered out by the caller.
+  final List<ScheduleDay> shifts;
+
   const DayViewWidget({
     super.key,
     required this.selectedDay,
     required this.onRideSelected,
     this.driverIdFilter,
     this.ridesOverride,
+    this.shifts = const [],
   });
 
   @override
@@ -73,12 +80,73 @@ class DayViewWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildDayHeader(context),
+          buildShiftRow(context),
           Expanded(
             child: dayRides.isEmpty
                 ? buildEmptyState(context)
                 : buildRidesList(context, dayRides),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Availability chips for the selected day's work shifts, right under the
+  /// header. Collapses to nothing when the day has no shifts.
+  Widget buildShiftRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final dayShifts =
+        shifts
+            .where(
+              (s) =>
+                  s.date.year == selectedDay.year &&
+                  s.date.month == selectedDay.month &&
+                  s.date.day == selectedDay.day,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    if (dayShifts.isEmpty) return const SizedBox.shrink();
+
+    String hhmm(String raw) => raw.length >= 5 ? raw.substring(0, 5) : raw;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: dayShifts
+            .map(
+              (shift) => Container(
+                key: ValueKey('day-shift-${shift.id}'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.schedule, size: 14, color: AppColors.success),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${l10n.sharedCalendarShift} ${hhmm(shift.startTime)}–${hhmm(shift.endTime)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
