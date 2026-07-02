@@ -62,8 +62,8 @@ import com.shevchyk.ride.repository.{
   RideTemplateRepository,
   TariffRepository
 }
-import com.shevchyk.schedule.application.ScheduleService
-import com.shevchyk.schedule.openapi.ScheduleApi
+import com.shevchyk.schedule.application.{CalendarShareService, ScheduleService}
+import com.shevchyk.schedule.openapi.{CalendarShareApi, ScheduleApi}
 import sttp.tapir.AnyEndpoint
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
@@ -88,15 +88,16 @@ object OpenApiServer:
    */
   type ApiEnv =
     JwtService & AuthService & RateLimiter & PersonRepository & AvatarService & FcmService & RideService &
-      ScheduleService & InvoiceService & InvoiceRepository & ClientCompanyRepository & BillingClientCompanyRepository &
-      CompanyBillingProfileRepository & GdprRepository & RideRepository & ExpenseRepository & NotificationRepository &
-      AuditService & SessionRepository & TokenRepository & NotificationPreferenceRepository & BlacklistRepository &
-      CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &
-      EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
-      AirportCheckpointService & AirportConfigService & AirportTimingService & ChatService & RideTemplateRepository &
-      DriverLocationService & HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository &
-      TariffRepository & RideEstimateService & RideShareTokenService & EtaService & FlightStatusProvider &
-      com.shevchyk.core.config.PublicLinkConfig & com.shevchyk.core.config.AirportArrivalTimingConfig
+      ScheduleService & CalendarShareService & InvoiceService & InvoiceRepository & ClientCompanyRepository &
+      BillingClientCompanyRepository & CompanyBillingProfileRepository & GdprRepository & RideRepository &
+      ExpenseRepository & NotificationRepository & AuditService & SessionRepository & TokenRepository &
+      NotificationPreferenceRepository & BlacklistRepository & CompanySettingsRepository & GeofenceRepository &
+      GeofenceService & RidePoolRepository & EventHub & EmergencyReassignmentRepository & RideRatingRepository &
+      ClientAddressService & ClientLocationService & AirportCheckpointService & AirportConfigService &
+      AirportTimingService & ChatService & RideTemplateRepository & DriverLocationService & HereRoutingService &
+      GeocodingService & ClientLocationRepository & CompanyRepository & TariffRepository & RideEstimateService &
+      RideShareTokenService & EtaService & FlightStatusProvider & com.shevchyk.core.config.PublicLinkConfig &
+      com.shevchyk.core.config.AirportArrivalTimingConfig
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so
@@ -119,6 +120,7 @@ object OpenApiServer:
       ClientAddressApi.serverEndpoints.map(_.endpoint) :::
       DriverApi.serverEndpoints.map(_.endpoint) :::
       ScheduleApi.serverEndpoints.map(_.endpoint) :::
+      CalendarShareApi.serverEndpoints.map(_.endpoint) :::
       InvoiceApi.serverEndpoints.map(_.endpoint) :::
       BillingClientCompanyApi.serverEndpoints.map(_.endpoint) :::
       BillingProfileApi.serverEndpoints.map(_.endpoint) :::
@@ -161,6 +163,7 @@ object OpenApiServer:
       http(ClientAddressApi.serverEndpoints) ++
       http(DriverApi.serverEndpoints) ++
       http(ScheduleApi.serverEndpoints) ++
+      http(CalendarShareApi.serverEndpoints) ++
       http(InvoiceApi.serverEndpoints) ++
       http(BillingClientCompanyApi.serverEndpoints) ++
       http(BillingProfileApi.serverEndpoints) ++

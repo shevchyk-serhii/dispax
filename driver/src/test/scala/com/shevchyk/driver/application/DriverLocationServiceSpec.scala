@@ -585,6 +585,11 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
               .succeed(Nil)
             def findRidesNeedingConfirmation(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]  = ZIO
               .succeed(Nil)
+            def findByDriverIdInWindow(
+                driverId: PersonId,
+                from: java.time.Instant,
+                to: java.time.Instant
+            ): Task[List[Ride]] = ZIO.succeed(Nil)
             def clearReminders(id: RideId): Task[Unit]                                                          = ZIO.unit
             def countAllRidesByStatus(): Task[Map[String, Int]]                                                 = ZIO.succeed(Map.empty)
             def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                 = ZIO.succeed(

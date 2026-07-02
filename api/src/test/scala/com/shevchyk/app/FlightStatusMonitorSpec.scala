@@ -128,6 +128,9 @@ object FlightStatusMonitorSpec extends ZIOSpecDefault:
       def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                    = nope(
         "findRidesNeedingConfirmation"
       )
+      def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]]      = nope(
+        "findByDriverIdInWindow"
+      )
       def clearReminders(rideId: RideId): Task[Unit]                                                    = nope("clearReminders")
       def countAllRidesByStatus(): Task[Map[String, Int]]                                               = nope(
         "countAllRidesByStatus"

@@ -115,13 +115,17 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
     "findActiveRidesInWindow"
   )
 
-  def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = notImpl(
+  def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]               = notImpl(
     "findRidesNeedingConfirmation"
   )
-  def clearReminders(rideId: RideId): Task[Unit]                                 = notImpl("clearReminders")
-  def countAllRidesByStatus(): Task[Map[String, Int]]                            = notImpl("countAllRidesByStatus")
-  def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                = notImpl("sumAllRevenue")
-  def countRidesByCompany(from: Instant, to: Instant): Task[Map[UUID, Int]]      = notImpl("countRidesByCompany")
+
+  def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]] = notImpl(
+    "findByDriverIdInWindow"
+  )
+  def clearReminders(rideId: RideId): Task[Unit]                                               = notImpl("clearReminders")
+  def countAllRidesByStatus(): Task[Map[String, Int]]                                          = notImpl("countAllRidesByStatus")
+  def sumAllRevenue(from: Instant, to: Instant): Task[BigDecimal]                              = notImpl("sumAllRevenue")
+  def countRidesByCompany(from: Instant, to: Instant): Task[Map[UUID, Int]]                    = notImpl("countRidesByCompany")
 
   def sumRevenueByCompanyPlatform(from: Instant, to: Instant): Task[Map[UUID, BigDecimal]] = notImpl(
     "sumRevenueByCompanyPlatform"

@@ -3618,4 +3618,111 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get linkClient => 'Add client details';
+
+  @override
+  String get calendarSharingTitle => 'Calendar Sharing';
+
+  @override
+  String get calendarSharingMenuItem => 'Calendar Sharing';
+
+  @override
+  String get shareInvitesSection => 'My invite codes';
+
+  @override
+  String get shareCreateInvite => 'Create invite code';
+
+  @override
+  String get shareInviteExpiry1Day => '1 day';
+
+  @override
+  String get shareInviteExpiry7Days => '7 days';
+
+  @override
+  String get shareInviteExpiry30Days => '30 days';
+
+  @override
+  String get shareInviteCreatedTitle => 'Invite code created';
+
+  @override
+  String get shareInviteCreatedHint =>
+      'Send this code to a driver or dispatcher of another company. They enter it in their app under Calendar Sharing.';
+
+  @override
+  String get shareCopyCode => 'Copy code';
+
+  @override
+  String get shareCodeCopied => 'Code copied to clipboard';
+
+  @override
+  String get shareRevoke => 'Revoke';
+
+  @override
+  String get shareGrantedSection => 'Who sees my calendar';
+
+  @override
+  String get shareSharedWithMeSection => 'Shared with me';
+
+  @override
+  String get shareEnterCode => 'Enter code';
+
+  @override
+  String get shareRedeemTitle => 'Connect a shared calendar';
+
+  @override
+  String get shareRedeemHint => 'Paste the invite code or link';
+
+  @override
+  String get shareRedeemConnect => 'Connect';
+
+  @override
+  String shareRedeemSuccess(String name) {
+    return 'Connected to $name';
+  }
+
+  @override
+  String get shareUnlink => 'Unlink';
+
+  @override
+  String get shareNoInvites => 'No active invite codes';
+
+  @override
+  String get shareNoGrants => 'You have not shared your calendar with anyone';
+
+  @override
+  String get shareNoSharedWithMe => 'No calendars have been shared with you';
+
+  @override
+  String shareValidUntil(String date) {
+    return 'Valid until $date';
+  }
+
+  @override
+  String shareSince(String date) {
+    return 'Since $date';
+  }
+
+  @override
+  String shareActionFailed(String error) {
+    return 'Action failed: $error';
+  }
+
+  @override
+  String get sharedCalendarBusy => 'Busy';
+
+  @override
+  String get sharedCalendarShift => 'Shift';
+
+  @override
+  String get sharedCalendarEmptyWeek => 'No shifts or busy slots this week';
+
+  @override
+  String sharedCalendarTimesHint(String company) {
+    return 'Shift times as provided by $company';
+  }
+
+  @override
+  String get sharedWithMeGroupLabel => 'Shared with me';
+
+  @override
+  String get myCompanyGroupLabel => 'My company';
 }

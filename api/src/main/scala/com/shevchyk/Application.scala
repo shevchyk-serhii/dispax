@@ -35,11 +35,14 @@ import com.shevchyk.core.config.PublicLinkConfig
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.schedule.application.{
+  CalendarShareService,
   ScheduleAvailabilityChecker,
   ScheduleDayLookupAdapter,
   ScheduleService => ScheduleSvc
 }
 import com.shevchyk.schedule.repository.{
+  CalendarShareGrantRepository,
+  CalendarShareInviteRepository,
   DriverScheduleVisibilityRepository,
   DriverUnavailabilityRepository,
   ScheduleDayRepository
@@ -256,6 +259,10 @@ object Application extends ZIOAppDefault:
       ScheduleAvailabilityChecker.layer,
       ScheduleDayLookupAdapter.layer,
       ScheduleSvc.layer,
+      CalendarShareInviteRepository.layer,
+      CalendarShareGrantRepository.layer,
+      com.shevchyk.ride.application.service.RideBusySlotAdapter.layer,
+      CalendarShareService.layer,
       ClientLocationRepository.layer,
       AirportConfigRepository.layer,
       AirportConfigService.layer,

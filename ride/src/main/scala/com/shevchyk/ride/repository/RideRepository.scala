@@ -77,6 +77,10 @@ trait RideRepository {
   // Rides in Assigned status with a driver assigned and pickup in [from, to) — used by the
   // morning confirmation-request scheduler to know which rides still need a confirmation push.
   def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]
+  // Non-cancelled rides of one driver with pickup in [from, to) — used by the calendar-share
+  // busy-slot adapter. NOTE: deliberately not company-scoped; the caller (CalendarShareService)
+  // authorizes access via an explicit cross-company grant before invoking this.
+  def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]]
   // Reset sent reminders for a ride (when pickupDateTime changes)
   def clearReminders(rideId: RideId): Task[Unit]
 
