@@ -688,4 +688,29 @@ void main() {
       expect(a.hashCode, isNot(b.hashCode));
     });
   });
+
+  // Mirrors the backend RidePolicy past-ride guard: reassign affordances are
+  // hidden for rides whose pickup time has passed (5-minute skew tolerance).
+  group('Ride.isPastPickup', () {
+    test('true when the pickup time is clearly in the past', () {
+      final ride = TestFixtures.ride(
+        pickupDateTime: DateTime.now().subtract(const Duration(hours: 1)),
+      );
+      expect(ride.isPastPickup, isTrue);
+    });
+
+    test('false when the pickup time is in the future', () {
+      final ride = TestFixtures.ride(
+        pickupDateTime: DateTime.now().add(const Duration(hours: 1)),
+      );
+      expect(ride.isPastPickup, isFalse);
+    });
+
+    test('false within the 5-minute clock-skew tolerance', () {
+      final ride = TestFixtures.ride(
+        pickupDateTime: DateTime.now().subtract(const Duration(minutes: 4)),
+      );
+      expect(ride.isPastPickup, isFalse);
+    });
+  });
 }

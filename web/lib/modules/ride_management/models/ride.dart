@@ -656,6 +656,13 @@ class Ride {
     return parts.join(' • ');
   }
 
+  /// True when the pickup time has already passed, with the same 5-minute
+  /// clock-skew tolerance the backend's RidePolicy applies. The backend rejects
+  /// reassigning such a ride (past_ride), so reassign affordances are hidden.
+  bool get isPastPickup => pickupDateTime.isBefore(
+    DateTime.now().subtract(const Duration(minutes: 5)),
+  );
+
   String get pickupLocation => from.address;
   String get dropoffLocation => to.address;
   DateTime get pickupTime => pickupDateTime;

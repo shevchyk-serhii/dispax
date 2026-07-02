@@ -745,6 +745,11 @@ class _DriverScheduleDropTarget extends StatelessWidget {
               ..sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
 
         final rideCount = driverRides.length;
+        // Only rides whose pickup time is still ahead can be bulk-reassigned —
+        // the backend rejects reassigning a past ride (past_ride).
+        final reassignableRides = driverRides
+            .where((r) => !r.isPastPickup)
+            .toList();
         final loadColor = rideCount == 0
             ? AppColors.success
             : rideCount <= 2
@@ -835,7 +840,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (rideCount > 0)
+                            if (reassignableRides.isNotEmpty)
                               GestureDetector(
                                 onTap: () {
                                   showAdaptiveDialog(
@@ -846,7 +851,7 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                         scheduleDay,
                                         driverNames,
                                       ),
-                                      rides: driverRides,
+                                      rides: reassignableRides,
                                     ),
                                   );
                                 },
@@ -937,7 +942,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  if (ride.status == RideStatus.assigned)
+                                  // Past rides are excluded: the backend
+                                  // rejects reassigning them (past_ride).
+                                  if (ride.status == RideStatus.assigned &&
+                                      !ride.isPastPickup)
                                     GestureDetector(
                                       onTap: () => showReassignSheet(
                                         context,
@@ -1159,6 +1167,11 @@ class _DriverScheduleColumn extends StatelessWidget {
     List<Ride> driverRides,
   ) {
     final rideCount = driverRides.length;
+    // Only rides whose pickup time is still ahead can be bulk-reassigned —
+    // the backend rejects reassigning a past ride (past_ride).
+    final reassignableRides = driverRides
+        .where((r) => !r.isPastPickup)
+        .toList();
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -1191,7 +1204,7 @@ class _DriverScheduleColumn extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              if (rideCount > 0)
+              if (reassignableRides.isNotEmpty)
                 GestureDetector(
                   onTap: () {
                     showAdaptiveDialog(
@@ -1202,7 +1215,7 @@ class _DriverScheduleColumn extends StatelessWidget {
                           scheduleDay,
                           driverNames,
                         ),
-                        rides: driverRides,
+                        rides: reassignableRides,
                       ),
                     );
                   },
@@ -1283,7 +1296,9 @@ class _DriverScheduleColumn extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (ride.status == RideStatus.assigned)
+          // Past rides are excluded: the backend rejects reassigning them
+          // (past_ride).
+          if (ride.status == RideStatus.assigned && !ride.isPastPickup)
             GestureDetector(
               onTap: () => showReassignSheet(context, ride, driverNames),
               child: Padding(
