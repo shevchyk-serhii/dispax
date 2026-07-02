@@ -128,6 +128,12 @@ output "cloudrun_sa_email" {
   value = google_service_account.cloudrun_sa.email # Потрібен модулю cloud_run
 }
 
+output "cloudrun_sa_name" {
+  # Повне ім'я SA (projects/.../serviceAccounts/...) — потрібен модулю scheduler
+  # для actAs-біндингу (оновлення сервіса який працює від цього SA).
+  value = google_service_account.cloudrun_sa.name
+}
+
 output "github_sa_email" {
   value = google_service_account.github_sa.email # Вказується в GitHub Actions змінній WIF_SERVICE_ACCOUNT
 }

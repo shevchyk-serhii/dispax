@@ -2,7 +2,6 @@ package com.shevchyk.core.repository
 
 import com.shevchyk.core.domain.*
 import zio.*
-import java.util.UUID
 
 trait RidePoolRepository:
   def create(pool: RidePool): Task[RidePool]

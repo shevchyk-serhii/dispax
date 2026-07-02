@@ -1,4 +1,4 @@
-.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-integration test-bdd test-bdd-port test-all clean rebuild \
+.PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-watch test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything test-everything-parallel test-all-parallel-clean clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -18,6 +18,11 @@ GCP_REGION := europe-west1
 GCP_SERVICE := dispax
 GCP_IMAGE := europe-west1-docker.pkg.dev/$(GCP_PROJECT)/dispax-docker/dispax-server:latest
 FLUTTER_DIR    := web
+# Build number for production app builds, derived from git so it auto-increments
+# every commit (App Store / Play require a strictly increasing build number).
+# `git rev-list --count HEAD` = total commits on the current branch. Override:
+# `make flutter-prod-android FLUTTER_BUILD_NUMBER=123`.
+FLUTTER_BUILD_NUMBER ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 1)
 # Mapbox public token (geocoding/address autocomplete + maps SDK). Read from
 # .env.dev and passed to every `flutter run`/`build` via --dart-define so the
 # in-app MapboxService.suggestAddresses/geocodeAddress actually work. Override
@@ -107,6 +112,76 @@ test-bdd:
 test-bdd-port:
 	PORT=$(or $(PORT),8090) sbt cucumber
 
+# Run the BDD suite as 3 PARALLEL shards (CucumberShard1/2/3Runner), faster than
+# the sequential `sbt cucumber`. Each shard runs the full @CucumberOptions suite
+# over its third of the feature files (balanced ~114 scenarios each).
+#
+# Why git worktrees: each shard needs its OWN sbt process (boot lock) AND its OWN
+# TestApplication on its OWN port (the shared in-memory server is a singleton, so
+# two shards in one JVM would collide). Two sbt processes in the SAME directory
+# also race on the project server socket. A worktree per shard gives each its own
+# project dir + sbt + server on ports 8101/8102/8103 — full state isolation, no
+# races. The worktrees are checked out at HEAD, so COMMIT the shard runners (and
+# any feature changes) before running this. `CucumberShardCoverageSpec` guards
+# that the shards together cover every .feature file.
+#
+# IMPORTANT — the worktrees are PERSISTENT and reused between runs: a fresh
+# worktree recompiles the whole project, which is ~3x SLOWER than `sbt cucumber`.
+# Reusing them means sbt only does incremental compilation, so the second run on
+# pre-warmed worktrees is the fast one (~40s vs ~67s sequential). The first run
+# pays the one-time compile in each worktree. Each run resets the worktree to the
+# current HEAD (discarding stray changes) so the shards always match committed
+# code. Run `make test-bdd-parallel-clean` to delete the worktrees.
+#
+# Critical: compilation and the parallel test phase must NOT overlap. Each shard
+# forks its own TestApplication, and if three worktrees are still compiling while
+# the servers try to bind, the machine is so saturated that a server takes minutes
+# to come up — past ANY sane readiness budget (observed >195s even with a 90s
+# budget). So the target compiles each worktree SEQUENTIALLY first (machine not
+# saturated), then runs the three shards in parallel against already-built classes,
+# where the server binds quickly. BDD_SERVER_STARTUP_MS=45s is a safety margin over
+# the 15s default for the still-somewhat-loaded parallel phase.
+#
+# Exit code is the OR of the three shards: any shard failure fails the target.
+BDD_SHARD_BASE := ../dispax-bdd-shard
+test-bdd-parallel:
+	@echo "🧪 Running BDD as 3 parallel shards (persistent worktrees)..."
+	@HEAD=$$(git rev-parse HEAD) ; STATUS=0 ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; \
+	  if [ -d "$$wt" ] && git -C "$$wt" rev-parse --git-dir >/dev/null 2>&1 ; then \
+	    git -C "$$wt" reset --hard $$HEAD >/dev/null 2>&1 || { echo "❌ reset failed for shard $$n"; exit 1; } ; \
+	  else \
+	    rm -rf "$$wt" ; git worktree prune ; \
+	    git worktree add --detach "$$wt" $$HEAD >/dev/null 2>&1 || { echo "❌ worktree add failed for shard $$n"; exit 1; } ; \
+	  fi ; \
+	done ; \
+	echo "⏳ Compiling shards sequentially (so the parallel test phase isn't starved)..." ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; \
+	  ( cd $$wt && sbt "root/Test/compile" > $$wt/compile.log 2>&1 ) || { echo "❌ compile failed for shard $$n (see $$wt/compile.log)"; exit 1; } ; \
+	  echo "  ✓ shard $$n compiled" ; \
+	done ; \
+	echo "🚀 Running shards in parallel..." ; \
+	pids="" ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; port=$$((8100 + n)) ; \
+	  ( cd $$wt && BDD_SERVER_STARTUP_MS=45000 PORT=$$port sbt "root/testOnly *CucumberShard$${n}Runner" > $$wt/shard.log 2>&1 ) & \
+	  pids="$$pids $$!" ; \
+	done ; \
+	for pid in $$pids; do wait $$pid || STATUS=1 ; done ; \
+	for n in 1 2 3; do \
+	  wt=$(BDD_SHARD_BASE)-$$n ; \
+	  echo "── shard $$n ──" ; grep -E 'Passed: Total [0-9]+, Failed [0-9]|FAILED|Error' $$wt/shard.log | tail -1 || true ; \
+	done ; \
+	if [ $$STATUS -eq 0 ]; then echo "✅ test-bdd-parallel: all shards passed." ; else echo "❌ test-bdd-parallel: a shard FAILED (see the shard.log in each worktree)." ; fi ; \
+	exit $$STATUS
+
+# Delete the persistent BDD shard worktrees created by `test-bdd-parallel`.
+test-bdd-parallel-clean:
+	@for n in 1 2 3; do git worktree remove --force $(BDD_SHARD_BASE)-$$n 2>/dev/null || true ; rm -rf $(BDD_SHARD_BASE)-$$n ; done ; \
+	git worktree prune ; echo "🧹 BDD shard worktrees removed."
+
 # Run all unit + integration tests (excludes Cucumber)
 test:
 	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test"
@@ -132,6 +207,24 @@ test-unit:
 	     schedule/testOnly * -- -ignore-tags integration; \
 	     billing/testOnly * -- -ignore-tags integration; \
 	     root/testOnly *Spec -- -ignore-tags integration"
+
+# ── INNER-LOOP WATCH ─────────────────────────────────────────────────────────
+# Keep ONE live sbt session open and re-run the fast unit tests on every file
+# save — no per-run JVM boot + compile-check (~7s each `make test-unit`), so an
+# incremental edit→test cycle is seconds. `~` is sbt continuous mode (watches
+# sources, recompiles incrementally), `testQuick` runs only tests affected by the
+# change (or previously failing), and `-ignore-tags integration` keeps it to the
+# in-memory unit tier (no Docker/Postgres). Ctrl-C stops watching; pressing Enter
+# returns to the sbt prompt. Use this while developing; run `make test` (unit +
+# integration) before merging. Scope to one module: `make test-watch MOD=ride`.
+MOD ?=
+test-watch:
+	@echo "👀 Watching sources — fast unit tests re-run on save (Ctrl-C to stop)..."
+ifeq ($(strip $(MOD)),)
+	sbt "~ Test/testQuick * -- -ignore-tags integration"
+else
+	sbt "~ $(MOD)/Test/testQuick * -- -ignore-tags integration"
+endif
 
 # Scala unit tests + Flutter (web) unit/widget tests. The Flutter suite lives in
 # web/test (no IntegrationTestWidgetsFlutterBinding, no network) — distinct from
@@ -248,6 +341,7 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_neg_superadmin_company e2e_neg_emergency_reassign \
               e2e_neg_create_ride_fields e2e_neg_tenant_isolation \
               e2e_neg_tenant_dispatcher e2e_neg_driver_access e2e_neg_secretary_access \
+              e2e_secretary_create_ride e2e_driver_confirm \
               e2e_two_dispatchers_assign_race e2e_two_dispatchers_handoff_visibility \
               e2e_two_dispatchers_reassign e2e_dispatcher_assign_conflict_override \
               e2e_dispatcher_self_conflict e2e_ws_dispatcher_status_live
@@ -397,6 +491,87 @@ test-all:
 	@echo "▶ Running Cucumber BDD tests..."
 	sbt cucumber
 
+# Run ABSOLUTELY EVERYTHING that gates CI: the whole backend (unit + integration
+# via Testcontainers + the api ZIO specs), Cucumber BDD, and the full Flutter
+# unit/widget suite. Requires Docker for the integration/BDD tiers.
+#
+# Each tier runs even if an earlier one fails, so one command gives the complete
+# picture; the target exits non-zero if any tier failed.
+#
+# NOT included: the Patrol / live-backend e2e suites (make e2e-test, e2e-fast,
+# flutter-test-integration, e2e-notif-http, e2e-ride-rules). Those need a booted
+# Android emulator / iOS sim and the test backend on $(TEST_PORT), are gated on a
+# device toolchain, and don't gate CI — run them explicitly when needed.
+test-everything:
+	@echo "════════════════════════════════════════════════════════"
+	@echo " Running ALL gating tests: backend + BDD + Flutter"
+	@echo "════════════════════════════════════════════════════════"
+	@STATUS=0 ; \
+	echo "▶ [1/3] Backend unit + integration (Scala/ZIO, Testcontainers)..." ; \
+	sbt "core/test; auth/test; ride/test; driver/test; notification/test; schedule/test; billing/test; root/testOnly *Spec" || STATUS=1 ; \
+	echo "▶ [2/3] Cucumber BDD scenarios..." ; \
+	sbt cucumber || STATUS=1 ; \
+	echo "▶ [3/3] Flutter unit/widget suite..." ; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) test test/ ) || STATUS=1 ; \
+	echo "════════════════════════════════════════════════════════" ; \
+	if [ $$STATUS -eq 0 ]; then \
+	  echo "✅ test-everything: ALL tiers passed." ; \
+	else \
+	  echo "❌ test-everything: one or more tiers FAILED (see output above)." ; \
+	fi ; \
+	exit $$STATUS
+
+# PARALLEL variant of test-everything: runs the unit, integration and BDD tiers
+# in THREE separate git worktrees plus the Flutter suite, all at once, instead of
+# the four sequential phases above. Wall time ~200s (warm) vs the sequential run.
+#
+# Why worktrees: unit, integration and BDD all live in the same sbt project, and
+# two sbt processes in one directory race on the boot/server lock — so each tier
+# needs its own project dir. Integration uses the shared reusable Postgres
+# container, serialised by the in-DB advisory lock, so it's safe alongside the
+# others. BDD owns port 8090 (not 8080) so it never collides with `make dev`.
+#
+# IMPORTANT — worktrees are PERSISTENT and reused (incremental compile). The FIRST
+# run compiles the whole project in each worktree (~3x slower than sequential);
+# the speedup is on subsequent runs. Run `make test-all-parallel-clean` to remove
+# them. Under heavy parallel load the in-memory BDD server takes longer to start,
+# so BDD_SERVER_STARTUP_MS lifts the readiness budget (default 15s, here 90s).
+#
+# Exit code is the OR of all four tiers. This is an OPTIONAL fast path; the
+# sequential `make test-everything` remains the canonical gate.
+TAP_BASE := ../dispax-tap
+test-everything-parallel:
+	@echo "🧪 ALL tiers in parallel: unit | integration | BDD | Flutter (worktree-isolated)..."
+	@HEAD=$$(git rev-parse HEAD) ; STATUS=0 ; \
+	for t in unit int bdd; do \
+	  wt=$(TAP_BASE)-$$t ; \
+	  if [ -d "$$wt" ] && git -C "$$wt" rev-parse --git-dir >/dev/null 2>&1 ; then \
+	    git -C "$$wt" reset --hard $$HEAD >/dev/null 2>&1 || { echo "❌ reset failed for $$t"; exit 1; } ; \
+	  else \
+	    rm -rf "$$wt" ; git worktree prune ; \
+	    git worktree add --detach "$$wt" $$HEAD >/dev/null 2>&1 || { echo "❌ worktree add failed for $$t"; exit 1; } ; \
+	  fi ; \
+	done ; \
+	( cd $(TAP_BASE)-unit && sbt "core/testOnly * -- -ignore-tags integration; auth/testOnly * -- -ignore-tags integration; ride/testOnly * -- -ignore-tags integration; driver/testOnly * -- -ignore-tags integration; notification/testOnly * -- -ignore-tags integration; schedule/testOnly * -- -ignore-tags integration; billing/testOnly * -- -ignore-tags integration; root/testOnly *Spec -- -ignore-tags integration" > $(TAP_BASE)-unit/tier.log 2>&1 ) & P_UNIT=$$! ; \
+	( cd $(TAP_BASE)-int && sbt "core/testOnly * -- -tags integration; auth/testOnly * -- -tags integration; ride/testOnly * -- -tags integration; driver/testOnly * -- -tags integration; notification/testOnly * -- -tags integration; schedule/testOnly * -- -tags integration; billing/testOnly * -- -tags integration" > $(TAP_BASE)-int/tier.log 2>&1 ) & P_INT=$$! ; \
+	( cd $(TAP_BASE)-bdd && BDD_SERVER_STARTUP_MS=90000 PORT=8090 sbt cucumber > $(TAP_BASE)-bdd/tier.log 2>&1 ) & P_BDD=$$! ; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) test test/ > /tmp/dispax-tap-flutter.log 2>&1 ) & P_FLU=$$! ; \
+	wait $$P_UNIT || STATUS=1 ; echo "  ✓ unit tier finished" ; \
+	wait $$P_INT  || STATUS=1 ; echo "  ✓ integration tier finished" ; \
+	wait $$P_BDD  || STATUS=1 ; echo "  ✓ BDD tier finished" ; \
+	wait $$P_FLU  || STATUS=1 ; echo "  ✓ Flutter tier finished" ; \
+	echo "── unit ──" ;        grep -E 'tests failed' $(TAP_BASE)-unit/tier.log | grep -vE '0 tests failed' | head -3 || true ; grep -cE '0 tests failed' $(TAP_BASE)-unit/tier.log | sed 's/^/   modules green: /' ; \
+	echo "── integration ──" ; grep -E 'tests failed' $(TAP_BASE)-int/tier.log | grep -vE '0 tests failed' | head -3 || true ; grep -cE '0 tests failed' $(TAP_BASE)-int/tier.log | sed 's/^/   modules green: /' ; \
+	echo "── BDD ──" ;         grep -E 'Passed: Total [0-9]+, Failed [0-9]' $(TAP_BASE)-bdd/tier.log | tail -1 || true ; \
+	echo "── Flutter ──" ;     grep -E 'All tests passed|[0-9]+ failed' /tmp/dispax-tap-flutter.log | tail -1 || true ; \
+	if [ $$STATUS -eq 0 ]; then echo "✅ test-everything-parallel: ALL tiers passed." ; else echo "❌ test-everything-parallel: a tier FAILED (see tier.log in each ../dispax-tap-* worktree)." ; fi ; \
+	exit $$STATUS
+
+# Delete the persistent worktrees created by `test-everything-parallel`.
+test-all-parallel-clean:
+	@for t in unit int bdd; do git worktree remove --force $(TAP_BASE)-$$t 2>/dev/null || true ; rm -rf $(TAP_BASE)-$$t ; done ; \
+	git worktree prune ; echo "🧹 test-all-parallel worktrees removed."
+
 # Format all Scala + Dart code. Dart is rewritten first via $(DART) (FVM-pinned
 # to web/.fvmrc 3.44.2 when FVM is installed, matching CI), then `sbt fmtAll`
 # runs scalafmt and re-checks Dart with the same binary (DART_BIN) so a CI/local
@@ -428,14 +603,27 @@ load-test:
 
 # ─── Deploy ─────────────────────────────────────────────────────────────────
 
-# Build and push Docker image, then deploy to Cloud Run
+# Build and push Docker image, then deploy to Cloud Run.
+#
+# --update-env-vars (not --set-env-vars) merges values in without wiping the
+# service's other env (DATABASE_URL, JWT_SECRET, …):
+#   PUBLIC_BASE_URL — base for absolute guest tracking links (<base>/track/<token>)
+#
+# MAPBOX_ACCESS_TOKEN is deliberately NOT set here: in prod it is a Secret Manager
+# reference (valueFrom.secretKeyRef). Passing it as a literal via --update-env-vars
+# fails — Cloud Run rejects changing an env var from a secret to a string literal
+# ("Cannot update environment variable [MAPBOX_ACCESS_TOKEN] to string literal …").
+# The token is managed out-of-band (gcloud run services update --update-secrets),
+# so the deploy must leave it untouched. (.env.dev still feeds MAPBOX_ACCESS_TOKEN
+# to the local `flutter-dev*` targets below.)
 deploy:
 	sbt assembly
 	docker buildx build --platform linux/amd64 --provenance=false --sbom=false -t $(GCP_IMAGE) --push .
 	gcloud run services update $(GCP_SERVICE) \
 		--project $(GCP_PROJECT) \
 		--region $(GCP_REGION) \
-		--image $(GCP_IMAGE)
+		--image $(GCP_IMAGE) \
+		--update-env-vars "PUBLIC_BASE_URL=$(PROD_URL)"
 	@echo "✅ Deployed to $(PROD_URL)"
 
 # Tail Cloud Run logs
@@ -483,6 +671,7 @@ flutter-prod:
 # Build Android APK for production
 flutter-prod-android:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build apk --release \
+		--build-number=$(FLUTTER_BUILD_NUMBER) \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ APK: $(FLUTTER_DIR)/build/app/outputs/flutter-apk/app-release.apk"
@@ -491,6 +680,7 @@ flutter-prod-android:
 # signing identity / provisioning profile in Xcode.
 flutter-prod-ios:
 	cd $(FLUTTER_DIR) && $(FLUTTER) build ipa --release \
+		--build-number=$(FLUTTER_BUILD_NUMBER) \
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ IPA: $(FLUTTER_DIR)/build/ios/ipa/"
@@ -517,6 +707,21 @@ flutter-dev-sergii:
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) & \
 	wait
 
+# Shell snippet: free :8080 (forked-JVM-proof, by port) + terminate the app on
+# every booted simulator. Reused by the dev-* targets' Ctrl-C trap. Mirrors stop-dev.
+# The backend started by the dev-* targets is a FORKED JVM (java … com.shevchyk…),
+# so it must be killed by PORT via lsof, not by the "sbt run" command line.
+define DEV_CLEANUP_BODY
+echo ""; \
+echo "🧹 Ctrl-C — stopping backend on :8080 and app on simulators..."; \
+pids=$$(lsof -ti tcp:8080 2>/dev/null); \
+if [ -n "$$pids" ]; then echo "$$pids" | xargs kill -9 2>/dev/null || true; fi; \
+for udid in $$(xcrun simctl list devices booted -j 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print('\n'.join(x['udid'] for rt in d['devices'].values() for x in rt))" 2>/dev/null); do \
+	xcrun simctl terminate "$$udid" $(APP_BUNDLE_ID) 2>/dev/null || true; \
+done; \
+echo "✅ Stopped"
+endef
+
 # Kill whatever is listening on :8080 so a stale backend never causes
 # "bind(..) failed: Address already in use". Used as a prerequisite by dev-all/dev-sim.
 free-port:
@@ -531,18 +736,25 @@ free-port:
 # Hot reload Flutter: press 'r' in each flutter process terminal
 # To restart backend after Scala changes: make stop-dev && make dev-all
 dev-all: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@echo "🚀 Starting Flutter on both devices"
-	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	echo "🚀 Starting Flutter on both devices"; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_IPHONE_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) & \
-	cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ) & \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(FLUTTER_DEVICE_ANDROID_SERGII) \
 		--dart-define=API_BASE_URL=http://$(MAC_IP):8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) & \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ) & \
 	wait
 
 # Start local backend + Flutter on the booted iOS simulator in one command.
@@ -550,15 +762,22 @@ dev-all: free-port
 # 127.0.0.1 (most reliable — no LAN/WiFi dependency). Override the simulator
 # with `make dev-sim IOS_SIM=<udid>`. Stop everything with `make stop-dev`.
 dev-sim: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"
-	@cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	echo "🚀 Starting Flutter on iOS simulator $(IOS_SIM)"; \
+	( cd $(FLUTTER_DIR) && $(FLUTTER) run -d $(IOS_SIM) \
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
-		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) )
 
 # Start local backend + the app on THREE dedicated iPhone 17 Pro Max simulators
 # at once (client / driver / dispatcher) so all roles can be tested side by side
@@ -579,12 +798,19 @@ dev-sim: free-port
 # Builds are sequential (Flutter shares one build dir); the simulators stay
 # booted between runs so re-running is faster. Stop with `make stop-dev`.
 dev-roles: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@ensure_sim() { \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	ensure_sim() { \
 		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
 		if [ -z "$$udid" ]; then \
@@ -609,10 +835,10 @@ dev-roles: free-port
 		xcrun simctl install "$$udid" "$$APP"; \
 		xcrun simctl launch --terminate-running-process "$$udid" $(APP_BUNDLE_ID); \
 	done; \
-	open -a Simulator
-	@echo "✅ App running on 3 named simulators, each auto-logged-in to its role."
-	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
-	@wait
+	open -a Simulator; \
+	echo "✅ App running on 3 named simulators, each auto-logged-in to its role."; \
+	echo "   Ctrl-C here stops the backend AND the apps; or run 'make stop-dev'."; \
+	wait $$SBT_PID
 
 # Start local backend + the app on THREE iPhone 17 Pro Max simulators, each
 # auto-logged-in as a DIFFERENT dispatcher of the SAME company (Dispax München):
@@ -629,12 +855,19 @@ dev-roles: free-port
 # The accounts are seeded in V10__seed_bootstrap_accounts.sql; the DEV_AUTOLOGIN
 # keys dispatcher1/2/3 map to their emails in main.dart. Stop with `make stop-dev`.
 dev-dispatchers: free-port
-	@export $$(cat .env.dev | grep -v '^#' | xargs) && sbt run &
-	@echo "⏳ Waiting for backend on :8080..."
-	@until curl -sf http://localhost:8080/health > /dev/null; do sleep 1; done
-	@echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."
-	@sleep $(FLUTTER_STARTUP_DELAY)
-	@APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
+	@export $$(cat .env.dev | grep -v '^#' | xargs) && \
+	cleanup() { $(DEV_CLEANUP_BODY); }; \
+	trap 'cleanup; exit 130' INT TERM; \
+	sbt run & \
+	SBT_PID=$$!; \
+	echo "⏳ Waiting for backend on :8080..."; \
+	until curl -sf http://localhost:8080/health > /dev/null; do \
+		if ! kill -0 $$SBT_PID 2>/dev/null; then echo "❌ Backend exited before becoming healthy"; cleanup; exit 1; fi; \
+		sleep 1; \
+	done; \
+	echo "✅ Backend health OK — buffering $(FLUTTER_STARTUP_DELAY)s for migrations/layers..."; \
+	sleep $(FLUTTER_STARTUP_DELAY); \
+	APP="$(FLUTTER_DIR)/build/ios/iphonesimulator/Runner.app"; \
 	ensure_sim() { \
 		local name="$$1"; local udid; \
 		udid=$$(xcrun simctl list devices --json 2>/dev/null | python3 -c "import sys,json; n=sys.argv[1]; t='$(SIM_DEVICE_TYPE)'; d=json.load(sys.stdin); print(next((x['udid'] for rt in d['devices'].values() for x in rt if x['name']==n and x.get('deviceTypeIdentifier')==t), ''))" "$$name"); \
@@ -660,14 +893,14 @@ dev-dispatchers: free-port
 		--dart-define=API_BASE_URL=http://127.0.0.1:8080/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ); \
 	echo "📲 Booting + launching 3 simulators in parallel..."; \
-	launch_role "$(SIM_NAME_DISPATCHER_IRYNA)"  dispatcher1 "$$APP" & \
-	launch_role "$(SIM_NAME_DISPATCHER_YILMAZ)" dispatcher2 "$$APP" & \
-	launch_role "$(SIM_NAME_DISPATCHER_SERHII)" dispatcher3 "$$APP" & \
-	wait; \
-	open -a Simulator
-	@echo "✅ App running on 3 named simulators, each auto-logged-in as a different dispatcher (Iryna / Yilmaz / Serhii)."
-	@echo "   Backend (sbt run) stays in the foreground — Ctrl-C here stops it; or run 'make stop-dev'."
-	@wait
+	launch_role "$(SIM_NAME_DISPATCHER_IRYNA)"  dispatcher1 "$$APP" & L1=$$!; \
+	launch_role "$(SIM_NAME_DISPATCHER_YILMAZ)" dispatcher2 "$$APP" & L2=$$!; \
+	launch_role "$(SIM_NAME_DISPATCHER_SERHII)" dispatcher3 "$$APP" & L3=$$!; \
+	wait $$L1 $$L2 $$L3; \
+	open -a Simulator; \
+	echo "✅ App running on 3 named simulators, each auto-logged-in as a different dispatcher (Iryna / Yilmaz / Serhii)."; \
+	echo "   Ctrl-C here stops the backend AND the apps; or run 'make stop-dev'."; \
+	wait $$SBT_PID
 
 # Kill all dev processes started by the dev-* targets.
 #  - `pkill "sbt run"` kills the sbt launcher, but the backend itself is a FORKED

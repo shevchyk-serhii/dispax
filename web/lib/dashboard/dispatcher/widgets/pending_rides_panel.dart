@@ -6,6 +6,16 @@ import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
+import '../../../modules/core/services/api_client.dart'
+    show ScheduleConflictInfo;
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/widgets/avatar_circle.dart';
+import '../../../modules/core/navigation_utils.dart';
+import '../../../modules/core/widgets/error_widget.dart';
+import '../../../modules/ride_management/helpers/airport_detection.dart';
+import '../../../modules/ride_management/helpers/conflict_dialog_text.dart';
+import '../../../modules/ride_management/helpers/tag_helpers.dart';
+import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
@@ -13,11 +23,13 @@ import '../../../screens/ride_details_screen.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../utils/conflict_detector.dart';
 import '../../../widgets/common/cancel_ride_dialog.dart';
 import '../../../widgets/common/notification_bell.dart';
 import '../../../widgets/common/hand_off_ride_dialog.dart';
+import '../../../modules/flight_management/widgets/flight_progress_bar.dart';
 import 'assignment_dialog.dart';
 import 'eta_alert_card.dart';
 
@@ -45,8 +57,13 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
   _SortMode _sortMode = _SortMode.timeAsc;
   _FilterMode _filterMode = _FilterMode.all;
   String _searchQuery = '';
+  // Active tag filter (null = no tag filter). Tags are dynamic, so they live
+  // outside _FilterMode (a single enum value can't represent N tags).
+  String? _selectedTag;
   int _tabIndex = 0; // 0 = Pending, 1 = Assigned
   Timer? _searchDebounce;
+  // Ride ids whose flight status is currently being manually refreshed (spinner on the row).
+  final Set<String> _refreshingFlightIds = {};
 
   /// Tracks whether the bloc was mid hand-off when the *current* state arrived,
   /// so the listener can tell a hand-off result (`handingOff -> loaded/error`)
@@ -105,9 +122,14 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
             )
             .toList();
       case _FilterMode.airport:
-        filtered = filtered.where((r) => r.isAirportTransfer).toList();
+        filtered = filtered.where(isAirportRide).toList();
       case _FilterMode.all:
         break;
+    }
+
+    final tag = _selectedTag;
+    if (tag != null) {
+      filtered = filtered.where((r) => rideHasTag(r, tag)).toList();
     }
 
     if (_searchQuery.isNotEmpty) {
@@ -160,19 +182,27 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
       },
       listener: (context, state) {
         final l10n = AppLocalizations.of(context)!;
-        if (state.hasReassignConflict) {
+        final conflictRideId = state.conflictRideId;
+        final conflictDriverId = state.conflictDriverId;
+        if (state.hasReassignConflict &&
+            conflictRideId != null &&
+            conflictDriverId != null) {
           _showReassignConflictDialog(
             context,
-            rideId: state.conflictRideId!,
-            driverId: state.conflictDriverId!,
+            rideId: conflictRideId,
+            driverId: conflictDriverId,
             message: state.errorMessage,
+            conflict: state.conflictInfo,
           );
-        } else if (state.hasAssignConflict) {
+        } else if (state.hasAssignConflict &&
+            conflictRideId != null &&
+            conflictDriverId != null) {
           _showAssignConflictDialog(
             context,
-            rideId: state.conflictRideId!,
-            driverId: state.conflictDriverId!,
+            rideId: conflictRideId,
+            driverId: conflictDriverId,
             message: state.errorMessage,
+            conflict: state.conflictInfo,
           );
         } else if (state.isAlreadyAssigned) {
           // Stale dispatcher view: the ride was already taken by someone else.
@@ -261,6 +291,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String rideId,
     required String driverId,
     String? message,
+    ScheduleConflictInfo? conflict,
   }) {
     final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
@@ -269,9 +300,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
         title: Text(l10n.assignAnywayTitle),
         content: Text(
-          message ??
-              'The selected driver already has a ride at this time. '
-                  'Assign anyway?',
+          scheduleConflictDialogBody(l10n, info: conflict, message: message),
         ),
         actions: [
           TextButton(
@@ -302,6 +331,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     required String rideId,
     required String driverId,
     String? message,
+    ScheduleConflictInfo? conflict,
   }) {
     final l10n = AppLocalizations.of(context)!;
     showAdaptiveDialog(
@@ -310,9 +340,7 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
         title: Text(l10n.assignAnywayTitle),
         content: Text(
-          message ??
-              'The selected driver already has a ride at this time. '
-                  'Reassign anyway?',
+          scheduleConflictDialogBody(l10n, info: conflict, message: message),
         ),
         actions: [
           TextButton(
@@ -364,13 +392,34 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         Expanded(
           child: BlocBuilder<RideBloc, RideState>(
             buildWhen: (prev, curr) =>
-                prev.rides != curr.rides || prev.isLoading != curr.isLoading,
+                prev.rides != curr.rides ||
+                prev.isLoading != curr.isLoading ||
+                prev.status != curr.status,
             builder: (context, state) {
               if (state.isLoading) {
                 return Center(child: CircularProgressIndicator.adaptive());
               }
 
               final rides = _applyFiltersAndSort(state.rides);
+
+              // A load failure must NOT masquerade as an empty list. Without
+              // this branch the panel fell through to `_buildEmptyState()` and
+              // showed a green "No rides" check on a timeout — hiding the error
+              // and offering no way to retry.
+              if (state.hasError && rides.isEmpty) {
+                final l10n = AppLocalizations.of(context)!;
+                return ErrorDisplayWidget(
+                  title: l10n.failedToLoadRides,
+                  message: friendlyError(
+                    state.error ?? state.errorMessage,
+                    l10n,
+                  ),
+                  onRetry: () => context.read<RideBloc>().add(
+                    const RideLoadPendingRequested(),
+                  ),
+                  retryLabel: l10n.retry,
+                );
+              }
 
               if (rides.isEmpty) {
                 return _buildEmptyState();
@@ -420,6 +469,13 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                               ),
                         isReassign: !isHandedOff,
                         onViewDetails: () => _openRideDetails(context, ride),
+                        onDuplicate: () =>
+                            NavigationUtils.duplicateRide(context, ride),
+                        onRefreshFlight: () =>
+                            _refreshFlightStatus(context, ride),
+                        isRefreshingFlight: _refreshingFlightIds.contains(
+                          ride.id,
+                        ),
                       );
                     }
                     return Draggable<Ride>(
@@ -459,6 +515,13 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                           onClose: () => _showCloseRideDialog(context, ride),
                           onHandOff: () => _showHandOffDialog(context, ride),
                           onViewDetails: () => _openRideDetails(context, ride),
+                          onDuplicate: () =>
+                              NavigationUtils.duplicateRide(context, ride),
+                          onRefreshFlight: () =>
+                              _refreshFlightStatus(context, ride),
+                          isRefreshingFlight: _refreshingFlightIds.contains(
+                            ride.id,
+                          ),
                         ),
                       ),
                     );
@@ -588,11 +651,11 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
           const SizedBox(height: 6),
           Row(
             children: [
-              _buildFilterChip('All', _FilterMode.all),
+              _buildFilterChip(l10n.all, _FilterMode.all),
               const SizedBox(width: 6),
-              _buildFilterChip('Today', _FilterMode.today),
+              _buildFilterChip(l10n.today, _FilterMode.today),
               const SizedBox(width: 6),
-              _buildFilterChip('Airport', _FilterMode.airport),
+              _buildFilterChip(l10n.airport, _FilterMode.airport),
               const Spacer(),
               PopupMenuButton<_SortMode>(
                 icon: Icon(
@@ -640,8 +703,83 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
               ),
             ],
           ),
+          _buildTagFilterRow(),
         ],
       ),
+    );
+  }
+
+  /// A horizontally-scrollable row of tag chips built from the distinct tags
+  /// across the currently-loaded rides. Selecting one filters the list; tapping
+  /// the active one clears the filter. Hidden entirely when no ride has a tag.
+  Widget _buildTagFilterRow() {
+    return BlocBuilder<RideBloc, RideState>(
+      buildWhen: (prev, curr) => prev.rides != curr.rides,
+      builder: (context, state) {
+        final tags = distinctTagsFromRides(state.rides);
+        if (tags.isEmpty) {
+          // Drop a stale selection if the tag no longer exists on any ride.
+          if (_selectedTag != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _selectedTag = null);
+            });
+          }
+          return const SizedBox.shrink();
+        }
+        final colorScheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: SizedBox(
+            height: 30,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: tags.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final tag = tags[i];
+                final selected = _selectedTag == tag;
+                return GestureDetector(
+                  onTap: () =>
+                      setState(() => _selectedTag = selected ? null : tag),
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.label_outline,
+                          size: 13,
+                          color: selected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          tag,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: selected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -780,6 +918,44 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         .then((_) {
           if (mounted) rideBloc.add(const RideLoadPendingRequested());
         });
+  }
+
+  /// Manual on-demand flight-status refresh for a pending row (same backend path as the
+  /// 5-minute monitor). Patches ONLY the flight fields via copyWith — replacing the whole
+  /// ride would de-enrich the shared RideBloc copy and blank driverName/eta/etc on the
+  /// cards. Pushes RideUpdated so the BlocBuilder rebuilds the row with the fresh status.
+  Future<void> _refreshFlightStatus(BuildContext context, Ride ride) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final rideBloc = context.read<RideBloc>();
+    final service = RideService(apiClient: context.read<AuthBloc>().apiClient);
+    setState(() => _refreshingFlightIds.add(ride.id));
+    try {
+      final result = await service.refreshFlightStatus(ride.id);
+      if (!mounted) return;
+      final patched = ride.withFlightFrom(result.ride);
+      rideBloc.add(RideUpdated(ride: patched));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(switch (result.outcome) {
+            'updated' => l10n.flightStatusRefreshed,
+            'notFound' => l10n.flightNotFoundYet,
+            _ => l10n.flightStatusUnchanged,
+          }),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.failedToRefreshFlightStatus),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _refreshingFlightIds.remove(ride.id));
+    }
   }
 
   void _showCloseRideDialog(BuildContext context, Ride ride) {
@@ -930,6 +1106,15 @@ class _RideRow extends StatelessWidget {
   /// ride details screen, from which the ride can be edited.
   final VoidCallback? onViewDetails;
 
+  /// Called when the dispatcher taps "Duplicate" — opens the create-ride form
+  /// pre-filled from this ride. Available for any status.
+  final VoidCallback? onDuplicate;
+
+  /// Manual "refresh flight status now" action on the flight line. Null hides the
+  /// button; the parent panel holds the loading state and passes [isRefreshingFlight].
+  final VoidCallback? onRefreshFlight;
+  final bool isRefreshingFlight;
+
   const _RideRow({
     super.key,
     required this.ride,
@@ -940,6 +1125,9 @@ class _RideRow extends StatelessWidget {
     this.onClose,
     this.onHandOff,
     this.onViewDetails,
+    this.onDuplicate,
+    this.onRefreshFlight,
+    this.isRefreshingFlight = false,
   });
 
   @override
@@ -1004,7 +1192,7 @@ class _RideRow extends StatelessWidget {
                 const Spacer(),
                 if (ride.price != null)
                   Text(
-                    '€${ride.price!.toStringAsFixed(2)}',
+                    '€${ride.price?.toStringAsFixed(2) ?? ''}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -1052,15 +1240,27 @@ class _RideRow extends StatelessWidget {
               address: ride.to.address,
             ),
             const SizedBox(height: 12),
-            // Meta: time · client [· driver] [· ETA]
-            Text(
-              _buildMetaLine(),
-              style: TextStyle(
-                fontSize: 12.5,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            // Meta: client avatar + (time · client [· driver] [· ETA])
+            Row(
+              children: [
+                AvatarCircle(
+                  user: ride.client,
+                  apiClient: context.read<AuthBloc>().apiClient,
+                  radius: 12,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _buildMetaLine(),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
             // Airport / flight info
             if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
@@ -1078,7 +1278,16 @@ class _RideRow extends StatelessWidget {
                   ],
                   Expanded(
                     child: Text(
-                      ride.fullFlightInfo,
+                      () {
+                        final l10n = AppLocalizations.of(context)!;
+                        final flightInfo = l10n.fullFlightInfoLocalized(ride);
+                        final statusText = l10n.localizedFlightStatus(
+                          ride.flightStatus,
+                        );
+                        return statusText.isEmpty
+                            ? flightInfo
+                            : '$flightInfo • ${ride.flightStatusIcon} $statusText';
+                      }(),
                       style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.onSurfaceVariant,
@@ -1087,7 +1296,118 @@ class _RideRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (onRefreshFlight != null && ride.flightNumber != null)
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: isRefreshingFlight ? null : onRefreshFlight,
+                        tooltip: AppLocalizations.of(
+                          context,
+                        )!.refreshFlightStatus,
+                        icon: isRefreshingFlight
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.refresh,
+                                size: 16,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                      ),
+                    ),
                 ],
+              ),
+              // Compact flight progress stepper under the flight line.
+              Builder(
+                builder: (context) {
+                  final bar = FlightProgressBar.forRide(ride, compact: true);
+                  if (!bar.isVisible) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: bar,
+                  );
+                },
+              ),
+            ],
+            // Payment method
+            Builder(
+              builder: (context) {
+                final paymentLabel = PaymentMethod.labelForWire(
+                  ride.paymentMethod,
+                  AppLocalizations.of(context)!,
+                );
+                if (paymentLabel == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.payments_outlined,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        paymentLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            // Tags
+            if (ride.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: ride.tags
+                    .map(
+                      (tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.label_outline,
+                              size: 11,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
             ],
             // Action buttons
@@ -1153,34 +1473,71 @@ class _RideRow extends StatelessWidget {
     );
   }
 
+  /// Compact icon button that opens the create-ride form pre-filled from this
+  /// ride. Kept to a 32×32 square so it does not crowd the action row.
+  Widget _buildDuplicateButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SizedBox(
+      height: 32,
+      width: 32,
+      child: IconButton(
+        onPressed: onDuplicate,
+        padding: EdgeInsets.zero,
+        iconSize: 18,
+        tooltip: l10n.duplicateRideAction,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        icon: const Icon(Icons.copy_outlined),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (isReassign) {
-      // Soft-red "Reassign" button — full width
-      return SizedBox(
-        width: double.infinity,
-        height: 32,
-        child: OutlinedButton(
-          onPressed: onAction,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.errorStrong,
-            side: const BorderSide(color: AppColors.errorBorder),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      // Soft-red "Reassign" button — full width (with a compact Duplicate icon).
+      return Row(
+        children: [
+          if (onDuplicate != null) ...[
+            _buildDuplicateButton(context),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: SizedBox(
+              height: 32,
+              child: OutlinedButton(
+                onPressed: onAction,
+                style: OutlinedButton.styleFrom(
+                  // errorStrong (#991B1B) is invisible on the dark surface; use
+                  // the light cancelled-text variant in dark per HANDOFF.
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.rideCancelledTextDark
+                      : AppColors.errorStrong,
+                  side: const BorderSide(color: AppColors.errorBorder),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(l10n.reassign),
+              ),
             ),
           ),
-          child: const Text('Reassign'),
-        ),
+        ],
       );
     } else {
-      // Pending row: [Close] [Hand off] [Assign →]
+      // Pending row: [Duplicate] [Close] [Hand off] [Assign →]
       final colorScheme = Theme.of(context).colorScheme;
       return Row(
         children: [
+          if (onDuplicate != null) ...[
+            _buildDuplicateButton(context),
+            const SizedBox(width: 6),
+          ],
           if (onClose != null)
             SizedBox(
               height: 32,
@@ -1198,7 +1555,7 @@ class _RideRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Close'),
+                child: Text(l10n.closeRide),
               ),
             ),
           if (onClose != null && onHandOff != null) const SizedBox(width: 6),
@@ -1208,7 +1565,12 @@ class _RideRow extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onHandOff,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.rideHandedOffText,
+                  // rideHandedOffText (#7C2D12) is invisible on the dark
+                  // surface; use its existing *Dark variant per HANDOFF.
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.rideHandedOffTextDark
+                      : AppColors.rideHandedOffText,
                   side: const BorderSide(color: AppColors.rideHandedOffBorder),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   textStyle: const TextStyle(
@@ -1219,7 +1581,7 @@ class _RideRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Hand off'),
+                child: Text(l10n.handOffButton),
               ),
             ),
           if (onAction != null) ...[
@@ -1241,7 +1603,7 @@ class _RideRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Assign'),
+                  child: Text(l10n.assign),
                 ),
               ),
             ),
@@ -1254,15 +1616,27 @@ class _RideRow extends StatelessWidget {
 
   String _buildMetaLine() {
     final time = DateFormat('dd.MM HH:mm').format(ride.pickupDateTime);
-    final parts = [time, ride.clientName];
-    if (ride.driverName != null) parts.add(ride.driverName!);
+    final parts = [time, provisionalAwareClientLabel(ride)];
+    final driverName = ride.driverName;
+    if (driverName != null) parts.add(driverName);
     if (ride.etaMinutes != null) parts.add('${ride.etaMinutes} min');
-    if (ride.driverDistanceMeters != null) {
-      final km = ride.driverDistanceMeters! / 1000;
+    final driverDistanceMeters = ride.driverDistanceMeters;
+    if (driverDistanceMeters != null) {
+      final km = driverDistanceMeters / 1000;
       parts.add('${km.toStringAsFixed(1)} km');
     }
     return parts.join(' · ');
   }
+}
+
+/// Label for a ride's client in dispatcher lists. For a provisional ("from-chat") ride the placeholder
+/// client name ("Walk-in") is meaningless, so we show the route instead — matching how the driver card
+/// renders provisional rides. Real clients keep their name.
+String provisionalAwareClientLabel(Ride ride) {
+  if (ride.clientProvisional) {
+    return '${ride.from.address} → ${ride.to.address}';
+  }
+  return ride.clientName;
 }
 
 // ─── Driver Selection Sheet (unchanged business logic, restyled header) ────
@@ -1291,7 +1665,7 @@ class _DriverSelectionSheet extends StatefulWidget {
 
 class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
   List<Person>? _drivers;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -1304,12 +1678,13 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
       final drivers = await widget.userService.getDrivers();
       if (mounted) setState(() => _drivers = drivers);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.3,
@@ -1342,7 +1717,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  widget.isReassign ? 'Reassign Driver' : 'Select Driver',
+                  widget.isReassign ? l10n.reassignDriver : l10n.selectDriver,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 18,
@@ -1351,7 +1726,7 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${widget.ride.clientName} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
+                  '${provisionalAwareClientLabel(widget.ride)} — ${DateFormat('dd.MM HH:mm').format(widget.ride.pickupDateTime)}',
                   style: TextStyle(
                     color: Theme.of(
                       context,
@@ -1369,22 +1744,24 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
   }
 
   Widget _buildBody(ScrollController scrollController) {
+    final l10n = AppLocalizations.of(context)!;
     if (_error != null) {
       return Center(
         child: Text(
-          'Error: $_error',
+          friendlyError(_error, l10n),
           style: const TextStyle(color: AppColors.error),
         ),
       );
     }
-    if (_drivers == null) {
+    final loadedDrivers = _drivers;
+    if (loadedDrivers == null) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    if (_drivers!.isEmpty) {
-      return const Center(child: Text('No drivers found'));
+    if (loadedDrivers.isEmpty) {
+      return Center(child: Text(l10n.noDriversFound));
     }
 
-    final drivers = List<Person>.from(_drivers!)
+    final drivers = List<Person>.from(loadedDrivers)
       ..sort((a, b) {
         final aScheduled = widget.scheduledDriverIds.contains(a.id) ? 0 : 1;
         final bScheduled = widget.scheduledDriverIds.contains(b.id) ? 0 : 1;
@@ -1429,9 +1806,14 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
             ),
           ),
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: loadColor.withAlpha(40),
-              child: Icon(Icons.person, color: loadColor),
+            // Show the driver's profile photo when set, falling back to initials.
+            // Use the sheet's own UserService client, not context.read<AuthBloc>:
+            // this sheet is shown via showModalBottomSheet, so it lives outside
+            // the panel's BlocProvider tree and has no AuthBloc above it.
+            leading: AvatarCircle(
+              user: driver,
+              apiClient: widget.userService.privateApiClient,
+              radius: 20,
             ),
             title: Row(
               children: [
@@ -1454,9 +1836,9 @@ class _DriverSelectionSheetState extends State<_DriverSelectionSheet> {
                         color: AppColors.success.withAlpha(80),
                       ),
                     ),
-                    child: const Text(
-                      'Scheduled',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.scheduled,
+                      style: const TextStyle(
                         color: AppColors.success,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,

@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
+import '../modules/core/services/api_client.dart';
 
 class BlacklistScreen extends StatefulWidget {
   const BlacklistScreen({super.key});
@@ -16,7 +18,7 @@ class BlacklistScreen extends StatefulWidget {
 class _BlacklistScreenState extends State<BlacklistScreen> {
   List<Map<String, dynamic>> _entries = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -45,14 +47,17 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load blacklist (${resp.statusCode})';
+          _error = ApiException(
+            'Failed to load blacklist',
+            statusCode: resp.statusCode,
+          );
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -124,9 +129,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        AppLocalizations.of(
-                          context,
-                        )!.genericError(e.toString()),
+                        friendlyError(e, AppLocalizations.of(context)!),
                       ),
                     ),
                   );
@@ -173,9 +176,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.genericError(e.toString()),
-          ),
+          content: Text(friendlyError(e, AppLocalizations.of(context)!)),
         ),
       );
     }
@@ -201,7 +202,7 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(friendlyError(_error, l10n)),
                       ElevatedButton(
                         onPressed: _loadEntries,
                         child: Text(l10n.retry),

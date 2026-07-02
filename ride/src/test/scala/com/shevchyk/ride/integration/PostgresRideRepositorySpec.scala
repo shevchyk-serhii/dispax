@@ -2,9 +2,8 @@ package com.shevchyk.ride.integration
 
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.repository.PostgresPersonRepository
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{PostgresRideRepository, RideRepository}
+import com.shevchyk.ride.repository.PostgresRideRepository
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
@@ -51,7 +50,9 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
       driver: Option[PersonId] = None,
       scheduledTime: Option[Instant] = None,
       notes: Option[String] = None,
-      specifics: Option[RideSpecifics] = None
+      specifics: Option[RideSpecifics] = None,
+      paymentMethod: Option[PaymentMethod] = None,
+      tags: List[String] = Nil
   ): Ride = Ride(
     id = id,
     clientId = clientId,
@@ -65,7 +66,9 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
     scheduledTime = scheduledTime,
     requestTime = Instant.now(),
     notes = notes,
-    specifics = specifics
+    specifics = specifics,
+    paymentMethod = paymentMethod,
+    tags = tags
   )
 
   def spec =
@@ -90,18 +93,76 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.status == RideStatus.Requested
         )
       },
+      // Round-trips the new 'Payment' enum value through a real PostgreSQL column. This proves the
+      // V16 migration added the value to the payment_method type — without it the INSERT would fail.
+      test("create and findById round-trip the new Payment payment method") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide(paymentMethod = Some(PaymentMethod.Payment))
+          _     <- repo.create(ride)
+          found <- repo.findById(ride.id)
+        } yield assertTrue(
+          found.isDefined,
+          found.get.paymentMethod.contains(PaymentMethod.Payment)
+        )
+      },
       test("create with AirportTransfer specifics") {
         for {
           xa    <- ZIO.service[Transactor[Task]]
           _     <- seedTestData(xa)
           _     <- cleanRides(xa)
           repo   = PostgresRideRepository(xa)
-          ride   = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH1234")))
+          ride   = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH1234"))))
           _     <- repo.create(ride)
           found <- repo.findById(ride.id)
         } yield assertTrue(
           found.get.specifics.isDefined,
-          found.get.specifics.get == RideSpecifics.AirportTransfer("MUC", "LH1234")
+          found.get.specifics.get == RideSpecifics.AirportTransfer("MUC", Some("LH1234"))
+        )
+      },
+      // Airport transfer with NO flight number — the JSONB codec must write null and read it back as
+      // None (the only path that exercises the Circe encoder/decoder, which the in-memory double skips).
+      test("create with AirportTransfer specifics and no flight number round-trips as None") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide(specifics = Some(RideSpecifics.AirportTransfer("MUC", None, isArrival = true)))
+          _     <- repo.create(ride)
+          found <- repo.findById(ride.id)
+        } yield assertTrue(
+          found.get.specifics.contains(RideSpecifics.AirportTransfer("MUC", None, isArrival = true))
+        )
+      },
+      test("findActiveRidesInWindow returns unassigned rides and excludes finished ones") {
+        // The flight monitor relies on this to enrich even Requested (no-driver) rides,
+        // while never tracking Completed/Cancelled ones.
+        val now      = Instant.now()
+        val inWindow = now.plusSeconds(3600) // +1h, inside the [now, now+...] window
+        for {
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <- cleanRides(xa)
+          repo      = PostgresRideRepository(xa)
+          requested = makeRide(status = RideStatus.Requested).copy(pickupDateTime = inWindow)
+          completed = makeRide(status = RideStatus.Completed).copy(pickupDateTime = inWindow)
+          cancelled = makeRide(status = RideStatus.Cancelled).copy(pickupDateTime = inWindow)
+          past      = makeRide(status = RideStatus.Requested).copy(pickupDateTime = now.minusSeconds(3600))
+          _        <- repo.create(requested)
+          _        <- repo.create(completed)
+          _        <- repo.create(cancelled)
+          _        <- repo.create(past)
+          found    <- repo.findActiveRidesInWindow(now, now.plusSeconds(2 * 3600))
+          ids       = found.map(_.id).toSet
+        } yield assertTrue(
+          ids.contains(requested.id),  // unassigned, in window → tracked
+          !ids.contains(completed.id), // finished → excluded
+          !ids.contains(cancelled.id), // finished → excluded
+          !ids.contains(past.id)       // outside the window → excluded
         )
       },
       test("update changes status and driver") {
@@ -118,6 +179,46 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
         } yield assertTrue(
           found.get.status == RideStatus.Assigned,
           found.get.driverId.contains(driverId)
+        )
+      },
+      test("tags round-trip and other fields stay intact (Read-tuple position guard)") {
+        // A ride carrying non-empty tags must read back with tags AND every neighbouring field
+        // (notes, payment method, airport specifics) intact — a mis-placed tags column in the split
+        // Read tuple would shift other fields and fail here.
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide(
+                     notes = Some("ring the bell"),
+                     specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true)),
+                     paymentMethod = Some(PaymentMethod.Cash),
+                     tags = List("Urgent", "Cash Only")
+                   )
+          _     <- repo.create(ride)
+          found <- repo.findById(ride.id)
+        } yield assertTrue(
+          found.get.tags == List("Urgent", "Cash Only"),
+          found.get.notes.contains("ring the bell"),
+          found.get.paymentMethod.contains(PaymentMethod.Cash),
+          found.get.isAirportTransfer
+        )
+      },
+      test("update replaces tags; a ride created without tags reads back as empty") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanRides(xa)
+          repo     = PostgresRideRepository(xa)
+          ride     = makeRide() // no tags → DB default '{}'
+          _       <- repo.create(ride)
+          created <- repo.findById(ride.id)
+          _       <- repo.update(ride.copy(tags = List("VIP")))
+          updated <- repo.findById(ride.id)
+        } yield assertTrue(
+          created.get.tags == Nil,
+          updated.get.tags == List("VIP")
         )
       },
       test("findByCompanyId returns only matching company rides") {
@@ -439,7 +540,7 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
                               estimatedPrice = Some(BigDecimal("42.50")),
                               finalPrice = Some(BigDecimal("45.00")),
                               notes = Some("Please ring bell"),
-                              specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH100")),
+                              specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH100"))),
                               specialRequirements = Some("Wheelchair access"),
                               paymentStatus = PaymentStatus.Paid,
                               paymentMethod = Some(PaymentMethod.Card),
@@ -749,6 +850,30 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.externalDriverId.contains(edId),
           found.get.partnerCompanyId.contains(pcId)
         )
+      },
+      test("findByDriverIdInWindow: half-open window, driver filter, Cancelled excluded") {
+        val from                                                                  = Instant.parse("2026-07-01T00:00:00Z")
+        val to                                                                    = Instant.parse("2026-07-08T00:00:00Z")
+        def rideAt(pickup: Instant, driver: Option[PersonId], status: RideStatus) = makeRide(
+          driver = driver,
+          status = status
+        ).copy(pickupDateTime = pickup)
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          inside = rideAt(Instant.parse("2026-07-02T08:00:00Z"), Some(driverId), RideStatus.Assigned)
+          atFrom = rideAt(from, Some(driverId), RideStatus.Requested)
+          _     <- repo.create(inside)
+          _     <- repo.create(atFrom)
+          // At `to` — excluded (half-open); Cancelled, driverless and out-of-window rides — excluded too.
+          _     <- repo.create(rideAt(to, Some(driverId), RideStatus.Assigned))
+          _     <- repo.create(rideAt(Instant.parse("2026-07-03T08:00:00Z"), Some(driverId), RideStatus.Cancelled))
+          _     <- repo.create(rideAt(Instant.parse("2026-07-03T09:00:00Z"), None, RideStatus.Requested))
+          _     <- repo.create(rideAt(Instant.parse("2026-06-01T08:00:00Z"), Some(driverId), RideStatus.Completed))
+          found <- repo.findByDriverIdInWindow(driverId, from, to)
+        } yield assertTrue(found.map(_.id).toSet == Set(inside.id, atFrom.id))
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

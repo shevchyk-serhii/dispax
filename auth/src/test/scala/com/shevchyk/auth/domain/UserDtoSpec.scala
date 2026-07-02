@@ -12,15 +12,16 @@ import java.util.UUID
  */
 object UserDtoSpec extends ZIOSpecDefault:
 
-  private def person(role: PersonRole): Person = Person(
+  private def person(role: PersonRole, avatarPresent: Boolean = false): Person = Person(
     id = PersonId(UUID.randomUUID()),
     name = "n",
     email = "e@e.com",
-    role = role
+    role = role,
+    avatarPresent = avatarPresent
   )
 
   def spec =
-    suite("UserDto.fromPerson role encoding")(
+    suite("UserDto.fromPerson")(
       test("SuperAdmin encodes as SUPER_ADMIN") {
         assertTrue(UserDto.fromPerson(person(PersonRole.SuperAdmin)).role == "SUPER_ADMIN")
       },
@@ -32,5 +33,13 @@ object UserDtoSpec extends ZIOSpecDefault:
           UserDto.fromPerson(person(PersonRole.Driver)).role == "DRIVER",
           UserDto.fromPerson(person(PersonRole.Admin)).role == "ADMIN"
         )
+      },
+      // hasAvatar must travel on the login UserDto so the app bar shows the avatar
+      // on first render, not only after a separate /users/profile refresh.
+      test("hasAvatar is true when the person has a profile photo") {
+        assertTrue(UserDto.fromPerson(person(PersonRole.Driver, avatarPresent = true)).hasAvatar)
+      },
+      test("hasAvatar is false when the person has no profile photo") {
+        assertTrue(!UserDto.fromPerson(person(PersonRole.Driver, avatarPresent = false)).hasAvatar)
       }
     )

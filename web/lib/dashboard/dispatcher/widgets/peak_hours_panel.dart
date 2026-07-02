@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class PeakHoursPanel extends StatefulWidget {
   const PeakHoursPanel({super.key});
@@ -17,7 +18,7 @@ class PeakHoursPanel extends StatefulWidget {
 class _PeakHoursPanelState extends State<PeakHoursPanel> {
   List<Map<String, dynamic>>? _data;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -41,13 +42,14 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildHeader(),
@@ -65,11 +67,10 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(friendlyError(_error, l10n)),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
                           return ElevatedButton(
                             onPressed: _loadData,
                             child: Text(l10n.retry),
@@ -128,7 +129,8 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
   Widget _buildContent() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_data == null || _data!.isEmpty) {
+    final data = _data;
+    if (data == null || data.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -157,7 +159,7 @@ class _PeakHoursPanelState extends State<PeakHoursPanel> {
     int busiestDayCount = 0;
     int busiestHourCount = 0;
 
-    for (final entry in _data!) {
+    for (final entry in data) {
       final day = (entry['dayOfWeek'] as num?)?.toInt() ?? 0;
       final hour = (entry['hour'] as num?)?.toInt() ?? 0;
       final count = (entry['count'] as num?)?.toInt() ?? 0;

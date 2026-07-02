@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -509,6 +510,60 @@ void main() {
         await rideService.getRidesByDrivers(['d1'], DateTime(2026, 1, 5));
 
         expect(capturedPath, contains('from=2026-01-05'));
+      });
+    });
+
+    group('getPendingRides — no double-wrap', () {
+      test(
+        'rethrows the ApiClient ApiException verbatim (no nested ApiException)',
+        () async {
+          // The exact failure that reached the dispatcher screen: the ApiClient
+          // already wrapped a timeout into an ApiException carrying the cause.
+          final fromClient = ApiException(
+            'Failed to perform GET request to '
+            'https://dispax-o2trzxjbva-ew.a.run.app/api/rides/pending: '
+            'TimeoutException after 0:00:15.000000: Future not completed',
+            cause: TimeoutException('t'),
+          );
+          when(() => mockApiClient.get('/rides/pending')).thenThrow(fromClient);
+
+          ApiException? thrown;
+          try {
+            await rideService.getPendingRides();
+          } on ApiException catch (e) {
+            thrown = e;
+          }
+
+          expect(thrown, isNotNull);
+          // The original is rethrown, not re-wrapped: no second "ApiException"
+          // nesting and no "Error fetching pending rides:" prefix.
+          expect(
+            thrown!.message,
+            isNot(contains('Error fetching pending rides')),
+          );
+          expect(
+            'ApiException: ${thrown.message}'.split('ApiException').length - 1,
+            1,
+            reason: 'message must not nest a second ApiException',
+          );
+          // Cause/kind survive so the UI can show a friendly timeout message.
+          expect(thrown.kind, AppErrorKind.timeout);
+        },
+      );
+
+      test('wraps a non-ApiException error with its cause', () async {
+        when(
+          () => mockApiClient.get('/rides/pending'),
+        ).thenThrow(StateError('odd'));
+
+        ApiException? thrown;
+        try {
+          await rideService.getPendingRides();
+        } on ApiException catch (e) {
+          thrown = e;
+        }
+        expect(thrown, isNotNull);
+        expect(thrown!.cause, isA<StateError>());
       });
     });
   });

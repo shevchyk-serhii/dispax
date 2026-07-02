@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class DriverEarningsPanel extends StatefulWidget {
   const DriverEarningsPanel({super.key});
@@ -17,7 +18,7 @@ class DriverEarningsPanel extends StatefulWidget {
 class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
   List<Map<String, dynamic>>? _driverStats;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   String _sortBy = 'earnings'; // earnings, rides, name
 
   @override
@@ -46,14 +47,15 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
 
   List<Map<String, dynamic>> get _sortedStats {
-    if (_driverStats == null) return [];
-    final sorted = List<Map<String, dynamic>>.from(_driverStats!);
+    final driverStats = _driverStats;
+    if (driverStats == null) return [];
+    final sorted = List<Map<String, dynamic>>.from(driverStats);
     switch (_sortBy) {
       case 'earnings':
         sorted.sort(
@@ -99,7 +101,7 @@ class _DriverEarningsPanelState extends State<DriverEarningsPanel> {
                             color: AppColors.error,
                           ),
                           const SizedBox(height: 12),
-                          Text(_error!),
+                          Text(friendlyError(_error, l10n)),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _loadStats,

@@ -45,7 +45,7 @@ object HereRoutingServiceSpec extends ZIOSpecDefault:
         (for {
           service <- makeService(HereConfig(apiKey = "", baseUrl = "http://127.0.0.1:1"))
           eta     <- service.getEtaMinutes(48.1, 11.5, 48.2, 11.6)
-        } yield assertTrue(eta.isEmpty)).provide(Client.default, Scope.default)
+        } yield assertTrue(eta.isEmpty)).provide(Client.default)
       },
       test("parses the HERE summary duration into ceil(minutes)") {
         ZIO

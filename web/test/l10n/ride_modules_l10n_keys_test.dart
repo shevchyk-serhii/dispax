@@ -99,7 +99,6 @@ void main() {
       expect(en.pickupDateTimeLabel, isNotEmpty);
       expect(en.flightNumberOptionalLabel, isNotEmpty);
       expect(en.notesOptionalLabel, isNotEmpty);
-      expect(en.invalidDateFormatError, isNotEmpty);
       expect(en.serverErrorMessage('500'), isNotEmpty);
       expect(en.useDispatcherDashboardInfo, isNotEmpty);
 
@@ -209,7 +208,6 @@ void main() {
       expect(de.pickupDateTimeLabel, isNotEmpty);
       expect(de.flightNumberOptionalLabel, isNotEmpty);
       expect(de.notesOptionalLabel, isNotEmpty);
-      expect(de.invalidDateFormatError, isNotEmpty);
       expect(de.serverErrorMessage('500'), isNotEmpty);
       expect(de.useDispatcherDashboardInfo, isNotEmpty);
       expect(de.updateLocationTitle, isNotEmpty);
@@ -309,7 +307,6 @@ void main() {
       expect(uk.pickupDateTimeLabel, isNotEmpty);
       expect(uk.flightNumberOptionalLabel, isNotEmpty);
       expect(uk.notesOptionalLabel, isNotEmpty);
-      expect(uk.invalidDateFormatError, isNotEmpty);
       expect(uk.serverErrorMessage('500'), isNotEmpty);
       expect(uk.useDispatcherDashboardInfo, isNotEmpty);
       expect(uk.updateLocationTitle, isNotEmpty);

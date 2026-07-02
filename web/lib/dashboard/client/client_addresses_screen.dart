@@ -91,11 +91,12 @@ class _ClientAddressesView extends StatelessWidget {
   }
 
   Future<void> _openPlace(BuildContext context, ClientAddress place) async {
-    if (clientId == null) return;
+    final id = clientId;
+    if (id == null) return;
     await showSavedPlaceActions(
       context,
       place: place,
-      clientId: clientId!,
+      clientId: id,
       // On this management screen there is no booking tab to jump to, so
       // "Use this address" just closes the menu.
       onUse: () {},
@@ -103,8 +104,9 @@ class _ClientAddressesView extends StatelessWidget {
   }
 
   Future<void> _add(BuildContext context) async {
-    if (clientId == null) return;
-    await showAddSavedPlaceFlow(context, clientId: clientId!);
+    final id = clientId;
+    if (id == null) return;
+    await showAddSavedPlaceFlow(context, clientId: id);
   }
 
   Widget _buildHeader(BuildContext context, AppLocalizations l10n) {

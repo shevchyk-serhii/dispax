@@ -32,6 +32,7 @@ class BillingTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = this.subtitle;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
@@ -65,7 +66,7 @@ class BillingTopBar extends StatelessWidget {
                     if (subtitle != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        subtitle!,
+                        subtitle,
                         style: const TextStyle(
                           color: Color(0xFFA1A1AA), // textLight on graphite
                           fontSize: 13,

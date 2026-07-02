@@ -20,13 +20,19 @@ class EarningsState {
   final EarningsPeriod period;
   final DateTime anchorDate;
   final DriverEarnings? data;
-  final String? error;
+
+  /// Fallback/debug message. The UI prefers [error] via `friendlyError`.
+  final String? errorMessage;
+
+  /// Typed cause behind an error state, for `friendlyError`. Additive.
+  final Object? error;
 
   const EarningsState({
     required this.status,
     required this.period,
     required this.anchorDate,
     this.data,
+    this.errorMessage,
     this.error,
   });
 
@@ -41,7 +47,8 @@ class EarningsState {
     EarningsPeriod? period,
     DateTime? anchorDate,
     DriverEarnings? data,
-    String? error,
+    String? errorMessage,
+    Object? error,
     bool clearError = false,
   }) {
     return EarningsState(
@@ -49,6 +56,7 @@ class EarningsState {
       period: period ?? this.period,
       anchorDate: anchorDate ?? this.anchorDate,
       data: data ?? this.data,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -83,7 +91,8 @@ class EarningsCubit extends Cubit<EarningsState> {
       emit(
         state.copyWith(
           status: EarningsStatus.error,
-          error: 'Failed to load earnings: $e',
+          errorMessage: 'Failed to load earnings: $e',
+          error: e,
         ),
       );
     }

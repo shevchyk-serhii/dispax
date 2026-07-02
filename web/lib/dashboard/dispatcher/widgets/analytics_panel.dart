@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class AnalyticsPanel extends StatefulWidget {
   const AnalyticsPanel({super.key});
@@ -18,7 +19,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>>? _dailyStats;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -50,7 +51,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -77,7 +78,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
                             color: AppColors.error,
                           ),
                           const SizedBox(height: 12),
-                          Text(_error!),
+                          Text(friendlyError(_error, l10n)),
                           const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: _loadStats,
@@ -131,9 +132,9 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
   }
 
   Widget _buildContent() {
-    if (_stats == null) return const SizedBox.shrink();
+    final stats = _stats;
+    if (stats == null) return const SizedBox.shrink();
 
-    final stats = _stats!;
     final total = (stats['totalRides'] ?? 0) as num;
     final completed = (stats['completedRides'] ?? 0) as num;
     final cancelled = (stats['cancelledRides'] ?? 0) as num;
@@ -234,13 +235,13 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         _buildMetricRow(
           'Active Drivers',
           drivers.toString(),
-          AppColors.driverColor,
+          colorScheme.primary,
           colorScheme,
         ),
         _buildMetricRow(
           'Total Clients',
           clients.toString(),
-          AppColors.clientColor,
+          colorScheme.primary,
           colorScheme,
         ),
 
@@ -294,7 +295,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
         const SizedBox(height: 20),
 
         // Daily chart
-        if (_dailyStats != null && _dailyStats!.isNotEmpty) ...[
+        if (_dailyStats?.isNotEmpty ?? false) ...[
           const Text(
             'Daily Overview (Last 7 Days)',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -411,7 +412,7 @@ class _AnalyticsPanelState extends State<AnalyticsPanel> {
   }
 
   Widget _buildDailyChart(ColorScheme colorScheme) {
-    final days = _dailyStats!;
+    final days = _dailyStats ?? const [];
     final maxTotal = days
         .map((d) => (d['total'] as num?) ?? 0)
         .fold<num>(1, (a, b) => a > b ? a : b);

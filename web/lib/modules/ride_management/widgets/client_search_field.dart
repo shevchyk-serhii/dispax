@@ -5,6 +5,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/services/user_service.dart';
+import '../../../modules/core/widgets/avatar_circle.dart';
 import '../services/client_address_service.dart';
 
 class ClientSearchField extends StatefulWidget {
@@ -75,7 +76,7 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+        padding: const EdgeInsets.all(AppDimensions.formCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,12 +98,12 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                 ],
               ],
             ),
-            const SizedBox(height: AppDimensions.paddingMedium),
+            const SizedBox(height: AppDimensions.formSectionGap),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  _error!,
+                  _error ?? '',
                   style: const TextStyle(color: AppColors.error, fontSize: 12),
                 ),
               ),
@@ -166,7 +167,9 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                               hintText: 'Search by name, email or phone',
                               prefixIcon: Icon(
                                 Icons.search,
-                                color: AppColors.secretaryColor,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(
@@ -246,14 +249,13 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                             itemBuilder: (context, index) {
                               final client = options.elementAt(index);
                               return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: AppColors.secretaryColor,
-                                  child: Text(
-                                    client.name.isNotEmpty
-                                        ? client.name[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
+                                // Show the client's profile photo when set,
+                                // falling back to initials.
+                                leading: AvatarCircle(
+                                  user: client,
+                                  apiClient:
+                                      widget.userService.privateApiClient,
+                                  radius: 20,
                                 ),
                                 title: Text(client.name),
                                 subtitle: client.email.isNotEmpty

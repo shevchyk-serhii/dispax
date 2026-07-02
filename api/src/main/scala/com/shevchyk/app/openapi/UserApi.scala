@@ -176,7 +176,7 @@ object UserApi:
         case _: InvalidTokenError | _: ExpiredTokenError =>
           (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
         case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
-        case _                                           => (StatusCode.InternalServerError, ApiError("Internal server error"))
+        case null                                        => (StatusCode.InternalServerError, ApiError("Internal server error"))
       },
       payload =>
         val wireRoles = payload.roles
@@ -341,6 +341,13 @@ object UserApi:
     .tag(usersTag)
     .summary("Update a user (dispatcher, admin, or self)")
 
+  val upgradeProvisionalClientEndpoint = secureBase.put
+    .in("api" / "users" / path[String]("id") / "upgrade-provisional")
+    .in(jsonBody[UpgradeProvisionalClientRequest])
+    .out(jsonBody[UserDto])
+    .tag(usersTag)
+    .summary("Fill in a provisional (from-chat) client and promote it to a real client (dispatcher, driver)")
+
   val deleteUserEndpoint = secureBase.delete
     .in("api" / "users" / path[String]("id"))
     .out(statusCode(StatusCode.NoContent))
@@ -385,6 +392,7 @@ object UserApi:
     createUserEndpoint,
     getUserEndpoint,
     updateUserEndpoint,
+    upgradeProvisionalClientEndpoint,
     deleteUserEndpoint,
     updateUserRoleEndpoint,
     updateUserStatusEndpoint
@@ -624,9 +632,10 @@ object UserApi:
   private val createUserServer: ZServerEndpoint[UserEnv, Any] = createUserEndpoint.serverLogic[UserEnv] { user =>
     { case (createReq, ip) =>
       for {
-        _       <- checkRateLimit(ip)
-        _       <- checkRole(user, "DISPATCHER", "ADMIN")
-        userDto <- ZIO.serviceWithZIO[AuthService](_.createUser(createReq)).mapError(mapAuthError)
+        _         <- checkRateLimit(ip)
+        _         <- checkRole(user, "DISPATCHER", "ADMIN")
+        companyId <- requireCompanyId(user)
+        userDto   <- ZIO.serviceWithZIO[AuthService](_.createUser(createReq, companyId)).mapError(mapAuthError)
       } yield userDto
     }
   }
@@ -661,6 +670,21 @@ object UserApi:
       } yield userDto
     }
   }
+
+  private val upgradeProvisionalClientServer: ZServerEndpoint[UserEnv, Any] = upgradeProvisionalClientEndpoint
+    .serverLogic[UserEnv] { user =>
+      { case (userId, upgradeReq) =>
+        for {
+          uid       <- parseUuid(userId)
+          _         <- checkRole(user, "DISPATCHER", "DRIVER", "ADMIN")
+          _         <- requireSameCompany(user, uid)
+          companyId <- requireCompanyId(user)
+          userDto   <- ZIO
+                         .serviceWithZIO[AuthService](_.upgradeProvisionalClient(uid, companyId, upgradeReq))
+                         .mapError(mapAuthError)
+        } yield userDto
+      }
+    }
 
   private val deleteUserServer: ZServerEndpoint[UserEnv, Any] = deleteUserEndpoint.serverLogic[UserEnv] {
     user => userId =>
@@ -715,7 +739,8 @@ object UserApi:
   /**
    * Generic mapping of any throwable to a 500 (matches the `other` branch of `handleAuthError`).
    */
-  private def internal(t: Throwable): Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
+  private def internal(@annotation.unused t: Throwable): Err =
+    (StatusCode.InternalServerError, ApiError("Internal server error"))
 
   /**
    * All server endpoints, interpreted into zio-http Routes by the api module.
@@ -747,9 +772,10 @@ object UserApi:
     uploadAvatarServer,
     getAvatarServer,
     deleteAvatarServer,
-    // users — {id} (and {id}/role, {id}/status)
+    // users — {id} (and {id}/role, {id}/status, {id}/upgrade-provisional)
     updateUserRoleServer,
     updateUserStatusServer,
+    upgradeProvisionalClientServer,
     getUserServer,
     updateUserServer,
     deleteUserServer

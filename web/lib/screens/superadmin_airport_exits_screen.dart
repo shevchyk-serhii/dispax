@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -208,7 +209,8 @@ class AirportsLoaded extends SuperAdminAirportState {
 
 class AirportsError extends SuperAdminAirportState {
   final String message;
-  AirportsError(this.message);
+  final Object? error;
+  AirportsError(this.message, {this.error});
 }
 
 // ---------------------------------------------------------------------------
@@ -247,10 +249,18 @@ class SuperAdminAirportBloc
           ),
         );
       } else {
-        emit(AirportsError('Failed to load airports (${response.statusCode})'));
+        emit(
+          AirportsError(
+            'Failed to load airports',
+            error: ApiException(
+              'Failed to load airports',
+              statusCode: response.statusCode,
+            ),
+          ),
+        );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 
@@ -271,11 +281,17 @@ class SuperAdminAirportBloc
         add(LoadAirports());
       } else {
         emit(
-          AirportsError('Failed to create airport (${response.statusCode})'),
+          AirportsError(
+            'Failed to create airport',
+            error: ApiException(
+              'Failed to create airport',
+              statusCode: response.statusCode,
+            ),
+          ),
         );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 
@@ -296,11 +312,17 @@ class SuperAdminAirportBloc
         add(LoadAirports());
       } else {
         emit(
-          AirportsError('Failed to update airport (${response.statusCode})'),
+          AirportsError(
+            'Failed to update airport',
+            error: ApiException(
+              'Failed to update airport',
+              statusCode: response.statusCode,
+            ),
+          ),
         );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 
@@ -315,12 +337,16 @@ class SuperAdminAirportBloc
       } else {
         emit(
           AirportsError(
-            'Failed to deactivate airport (${response.statusCode})',
+            'Failed to deactivate airport',
+            error: ApiException(
+              'airport deactivate',
+              statusCode: response.statusCode,
+            ),
           ),
         );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 
@@ -343,10 +369,18 @@ class SuperAdminAirportBloc
       if (response.statusCode == 201 || response.statusCode == 200) {
         add(LoadAirports());
       } else {
-        emit(AirportsError('Failed to create zone (${response.statusCode})'));
+        emit(
+          AirportsError(
+            'Failed to create zone',
+            error: ApiException(
+              'Failed to create zone',
+              statusCode: response.statusCode,
+            ),
+          ),
+        );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 
@@ -370,10 +404,18 @@ class SuperAdminAirportBloc
       if (response.statusCode == 200) {
         add(LoadAirports());
       } else {
-        emit(AirportsError('Failed to update zone (${response.statusCode})'));
+        emit(
+          AirportsError(
+            'Failed to update zone',
+            error: ApiException(
+              'Failed to update zone',
+              statusCode: response.statusCode,
+            ),
+          ),
+        );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 
@@ -388,10 +430,18 @@ class SuperAdminAirportBloc
       if (response.statusCode == 204 || response.statusCode == 200) {
         add(LoadAirports());
       } else {
-        emit(AirportsError('Failed to delete zone (${response.statusCode})'));
+        emit(
+          AirportsError(
+            'Failed to delete zone',
+            error: ApiException(
+              'Failed to delete zone',
+              statusCode: response.statusCode,
+            ),
+          ),
+        );
       }
     } catch (e) {
-      emit(AirportsError(e.toString()));
+      emit(AirportsError('Operation failed', error: e));
     }
   }
 }
@@ -439,12 +489,13 @@ class _AirportExitsView extends StatelessWidget {
                 return Center(child: CircularProgressIndicator.adaptive());
               }
               if (state is AirportsError) {
+                final l10n = AppLocalizations.of(context)!;
                 return Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Error: ${state.message}',
+                        friendlyError(state.error ?? state.message, l10n),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),
@@ -1048,20 +1099,21 @@ class _AirportFormDialogState extends State<_AirportFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
     final lat = double.tryParse(_latCtrl.text) ?? 0.0;
     final lon = double.tryParse(_lonCtrl.text) ?? 0.0;
     final radius = int.tryParse(_radiusCtrl.text) ?? 2000;
-    if (_isEdit) {
+    final airport = widget.airport;
+    if (airport != null) {
       widget.bloc.add(
         UpdateAirport(
-          code: widget.airport!.code,
+          code: airport.code,
           name: _nameCtrl.text.trim(),
           country: _countryCtrl.text.trim(),
           landingLat: lat,
           landingLon: lon,
           landingRadius: radius,
-          isActive: widget.airport!.isActive,
+          isActive: airport.isActive,
         ),
       );
     } else {
@@ -1266,15 +1318,16 @@ class _ZoneFormDialogState extends State<_ZoneFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState?.validate() != true) return;
     final lat = double.tryParse(_latCtrl.text) ?? 0.0;
     final lon = double.tryParse(_lonCtrl.text) ?? 0.0;
     final radius = int.tryParse(_radiusCtrl.text) ?? 200;
     final order = int.tryParse(_orderCtrl.text) ?? 0;
-    if (_isEdit) {
+    final zone = widget.zone;
+    if (zone != null) {
       widget.bloc.add(
         UpdateZone(
-          zoneId: widget.zone!.id,
+          zoneId: zone.id,
           airportCode: widget.airportCode,
           terminalCode: _terminalCtrl.text.trim(),
           checkpointType: _checkpointType,

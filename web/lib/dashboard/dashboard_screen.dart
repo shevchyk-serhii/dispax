@@ -17,11 +17,10 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
-        if (!authState.isAuthenticated || authState.user == null) {
+        final user = authState.user;
+        if (!authState.isAuthenticated || user == null) {
           return const Scaffold(body: LoadingWidget());
         }
-
-        final user = authState.user!;
 
         return Scaffold(
           appBar: UserAppBar(

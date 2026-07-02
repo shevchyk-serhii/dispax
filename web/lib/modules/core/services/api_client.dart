@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -7,6 +8,9 @@ import '../../../constants/app_constants.dart';
 
 class UnauthorizedException extends ApiException {
   UnauthorizedException() : super('Unauthorized: session expired');
+
+  @override
+  AppErrorKind get kind => AppErrorKind.unauthorized;
 }
 
 class ApiClient {
@@ -82,19 +86,23 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      debugPrint('❌ TimeoutException: $e');
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } on SocketException catch (e) {
       debugPrint('❌ SocketException: $e');
-      throw ApiException(_networkErrorMessage(e));
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } on HttpException catch (e) {
       debugPrint('❌ HttpException: $e');
-      throw ApiException('HTTP error: $e');
+      throw ApiException('HTTP error: $e', cause: e);
     } on FormatException catch (e) {
       debugPrint('❌ FormatException: $e');
-      throw ApiException('Format error: $e');
+      throw ApiException('Format error: $e', cause: e);
     } catch (e) {
       debugPrint('❌ General Exception: $e');
       throw ApiException(
         'Failed to perform GET request to $_baseUrl$endpoint: $e',
+        cause: e,
       );
     }
   }
@@ -114,8 +122,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform POST request: $e');
+      throw ApiException('Failed to perform POST request: $e', cause: e);
     }
   }
 
@@ -134,8 +146,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform PUT request: $e');
+      throw ApiException('Failed to perform PUT request: $e', cause: e);
     }
   }
 
@@ -157,8 +173,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform PATCH request: $e');
+      throw ApiException('Failed to perform PATCH request: $e', cause: e);
     }
   }
 
@@ -173,8 +193,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to perform DELETE request: $e');
+      throw ApiException('Failed to perform DELETE request: $e', cause: e);
     }
   }
 
@@ -213,11 +237,14 @@ class ApiClient {
       } else {
         throw ApiException('Login failed with status: ${response.statusCode}');
       }
+    } on TimeoutException catch (e) {
+      debugPrint('❌ TimeoutException (login): $e');
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } on SocketException catch (e) {
       debugPrint('❌ SocketException (login): $e');
-      throw ApiException(_networkErrorMessage(e));
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Login failed: $e');
+      throw ApiException('Login failed: $e', cause: e);
     }
   }
 
@@ -251,8 +278,12 @@ class ApiClient {
       return response;
     } on UnauthorizedException {
       rethrow;
+    } on TimeoutException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
+    } on SocketException catch (e) {
+      throw ApiException(_networkErrorMessage(e), cause: e);
     } catch (e) {
-      throw ApiException('Failed to upload file: $e');
+      throw ApiException('Failed to upload file: $e', cause: e);
     }
   }
 
@@ -262,8 +293,15 @@ class ApiClient {
   Future<Uint8List?> getBytes(String endpoint) async {
     try {
       final uri = Uri.parse('$_baseUrl$endpoint');
+      // The avatar endpoint serves image bytes, not JSON. privateHeaders sends
+      // 'Accept: application/json', which makes the server's content negotiation
+      // reject the request with 406 Not Acceptable. Override Accept to allow any
+      // media type so the raw bytes come through.
+      final headers = Map<String, String>.from(privateHeaders)
+        ..['Accept'] = '*/*'
+        ..remove('Content-Type');
       final response = await privateClient
-          .get(uri, headers: privateHeaders)
+          .get(uri, headers: headers)
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 401) {
         _handleUnauthorized();
@@ -280,7 +318,10 @@ class ApiClient {
       rethrow;
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Failed to fetch bytes from $_baseUrl$endpoint: $e');
+      throw ApiException(
+        'Failed to fetch bytes from $_baseUrl$endpoint: $e',
+        cause: e,
+      );
     }
   }
 
@@ -312,10 +353,69 @@ class ApiClient {
   }
 }
 
+/// Coarse classification of a failure, derived from the HTTP status code or the
+/// underlying cause. The UI maps this to a short, localized, non-technical
+/// message (see `friendlyError` in `error_messages.dart`) instead of surfacing
+/// the raw [ApiException.message], which may contain the backend URL, the
+/// exception class name, or a stack-trace-like tail.
+enum AppErrorKind {
+  network,
+  timeout,
+  unauthorized,
+  notFound,
+  conflict,
+  validation,
+  server,
+  unknown,
+}
+
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-  ApiException(this.message, {this.statusCode});
+
+  /// The original lower-level error this exception wrapped (e.g. a
+  /// [TimeoutException] or [SocketException]), when known. Carried so [kind]
+  /// can classify network/timeout failures — for which [statusCode] is null and
+  /// [message] is just a wrapped string — without re-parsing the message text.
+  final Object? cause;
+
+  /// Structured schedule-conflict details from the backend (see ApiError
+  /// .scheduleConflict on the server): the conflicting ride's id, client, route
+  /// and pickup time. Present only on an assign/reassign schedule conflict, so
+  /// the UI can render a localized, human-readable dialog instead of the raw
+  /// fallback [message]. Null for every other error.
+  final ScheduleConflictInfo? scheduleConflict;
+
+  ApiException(
+    this.message, {
+    this.statusCode,
+    this.cause,
+    this.scheduleConflict,
+  });
+
+  /// Classifies this failure for the UI. Status code wins when present;
+  /// otherwise the wrapped [cause] (or the message, as a last resort) is used to
+  /// tell a timeout from a generic network drop. Never surfaces the raw text.
+  AppErrorKind get kind {
+    final code = statusCode;
+    if (code != null) {
+      if (code == 401) return AppErrorKind.unauthorized;
+      if (code == 404) return AppErrorKind.notFound;
+      if (code == 409) return AppErrorKind.conflict;
+      if (code >= 500) return AppErrorKind.server;
+      if (code >= 400) return AppErrorKind.validation;
+    }
+    final c = cause;
+    if (c is TimeoutException) return AppErrorKind.timeout;
+    if (c is SocketException) return AppErrorKind.network;
+    // Fall back to the message only when no structured signal is available
+    // (e.g. an exception constructed before causes were threaded through).
+    if (c == null) {
+      if (message.contains('TimeoutException')) return AppErrorKind.timeout;
+      if (message.contains('SocketException')) return AppErrorKind.network;
+    }
+    return AppErrorKind.unknown;
+  }
 
   /// Builds an exception from a failed [http.Response], surfacing the server's
   /// own error message instead of a bare status code. The backend returns
@@ -325,12 +425,17 @@ class ApiException implements Exception {
   /// body, then to the status code, when the body isn't the expected shape.
   factory ApiException.fromResponse(http.Response response, String action) {
     String detail = 'status ${response.statusCode}';
+    ScheduleConflictInfo? conflict;
     final body = response.body.trim();
     if (body.isNotEmpty) {
       try {
         final decoded = jsonDecode(body);
         if (decoded is Map<String, dynamic> && decoded['error'] is String) {
           detail = decoded['error'] as String;
+          final sc = decoded['scheduleConflict'];
+          if (sc is Map<String, dynamic>) {
+            conflict = ScheduleConflictInfo.fromJson(sc);
+          }
         } else {
           detail = body;
         }
@@ -338,9 +443,44 @@ class ApiException implements Exception {
         detail = body;
       }
     }
-    return ApiException('$action: $detail', statusCode: response.statusCode);
+    return ApiException(
+      '$action: $detail',
+      statusCode: response.statusCode,
+      scheduleConflict: conflict,
+    );
   }
 
   @override
   String toString() => 'ApiException: $message';
+}
+
+/// Structured details of a schedule conflict, mirroring the server's
+/// ScheduleConflictDetails. All fields optional — the manual-unavailability
+/// conflict carries none of them.
+class ScheduleConflictInfo {
+  final String? rideId;
+  final String? clientId;
+  final String? from;
+  final String? to;
+
+  /// ISO-8601 UTC instant of the conflicting ride's pickup time (parse + format
+  /// to the viewer's local time for display).
+  final String? pickupAt;
+
+  const ScheduleConflictInfo({
+    this.rideId,
+    this.clientId,
+    this.from,
+    this.to,
+    this.pickupAt,
+  });
+
+  factory ScheduleConflictInfo.fromJson(Map<String, dynamic> json) =>
+      ScheduleConflictInfo(
+        rideId: json['rideId'] as String?,
+        clientId: json['clientId'] as String?,
+        from: json['from'] as String?,
+        to: json['to'] as String?,
+        pickupAt: json['pickupAt'] as String?,
+      );
 }

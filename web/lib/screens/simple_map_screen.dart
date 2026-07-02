@@ -36,7 +36,9 @@ class SimpleMapScreen extends StatelessWidget {
               const SizedBox(height: AppDimensions.paddingMedium),
               Text(
                 'Map Integration Ready',
-                style: AppStyles.titleLarge,
+                style: AppStyles.titleLarge.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppDimensions.paddingSmall),

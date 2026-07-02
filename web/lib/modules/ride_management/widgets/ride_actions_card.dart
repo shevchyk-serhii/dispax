@@ -3,11 +3,13 @@ import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RideActionsCard extends StatelessWidget {
   final Ride ride;
   final bool isClientView;
   final VoidCallback? onEditRide;
+  final VoidCallback? onDuplicateRide;
   final VoidCallback? onCancelRide;
   final VoidCallback? onStartRide;
   final VoidCallback? onCompleteRide;
@@ -20,6 +22,7 @@ class RideActionsCard extends StatelessWidget {
     required this.ride,
     this.isClientView = false,
     this.onEditRide,
+    this.onDuplicateRide,
     this.onCancelRide,
     this.onStartRide,
     this.onCompleteRide,
@@ -89,29 +92,32 @@ class RideActionsCard extends StatelessWidget {
   Widget? _getPrimaryAction() {
     switch (ride.status) {
       case RideStatus.inProgress:
+        final onCompleteRide = this.onCompleteRide;
         if (!isClientView && onCompleteRide != null) {
           return _buildPrimaryButton(
             icon: Icons.check_circle_rounded,
             label: 'Complete Ride',
-            onPressed: onCompleteRide!,
+            onPressed: onCompleteRide,
             color: AppColors.success,
           );
         }
       case RideStatus.assigned:
+        final onStartRide = this.onStartRide;
         if (!isClientView && onStartRide != null) {
           return _buildPrimaryButton(
             icon: Icons.play_circle_rounded,
             label: 'Start Ride',
-            onPressed: onStartRide!,
+            onPressed: onStartRide,
             color: AppColors.accent,
           );
         }
       case RideStatus.requested:
+        final onAssignDriver = this.onAssignDriver;
         if (!isClientView && onAssignDriver != null) {
           return _buildPrimaryButton(
             icon: Icons.person_add_rounded,
             label: 'Assign Driver',
-            onPressed: onAssignDriver!,
+            onPressed: onAssignDriver,
             color: AppColors.primary,
           );
         }
@@ -124,28 +130,31 @@ class RideActionsCard extends StatelessWidget {
   List<Widget> _getSecondaryActions(BuildContext context) {
     final List<Widget> actions = [];
 
+    final onViewOnMap = this.onViewOnMap;
     if (onViewOnMap != null) {
       actions.add(
         _buildSecondaryButton(
           context,
           icon: Icons.map_outlined,
           label: 'View on Map',
-          onPressed: onViewOnMap!,
+          onPressed: onViewOnMap,
         ),
       );
     }
 
+    final onShareRide = this.onShareRide;
     if (onShareRide != null) {
       actions.add(
         _buildSecondaryButton(
           context,
           icon: Icons.ios_share_rounded,
           label: 'Share',
-          onPressed: onShareRide!,
+          onPressed: onShareRide,
         ),
       );
     }
 
+    final onEditRide = this.onEditRide;
     if (onEditRide != null &&
         (ride.status == RideStatus.requested ||
             ride.status == RideStatus.assigned)) {
@@ -154,7 +163,21 @@ class RideActionsCard extends StatelessWidget {
           context,
           icon: Icons.edit_outlined,
           label: 'Edit',
-          onPressed: onEditRide!,
+          onPressed: onEditRide,
+        ),
+      );
+    }
+
+    // Duplicate is offered for any ride status (incl. completed/cancelled):
+    // re-creating a similar ride is a common follow-up to a past trip.
+    final onDuplicateRide = this.onDuplicateRide;
+    if (onDuplicateRide != null) {
+      actions.add(
+        _buildSecondaryButton(
+          context,
+          icon: Icons.copy_outlined,
+          label: AppLocalizations.of(context)!.duplicateRideAction,
+          onPressed: onDuplicateRide,
         ),
       );
     }
@@ -163,13 +186,14 @@ class RideActionsCard extends StatelessWidget {
   }
 
   Widget? _getDangerAction() {
+    final onCancelRide = this.onCancelRide;
     if (onCancelRide != null &&
         (ride.status == RideStatus.requested ||
             ride.status == RideStatus.assigned)) {
       return _buildDangerButton(
         icon: Icons.cancel_outlined,
         label: 'Cancel Ride',
-        onPressed: onCancelRide!,
+        onPressed: onCancelRide,
       );
     }
     return null;

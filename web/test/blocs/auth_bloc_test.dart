@@ -38,6 +38,12 @@ void main() {
     when(() => mockStorage.read(any())).thenAnswer((_) async => null);
     when(() => mockStorage.write(any(), any())).thenAnswer((_) async {});
     when(() => mockStorage.delete(any())).thenAnswer((_) async {});
+    // Default: the background profile refresh dispatched after a restored session
+    // returns the stored user unchanged. Individual tests override to assert the
+    // refresh applies server-side changes (e.g. a newly-set hasAvatar).
+    when(() => mockApiClient.get('/users/profile')).thenAnswer(
+      (_) async => http.Response(jsonEncode(TestFixtures.person().toJson()), 200),
+    );
     when(
       () => mockWebSocketService.connect(
         any(),
@@ -81,6 +87,119 @@ void main() {
       ],
     );
 
+    // Onboarding: a user logging in with a temporary password must be gated
+    // behind the forced password-change screen, not let into the app.
+    blocTest<AuthBloc, AuthState>(
+      'AuthLoginRequested emits mustChangePassword when the flag is set',
+      build: () {
+        final person = TestFixtures.person(mustChangePassword: true);
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(email: 'temp@test.com', password: 'Temp1234'),
+      ),
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.mustChangePassword)
+            .having((s) => s.user, 'user', isNotNull),
+      ],
+    );
+
+    // Onboarding: changing the temporary password re-logs in with the new
+    // password and lands the (now non-flagged) user in the authenticated state.
+    blocTest<AuthBloc, AuthState>(
+      'AuthPasswordChangeRequested changes password then authenticates',
+      build: () {
+        final flagged = TestFixtures.person(
+          email: 'temp@test.com',
+          mustChangePassword: true,
+        );
+        final activated = TestFixtures.person(email: 'temp@test.com');
+        // First login (temporary) returns the flagged user; the re-login after
+        // the change returns the activated (flag cleared) user.
+        final logins = <Map<String, dynamic>>[
+          {'person': flagged.toJson(), 'token': 'tmp-token'},
+          {'person': activated.toJson(), 'token': 'new-token'},
+        ];
+        var loginCall = 0;
+        when(
+          () => mockApiClient.login(any(), any()),
+        ).thenAnswer((_) async => logins[loginCall++]);
+        when(
+          () => mockApiClient.put(any(), any()),
+        ).thenAnswer((_) async => http.Response('{}', 200));
+        return buildBloc();
+      },
+      act: (bloc) async {
+        bloc.add(
+          const AuthLoginRequested(
+            email: 'temp@test.com',
+            password: 'Temp1234',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(
+          const AuthPasswordChangeRequested(
+            currentPassword: 'Temp1234',
+            newPassword: 'NewPass123',
+          ),
+        );
+      },
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.mustChangePassword,
+        ),
+        AuthState.loading(),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.authenticated)
+            .having((s) => s.user?.mustChangePassword, 'flagCleared', false),
+      ],
+      verify: (_) {
+        verify(
+          () => mockApiClient.put('/users/change-password', any()),
+        ).called(1);
+      },
+    );
+
+    // Regression: a password login must carry the biometric flags from
+    // BiometricService into the authenticated state. Previously the login
+    // handler emitted AuthState.authenticated(user) without them, so they
+    // defaulted to false and the Face ID button stayed hidden after login even
+    // when biometrics were already enabled (until the next session restore).
+    blocTest<AuthBloc, AuthState>(
+      'AuthLoginRequested success propagates biometric flags into authenticated',
+      build: () {
+        final person = TestFixtures.person();
+        when(() => mockApiClient.login(any(), any())).thenAnswer(
+          (_) async => {'person': person.toJson(), 'token': 'test-token'},
+        );
+        when(
+          () => mockBiometricService.isAvailable,
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockBiometricService.isBiometricEnabled,
+        ).thenAnswer((_) async => true);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const AuthLoginRequested(email: 'test@test.com', password: 'pass'),
+      ),
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>()
+            .having((s) => s.status, 'status', AuthStatus.authenticated)
+            .having((s) => s.biometricAvailable, 'biometricAvailable', true)
+            .having((s) => s.biometricEnabled, 'biometricEnabled', true),
+      ],
+    );
+
     blocTest<AuthBloc, AuthState>(
       'AuthLoginRequested null response emits error',
       build: () {
@@ -100,7 +219,11 @@ void main() {
               (s) => s.errorMessage,
               'errorMessage',
               'Invalid email or password',
-            ),
+            )
+            // Phase 3 triage: an intentional DOMAIN message must NOT carry a
+            // typed cause, so the UI shows it verbatim instead of collapsing it
+            // to a generic "something went wrong" via friendlyError.
+            .having((s) => s.error, 'error (domain → none)', isNull),
       ],
     );
 
@@ -117,7 +240,14 @@ void main() {
       ),
       expect: () => [
         AuthState.loading(),
-        isA<AuthState>().having((s) => s.hasError, 'hasError', true),
+        isA<AuthState>()
+            .having((s) => s.hasError, 'hasError', true)
+            // A NETWORK-class failure DOES carry the typed cause → friendlyError.
+            .having(
+              (s) => s.error,
+              'error (network → typed)',
+              isA<ApiException>(),
+            ),
       ],
     );
 
@@ -148,6 +278,8 @@ void main() {
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthInitializeRequested()),
+      // authenticated(restored) then a second authenticated after the background
+      // /users/profile refresh dispatched by _onInitializeRequested.
       expect: () => [
         AuthState.loading(),
         isA<AuthState>().having(
@@ -155,6 +287,41 @@ void main() {
           'status',
           AuthStatus.authenticated,
         ),
+        isA<AuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.authenticated,
+        ),
+      ],
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'AuthInitializeRequested refreshes a stale stored user from /users/profile '
+      '(picks up a hasAvatar set after the last login)',
+      build: () {
+        // Stored session is stale: it was saved by a login before the avatar
+        // existed, so hasAvatar is false.
+        final stored = TestFixtures.person(hasAvatar: false);
+        when(
+          () => mockStorage.read(AuthBloc.privateUserKey),
+        ).thenAnswer((_) async => jsonEncode(stored.toJson()));
+        when(
+          () => mockStorage.read(AuthBloc.privateTokenKey),
+        ).thenAnswer((_) async => 'test-token');
+        // The backend now reports the avatar is present.
+        final fresh = TestFixtures.person(hasAvatar: true);
+        when(() => mockApiClient.get('/users/profile')).thenAnswer(
+          (_) async => http.Response(jsonEncode(fresh.toJson()), 200),
+        );
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(const AuthInitializeRequested()),
+      // loading → authenticated(stale, hasAvatar:false) → authenticated(fresh,
+      // hasAvatar:true) after the background refresh.
+      expect: () => [
+        AuthState.loading(),
+        isA<AuthState>().having((s) => s.user?.hasAvatar, 'hasAvatar', false),
+        isA<AuthState>().having((s) => s.user?.hasAvatar, 'hasAvatar', true),
       ],
     );
 
@@ -227,10 +394,17 @@ void main() {
         when(
           () => mockBiometricService.isAvailable,
         ).thenAnswer((_) async => true);
+        // Regression: at setup time biometrics are NOT yet enabled. The setup
+        // path must call authenticate with requireEnabled:false, otherwise the
+        // service short-circuits to "disabled" and enabling is impossible.
+        when(
+          () => mockBiometricService.isBiometricEnabled,
+        ).thenAnswer((_) async => false);
         when(
           () => mockBiometricService.authenticate(
             reason: any(named: 'reason'),
             stickyAuth: any(named: 'stickyAuth'),
+            requireEnabled: any(named: 'requireEnabled'),
           ),
         ).thenAnswer((_) async => BiometricAuthResult.success);
         when(
@@ -252,6 +426,16 @@ void main() {
           true,
         ),
       ],
+      verify: (_) {
+        // Setup must bypass the "enabled" precondition.
+        verify(
+          () => mockBiometricService.authenticate(
+            reason: any(named: 'reason'),
+            stickyAuth: any(named: 'stickyAuth'),
+            requireEnabled: false,
+          ),
+        ).called(1);
+      },
     );
 
     test('apiClient is the same instance after repeated logins', () async {
@@ -319,7 +503,15 @@ void main() {
 
     test('ApiClient 401 on an authenticated session forces logout with a '
         '"session expired" message', () async {
-      final httpClient = MockClient((_) async => http.Response('', 401));
+      // /users/profile must succeed (the background refresh dispatched on session
+      // restore); only /rides returns 401 to drive the forced-logout under test.
+      final person = TestFixtures.person();
+      final httpClient = MockClient((request) async {
+        if (request.url.path.endsWith('/users/profile')) {
+          return http.Response(jsonEncode(person.toJson()), 200);
+        }
+        return http.Response('', 401);
+      });
       final realApiClient = ApiClient(
         client: httpClient,
         baseUrl: 'http://localhost:8080/api',
@@ -333,7 +525,6 @@ void main() {
       );
       // The forced-logout guard only fires for an authenticated session, so
       // drive the bloc to authenticated via AuthInitializeRequested first.
-      final person = TestFixtures.person();
       when(
         () => mockStorage.read(AuthBloc.privateUserKey),
       ).thenAnswer((_) async => jsonEncode(person.toJson()));

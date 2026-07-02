@@ -5,6 +5,7 @@ import '../../core/services/location_clarification_service.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class LocationClarificationDialog extends StatefulWidget {
   final Ride ride;
@@ -72,7 +73,7 @@ class _LocationClarificationDialogState
       }
     } catch (e) {
       setState(() {
-        _errorMessage = l10n.genericError(e.toString());
+        _errorMessage = friendlyError(e, l10n);
         _isLoading = false;
       });
     }
@@ -81,6 +82,7 @@ class _LocationClarificationDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final errorMessage = _errorMessage;
     final quickLocations = [
       l10n.locationQuickMainEntrance,
       l10n.locationQuickBaggageClaim,
@@ -201,7 +203,7 @@ class _LocationClarificationDialogState
               maxLines: 3,
             ),
 
-            if (_errorMessage != null) ...[
+            if (errorMessage != null) ...[
               const SizedBox(height: AppDimensions.paddingMedium),
               Container(
                 padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -221,7 +223,7 @@ class _LocationClarificationDialogState
                     const SizedBox(width: AppDimensions.paddingSmall),
                     Expanded(
                       child: Text(
-                        _errorMessage!,
+                        errorMessage,
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.error,
                         ),

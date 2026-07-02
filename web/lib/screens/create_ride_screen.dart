@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/helpers/create_ride_form_helper.dart';
+import '../modules/ride_management/helpers/conflict_dialog_text.dart';
+import '../modules/core/services/api_client.dart' show ScheduleConflictInfo;
+import '../modules/core/services/error_messages.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
@@ -23,10 +26,11 @@ class CreateRideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formBloc = this.formBloc;
     return MultiBlocProvider(
       providers: [
         formBloc != null
-            ? BlocProvider.value(value: formBloc!)
+            ? BlocProvider.value(value: formBloc)
             : BlocProvider(create: (_) => CreateRideFormBloc()),
         BlocProvider.value(value: rideBloc),
       ],
@@ -57,6 +61,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
     required String rideId,
     required String driverId,
     String? message,
+    ScheduleConflictInfo? conflict,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final rideBloc = context.read<RideBloc>();
@@ -66,9 +71,7 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
         icon: const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
         title: Text(l10n.conflictDialogTitle),
         content: Text(
-          message != null
-              ? l10n.conflictDialogContent(message)
-              : l10n.conflictDialogContentDefault,
+          scheduleConflictDialogBody(l10n, info: conflict, message: message),
         ),
         actions: [
           TextButton(
@@ -111,6 +114,9 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
           listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) {
             final listenerL10n = AppLocalizations.of(context)!;
+            final onCreated = widget.onCreated;
+            final conflictRideId = state.conflictRideId;
+            final conflictDriverId = state.conflictDriverId;
             if (state.status == RideStateStatus.created) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -125,36 +131,52 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
               // "Creating Ride..." — because the success branch (unlike the
               // error branch) never clears the status.
               context.read<CreateRideFormBloc>().add(const FormCleared());
-              if (widget.onCreated != null) {
-                widget.onCreated!();
+              if (onCreated != null) {
+                onCreated();
               } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               }
             } else if (state.status == RideStateStatus.assignConflict &&
-                state.hasAssignConflict) {
+                state.hasAssignConflict &&
+                conflictRideId != null &&
+                conflictDriverId != null) {
               // The ride was created into the pool, but the driver's opt-in
               // "Assign to me" hit a schedule conflict so it came back
               // unassigned. The ride is NOT lost — offer to assign anyway
               // (override) or leave it in the pool for the dispatcher.
               _showCreateSelfAssignConflictDialog(
                 context,
-                rideId: state.conflictRideId!,
-                driverId: state.conflictDriverId!,
+                rideId: conflictRideId,
+                driverId: conflictDriverId,
                 message: state.errorMessage,
+                conflict: state.conflictInfo,
               );
-              if (widget.onCreated != null) {
-                widget.onCreated!();
+              if (onCreated != null) {
+                onCreated();
               } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               }
             } else if (state.status == RideStateStatus.error) {
+              // Only react to an error from THIS screen's own submit. The
+              // RideBloc is shared across the dashboard, so a background load
+              // failure (e.g. the dispatcher's pending-rides timeout) also
+              // reaches here; without this guard it surfaced this create form's
+              // error banner over an unrelated screen. Our submit is in flight
+              // exactly while the form is `submitting`.
+              final formSubmitting =
+                  context.read<CreateRideFormBloc>().state.status ==
+                  CreateRideFormStatus.submitting;
+              if (!formSubmitting) return;
               // Leave the submitting state so the "Create Ride" button
               // re-enables and the user can fix the field and retry.
               context.read<CreateRideFormBloc>().add(const SubmissionFailed());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    state.errorMessage ?? listenerL10n.failedToCreateRide,
+                    friendlyError(
+                      state.error ?? state.errorMessage,
+                      listenerL10n,
+                    ),
                   ),
                   backgroundColor: AppColors.error,
                   duration: const Duration(seconds: 8),

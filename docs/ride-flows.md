@@ -57,17 +57,17 @@ avoid leaking the existence of other companies' rides (e.g. `assignDriverServer`
 
 Status predicates live on the `Ride` domain object (`ride/domain/RideDomain.scala:270-281`):
 
-| Action       | From → To                              | Predicate         | Who (HTTP `checkRole`)                  | Endpoint |
-|--------------|----------------------------------------|-------------------|-----------------------------------------|----------|
-| Assign       | `Requested` → `Assigned`               | `canBeAssigned`   | DISPATCHER                              | `PUT /api/rides/{id}/assign-driver` |
-| Confirm      | `Assigned` → `Confirmed`               | `canBeConfirmed`  | DRIVER (own)                            | `PUT /api/rides/{id}/confirm` |
-| Reject       | `{Assigned,Confirmed}` → `Requested`   | `canBeRejected`   | DRIVER (own)                            | `PUT /api/rides/{id}/reject` |
-| Reassign     | `{Assigned,Confirmed}` → `Assigned` (new driver) | `canBeReassigned` | DISPATCHER                    | `PUT /api/rides/{id}/reassign-driver` |
-| Start        | `Confirmed` → `InProgress`             | `canBeStarted`    | DRIVER (own), DISPATCHER                | `PUT /api/rides/{id}/status` |
-| Complete     | `InProgress` → `Completed`             | `canBeCompleted`  | DRIVER (own), DISPATCHER                | `PUT /api/rides/{id}/status` |
-| Hand-off     | `Requested` → `HandedOff`              | `canBeHandedOff`  | DISPATCHER, ADMIN                       | `PUT /api/rides/{id}/hand-off` |
-| Cancel       | `{Requested,Assigned,Confirmed,InProgress,HandedOff}` → `Cancelled` | `canBeCancelled` | DRIVER (own), DISPATCHER, CLIENT (own) | `PUT /api/rides/{id}/cancel` |
-| Edit details | only `Requested`, `Assigned` or `Confirmed` | `canBeEdited` | DRIVER, DISPATCHER, SECRETARY, CLIENT   | `PUT /api/rides/{id}` |
+| Action       | From → To                                                           | Predicate         | Who (HTTP `checkRole`)                 | Endpoint                              |
+|--------------|---------------------------------------------------------------------|-------------------|----------------------------------------|---------------------------------------|
+| Assign       | `Requested` → `Assigned`                                            | `canBeAssigned`   | DISPATCHER                             | `PUT /api/rides/{id}/assign-driver`   |
+| Confirm      | `Assigned` → `Confirmed`                                            | `canBeConfirmed`  | DRIVER (own)                           | `PUT /api/rides/{id}/confirm`         |
+| Reject       | `{Assigned,Confirmed}` → `Requested`                                | `canBeRejected`   | DRIVER (own)                           | `PUT /api/rides/{id}/reject`          |
+| Reassign     | `{Assigned,Confirmed}` → `Assigned` (new driver)                    | `canBeReassigned` | DISPATCHER                             | `PUT /api/rides/{id}/reassign-driver` |
+| Start        | `Confirmed` → `InProgress`                                          | `canBeStarted`    | DRIVER (own), DISPATCHER               | `PUT /api/rides/{id}/status`          |
+| Complete     | `InProgress` → `Completed`                                          | `canBeCompleted`  | DRIVER (own), DISPATCHER               | `PUT /api/rides/{id}/status`          |
+| Hand-off     | `Requested` → `HandedOff`                                           | `canBeHandedOff`  | DISPATCHER, ADMIN                      | `PUT /api/rides/{id}/hand-off`        |
+| Cancel       | `{Requested,Assigned,Confirmed,InProgress,HandedOff}` → `Cancelled` | `canBeCancelled`  | DRIVER (own), DISPATCHER, CLIENT (own) | `PUT /api/rides/{id}/cancel`          |
+| Edit details | only `Requested`, `Assigned` or `Confirmed`                         | `canBeEdited`     | DRIVER, DISPATCHER, SECRETARY, CLIENT  | `PUT /api/rides/{id}`                 |
 
 > `canBeCancelled = status != Completed && status != Cancelled`.
 > `canBeStarted`/`canBeReassigned`/`canBeConfirmed`/`canBeRejected` also require `driverId.isDefined`.
@@ -205,11 +205,11 @@ HTTP `checkRole`: **DRIVER, DISPATCHER, CLIENT** only (`RideApi.scala:562`). The
 ClientSecretary/SuperAdmin **if** they reach the service, but **the HTTP layer rejects those roles
 first** — so over the API only the three below can cancel:
 
-| Role       | Can cancel             | Ownership rule                                  |
-|------------|------------------------|-------------------------------------------------|
-| CLIENT     | own rides only         | `ride.clientId == userId` (`:813-814`)          |
-| DRIVER     | assigned-to-them only  | `ride.driverId contains userId` (`:815-816`)    |
-| DISPATCHER | any ride               | no ownership check (`:810-812`)                 |
+| Role       | Can cancel            | Ownership rule                               |
+|------------|-----------------------|----------------------------------------------|
+| CLIENT     | own rides only        | `ride.clientId == userId` (`:813-814`)       |
+| DRIVER     | assigned-to-them only | `ride.driverId contains userId` (`:815-816`) |
+| DISPATCHER | any ride              | no ownership check (`:810-812`)              |
 
 ### Preconditions
 - status must be cancellable: must **not** be `Cancelled` → `InvalidStatusTransition` (`:281-285`);
@@ -509,22 +509,22 @@ Three channels carry ride events:
 `PushNotificationListener.handleEvent()` (`notification/.../application/PushNotificationListener.scala`)
 fans a `WebSocketEvent` out to FCM + inbox via `notifyUser`.
 
-| Event | Recipients | Channel | Notes |
-|---|---|---|---|
-| `RideCreated` | Client; dispatchers | FCM + inbox / WS | Client gets a booking confirmation; dispatchers see it via WS in Pending (`:253-261`) |
-| `RideAssigned` | Driver + Client | FCM + inbox | "New ride assigned" / "Driver assigned" (`:101-115`) |
-| `RideConfirmed` | Dispatchers | **WS only** | No push — log only (`:333-336`) |
-| `RideRejected` | All dispatchers | FCM + inbox | With the rejection reason (`:338-353`) |
-| `RideStatusChanged` → InProgress | Driver + Client | FCM + inbox | "Ride started" (`:128-140`) |
-| `RideStatusChanged` → Completed | Driver + Client + all dispatchers | FCM + inbox | Dispatchers de-duped vs driver/client (`:141-227`) |
-| `RideStatusChanged` → Cancelled | Driver (if assigned) + Client + all dispatchers | FCM + inbox | Dispatcher body carries the cancel reason (`:154-216`) |
-| `RideDetailsUpdated` | Assigned driver + all dispatchers | FCM + inbox | (`:229-251`) |
-| `LocationUpdated` | — | WS only | Live driver/client tracking (`:263`) |
-| `ChatMessageSent` | — | WS only | (`:267`) |
-| `DriverApproaching` | Client | FCM + inbox | threshold 2km / 500m / 100m (`:293-306`) |
-| `EtaAtRisk` | All dispatchers | FCM + inbox | Late-pickup warning (`:308-...`) |
-| `GeofenceTriggered` | All dispatchers | FCM + inbox | entry / exit (`:271-291`) |
-| `AirportCheckpointReached` | Driver | FCM + inbox | Once per checkpoint, deduped (`:355-...`) |
+| Event                            | Recipients                                      | Channel          | Notes                                                                                 |
+|----------------------------------|-------------------------------------------------|------------------|---------------------------------------------------------------------------------------|
+| `RideCreated`                    | Client; dispatchers                             | FCM + inbox / WS | Client gets a booking confirmation; dispatchers see it via WS in Pending (`:253-261`) |
+| `RideAssigned`                   | Driver + Client                                 | FCM + inbox      | "New ride assigned" / "Driver assigned" (`:101-115`)                                  |
+| `RideConfirmed`                  | Dispatchers                                     | **WS only**      | No push — log only (`:333-336`)                                                       |
+| `RideRejected`                   | All dispatchers                                 | FCM + inbox      | With the rejection reason (`:338-353`)                                                |
+| `RideStatusChanged` → InProgress | Driver + Client                                 | FCM + inbox      | "Ride started" (`:128-140`)                                                           |
+| `RideStatusChanged` → Completed  | Driver + Client + all dispatchers               | FCM + inbox      | Dispatchers de-duped vs driver/client (`:141-227`)                                    |
+| `RideStatusChanged` → Cancelled  | Driver (if assigned) + Client + all dispatchers | FCM + inbox      | Dispatcher body carries the cancel reason (`:154-216`)                                |
+| `RideDetailsUpdated`             | Assigned driver + all dispatchers               | FCM + inbox      | (`:229-251`)                                                                          |
+| `LocationUpdated`                | —                                               | WS only          | Live driver/client tracking (`:263`)                                                  |
+| `ChatMessageSent`                | —                                               | WS only          | (`:267`)                                                                              |
+| `DriverApproaching`              | Client                                          | FCM + inbox      | threshold 2km / 500m / 100m (`:293-306`)                                              |
+| `EtaAtRisk`                      | All dispatchers                                 | FCM + inbox      | Late-pickup warning (`:308-...`)                                                      |
+| `GeofenceTriggered`              | All dispatchers                                 | FCM + inbox      | entry / exit (`:271-291`)                                                             |
+| `AirportCheckpointReached`       | Driver                                          | FCM + inbox      | Once per checkpoint, deduped (`:355-...`)                                             |
 
 Push `data` map: `type`, `rideId`, `driverId`/`clientId`, plus event-specific fields (`status`,
 `reason`, `etaMinutes`/`minutesUntilPickup`/`slackMinutes`, `distanceMeters`/`threshold`,
@@ -532,11 +532,11 @@ Push `data` map: `type`, `rideId`, `driverId`/`clientId`, plus event-specific fi
 
 ### 6.1 Background notification jobs
 
-| Job | Schedule | What it sends | Dedup |
-|---|---|---|---|
-| `PredictiveEtaMonitor` (`api/.../app/PredictiveEtaMonitor.scala`) | every minute | For assigned rides with pickup in `[now, now+45min]`, computes ETA via `EtaService` (HERE Routing API; Haversine ≈ 50 km/h fallback). If `slack < 5min`, publishes `EtaAtRisk` to dispatchers. | `EtaAlertRepository` per (ride, driver) |
-| `ConfirmationReminderScheduler` (`api/.../app/ConfirmationReminderScheduler.scala`) | 07:00 Europe/Berlin + catch-up | "Confirm your ride" push to drivers with `Assigned` rides. | `SentConfirmationRequestRepository` per (ride, driver) |
-| `ReminderScheduler` (`api/.../app/ReminderScheduler.scala`) | every minute | Using the driver's `reminderMinutes`, "Ride in N min" when pickup enters the window. | `SentReminderRepository` per (ride, driver) |
+| Job                                                                                 | Schedule                       | What it sends                                                                                                                                                                                  | Dedup                                                  |
+|-------------------------------------------------------------------------------------|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| `PredictiveEtaMonitor` (`api/.../app/PredictiveEtaMonitor.scala`)                   | every minute                   | For assigned rides with pickup in `[now, now+45min]`, computes ETA via `EtaService` (HERE Routing API; Haversine ≈ 50 km/h fallback). If `slack < 5min`, publishes `EtaAtRisk` to dispatchers. | `EtaAlertRepository` per (ride, driver)                |
+| `ConfirmationReminderScheduler` (`api/.../app/ConfirmationReminderScheduler.scala`) | 07:00 Europe/Berlin + catch-up | "Confirm your ride" push to drivers with `Assigned` rides.                                                                                                                                     | `SentConfirmationRequestRepository` per (ride, driver) |
+| `ReminderScheduler` (`api/.../app/ReminderScheduler.scala`)                         | every minute                   | Using the driver's `reminderMinutes`, "Ride in N min" when pickup enters the window.                                                                                                           | `SentReminderRepository` per (ride, driver)            |
 
 ### 6.2 Airport checkpoint notification chain
 
@@ -553,13 +553,13 @@ deduped per (ride, driver, checkpoint) via `CheckpointNotificationRepository`
 
 Cross-checked against [`docs/audit-tasks.md`](audit-tasks.md). Each is a regression-test candidate.
 
-| # | Gap                                                                                                                                                       | Where                                                    | Test to add                                                               |
-|---|-----------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------------------------------------|
-| 1 | **Cancel endpoint has no HTTP-level `companyId` check** (unlike assign/reassign/markPayment/getRide which all compare `existing.companyId != companyId`). | `RideApi.scala:559-575`                                  | A dispatcher of company A must not be able to cancel a ride of company B. |
-| 2 | `validateCancelPermission` has no `case _` → **MatchError** if a new `PersonRole` is added.                                                               | `RideService.scala:808-816`                              | Adding a role must default to deny, not crash.                            |
-| 3 | **markPayment field-level lost-update** — CAS guards ride status only, not the payment fields.                                                            | `RideService.scala:729-731`                              | Two concurrent `markPayment(Paid)` must not clobber each other.           |
-| 4 | **ETA reminders not cleared on cancel** (only on edit-details).                                                                                           | `cancelRideWithReason` vs `updateRideDetails` `:453-503` | A reminder must not fire for a cancelled ride.                            |
-| 5 | `cancellationFee` is stored but **never auto-charged**; no waiting fee logic.                                                                             | `RideDomain.scala:202`, billing                          | Document expected billing behaviour before testing.                       |
+| #   | Gap                                                                                                                                                       | Where                                                    | Test to add                                                               |
+|-----|-----------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|---------------------------------------------------------------------------|
+| 1   | **Cancel endpoint has no HTTP-level `companyId` check** (unlike assign/reassign/markPayment/getRide which all compare `existing.companyId != companyId`). | `RideApi.scala:559-575`                                  | A dispatcher of company A must not be able to cancel a ride of company B. |
+| 2   | `validateCancelPermission` has no `case _` → **MatchError** if a new `PersonRole` is added.                                                               | `RideService.scala:808-816`                              | Adding a role must default to deny, not crash.                            |
+| 3   | **markPayment field-level lost-update** — CAS guards ride status only, not the payment fields.                                                            | `RideService.scala:729-731`                              | Two concurrent `markPayment(Paid)` must not clobber each other.           |
+| 4   | **ETA reminders not cleared on cancel** (only on edit-details).                                                                                           | `cancelRideWithReason` vs `updateRideDetails` `:453-503` | A reminder must not fire for a cancelled ride.                            |
+| 5   | `cancellationFee` is stored but **never auto-charged**; no waiting fee logic.                                                                             | `RideDomain.scala:202`, billing                          | Document expected billing behaviour before testing.                       |
 
 ---
 
@@ -569,31 +569,31 @@ Existing service-level tests: `ride/src/test/scala/com/shevchyk/ride/application
 (cancel + concurrency around lines 562–889). BDD scenarios: `api/src/test/scala/com/shevchyk/app/`.
 Flutter: `bloc_test` + `mocktail`.
 
-| Flow / case                                                   | Backend unit                 | Integration / BDD | Flutter | Notes                                           |
-|---------------------------------------------------------------|------------------------------|-------------------|---------|-------------------------------------------------|
-| Create — happy path per role                                  | partial                      | ?                 | ?       | verify each of the 5 roles                      |
+| Flow / case                                                   | Backend unit                  | Integration / BDD | Flutter | Notes                                           |
+|---------------------------------------------------------------|-------------------------------|-------------------|---------|-------------------------------------------------|
+| Create — happy path per role                                  | partial                       | ?                 | ?       | verify each of the 5 roles                      |
 | Create — tenant isolation (sec A → client B)                  | ✅ (createRide)               | ?                 | n/a     | see memory `createride-client-tenant-isolation` |
-| Create — from==to / past pickup / airport-no-flight / price≤0 | ?                            | n/a               | ?       | validator-level                                 |
-| Estimate — MissingCoordinates                                 | ?                            | n/a               | ?       |                                                 |
+| Create — from==to / past pickup / airport-no-flight / price≤0 | ?                             | n/a               | ?       | validator-level                                 |
+| Estimate — MissingCoordinates                                 | ?                             | n/a               | ?       |                                                 |
 | Cancel — each valid source status                             | ✅ `RideServiceSpec` ~683-889 | ?                 | ?       |                                                 |
 | Cancel — already cancelled / completed                        | ✅                            | ?                 | n/a     |                                                 |
 | Cancel — ownership (client/driver)                            | ✅                            | ?                 | n/a     |                                                 |
 | Cancel — negative fee                                         | ✅                            | n/a               | ?       |                                                 |
 | Cancel — race vs start/complete                               | ✅ ~562-680, 816-868          | n/a               | n/a     | CAS tests                                       |
-| **Cancel — HTTP tenant check (gap #1)**                       | ❌                            | ❌                 | n/a     | **TODO regression**                             |
+| **Cancel — HTTP tenant check (gap #1)**                       | ❌                            | ❌                | n/a     | **TODO regression**                             |
 | **validateCancelPermission default-deny (gap #2)**            | ❌                            | n/a               | n/a     | **TODO**                                        |
-| Assign — happy / conflict / blacklist / cross-tenant          | partial                      | ?                 | ?       |                                                 |
-| Reassign — override conflict                                  | ?                            | ?                 | ?       |                                                 |
-| Confirm — happy / non-assigned driver / double-confirm        | ?                            | ?                 | ?       | RideConfirmed WS, no push                       |
-| Reject — back-to-pool + dispatcher push / no reason           | ?                            | ?                 | ?       | clears driver, status → Requested               |
-| Hand-off — Requested → HandedOff / non-Requested              | ?                            | ?                 | ?       |                                                 |
+| Assign — happy / conflict / blacklist / cross-tenant          | partial                       | ?                 | ?       |                                                 |
+| Reassign — override conflict                                  | ?                             | ?                 | ?       |                                                 |
+| Confirm — happy / non-assigned driver / double-confirm        | ?                             | ?                 | ?       | RideConfirmed WS, no push                       |
+| Reject — back-to-pool + dispatcher push / no reason           | ?                             | ?                 | ?       | clears driver, status → Requested               |
+| Hand-off — Requested → HandedOff / non-Requested              | ?                             | ?                 | ?       |                                                 |
 | Start / Complete — happy + race                               | ✅ (CAS)                      | ?                 | ?       | start requires Confirmed                        |
-| Edit details — editable statuses + reminder clear             | ?                            | ?                 | n/a     | no CAS — concurrent-edit case                   |
-| Notifications — recipient/channel per event (§6)              | ?                            | ?                 | n/a     | listener fan-out + dedup                        |
-| Mark payment — Paid requires Completed                        | ?                            | ?                 | n/a     |                                                 |
-| **Mark payment — concurrent lost-update (gap #3)**            | ❌                            | ❌                 | n/a     | **TODO**                                        |
-| Rate — completed / duplicate / out-of-range / ownership       | ?                            | ?                 | ?       |                                                 |
-| Airport checkpoint — forward-only + race                      | ?                            | ?                 | ?       |                                                 |
+| Edit details — editable statuses + reminder clear             | ?                             | ?                 | n/a     | no CAS — concurrent-edit case                   |
+| Notifications — recipient/channel per event (§6)              | ?                             | ?                 | n/a     | listener fan-out + dedup                        |
+| Mark payment — Paid requires Completed                        | ?                             | ?                 | n/a     |                                                 |
+| **Mark payment — concurrent lost-update (gap #3)**            | ❌                            | ❌                | n/a     | **TODO**                                        |
+| Rate — completed / duplicate / out-of-range / ownership       | ?                             | ?                 | ?       |                                                 |
+| Airport checkpoint — forward-only + race                      | ?                             | ?                 | ?       |                                                 |
 
 Legend: ✅ exists · partial · ? unverified · ❌ missing.
 

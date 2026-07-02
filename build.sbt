@@ -1,4 +1,19 @@
-ThisBuild / version      := "0.1.0-SNAPSHOT"
+// Semver base reported by GET /api/version. Bump this on a release; the commit
+// SHA / branch / build time are derived automatically from git at compile time
+// (the gitProp helper below + sbt-buildinfo) so no other version edit is needed
+// per deploy.
+ThisBuild / version := "0.1.0"
+
+// Read a value from the local git checkout via the `git` CLI. Used to stamp the
+// build (see the BuildInfo keys on `root`). The CLI is worktree-aware, unlike
+// sbt-git/jgit which treats a worktree's `.git` file pointer as a bare repo and
+// fails. Returns "unknown" when git is unavailable (e.g. a source tarball build),
+// so the build never breaks on a missing repo.
+def gitProp(args: String*): String = scala.util
+  .Try(scala.sys.process.Process("git" +: args).!!.trim)
+  .toOption
+  .filter(_.nonEmpty)
+  .getOrElse("unknown")
 ThisBuild / scalaVersion := "3.3.7"
 
 // Test-coverage (scoverage) exclusions: generated/derived/wiring code that carries
@@ -14,16 +29,19 @@ ThisBuild / coverageExcludedPackages := Seq(
 
 // Strict compiler flags. In a ZIO codebase the most valuable are -Wvalue-discard
 // and -Wnonunit-statement: they catch effects that are constructed but never
-// chained into the program (a silently-dropped ZIO that never runs). We keep
-// warnings non-fatal for now so the build still succeeds while the existing
-// findings are cleaned up incrementally.
+// chained into the program (a silently-dropped ZIO that never runs).
+// -Werror makes every warning fatal, so the build fails on any of them — in
+// particular an unused import (flagged by -Wunused:all) will not compile. Fix
+// the warning at its source; suppress only a justified false positive with a
+// narrow @nowarn("cat=...") + comment. See docs/scala-style.md §15.
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation",
   "-feature",
   "-unchecked",
   "-Wunused:all",
   "-Wvalue-discard",
-  "-Wnonunit-statement"
+  "-Wnonunit-statement",
+  "-Werror"
 )
 
 // Integration specs share a single reusable Postgres container
@@ -96,6 +114,10 @@ lazy val commonDependencies = Seq(
 
 lazy val httpDependencies = Seq(
   "dev.zio" %% "zio-http" % "3.0.1"
+)
+
+lazy val cacheDependencies = Seq(
+  "dev.zio" %% "zio-cache" % "0.2.3"
 )
 
 // Sentry error tracking. sentry-logback pulls in the sentry core SDK and wires a
@@ -214,7 +236,7 @@ lazy val ride = (project in file("ride"))
   )
   .settings(
     name := "dispax-ride",
-    libraryDependencies ++= commonDependencies ++ httpDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ tapirDependencies ++ testcontainersDependencies,
+    libraryDependencies ++= commonDependencies ++ httpDependencies ++ cacheDependencies ++ dbDependencies ++ jsonDependencies ++ circeDependencies ++ monocleDependencies ++ tapirDependencies ++ testcontainersDependencies,
     scalacOptions += "-Xmax-inlines:64",
     Test / unmanagedResourceDirectories += baseDirectory.value / ".." / "api" / "src" / "main" / "resources"
   )
@@ -281,10 +303,26 @@ lazy val billing = (project in file("billing"))
   )
 
 lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
   .aggregate(core, auth, ride, driver, notification, schedule, billing)
-  .dependsOn(core, auth, ride, driver, notification, schedule, billing)
+  // core test->test exposes PostgresTestContainer to api integration specs
+  // (e.g. DriverRidesFlightPostgresSpec drives an endpoint against a real DB).
+  .dependsOn(core % "compile->compile;test->test", auth, ride, driver, notification, schedule, billing)
   .settings(
     name                        := "dispax",
+    // Generated com.shevchyk.app.BuildInfo, baked at compile time. Powers the
+    // public GET /api/version endpoint so any deployed build self-reports its
+    // semver, git commit/branch and build time — no manual stamping after deploy.
+    buildInfoPackage            := "com.shevchyk.app",
+    buildInfoKeys               := Seq[BuildInfoKey](
+      version,
+      "gitCommit"      -> gitProp("rev-parse", "HEAD"),
+      "gitShortCommit" -> gitProp("rev-parse", "--short", "HEAD"),
+      "gitBranch"      -> gitProp("rev-parse", "--abbrev-ref", "HEAD"),
+      // NOTE: a wall-clock build time makes BuildInfo non-reproducible (busts the
+      // sbt cache so it regenerates each assembly) — intended, the stamp must be fresh.
+      BuildInfoKey.action("buildTime")(java.time.Instant.now().toString)
+    ),
     Compile / scalaSource       := baseDirectory.value / "api" / "src" / "main" / "scala",
     Compile / resourceDirectory := baseDirectory.value / "api" / "src" / "main" / "resources",
     Test / scalaSource          := baseDirectory.value / "api" / "src" / "test" / "scala",
@@ -306,6 +344,15 @@ lazy val root = (project in file("."))
     assembly / assemblyJarName  := "dispax-server.jar",
     fork                        := true,
     Compile / run / javaOptions ++= Seq(
+      // Cap the forked dev backend's heap so it stays a small, predictable RSS.
+      // Without an explicit -Xmx the JVM defaults to ~25% of physical RAM (~12 GB
+      // on a 48 GB machine), so under macOS memory pressure the idle backend
+      // becomes a large jetsam target and gets SIGKILL'd (exit 137) while the
+      // dev tooling (simulators, emulators, IDE) competes for RAM. 1 GB is ample
+      // for local development; production sizing is driven by Dockerfile's
+      // -XX:MaxRAMPercentage and is unaffected by this run-scoped option.
+      "-Xmx1g",
+      "-XX:+UseG1GC",
       "-Djava.util.logging.config.file=logging.properties",
       "-Dcom.sun.management.jmxremote=false",
       "-Djava.rmi.server.randomIDs=true",

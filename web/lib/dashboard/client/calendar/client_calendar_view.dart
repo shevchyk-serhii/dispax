@@ -134,6 +134,7 @@ class _ClientCalendarViewState extends State<ClientCalendarView> {
             ),
             CalendarViewType.week => WeekViewWidget(
               selectedDay: _selectedDay,
+              onRideSelected: widget.onRideSelected,
               onDaySelected: (d) {
                 setState(() {
                   _selectedDay = d;

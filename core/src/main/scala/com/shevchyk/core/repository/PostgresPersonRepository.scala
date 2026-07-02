@@ -81,17 +81,17 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
     )
 
   private val selectColumns =
-    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes, roles::text[], (avatar IS NOT NULL) AS has_avatar, preferred_language"
+    fr"id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, last_login_at, client_company_id, reminder_minutes, roles::text[], (avatar IS NOT NULL) AS has_avatar, preferred_language, must_change_password, provisional"
 
   override def create(person: Person): Task[Person] = {
     val rolesArray = person.effectiveRoles.toList
     sql"""
-      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id, reminder_minutes, roles, preferred_language)
+      INSERT INTO persons (id, name, email, role, company_id, password_hash, license_number, phone, is_vip, preferred_driver_id, status, client_company_id, reminder_minutes, roles, preferred_language, must_change_password, provisional)
       VALUES (${person.id.value}, ${person.name}, ${person.email}, ${person.role}, ${person.companyId},
               ${person.passwordHash}, ${person.licenseNumber}, ${person.phone}, ${person.isVip},
               ${person.preferredDriverId.map(_.value)}, ${person.status}, ${person.clientCompanyId.map(
         _.value
-      )}, ${person.reminderMinutes}, ${rolesArray}::person_role[], ${person.preferredLanguage})
+      )}, ${person.reminderMinutes}, ${rolesArray}::person_role[], ${person.preferredLanguage}, ${person.mustChangePassword}, ${person.provisional})
     """.update.run
       .transact(xa)
       .as(person)
@@ -168,7 +168,9 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           client_company_id = ${person.clientCompanyId.map(_.value)},
           reminder_minutes = ${person.reminderMinutes},
           roles = ${rolesArray}::person_role[],
-          preferred_language = ${person.preferredLanguage}
+          preferred_language = ${person.preferredLanguage},
+          must_change_password = ${person.mustChangePassword},
+          provisional = ${person.provisional}
       WHERE id = ${person.id.value} AND company_id IS NOT DISTINCT FROM ${person.companyId}
     """.update.run
       .transact(xa)
@@ -275,7 +277,9 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           Int,
           List[PersonRole],
           Boolean,
-          Option[String]
+          Option[String],
+          Boolean,
+          Boolean
       )
     ].map {
       case (
@@ -295,7 +299,9 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
             reminderMinutes,
             rolesList,
             hasAvatar,
-            preferredLanguage
+            preferredLanguage,
+            mustChangePassword,
+            provisional
           ) =>
         Person(
           id = PersonId(id),
@@ -314,7 +320,9 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
           reminderMinutes = reminderMinutes,
           roles = rolesList.toSet,
           avatarPresent = hasAvatar,
-          preferredLanguage = preferredLanguage
+          preferredLanguage = preferredLanguage,
+          mustChangePassword = mustChangePassword,
+          provisional = provisional
         )
     }
 }

@@ -7,7 +7,6 @@ import com.shevchyk.schedule.validation.Validator
 import zio.*
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.util.Try
 

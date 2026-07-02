@@ -31,7 +31,7 @@ Feature: Ride Templates
     Given I am authenticated as a dispatcher
     When I send a POST request to "/api/ride-templates/11111111-1111-1111-1111-111111111111/generate" with body:
       """
-      {"fromDate":"2026-07-01","toDate":"2026-07-07"}
+      {"fromDate":"2026-12-14","toDate":"2026-12-18"}
       """
     Then the response status should be 201
     And the response should contain ride details

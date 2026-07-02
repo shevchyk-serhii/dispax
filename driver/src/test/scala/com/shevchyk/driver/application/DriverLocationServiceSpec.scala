@@ -304,7 +304,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[DriverLocationService]
             _       <- service.updateAvailability(testDriverId, "Available")
-            drivers <- service.getAvailableDrivers(testCompanyId)
+            _       <- service.getAvailableDrivers(testCompanyId)
           } yield assertTrue(true) // availability stored successfully
         }.provide(standardLayers),
         test("sets driver as Offline") {
@@ -317,7 +317,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
           for {
             service <- ZIO.service[DriverLocationService]
             _       <- service.updateAvailability(testDriverId, "Available")
-            before  <- service.getAvailableDrivers(testCompanyId)
+            _       <- service.getAvailableDrivers(testCompanyId)
             _       <- service.updateAvailability(testDriverId, "Offline")
             after   <- service.getAvailableDrivers(testCompanyId)
           } yield assertTrue(after.isEmpty)
@@ -581,8 +581,15 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
             ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
             def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]     = ZIO
               .succeed(Nil)
+            def findActiveRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]       = ZIO
+              .succeed(Nil)
             def findRidesNeedingConfirmation(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]  = ZIO
               .succeed(Nil)
+            def findByDriverIdInWindow(
+                driverId: PersonId,
+                from: java.time.Instant,
+                to: java.time.Instant
+            ): Task[List[Ride]] = ZIO.succeed(Nil)
             def clearReminders(id: RideId): Task[Unit]                                                          = ZIO.unit
             def countAllRidesByStatus(): Task[Map[String, Int]]                                                 = ZIO.succeed(Map.empty)
             def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                 = ZIO.succeed(
@@ -600,6 +607,19 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                 id: RideId,
                 cp: com.shevchyk.ride.domain.AirportCheckpoint
             ): Task[Boolean] = ZIO.succeed(false)
+            def updateFlightStatus(
+                id: RideId,
+                gate: Option[String],
+                terminal: Option[String],
+                flightStatus: Option[String],
+                flightTime: Option[java.time.Instant],
+                scheduledTime: Option[java.time.Instant],
+                departureTime: Option[java.time.Instant]
+            ): Task[Boolean] = ZIO.succeed(false)
+            def findFlightStatus(id: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]            = ZIO.none
+            def findFlightStatusFor(
+                ids: List[RideId]
+            ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = ZIO.succeed(Map.empty)
           )
           val layers          =
             InMemoryDriverLocationRepository.layer ++

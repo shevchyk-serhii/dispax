@@ -27,6 +27,8 @@
 // the widget-test scheduler, unlike the engine-frame-timing-dependent
 // `_dependents.isEmpty` assertion itself.
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +36,7 @@ import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
 import 'package:dispax/blocs/auth/auth_bloc.dart';
+import 'package:dispax/modules/core/widgets/avatar_circle.dart';
 import 'package:dispax/blocs/ride/ride_bloc.dart';
 import 'package:dispax/blocs/schedule/schedule_bloc.dart';
 import 'package:dispax/dashboard/dispatcher/widgets/pending_rides_panel.dart';
@@ -142,6 +145,42 @@ void main() {
       ),
     );
   }
+
+  testWidgets(
+    'the driver-selection sheet renders each driver via AvatarCircle (photo '
+    'when set), not a hardcoded person icon',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // This driver has a profile photo: getDrivers reports hasAvatar=true, and
+      // the avatar endpoint serves bytes. AvatarCircle must fetch them.
+      when(() => mockApiClient.get('/users/drivers')).thenAnswer(
+        (_) async => http.Response(
+          '[{"id":"driver-1","name":"Driver Hans","email":"hans@example.com",'
+          '"role":"driver","companyId":"company-1","phone":"+491111111111",'
+          '"hasAvatar":true}]',
+          200,
+        ),
+      );
+      when(
+        () => mockApiClient.getBytes('/users/driver-1/avatar'),
+      ).thenAnswer((_) async => Uint8List.fromList([0xFF, 0xD8, 0xFF]));
+
+      await tester.pumpWidget(buildPanel());
+      await _pumpUntilFound(tester, find.text('Assign'));
+      await tester.tap(find.text('Assign').first);
+      await _pumpUntilFound(tester, find.text('Select Driver'));
+      await _pumpUntilFound(tester, find.text('Driver Hans'));
+
+      // The row uses AvatarCircle (not a bare Icon(Icons.person) placeholder),
+      // and AvatarCircle fetched the photo bytes for the driver with a photo.
+      expect(find.byType(AvatarCircle), findsWidgets);
+      verify(() => mockApiClient.getBytes('/users/driver-1/avatar')).called(1);
+    },
+  );
 
   testWidgets(
     'assigning a driver via the selection sheet + AssignmentDialog defers the '

@@ -9,9 +9,30 @@ import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/widgets/error_widget.dart';
 import '../utils/conflict_detector.dart';
 import 'assignment_dialog.dart';
 import 'bulk_reassign_dialog.dart';
+
+/// One-line label for a ride in the compact per-driver schedule list:
+/// "HH:mm address", with a `✈ <flight> ·` prefix for airport rides so the
+/// dispatcher can spot transfers at a glance. For airport rides whose gate is
+/// known it appends `· Gate <gate>` so the dispatcher sees the gate without
+/// opening the ride. Pure so it is unit-testable without standing up the panel's BLoCs.
+String driverScheduleRideLabel(Ride ride, [AppLocalizations? l10n]) {
+  final time = DateFormat('HH:mm').format(ride.pickupDateTime);
+  if (ride.isAirportTransfer && ride.flightNumber != null) {
+    final gatePart = switch (ride.gate) {
+      null => '',
+      // A remote stand has no real code → its self-describing label, no "Gate" prefix.
+      _ when ride.isRemoteGate => '${l10n?.gateRemote ?? 'Bus gate'} · ',
+      final g => 'Gate $g · ',
+    };
+    return '$time ✈ ${ride.flightNumber} · $gatePart${ride.from.address}';
+  }
+  return '$time ${ride.from.address}';
+}
 
 class DriverSchedulePanel extends StatefulWidget {
   final DateTime selectedDate;
@@ -44,7 +65,8 @@ const double _boardColumnWidth = 300;
 String resolveDriverLabel(ScheduleDay d, Map<String, String> driverNames) {
   final name = driverNames[d.driverId];
   if (name != null && name.isNotEmpty) return name;
-  if (d.notes?.isNotEmpty == true) return d.notes!;
+  final notes = d.notes;
+  if (notes != null && notes.isNotEmpty) return notes;
   final id = d.driverId;
   return 'Driver ${id.length > 8 ? id.substring(0, 8) : id}...';
 }
@@ -170,31 +192,15 @@ class _DriverSchedulePanelState extends State<DriverSchedulePanel> {
               }
 
               if (scheduleState.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        scheduleState.errorMessage ?? 'Error loading schedules',
-                      ),
-                      const SizedBox(height: 12),
-                      Builder(
-                        builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
-                          return ElevatedButton(
-                            onPressed: _loadSchedule,
-                            child: Text(l10n.retry),
-                          );
-                        },
-                      ),
-                    ],
+                final l10n = AppLocalizations.of(context)!;
+                return ErrorDisplayWidget(
+                  title: l10n.errorLoadingData,
+                  message: friendlyError(
+                    scheduleState.error ?? scheduleState.errorMessage,
+                    l10n,
                   ),
+                  onRetry: _loadSchedule,
+                  retryLabel: l10n.retry,
                 );
               }
 
@@ -849,7 +855,13 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                   child: Icon(
                                     Icons.swap_horiz,
                                     size: 20,
-                                    color: AppColors.errorStrong,
+                                    // errorStrong is invisible on the dark Card;
+                                    // use the theme error red in dark mode.
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? AppColors.rideCancelledTextDark
+                                        : AppColors.errorStrong,
                                   ),
                                 ),
                               ),
@@ -913,7 +925,10 @@ class _DriverScheduleDropTarget extends StatelessWidget {
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      '${DateFormat('HH:mm').format(ride.pickupDateTime)} ${ride.from.address}',
+                                      driverScheduleRideLabel(
+                                        ride,
+                                        AppLocalizations.of(context),
+                                      ),
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: colorScheme.onSurfaceVariant,
@@ -1196,7 +1211,11 @@ class _DriverScheduleColumn extends StatelessWidget {
                     child: Icon(
                       Icons.swap_horiz,
                       size: 20,
-                      color: AppColors.errorStrong,
+                      // errorStrong is invisible on the dark Card; use the
+                      // theme error red in dark mode.
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.rideCancelledTextDark
+                          : AppColors.errorStrong,
                     ),
                   ),
                 ),

@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class ClientValuePanel extends StatefulWidget {
   const ClientValuePanel({super.key});
@@ -17,7 +18,7 @@ class ClientValuePanel extends StatefulWidget {
 class _ClientValuePanelState extends State<ClientValuePanel> {
   List<Map<String, dynamic>>? _data;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
   final _searchController = TextEditingController();
 
   @override
@@ -42,28 +43,30 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
       final response = await apiClient.get('/stats/client-value');
 
       if (response.statusCode == 200) {
-        _data = List<Map<String, dynamic>>.from(jsonDecode(response.body));
+        final data = List<Map<String, dynamic>>.from(jsonDecode(response.body));
         // Sort by total revenue descending
-        _data!.sort(
+        data.sort(
           (a, b) => ((b['totalRevenue'] as num?) ?? 0).compareTo(
             (a['totalRevenue'] as num?) ?? 0,
           ),
         );
+        _data = data;
       }
       setState(() => _isLoading = false);
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
 
   List<Map<String, dynamic>> get _filteredData {
-    if (_data == null) return [];
+    final data = _data;
+    if (data == null) return [];
     final search = _searchController.text.trim().toLowerCase();
-    if (search.isEmpty) return _data!;
-    return _data!
+    if (search.isEmpty) return data;
+    return data
         .where(
           (c) =>
               (c['clientName'] as String? ?? '').toLowerCase().contains(search),
@@ -73,6 +76,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildHeader(),
@@ -90,11 +94,10 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(friendlyError(_error, l10n)),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
                           return ElevatedButton(
                             onPressed: _loadData,
                             child: Text(l10n.retry),
@@ -149,7 +152,8 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
   Widget _buildContent() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_data == null || _data!.isEmpty) {
+    final data = _data;
+    if (data == null || data.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -169,8 +173,8 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
       );
     }
 
-    final totalClients = _data!.length;
-    final totalRevenue = _data!.fold<num>(
+    final totalClients = data.length;
+    final totalRevenue = data.fold<num>(
       0,
       (sum, c) => sum + ((c['totalRevenue'] as num?) ?? 0),
     );
@@ -186,7 +190,7 @@ class _ClientValuePanelState extends State<ClientValuePanel> {
             _buildSummaryCard(
               'Clients',
               totalClients.toString(),
-              AppColors.clientColor,
+              colorScheme.primary,
               colorScheme,
             ),
             const SizedBox(width: 12),

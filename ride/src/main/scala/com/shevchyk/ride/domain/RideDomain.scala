@@ -21,6 +21,25 @@ object RidePolicy:
     now.minusSeconds(ClockSkewToleranceSeconds)
   )
 
+/**
+ * Single source of truth for normalizing free-form ride tags so the dispatcher's tag filter never splits "Urgent" from
+ * "urgent". Applied in BOTH the create and update DTO `toDomain` paths.
+ *
+ * Each tag is trimmed, internal whitespace is collapsed to single spaces, blanks are dropped, and the list is
+ * de-duplicated case-insensitively while preserving the first-seen original casing and order.
+ */
+object TagNormalizer:
+
+  def normalize(tags: List[String]): List[String] =
+    val seen = scala.collection.mutable.LinkedHashMap.empty[String, String]
+    tags.foreach { raw =>
+      val cleaned = raw.trim.replaceAll("\\s+", " ")
+      if cleaned.nonEmpty then
+        val key = cleaned.toLowerCase
+        if !seen.contains(key) then seen.update(key, cleaned)
+    }
+    seen.values.toList
+
 enum AirportCheckpoint:
   case Landed, ArrivalsHall, TerminalExit
 
@@ -164,7 +183,7 @@ enum PaymentStatus:
   case Unpaid, Pending, Paid
 
 enum PaymentMethod:
-  case Cash, Card, Invoice, Bank, Receivable
+  case Cash, Card, Invoice, Bank, Receivable, Payment
 
 sealed trait RideSpecifics
 
@@ -180,7 +199,9 @@ object RideSpecifics:
    */
   final case class AirportTransfer(
       airportCode: String,
-      flightNumber: String,
+      // None when the ride is a known airport transfer but the flight number is not yet known.
+      // Without a flight number there is no live gate/terminal/entry-time lookup, by design.
+      flightNumber: Option[String] = None,
       isArrival: Boolean = false
   ) extends RideSpecifics
 
@@ -189,11 +210,13 @@ object RideSpecifics:
   import io.circe.generic.semiauto.*
   import io.circe.syntax.*
 
-  // Custom decoder: tolerates missing `isArrival` key (legacy rows) by defaulting to false.
+  // Custom decoder: tolerates a missing `isArrival` key (legacy rows) by defaulting to false, and
+  // decodes `flightNumber` as optional (legacy rows always have a String; new airport-without-flight
+  // rows may omit it or store null).
   implicit val airportTransferDecoder: Decoder[AirportTransfer] = Decoder.instance { c =>
     for {
       airportCode  <- c.downField("airportCode").as[String]
-      flightNumber <- c.downField("flightNumber").as[String]
+      flightNumber <- c.downField("flightNumber").as[Option[String]]
       isArrival    <- c.downField("isArrival").as[Option[Boolean]]
     } yield AirportTransfer(airportCode, flightNumber, isArrival.getOrElse(false))
   }
@@ -264,7 +287,9 @@ final case class Ride(
     confirmedAt: Option[java.time.Instant] = None,
     rejectionReason: Option[String] = None,
     rejectedBy: Option[PersonId] = None,
-    rejectedAt: Option[java.time.Instant] = None
+    rejectedAt: Option[java.time.Instant] = None,
+    // Free-form operator labels (e.g. "Urgent", "Cash"). Normalized via TagNormalizer; empty by default.
+    tags: List[String] = Nil
 ):
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
@@ -298,6 +323,8 @@ final case class CreateRideRequest(
     specifics: Option[RideSpecifics] = None,
     specialRequirements: Option[String] = None,
     vehicleClass: VehicleClass = VehicleClass.Default,
+    // Operator-selected payment method chosen at ride creation. None leaves it unset.
+    paymentMethod: Option[PaymentMethod] = None,
     // Client/operator-supplied fare estimate. Stored on the ride as estimatedPrice when present;
     // None leaves the ride unpriced (RideEstimateService is invoked separately, not here).
     estimatedPrice: Option[BigDecimal] = None,
@@ -306,7 +333,9 @@ final case class CreateRideRequest(
     pickupDateTime: Option[Instant] = None,
     // clientCompanyId is resolved from the client Person and used by PickupTimeService to apply
     // client-level airport timing overrides. May be None when the client has no company affiliation.
-    clientCompanyId: Option[ClientCompanyId] = None
+    clientCompanyId: Option[ClientCompanyId] = None,
+    // Free-form operator labels. Already normalized by the DTO layer before reaching the mapper.
+    tags: List[String] = Nil
 )
 
 final case class UpdateRideStatusRequest(
@@ -324,14 +353,29 @@ final case class HandOffRequest(
     partnerCompanyId: PartnerCompanyId
 )
 
+/**
+ * A three-valued update for a single field, so a partial update can tell "leave it as it is" apart from "remove the
+ * value". A plain `Option` collapses these two (both are `None`), which is why an absent flight number and a cleared
+ * flight number could not be distinguished before.
+ */
+enum FieldUpdate[+A]:
+  case Unchanged
+  case Clear
+  case Set(value: A)
+
 final case class UpdateRideDetailsRequest(
     pickupLocation: Option[Location] = None,
     dropoffLocation: Option[Location] = None,
     pickupDateTime: Option[Instant] = None,
     scheduledTime: Option[Instant] = None,
     notes: Option[String] = None,
-    specifics: Option[RideSpecifics] = None,
-    specialRequirements: Option[String] = None
+    // Three-valued: Unchanged leaves the ride's specifics, Clear removes them (e.g. the flight number
+    // was cleared so the ride is no longer an airport transfer), Set replaces (preserving direction in
+    // the service when both old and new are airport transfers).
+    specifics: FieldUpdate[RideSpecifics] = FieldUpdate.Unchanged,
+    specialRequirements: Option[String] = None,
+    // None = leave the ride's tags unchanged; Some(list) = replace with this (already normalized).
+    tags: Option[List[String]] = None
 )
 
 enum RideError extends Throwable:
@@ -343,7 +387,19 @@ enum RideError extends Throwable:
   case UnauthorizedAccess(userId: PersonId, rideId: RideId)
   case InvalidStatusTransition(from: RideStatus, to: RideStatus)
   case RideAlreadyAssigned(rideId: RideId, driverId: PersonId)
-  case ScheduleConflict(message: String)
+
+  // Structured details of the conflicting ride so the client can render a
+  // human-readable, localized dialog (route + client + the dispatcher's local
+  // time) instead of showing a raw id. All optional: the manual-unavailability
+  // branch raises ScheduleConflict with just a message.
+  case ScheduleConflict(
+      message: String,
+      conflictingRideId: Option[RideId] = None,
+      conflictingClientId: Option[PersonId] = None,
+      conflictingFrom: Option[String] = None,
+      conflictingTo: Option[String] = None,
+      conflictingPickupAt: Option[Instant] = None
+  )
   case DatabaseError(cause: Throwable)
   case ExternalServiceError(service: String, cause: Throwable)
   case BusinessRuleViolation(rule: String, message: String)
@@ -353,5 +409,11 @@ enum RideError extends Throwable:
   case PartnerCompanyNotFound(id: PartnerCompanyId)
   case RideAlreadyConfirmed(rideId: RideId)
   case RejectionReasonRequired(rideId: RideId)
+
+  // A guest share token was not found, has expired, or the ride is outside its
+  // tracking window. Deliberately information-free (no fields) so the API maps it
+  // to 404 — a guest must not be able to tell "wrong token" from "expired" from
+  // "ride gone", which would leak the existence of rides.
+  case ShareTokenInvalid
 
 object RideError

@@ -43,10 +43,17 @@
   },
   "allRidesAssigned": "All rides have been assigned",
   "selectDriver": "Select Driver",
+  "reassignDriver": "Reassign Driver",
+  "noDriversFound": "No drivers found",
   "reassignRide": "Reassign Ride",
   "confirmReassignment": "Confirm Reassignment",
   "reassign": "Reassign",
   "assign": "Assign",
+  "driverDashboardTitle": "Driver Dashboard",
+  "secretaryDashboardTitle": "Secretary Dashboard",
+  "dispatcherDashboardTitle": "Dispatcher Dashboard",
+  "adminDashboardTitle": "Admin Dashboard",
+  "platformAdminTitle": "Platform Admin",
   "cancel": "Cancel",
   "confirm": "Confirm",
   "retry": "Retry",
@@ -121,6 +128,16 @@
   "passwordChanged": "Password changed successfully",
   "passwordsDoNotMatch": "Passwords do not match",
   "passwordTooShort": "Password must be at least 6 characters",
+  "forcePasswordChangeTitle": "Set a new password",
+  "forcePasswordChangeMessage": "Your account uses a temporary password. Please set a new password to continue.",
+  "updateRequired": "Update required",
+  "updateRequiredMessage": "This version of the app is no longer supported. Please update to the latest version to continue.",
+  "updateNow": "Update now",
+  "temporaryPassword": "Temporary password",
+  "temporaryPasswordHint": "The user will be asked to change it on first login.",
+  "tempPasswordRules": "At least 8 characters with an uppercase letter, a lowercase letter, and a digit",
+  "setNewPassword": "Set new password",
+  "userCreatedSharePassword": "User created. Share the temporary password with them.",
 
   "notifications": "Notifications",
   "pushNotifications": "Push Notifications",
@@ -153,6 +170,8 @@
 
   "about": "About",
   "version": "Version",
+  "appVersion": "App version",
+  "backendVersion": "Backend version",
   "privacyPolicy": "Privacy Policy",
   "termsOfService": "Terms of Service",
 
@@ -179,8 +198,65 @@
   "checkpointLanded": "Landed",
   "checkpointArrivalsHall": "Arrivals Hall",
   "checkpointTerminalExit": "Terminal Exit",
+  "passengerCheckpointStatus": "Passenger: {checkpoint}",
+  "@passengerCheckpointStatus": {
+    "description": "Ride-card line showing the passenger's self-reported airport progress.",
+    "placeholders": {
+      "checkpoint": {"type": "String"}
+    }
+  },
   "markCheckpointButton": "I'm here",
   "airportCheckpointPanelTitle": "My location in terminal",
+  "airportEntryTitle": "Airport Entry Time",
+  "airportDepartIn": "Depart in:",
+  "airportEntryLabel": "Airport entry:",
+  "airportEntryAt": "Entry at {time}",
+  "@airportEntryAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandingAt": "Landing at {time}",
+  "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandedAt": "Landed at {time}",
+  "@airportLandedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportFlightDelay": "+{minutes} min delay",
+  "@airportFlightDelay": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "airportScheduledVsActual": "Scheduled {scheduled} → {actual}",
+  "@airportScheduledVsActual": {
+    "placeholders": {
+      "scheduled": {"type": "String"},
+      "actual": {"type": "String"}
+    }
+  },
+  "airportTravelTime": "Travel time:",
+  "airportParkingSavings": "Parking savings: {amount}",
+  "@airportParkingSavings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "airportDepartNow": "Depart now!",
+  "airportFlightDelayed": "Flight delayed. Entry time recalculated.",
+  "airportTimingError": "Error loading data: {error}",
+  "@airportTimingError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "airportLoadingTiming": "Loading entry time data...",
   "checkpointNotifTitle": "Client reached {checkpoint}",
   "@checkpointNotifTitle": {
     "placeholders": {
@@ -230,6 +306,20 @@
     }
   },
   "pickupTimeComputedAuto": "Computed automatically based on flight departure",
+  "addressNotFound": "Address could not be located — double-check the spelling.",
+  "addressOutOfServiceArea": "Address is outside the service area (about {distanceKm} km from Munich, max {radiusKm} km).",
+  "@addressOutOfServiceArea": {
+    "placeholders": {
+      "distanceKm": {"type": "int"},
+      "radiusKm": {"type": "int"}
+    }
+  },
+  "addressOutOfServiceAreaShort": "Address is outside the service area (max {radiusKm} km from Munich).",
+  "@addressOutOfServiceAreaShort": {
+    "placeholders": {
+      "radiusKm": {"type": "int"}
+    }
+  },
   "markUnavailable": "Mark Unavailable",
   "driverUnavailable": "Driver Unavailable",
   "unavailabilityReason": "Reason",
@@ -388,6 +478,13 @@
       "error": {"type": "String"}
     }
   },
+  "errorNetwork": "Couldn't reach the server. Please check your internet connection and try again.",
+  "errorTimeout": "The server took too long to respond. Please try again.",
+  "errorServer": "Something went wrong on our side. Please try again in a moment.",
+  "errorNotFound": "We couldn't find what you were looking for.",
+  "errorLoadingData": "Couldn't load the data",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorSessionExpired": "Your session has expired. Please sign in again.",
   "unbilledRidesTitle": "Unbilled Rides",
   "selectRidesToBill": "Select rides to bill",
   "ridesBillingCountSelected": "{count} selected",
@@ -527,6 +624,14 @@
   },
   "noCompletedRides": "No completed rides yet",
   "refresh": "Refresh",
+  "refreshFlightStatus": "Refresh flight status",
+  "@refreshFlightStatus": {
+    "description": "Tooltip for the manual flight-status refresh button on the ride flight card"
+  },
+  "flightStatusRefreshed": "Flight status updated",
+  "flightStatusUnchanged": "Already up to date",
+  "flightNotFoundYet": "Flight not in the system yet",
+  "failedToRefreshFlightStatus": "Failed to refresh flight status",
   "youreOnline": "You're online",
   "youreOffline": "You're offline",
   "discardChangesTitle": "Discard changes?",
@@ -794,6 +899,7 @@
   "invalidEmail": "Invalid email",
   "addButton": "Add",
   "editAction": "Edit",
+  "duplicateRideAction": "Duplicate",
   "deactivateAction": "Deactivate",
   "editClientTitle": "Edit Client",
   "clientUpdatedSuccess": "Client updated successfully",
@@ -932,9 +1038,20 @@
   "airportArrivalHint": "From airport",
   "flightNumberLabel": "Flight Number",
   "flightNumberHint": "e.g. LH123, BA456",
-  "flightNumberRequired": "Flight number is required for airport transfers",
+  "flightNumberRequired": "Flight number is required",
+  "@flightNumberRequired": {
+    "description": "Validation error shown when an airport-transfer ride is missing its flight number"
+  },
+  "flightNumberInvalidFormat": "Enter a valid flight number, e.g. LH429",
+  "@flightNumberInvalidFormat": {
+    "description": "Validation error when the entered flight number is not a plausible IATA/ICAO code+number"
+  },
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
+  "gateRemote": "Bus gate (remote stand)",
+  "@gateRemote": {
+    "description": "Shown instead of a gate code when MUC reports 'Gate REMOTE' — the plane is on a remote apron stand and passengers are bussed to the terminal."
+  },
 
   "creatingRideLabel": "Creating Ride...",
   "createRideButton": "Create Ride",
@@ -971,10 +1088,9 @@
   "enterClientNameError": "Please enter client name",
 
   "editRideDialogTitle": "Edit Ride",
-  "pickupDateTimeLabel": "Pickup date/time (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Pickup date/time",
   "flightNumberOptionalLabel": "Flight number (optional)",
   "notesOptionalLabel": "Notes (optional)",
-  "invalidDateFormatError": "Invalid date format. Use: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Server error: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {
@@ -1496,8 +1612,10 @@
   "allRidesPaidLabel": "All rides are paid",
   "markAsPaidDialogTitle": "Mark as Paid",
   "paymentMethodLabel": "Payment Method:",
+  "paymentMethodSelectLabel": "Payment Method",
+  "paymentMethodPayment": "Payment",
   "paymentMethodCash": "Cash",
-  "paymentMethodCard": "Card",
+  "paymentMethodCard": "Credit Card",
   "paymentMethodInvoice": "Invoice",
   "amountLabel": "Amount: {amount} EUR",
   "@amountLabel": {
@@ -1585,6 +1703,14 @@
     }
   },
   "conflictDialogContentDefault": "You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?",
+  "conflictDialogContentRich": "The driver is already booked: {from} → {to} at {time}.\n\nThe ride was created and is in the dispatcher pool. Assign it anyway?",
+  "@conflictDialogContentRich": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "keepInPoolButton": "Keep in pool",
   "assignAnywayButton": "Assign anyway",
 
@@ -1606,9 +1732,14 @@
   "flightsMunichAirportTitle": "Flights · Munich Airport",
   "autoSyncedLabel": "auto-synced",
   "arrivalsTabLabel": "Arrivals",
+  "arrivalsBoardTitle": "Arrivals · Munich Airport",
   "departuresTabLabel": "Departures",
   "noArrivalsFound": "No arrivals found",
   "noDeparturesFound": "No departures found",
+  "flightDetailsTitle": "Flight details",
+  "gateNotPublished": "Gate not published yet",
+  "trackFlightLive": "Track live on Flightradar24",
+  "couldNotOpenFlightTracker": "Could not open the flight tracker",
   "errorLoadingFlights": "Error loading flights: {error}",
   "@errorLoadingFlights": {
     "placeholders": {
@@ -1625,6 +1756,27 @@
   "flightStatusBoarding": "Boarding",
   "flightStatusCancelled": "Cancelled",
   "flightStatusUnknown": "Unknown",
+  "flightStatusScheduled": "Scheduled",
+  "flightStatusDeparted": "Departed",
+  "flightStatusEnRoute": "En route",
+  "flightStatusLanded": "Landed",
+  "flightStatusDiverted": "Diverted",
+  "flightInformation": "Flight Information",
+  "@flightInformation": {
+    "description": "Header of the flight details card on the ride details screen"
+  },
+  "flightNumber": "Flight Number",
+  "@flightNumber": {
+    "description": "Label for the flight number field on the ride flight card"
+  },
+  "arrivalTime": "Arrival Time",
+  "@arrivalTime": {
+    "description": "Label for an arriving flight's time on the ride flight card"
+  },
+  "departureTime": "Departure Time",
+  "@departureTime": {
+    "description": "Label for a departing flight's time on the ride flight card"
+  },
   "flightNotLinked": "— not linked",
 
   "whoCanSeeWhomTitle": "Who can see whom",
@@ -1668,5 +1820,67 @@
   "clientPaymentTitle": "Payment",
   "paymentMethodsSectionLabel": "PAYMENT METHODS",
   "corporateInvoiceLabel": "Corporate invoice",
-  "addPaymentMethodButton": "Add payment method"
+  "addPaymentMethodButton": "Add payment method",
+
+  "shareRideLink": "Share tracking link",
+  "trackingLinkCopied": "Tracking link copied to clipboard",
+
+  "bookWithoutClient": "Without client (from chat)",
+  "fromChatRide": "From chat",
+  "linkClient": "Add client details",
+"calendarSharingTitle": "Calendar Sharing",
+  "calendarSharingMenuItem": "Calendar Sharing",
+  "shareInvitesSection": "My invite codes",
+  "shareCreateInvite": "Create invite code",
+  "shareInviteExpiry1Day": "1 day",
+  "shareInviteExpiry7Days": "7 days",
+  "shareInviteExpiry30Days": "30 days",
+  "shareInviteCreatedTitle": "Invite code created",
+  "shareInviteCreatedHint": "Send this code to a driver or dispatcher of another company. They enter it in their app under Calendar Sharing.",
+  "shareCopyCode": "Copy code",
+  "shareCodeCopied": "Code copied to clipboard",
+  "shareRevoke": "Revoke",
+  "shareGrantedSection": "Who sees my calendar",
+  "shareSharedWithMeSection": "Shared with me",
+  "shareEnterCode": "Enter code",
+  "shareRedeemTitle": "Connect a shared calendar",
+  "shareRedeemHint": "Paste the invite code or link",
+  "shareRedeemConnect": "Connect",
+  "shareRedeemSuccess": "Connected to {name}",
+  "@shareRedeemSuccess": {"placeholders": {"name": {"type": "String"}}},
+  "shareUnlink": "Unlink",
+  "shareNoInvites": "No active invite codes",
+  "shareNoGrants": "You have not shared your calendar with anyone",
+  "shareNoSharedWithMe": "No calendars have been shared with you",
+  "shareValidUntil": "Valid until {date}",
+  "@shareValidUntil": {"placeholders": {"date": {"type": "String"}}},
+  "shareSince": "Since {date}",
+  "@shareSince": {"placeholders": {"date": {"type": "String"}}},
+  "shareActionFailed": "Action failed: {error}",
+  "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
+  "sharedCalendarAvailable": "Available",
+  "sharedCalendarBusy": "Busy",
+  "sharedCalendarShift": "Shift",
+  "sharedCalendarEmptyDay": "No shifts or busy slots",
+  "sharedCalendarEmptyWeek": "No shifts or busy slots this week",
+  "sharedCalendarTimesHint": "Shift times as provided by {company}",
+  "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
+  "sharedWithMeGroupLabel": "Shared with me",
+  "myCompanyGroupLabel": "My company",
+"addShiftTooltip": "Add shift",
+  "addShiftTitle": "New shift",
+  "shiftDateLabel": "Date",
+  "shiftStartLabel": "Start",
+  "shiftEndLabel": "End",
+  "shiftRepeatUntilLabel": "Repeat daily until (optional)",
+  "shiftNoteLabel": "Note (optional)",
+  "shiftCreateButton": "Create",
+  "shiftsCreatedSnack": "Shifts created: {count}",
+  "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftTimeOrderError": "Start time must be before end time",
+  "shiftCancelTitle": "Cancel this shift?",
+  "shiftCancelButton": "Cancel shift",
+  "shiftCancelledSnack": "Shift cancelled",
+  "shiftsStripLabel": "Shifts",
+  "noShiftsForDay": "No shifts"
 }

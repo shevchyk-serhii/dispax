@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../models/client_address.dart';
 
@@ -144,7 +143,7 @@ class _AddressAutocompleteFieldState extends State<AddressAutocompleteField> {
                 hintText: widget.hintText,
                 prefixIcon: Icon(
                   widget.prefixIconData,
-                  color: AppColors.secretaryColor,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 suffixIcon: controller.text.isNotEmpty
                     ? IconButton(

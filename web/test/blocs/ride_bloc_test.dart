@@ -241,6 +241,44 @@ void main() {
       ],
     );
 
+    // Regression for the "confirmed ride vanishes from My Rides until manual
+    // refresh" bug: a WebSocket RideConfirmed makes the dispatcher dashboard
+    // dispatch RideLoadPendingRequested. The shared RideBloc also backs the
+    // driver My Rides screen, so loading pending (requested-only) must NOT drop
+    // the non-pending rides (assigned/confirmed/...) already held — otherwise a
+    // driver-dispatcher's just-confirmed ride disappears.
+    blocTest<RideBloc, RideState>(
+      'RideLoadPendingRequested keeps existing non-pending rides (merge, not replace)',
+      build: () {
+        when(
+          () => mockRideService.getPendingRides(),
+        ).thenAnswer((_) async => <Ride>[]); // no pending rides on the server
+        return buildBloc();
+      },
+      // Seed: one confirmed ride (the driver's own) + one stale requested ride.
+      seed: () => RideState.loaded([
+        TestFixtures.ride(
+          id: 'mine-confirmed',
+          driverId: 'me',
+          status: RideStatus.confirmed,
+        ),
+        TestFixtures.ride(id: 'stale-requested', status: RideStatus.requested),
+      ]),
+      act: (bloc) => bloc.add(const RideLoadPendingRequested()),
+      verify: (bloc) {
+        // The confirmed ride must survive; the stale requested one is dropped
+        // because the fresh pending list is empty.
+        expect(
+          bloc.state.rides.map((r) => r.id),
+          ['mine-confirmed'],
+          reason:
+              'pending reload must preserve non-pending rides and only refresh '
+              'the requested subset',
+        );
+        expect(bloc.state.rides.single.status, RideStatus.confirmed);
+      },
+    );
+
     blocTest<RideBloc, RideState>(
       'RideAssignRequested emits assigning then loaded with updated ride',
       build: () {
@@ -610,6 +648,64 @@ void main() {
                 RideStatus.assigned,
               ),
         ],
+      );
+    });
+
+    group('RideCheckpointReceived (passenger airport status via WS)', () {
+      blocTest<RideBloc, RideState>(
+        'updates the matching ride airportCheckpoint without an HTTP call',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', isAirportTransfer: true),
+          TestFixtures.ride(id: 'ride-2', isAirportTransfer: true),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideCheckpointReceived(
+            rideId: 'ride-1',
+            checkpoint: 'terminal_exit',
+          ),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) =>
+                s.rides.firstWhere((r) => r.id == 'ride-1').airportCheckpoint,
+            'ride-1 checkpoint',
+            'terminal_exit',
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockRideService.getRidesForUser(any()));
+        },
+      );
+
+      blocTest<RideBloc, RideState>(
+        'does not affect other rides',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', isAirportTransfer: true),
+          TestFixtures.ride(id: 'ride-2', isAirportTransfer: true),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideCheckpointReceived(rideId: 'ride-1', checkpoint: 'landed'),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) =>
+                s.rides.firstWhere((r) => r.id == 'ride-2').airportCheckpoint,
+            'ride-2 checkpoint unchanged',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<RideBloc, RideState>(
+        'unknown rideId emits nothing',
+        build: buildBloc,
+        seed: () => RideState.loaded([TestFixtures.ride(id: 'ride-1')]),
+        act: (bloc) => bloc.add(
+          const RideCheckpointReceived(rideId: 'unknown', checkpoint: 'landed'),
+        ),
+        expect: () => [],
       );
     });
 

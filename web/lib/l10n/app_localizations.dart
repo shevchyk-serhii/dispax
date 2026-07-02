@@ -280,6 +280,18 @@ abstract class AppLocalizations {
   /// **'Select Driver'**
   String get selectDriver;
 
+  /// No description provided for @reassignDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassign Driver'**
+  String get reassignDriver;
+
+  /// No description provided for @noDriversFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No drivers found'**
+  String get noDriversFound;
+
   /// No description provided for @reassignRide.
   ///
   /// In en, this message translates to:
@@ -303,6 +315,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assign'**
   String get assign;
+
+  /// No description provided for @driverDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver Dashboard'**
+  String get driverDashboardTitle;
+
+  /// No description provided for @secretaryDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Secretary Dashboard'**
+  String get secretaryDashboardTitle;
+
+  /// No description provided for @dispatcherDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatcher Dashboard'**
+  String get dispatcherDashboardTitle;
+
+  /// No description provided for @adminDashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Dashboard'**
+  String get adminDashboardTitle;
+
+  /// No description provided for @platformAdminTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Admin'**
+  String get platformAdminTitle;
 
   /// No description provided for @cancel.
   ///
@@ -658,6 +700,66 @@ abstract class AppLocalizations {
   /// **'Password must be at least 6 characters'**
   String get passwordTooShort;
 
+  /// No description provided for @forcePasswordChangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new password'**
+  String get forcePasswordChangeTitle;
+
+  /// No description provided for @forcePasswordChangeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account uses a temporary password. Please set a new password to continue.'**
+  String get forcePasswordChangeMessage;
+
+  /// No description provided for @updateRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Update required'**
+  String get updateRequired;
+
+  /// No description provided for @updateRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of the app is no longer supported. Please update to the latest version to continue.'**
+  String get updateRequiredMessage;
+
+  /// No description provided for @updateNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Update now'**
+  String get updateNow;
+
+  /// No description provided for @temporaryPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary password'**
+  String get temporaryPassword;
+
+  /// No description provided for @temporaryPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The user will be asked to change it on first login.'**
+  String get temporaryPasswordHint;
+
+  /// No description provided for @tempPasswordRules.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters with an uppercase letter, a lowercase letter, and a digit'**
+  String get tempPasswordRules;
+
+  /// No description provided for @setNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Set new password'**
+  String get setNewPassword;
+
+  /// No description provided for @userCreatedSharePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'User created. Share the temporary password with them.'**
+  String get userCreatedSharePassword;
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:
@@ -814,6 +916,18 @@ abstract class AppLocalizations {
   /// **'Version'**
   String get version;
 
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get appVersion;
+
+  /// No description provided for @backendVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend version'**
+  String get backendVersion;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
@@ -958,6 +1072,12 @@ abstract class AppLocalizations {
   /// **'Terminal Exit'**
   String get checkpointTerminalExit;
 
+  /// Ride-card line showing the passenger's self-reported airport progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Passenger: {checkpoint}'**
+  String passengerCheckpointStatus(String checkpoint);
+
   /// No description provided for @markCheckpointButton.
   ///
   /// In en, this message translates to:
@@ -969,6 +1089,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My location in terminal'**
   String get airportCheckpointPanelTitle;
+
+  /// No description provided for @airportEntryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport Entry Time'**
+  String get airportEntryTitle;
+
+  /// No description provided for @airportDepartIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Depart in:'**
+  String get airportDepartIn;
+
+  /// No description provided for @airportEntryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Airport entry:'**
+  String get airportEntryLabel;
+
+  /// No description provided for @airportEntryAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry at {time}'**
+  String airportEntryAt(String time);
+
+  /// No description provided for @airportLandingAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Landing at {time}'**
+  String airportLandingAt(String time);
+
+  /// No description provided for @airportLandedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed at {time}'**
+  String airportLandedAt(String time);
+
+  /// No description provided for @airportFlightDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'+{minutes} min delay'**
+  String airportFlightDelay(int minutes);
+
+  /// No description provided for @airportScheduledVsActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled {scheduled} → {actual}'**
+  String airportScheduledVsActual(String scheduled, String actual);
+
+  /// No description provided for @airportTravelTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel time:'**
+  String get airportTravelTime;
+
+  /// No description provided for @airportParkingSavings.
+  ///
+  /// In en, this message translates to:
+  /// **'Parking savings: {amount}'**
+  String airportParkingSavings(String amount);
+
+  /// No description provided for @airportDepartNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Depart now!'**
+  String get airportDepartNow;
+
+  /// No description provided for @airportFlightDelayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight delayed. Entry time recalculated.'**
+  String get airportFlightDelayed;
+
+  /// No description provided for @airportTimingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading data: {error}'**
+  String airportTimingError(String error);
+
+  /// No description provided for @airportLoadingTiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading entry time data...'**
+  String get airportLoadingTiming;
 
   /// No description provided for @checkpointNotifTitle.
   ///
@@ -1125,6 +1329,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Computed automatically based on flight departure'**
   String get pickupTimeComputedAuto;
+
+  /// No description provided for @addressNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Address could not be located — double-check the spelling.'**
+  String get addressNotFound;
+
+  /// No description provided for @addressOutOfServiceArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Address is outside the service area (about {distanceKm} km from Munich, max {radiusKm} km).'**
+  String addressOutOfServiceArea(int distanceKm, int radiusKm);
+
+  /// No description provided for @addressOutOfServiceAreaShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Address is outside the service area (max {radiusKm} km from Munich).'**
+  String addressOutOfServiceAreaShort(int radiusKm);
 
   /// No description provided for @markUnavailable.
   ///
@@ -1780,6 +2002,48 @@ abstract class AppLocalizations {
   /// **'Error: {error}'**
   String genericError(String error);
 
+  /// No description provided for @errorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Please check your internet connection and try again.'**
+  String get errorNetwork;
+
+  /// No description provided for @errorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The server took too long to respond. Please try again.'**
+  String get errorTimeout;
+
+  /// No description provided for @errorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong on our side. Please try again in a moment.'**
+  String get errorServer;
+
+  /// No description provided for @errorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find what you were looking for.'**
+  String get errorNotFound;
+
+  /// No description provided for @errorLoadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the data'**
+  String get errorLoadingData;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errorGeneric;
+
+  /// No description provided for @errorSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Please sign in again.'**
+  String get errorSessionExpired;
+
   /// No description provided for @unbilledRidesTitle.
   ///
   /// In en, this message translates to:
@@ -2163,6 +2427,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh'**
   String get refresh;
+
+  /// Tooltip for the manual flight-status refresh button on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh flight status'**
+  String get refreshFlightStatus;
+
+  /// No description provided for @flightStatusRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight status updated'**
+  String get flightStatusRefreshed;
+
+  /// No description provided for @flightStatusUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get flightStatusUnchanged;
+
+  /// No description provided for @flightNotFoundYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight not in the system yet'**
+  String get flightNotFoundYet;
+
+  /// No description provided for @failedToRefreshFlightStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to refresh flight status'**
+  String get failedToRefreshFlightStatus;
 
   /// No description provided for @youreOnline.
   ///
@@ -3202,6 +3496,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get editAction;
 
+  /// No description provided for @duplicateRideAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateRideAction;
+
   /// No description provided for @deactivateAction.
   ///
   /// In en, this message translates to:
@@ -3748,11 +4048,17 @@ abstract class AppLocalizations {
   /// **'e.g. LH123, BA456'**
   String get flightNumberHint;
 
-  /// No description provided for @flightNumberRequired.
+  /// Validation error shown when an airport-transfer ride is missing its flight number
   ///
   /// In en, this message translates to:
-  /// **'Flight number is required for airport transfers'**
+  /// **'Flight number is required'**
   String get flightNumberRequired;
+
+  /// Validation error when the entered flight number is not a plausible IATA/ICAO code+number
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid flight number, e.g. LH429'**
+  String get flightNumberInvalidFormat;
 
   /// No description provided for @gateLabel.
   ///
@@ -3765,6 +4071,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terminal'**
   String get terminalLabel;
+
+  /// Shown instead of a gate code when MUC reports 'Gate REMOTE' — the plane is on a remote apron stand and passengers are bussed to the terminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus gate (remote stand)'**
+  String get gateRemote;
 
   /// No description provided for @creatingRideLabel.
   ///
@@ -3949,7 +4261,7 @@ abstract class AppLocalizations {
   /// No description provided for @pickupDateTimeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Pickup date/time (yyyy-MM-ddTHH:mm)'**
+  /// **'Pickup date/time'**
   String get pickupDateTimeLabel;
 
   /// No description provided for @flightNumberOptionalLabel.
@@ -3963,12 +4275,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes (optional)'**
   String get notesOptionalLabel;
-
-  /// No description provided for @invalidDateFormatError.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid date format. Use: yyyy-MM-ddTHH:mm'**
-  String get invalidDateFormatError;
 
   /// No description provided for @serverErrorMessage.
   ///
@@ -5842,6 +6148,18 @@ abstract class AppLocalizations {
   /// **'Payment Method:'**
   String get paymentMethodLabel;
 
+  /// No description provided for @paymentMethodSelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethodSelectLabel;
+
+  /// No description provided for @paymentMethodPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentMethodPayment;
+
   /// No description provided for @paymentMethodCash.
   ///
   /// In en, this message translates to:
@@ -5851,7 +6169,7 @@ abstract class AppLocalizations {
   /// No description provided for @paymentMethodCard.
   ///
   /// In en, this message translates to:
-  /// **'Card'**
+  /// **'Credit Card'**
   String get paymentMethodCard;
 
   /// No description provided for @paymentMethodInvoice.
@@ -6016,6 +6334,12 @@ abstract class AppLocalizations {
   /// **'You already have a ride around this time. The ride was created and is in the dispatcher pool. Assign it to yourself anyway?'**
   String get conflictDialogContentDefault;
 
+  /// No description provided for @conflictDialogContentRich.
+  ///
+  /// In en, this message translates to:
+  /// **'The driver is already booked: {from} → {to} at {time}.\n\nThe ride was created and is in the dispatcher pool. Assign it anyway?'**
+  String conflictDialogContentRich(String from, String to, String time);
+
   /// No description provided for @keepInPoolButton.
   ///
   /// In en, this message translates to:
@@ -6100,6 +6424,12 @@ abstract class AppLocalizations {
   /// **'Arrivals'**
   String get arrivalsTabLabel;
 
+  /// No description provided for @arrivalsBoardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals · Munich Airport'**
+  String get arrivalsBoardTitle;
+
   /// No description provided for @departuresTabLabel.
   ///
   /// In en, this message translates to:
@@ -6117,6 +6447,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No departures found'**
   String get noDeparturesFound;
+
+  /// No description provided for @flightDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight details'**
+  String get flightDetailsTitle;
+
+  /// No description provided for @gateNotPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Gate not published yet'**
+  String get gateNotPublished;
+
+  /// No description provided for @trackFlightLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Track live on Flightradar24'**
+  String get trackFlightLive;
+
+  /// No description provided for @couldNotOpenFlightTracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the flight tracker'**
+  String get couldNotOpenFlightTracker;
 
   /// No description provided for @errorLoadingFlights.
   ///
@@ -6183,6 +6537,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get flightStatusUnknown;
+
+  /// No description provided for @flightStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get flightStatusScheduled;
+
+  /// No description provided for @flightStatusDeparted.
+  ///
+  /// In en, this message translates to:
+  /// **'Departed'**
+  String get flightStatusDeparted;
+
+  /// No description provided for @flightStatusEnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'En route'**
+  String get flightStatusEnRoute;
+
+  /// No description provided for @flightStatusLanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed'**
+  String get flightStatusLanded;
+
+  /// No description provided for @flightStatusDiverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Diverted'**
+  String get flightStatusDiverted;
+
+  /// Header of the flight details card on the ride details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Information'**
+  String get flightInformation;
+
+  /// Label for the flight number field on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Flight Number'**
+  String get flightNumber;
+
+  /// Label for an arriving flight's time on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival Time'**
+  String get arrivalTime;
+
+  /// Label for a departing flight's time on the ride flight card
+  ///
+  /// In en, this message translates to:
+  /// **'Departure Time'**
+  String get departureTime;
 
   /// No description provided for @flightNotLinked.
   ///
@@ -6327,6 +6735,330 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add payment method'**
   String get addPaymentMethodButton;
+
+  /// No description provided for @shareRideLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share tracking link'**
+  String get shareRideLink;
+
+  /// No description provided for @trackingLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking link copied to clipboard'**
+  String get trackingLinkCopied;
+
+  /// No description provided for @bookWithoutClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Without client (from chat)'**
+  String get bookWithoutClient;
+
+  /// No description provided for @fromChatRide.
+  ///
+  /// In en, this message translates to:
+  /// **'From chat'**
+  String get fromChatRide;
+
+  /// No description provided for @linkClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add client details'**
+  String get linkClient;
+
+  /// No description provided for @calendarSharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Sharing'**
+  String get calendarSharingTitle;
+
+  /// No description provided for @calendarSharingMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Sharing'**
+  String get calendarSharingMenuItem;
+
+  /// No description provided for @shareInvitesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'My invite codes'**
+  String get shareInvitesSection;
+
+  /// No description provided for @shareCreateInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Create invite code'**
+  String get shareCreateInvite;
+
+  /// No description provided for @shareInviteExpiry1Day.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day'**
+  String get shareInviteExpiry1Day;
+
+  /// No description provided for @shareInviteExpiry7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get shareInviteExpiry7Days;
+
+  /// No description provided for @shareInviteExpiry30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'30 days'**
+  String get shareInviteExpiry30Days;
+
+  /// No description provided for @shareInviteCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite code created'**
+  String get shareInviteCreatedTitle;
+
+  /// No description provided for @shareInviteCreatedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this code to a driver or dispatcher of another company. They enter it in their app under Calendar Sharing.'**
+  String get shareInviteCreatedHint;
+
+  /// No description provided for @shareCopyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get shareCopyCode;
+
+  /// No description provided for @shareCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied to clipboard'**
+  String get shareCodeCopied;
+
+  /// No description provided for @shareRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get shareRevoke;
+
+  /// No description provided for @shareGrantedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Who sees my calendar'**
+  String get shareGrantedSection;
+
+  /// No description provided for @shareSharedWithMeSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with me'**
+  String get shareSharedWithMeSection;
+
+  /// No description provided for @shareEnterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code'**
+  String get shareEnterCode;
+
+  /// No description provided for @shareRedeemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a shared calendar'**
+  String get shareRedeemTitle;
+
+  /// No description provided for @shareRedeemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the invite code or link'**
+  String get shareRedeemHint;
+
+  /// No description provided for @shareRedeemConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get shareRedeemConnect;
+
+  /// No description provided for @shareRedeemSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {name}'**
+  String shareRedeemSuccess(String name);
+
+  /// No description provided for @shareUnlink.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink'**
+  String get shareUnlink;
+
+  /// No description provided for @shareNoInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'No active invite codes'**
+  String get shareNoInvites;
+
+  /// No description provided for @shareNoGrants.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not shared your calendar with anyone'**
+  String get shareNoGrants;
+
+  /// No description provided for @shareNoSharedWithMe.
+  ///
+  /// In en, this message translates to:
+  /// **'No calendars have been shared with you'**
+  String get shareNoSharedWithMe;
+
+  /// No description provided for @shareValidUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {date}'**
+  String shareValidUntil(String date);
+
+  /// No description provided for @shareSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Since {date}'**
+  String shareSince(String date);
+
+  /// No description provided for @shareActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Action failed: {error}'**
+  String shareActionFailed(String error);
+
+  /// No description provided for @sharedCalendarAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get sharedCalendarAvailable;
+
+  /// No description provided for @sharedCalendarBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get sharedCalendarBusy;
+
+  /// No description provided for @sharedCalendarShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get sharedCalendarShift;
+
+  /// No description provided for @sharedCalendarEmptyDay.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts or busy slots'**
+  String get sharedCalendarEmptyDay;
+
+  /// No description provided for @sharedCalendarEmptyWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts or busy slots this week'**
+  String get sharedCalendarEmptyWeek;
+
+  /// No description provided for @sharedCalendarTimesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift times as provided by {company}'**
+  String sharedCalendarTimesHint(String company);
+
+  /// No description provided for @sharedWithMeGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with me'**
+  String get sharedWithMeGroupLabel;
+
+  /// No description provided for @myCompanyGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'My company'**
+  String get myCompanyGroupLabel;
+
+  /// No description provided for @addShiftTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add shift'**
+  String get addShiftTooltip;
+
+  /// No description provided for @addShiftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New shift'**
+  String get addShiftTitle;
+
+  /// No description provided for @shiftDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get shiftDateLabel;
+
+  /// No description provided for @shiftStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get shiftStartLabel;
+
+  /// No description provided for @shiftEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get shiftEndLabel;
+
+  /// No description provided for @shiftRepeatUntilLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat daily until (optional)'**
+  String get shiftRepeatUntilLabel;
+
+  /// No description provided for @shiftNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get shiftNoteLabel;
+
+  /// No description provided for @shiftCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get shiftCreateButton;
+
+  /// No description provided for @shiftsCreatedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts created: {count}'**
+  String shiftsCreatedSnack(int count);
+
+  /// No description provided for @shiftTimeOrderError.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time must be before end time'**
+  String get shiftTimeOrderError;
+
+  /// No description provided for @shiftCancelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this shift?'**
+  String get shiftCancelTitle;
+
+  /// No description provided for @shiftCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel shift'**
+  String get shiftCancelButton;
+
+  /// No description provided for @shiftCancelledSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift cancelled'**
+  String get shiftCancelledSnack;
+
+  /// No description provided for @shiftsStripLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shifts'**
+  String get shiftsStripLabel;
+
+  /// No description provided for @noShiftsForDay.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts'**
+  String get noShiftsForDay;
 }
 
 class _AppLocalizationsDelegate

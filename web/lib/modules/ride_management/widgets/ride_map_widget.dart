@@ -87,14 +87,15 @@ class _RideMapWidgetState extends State<RideMapWidget> {
     List<double>? fromCoords;
     List<double>? toCoords;
 
-    if (widget.fromLocation != null) {
-      fromCoords = await MapboxService.geocodeAddress(
-        widget.fromLocation!.address,
-      );
+    final fromLocation = widget.fromLocation;
+    final toLocation = widget.toLocation;
+
+    if (fromLocation != null) {
+      fromCoords = await MapboxService.geocodeAddress(fromLocation.address);
     }
 
-    if (widget.toLocation != null) {
-      toCoords = await MapboxService.geocodeAddress(widget.toLocation!.address);
+    if (toLocation != null) {
+      toCoords = await MapboxService.geocodeAddress(toLocation.address);
     }
 
     if (fromCoords != null && toCoords != null) {
@@ -126,14 +127,16 @@ class _RideMapWidgetState extends State<RideMapWidget> {
   }
 
   Future<void> _addLocationMarkers() async {
-    if (_circleAnnotationManager == null) return;
+    final circleManager = _circleAnnotationManager;
+    if (circleManager == null) return;
 
     List<CircleAnnotationOptions> annotations = [];
 
-    if (widget.fromLocation != null) {
-      final coords = await MapboxService.geocodeAddress(
-        widget.fromLocation!.address,
-      );
+    final fromLocation = widget.fromLocation;
+    final toLocation = widget.toLocation;
+
+    if (fromLocation != null) {
+      final coords = await MapboxService.geocodeAddress(fromLocation.address);
       if (coords != null) {
         annotations.add(
           MapboxService.createLocationMarker(
@@ -145,10 +148,8 @@ class _RideMapWidgetState extends State<RideMapWidget> {
       }
     }
 
-    if (widget.toLocation != null) {
-      final coords = await MapboxService.geocodeAddress(
-        widget.toLocation!.address,
-      );
+    if (toLocation != null) {
+      final coords = await MapboxService.geocodeAddress(toLocation.address);
       if (coords != null) {
         annotations.add(
           MapboxService.createLocationMarker(
@@ -161,23 +162,20 @@ class _RideMapWidgetState extends State<RideMapWidget> {
     }
 
     if (annotations.isNotEmpty) {
-      await _circleAnnotationManager!.createMulti(annotations);
+      await circleManager.createMulti(annotations);
     }
   }
 
   Future<void> _addRoute() async {
-    if (_polylineAnnotationManager == null ||
-        widget.fromLocation == null ||
-        widget.toLocation == null) {
+    final polylineManager = _polylineAnnotationManager;
+    final fromLocation = widget.fromLocation;
+    final toLocation = widget.toLocation;
+    if (polylineManager == null || fromLocation == null || toLocation == null) {
       return;
     }
 
-    final fromCoords = await MapboxService.geocodeAddress(
-      widget.fromLocation!.address,
-    );
-    final toCoords = await MapboxService.geocodeAddress(
-      widget.toLocation!.address,
-    );
+    final fromCoords = await MapboxService.geocodeAddress(fromLocation.address);
+    final toCoords = await MapboxService.geocodeAddress(toLocation.address);
 
     if (fromCoords != null && toCoords != null) {
       final routePoints = await MapboxService.getRoutePoints(
@@ -193,7 +191,7 @@ class _RideMapWidgetState extends State<RideMapWidget> {
         lineWidth: 4.0,
       );
 
-      await _polylineAnnotationManager!.create(polylineAnnotation);
+      await polylineManager.create(polylineAnnotation);
     }
   }
 

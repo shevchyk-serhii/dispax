@@ -25,6 +25,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideConfirmRequested>(onConfirmRequested);
     on<RideRejectRequested>(onRejectRequested);
     on<RideStatusReceived>(onStatusReceived);
+    on<RideCheckpointReceived>(onCheckpointReceived);
     on<RideCancelRequested>(onCancelRequested);
     on<RideHandOffRequested>(onHandOffRequested);
   }
@@ -41,7 +42,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final rides = await privateRideService.getRidesForUser(event.user);
       emit(RideState.loaded(rides));
     } catch (e) {
-      emit(RideState.error('Failed to load rides: $e'));
+      emit(RideState.error('Failed to load rides: $e', cause: e));
     }
   }
 
@@ -55,7 +56,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final rides = await privateRideService.getRidesForUser(event.user);
       emit(RideState.loaded(rides));
     } catch (e) {
-      emit(RideState.error('Failed to refresh rides: $e'));
+      emit(RideState.error('Failed to refresh rides: $e', cause: e));
     }
   }
 
@@ -118,6 +119,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to create ride: $e',
+          error: e,
         ),
       );
     }
@@ -157,6 +159,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to update ride status: $e',
+          error: e,
         ),
       );
     }
@@ -169,11 +172,34 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     emit(state.copyWith(status: RideStateStatus.loading));
 
     try {
-      final rides = await privateRideService.getPendingRides();
-      emit(RideState.loaded(rides));
+      final pending = await privateRideService.getPendingRides();
+      emit(RideState.loaded(_mergePending(pending)));
     } catch (e) {
-      emit(RideState.error('Failed to load pending rides: $e'));
+      // Carry the typed cause so the UI can render a localized, non-technical
+      // message (e.g. a timeout) via friendlyError, instead of the raw wrapped
+      // string. The string is kept only as a debug/fallback.
+      emit(RideState.error('Failed to load pending rides: $e', cause: e));
     }
+  }
+
+  /// Merges a freshly fetched pending list (`GET /rides/pending`, which returns
+  /// ONLY [RideStatus.requested] rides) into the current `state.rides` WITHOUT
+  /// discarding the non-pending rides already held.
+  ///
+  /// The shared [RideBloc] backs both the dispatcher pending/assigned panels and
+  /// the driver "My Rides" screen, and every consumer filters the FULL list by
+  /// status (Assigned tab → assigned/confirmed/handedOff, My Rides → driverId,
+  /// stats → assigned/inProgress/completed). Previously this handler did
+  /// `emit(RideState.loaded(pending))`, replacing the whole list with pending
+  /// only, so a driver-dispatcher confirming their own ride (which fires a
+  /// WebSocket `RideConfirmed` → `RideLoadPendingRequested`) saw their just
+  /// confirmed ride vanish from My Rides until a manual full reload. Keeping the
+  /// non-requested rides and only refreshing the requested subset fixes that.
+  List<Ride> _mergePending(List<Ride> pending) {
+    final nonPending = state.rides
+        .where((r) => r.status != RideStatus.requested)
+        .toList();
+    return [...nonPending, ...pending];
   }
 
   Future<void> onAssignRequested(
@@ -220,6 +246,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
             errorMessage: e.message,
             conflictRideId: event.rideId,
             conflictDriverId: event.driverId,
+            conflictInfo: e.scheduleConflict,
           ),
         );
       } else {
@@ -235,6 +262,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to assign driver: $e',
+          error: e,
         ),
       );
     }
@@ -249,9 +277,13 @@ class RideBloc extends Bloc<RideEvent, RideState> {
   /// Refreshes the pending list after a stale-state rejection, keeping the
   /// current rides if the reload itself fails (best effort — the goal is to drop
   /// the now-assigned ride from the pending tab, not to surface a load error).
+  ///
+  /// Merges via [_mergePending] so the refreshed pending (requested-only) subset
+  /// replaces the stale requested rows while the non-pending rides the other
+  /// consumers depend on are preserved.
   Future<List<Ride>> _reloadPendingSilently() async {
     try {
-      return await privateRideService.getPendingRides();
+      return _mergePending(await privateRideService.getPendingRides());
     } catch (_) {
       return state.rides;
     }
@@ -284,6 +316,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
             errorMessage: e.message,
             conflictRideId: event.rideId,
             conflictDriverId: event.newDriverId,
+            conflictInfo: e.scheduleConflict,
           ),
         );
       } else {
@@ -299,6 +332,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to reassign driver: $e',
+          error: e,
         ),
       );
     }
@@ -321,6 +355,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to confirm ride: $e',
+          error: e,
         ),
       );
     }
@@ -346,6 +381,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to reject ride: $e',
+          error: e,
         ),
       );
     }
@@ -360,6 +396,20 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     // A live WebSocket update proves the system is responsive, so settle back
     // to a clean loaded state instead of preserving a stale error status (and
     // its message) left over from an earlier failed operation.
+    emit(RideState.loaded(updatedRides));
+  }
+
+  void onCheckpointReceived(
+    RideCheckpointReceived event,
+    Emitter<RideState> emit,
+  ) {
+    if (state.rides.isEmpty) return;
+    final idx = state.rides.indexWhere((r) => r.id == event.rideId);
+    if (idx == -1) return;
+    final updatedRides = List<Ride>.from(state.rides);
+    updatedRides[idx] = updatedRides[idx].copyWith(
+      airportCheckpoint: event.checkpoint,
+    );
     emit(RideState.loaded(updatedRides));
   }
 
@@ -386,6 +436,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to cancel ride: $e',
+          error: e,
         ),
       );
     }
@@ -417,6 +468,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         state.copyWith(
           status: RideStateStatus.error,
           errorMessage: 'Failed to hand off ride: $e',
+          error: e,
         ),
       );
     }

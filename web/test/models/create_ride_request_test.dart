@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dispax/modules/ride_management/models/payment_method.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {
@@ -33,6 +34,36 @@ void main() {
 
       expect(json['flightNumber'], isNull);
       expect(json['isAirportTransfer'], false);
+    });
+
+    test('toJson includes price when set', () {
+      final request = TestFixtures.createRideRequest(price: 45.5);
+      final json = request.toJson();
+
+      expect(json['price'], 45.5);
+    });
+
+    test('toJson omits price when not set', () {
+      final request = TestFixtures.createRideRequest();
+      final json = request.toJson();
+
+      expect(json.containsKey('price'), isFalse);
+    });
+
+    test('toJson sends the selected payment method wire value', () {
+      final request = TestFixtures.createRideRequest(
+        paymentMethod: PaymentMethod.creditCard,
+      );
+      final json = request.toJson();
+
+      expect(json['paymentMethod'], 'Card');
+    });
+
+    test('toJson defaults payment method to Invoice (Rechnung)', () {
+      final request = TestFixtures.createRideRequest();
+      final json = request.toJson();
+
+      expect(json['paymentMethod'], 'Invoice');
     });
 
     test('toJson serializes from/to locations correctly', () {

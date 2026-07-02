@@ -103,6 +103,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get selectDriver => 'Обрати водія';
 
   @override
+  String get reassignDriver => 'Перепризначити водія';
+
+  @override
+  String get noDriversFound => 'Водіїв не знайдено';
+
+  @override
   String get reassignRide => 'Перепризначити поїздку';
 
   @override
@@ -113,6 +119,21 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get assign => 'Призначити';
+
+  @override
+  String get driverDashboardTitle => 'Панель водія';
+
+  @override
+  String get secretaryDashboardTitle => 'Панель секретаря';
+
+  @override
+  String get dispatcherDashboardTitle => 'Панель диспетчера';
+
+  @override
+  String get adminDashboardTitle => 'Панель адміністратора';
+
+  @override
+  String get platformAdminTitle => 'Адміністратор платформи';
 
   @override
   String get cancel => 'Скасувати';
@@ -296,6 +317,41 @@ class AppLocalizationsUk extends AppLocalizations {
   String get passwordTooShort => 'Пароль повинен містити щонайменше 6 символів';
 
   @override
+  String get forcePasswordChangeTitle => 'Встановіть новий пароль';
+
+  @override
+  String get forcePasswordChangeMessage =>
+      'Ваш обліковий запис використовує тимчасовий пароль. Будь ласка, встановіть новий пароль, щоб продовжити.';
+
+  @override
+  String get updateRequired => 'Потрібне оновлення';
+
+  @override
+  String get updateRequiredMessage =>
+      'Ця версія застосунку більше не підтримується. Будь ласка, оновіть до останньої версії, щоб продовжити.';
+
+  @override
+  String get updateNow => 'Оновити зараз';
+
+  @override
+  String get temporaryPassword => 'Тимчасовий пароль';
+
+  @override
+  String get temporaryPasswordHint =>
+      'Користувача попросять змінити його під час першого входу.';
+
+  @override
+  String get tempPasswordRules =>
+      'Щонайменше 8 символів із великою літерою, малою літерою та цифрою';
+
+  @override
+  String get setNewPassword => 'Встановити новий пароль';
+
+  @override
+  String get userCreatedSharePassword =>
+      'Користувача створено. Повідомте йому тимчасовий пароль.';
+
+  @override
   String get notifications => 'Сповіщення';
 
   @override
@@ -374,6 +430,12 @@ class AppLocalizationsUk extends AppLocalizations {
   String get version => 'Версія';
 
   @override
+  String get appVersion => 'Версія додатка';
+
+  @override
+  String get backendVersion => 'Версія бекенду';
+
+  @override
   String get privacyPolicy => 'Політика конфіденційності';
 
   @override
@@ -447,10 +509,72 @@ class AppLocalizationsUk extends AppLocalizations {
   String get checkpointTerminalExit => 'Вихід з терміналу';
 
   @override
+  String passengerCheckpointStatus(String checkpoint) {
+    return 'Пасажир: $checkpoint';
+  }
+
+  @override
   String get markCheckpointButton => 'Я тут';
 
   @override
   String get airportCheckpointPanelTitle => 'Моє місце в терміналі';
+
+  @override
+  String get airportEntryTitle => 'Час в\'їзду в термінал';
+
+  @override
+  String get airportDepartIn => 'Виїзд через:';
+
+  @override
+  String get airportEntryLabel => 'В\'їзд у термінал:';
+
+  @override
+  String airportEntryAt(String time) {
+    return 'В\'їзд о $time';
+  }
+
+  @override
+  String airportLandingAt(String time) {
+    return 'Приліт о $time';
+  }
+
+  @override
+  String airportLandedAt(String time) {
+    return 'Приземлився о $time';
+  }
+
+  @override
+  String airportFlightDelay(int minutes) {
+    return '+$minutes хв затримки';
+  }
+
+  @override
+  String airportScheduledVsActual(String scheduled, String actual) {
+    return 'За розкладом $scheduled → $actual';
+  }
+
+  @override
+  String get airportTravelTime => 'Час у дорозі:';
+
+  @override
+  String airportParkingSavings(String amount) {
+    return 'Економія на паркуванні: $amount';
+  }
+
+  @override
+  String get airportDepartNow => 'Виїжджайте зараз!';
+
+  @override
+  String get airportFlightDelayed =>
+      'Рейс затримано. Час в\'їзду перераховано.';
+
+  @override
+  String airportTimingError(String error) {
+    return 'Помилка завантаження даних: $error';
+  }
+
+  @override
+  String get airportLoadingTiming => 'Завантаження часу в\'їзду...';
 
   @override
   String checkpointNotifTitle(String checkpoint) {
@@ -539,6 +663,20 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get pickupTimeComputedAuto =>
       'Розраховано автоматично на основі часу відправлення рейсу';
+
+  @override
+  String get addressNotFound =>
+      'Не вдалося знайти адресу — перевірте правильність написання.';
+
+  @override
+  String addressOutOfServiceArea(int distanceKm, int radiusKm) {
+    return 'Адреса поза зоною обслуговування (близько $distanceKm км від Мюнхена, макс. $radiusKm км).';
+  }
+
+  @override
+  String addressOutOfServiceAreaShort(int radiusKm) {
+    return 'Адреса поза зоною обслуговування (макс. $radiusKm км від Мюнхена).';
+  }
 
   @override
   String get markUnavailable => 'Позначити як недоступний';
@@ -885,6 +1023,31 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get errorNetwork =>
+      'Не вдалося з\'єднатися із сервером. Перевірте підключення до інтернету та повторіть спробу.';
+
+  @override
+  String get errorTimeout =>
+      'Сервер відповідав надто довго. Будь ласка, повторіть спробу.';
+
+  @override
+  String get errorServer =>
+      'Сталася помилка на нашому боці. Спробуйте ще раз за мить.';
+
+  @override
+  String get errorNotFound => 'Не вдалося знайти те, що ви шукали.';
+
+  @override
+  String get errorLoadingData => 'Не вдалося завантажити дані';
+
+  @override
+  String get errorGeneric => 'Щось пішло не так. Будь ласка, повторіть спробу.';
+
+  @override
+  String get errorSessionExpired =>
+      'Ваша сесія завершилася. Будь ласка, увійдіть знову.';
+
+  @override
   String get unbilledRidesTitle => 'Нерозрахованих поїздок';
 
   @override
@@ -1105,6 +1268,21 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get refresh => 'Оновити';
+
+  @override
+  String get refreshFlightStatus => 'Оновити статус рейсу';
+
+  @override
+  String get flightStatusRefreshed => 'Статус рейсу оновлено';
+
+  @override
+  String get flightStatusUnchanged => 'Вже актуально';
+
+  @override
+  String get flightNotFoundYet => 'Рейсу ще немає в системі';
+
+  @override
+  String get failedToRefreshFlightStatus => 'Не вдалося оновити статус рейсу';
 
   @override
   String get youreOnline => 'Ви онлайн';
@@ -1661,6 +1839,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editAction => 'Редагувати';
 
   @override
+  String get duplicateRideAction => 'Дублювати';
+
+  @override
   String get deactivateAction => 'Деактивувати';
 
   @override
@@ -1952,14 +2133,20 @@ class AppLocalizationsUk extends AppLocalizations {
   String get flightNumberHint => 'напр. LH123, BA456';
 
   @override
-  String get flightNumberRequired =>
-      'Номер рейсу обов\'язковий для трансферів до аеропорту';
+  String get flightNumberRequired => 'Номер рейсу обов\'язковий';
+
+  @override
+  String get flightNumberInvalidFormat =>
+      'Введіть дійсний номер рейсу, напр. LH429';
 
   @override
   String get gateLabel => 'Гейт';
 
   @override
   String get terminalLabel => 'Термінал';
+
+  @override
+  String get gateRemote => 'Автобусний гейт (віддалена стоянка)';
 
   @override
   String get creatingRideLabel => 'Створення поїздки...';
@@ -2054,17 +2241,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editRideDialogTitle => 'Редагувати поїздку';
 
   @override
-  String get pickupDateTimeLabel => 'Дата/час подачі (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Дата/час подачі';
 
   @override
   String get flightNumberOptionalLabel => 'Номер рейсу (необов\'язково)';
 
   @override
   String get notesOptionalLabel => 'Примітки (необов\'язково)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {
@@ -3109,10 +3292,16 @@ class AppLocalizationsUk extends AppLocalizations {
   String get paymentMethodLabel => 'Спосіб оплати:';
 
   @override
+  String get paymentMethodSelectLabel => 'Спосіб оплати';
+
+  @override
+  String get paymentMethodPayment => 'Оплата';
+
+  @override
   String get paymentMethodCash => 'Готівка';
 
   @override
-  String get paymentMethodCard => 'Картка';
+  String get paymentMethodCard => 'Кредитна картка';
 
   @override
   String get paymentMethodInvoice => 'Рахунок';
@@ -3216,6 +3405,11 @@ class AppLocalizationsUk extends AppLocalizations {
       'У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?';
 
   @override
+  String conflictDialogContentRich(String from, String to, String time) {
+    return 'Водій уже зайнятий: $from → $to о $time.\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити?';
+  }
+
+  @override
   String get keepInPoolButton => 'Залишити в пулі';
 
   @override
@@ -3260,6 +3454,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get arrivalsTabLabel => 'Прильоти';
 
   @override
+  String get arrivalsBoardTitle => 'Прильоти · Аеропорт Мюнхен';
+
+  @override
   String get departuresTabLabel => 'Відльоти';
 
   @override
@@ -3267,6 +3464,18 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noDeparturesFound => 'Відльотів не знайдено';
+
+  @override
+  String get flightDetailsTitle => 'Деталі рейсу';
+
+  @override
+  String get gateNotPublished => 'Гейт ще не оголошено';
+
+  @override
+  String get trackFlightLive => 'Стежити наживо на Flightradar24';
+
+  @override
+  String get couldNotOpenFlightTracker => 'Не вдалося відкрити трекер рейсу';
 
   @override
   String errorLoadingFlights(String error) {
@@ -3302,6 +3511,33 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get flightStatusUnknown => 'Невідомо';
+
+  @override
+  String get flightStatusScheduled => 'За розкладом';
+
+  @override
+  String get flightStatusDeparted => 'Вилетів';
+
+  @override
+  String get flightStatusEnRoute => 'У польоті';
+
+  @override
+  String get flightStatusLanded => 'Приземлився';
+
+  @override
+  String get flightStatusDiverted => 'Перенаправлено';
+
+  @override
+  String get flightInformation => 'Інформація про рейс';
+
+  @override
+  String get flightNumber => 'Номер рейсу';
+
+  @override
+  String get arrivalTime => 'Час прибуття';
+
+  @override
+  String get departureTime => 'Час відправлення';
 
   @override
   String get flightNotLinked => '— не пов\'язано';
@@ -3380,4 +3616,180 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get addPaymentMethodButton => 'Додати спосіб оплати';
+
+  @override
+  String get shareRideLink => 'Поділитися посиланням';
+
+  @override
+  String get trackingLinkCopied => 'Посилання скопійовано в буфер обміну';
+
+  @override
+  String get bookWithoutClient => 'Без клієнта (з чату)';
+
+  @override
+  String get fromChatRide => 'З чату';
+
+  @override
+  String get linkClient => 'Додати клієнта';
+
+  @override
+  String get calendarSharingTitle => 'Спільний доступ до календаря';
+
+  @override
+  String get calendarSharingMenuItem => 'Доступ до календаря';
+
+  @override
+  String get shareInvitesSection => 'Мої коди запрошень';
+
+  @override
+  String get shareCreateInvite => 'Створити код запрошення';
+
+  @override
+  String get shareInviteExpiry1Day => '1 день';
+
+  @override
+  String get shareInviteExpiry7Days => '7 днів';
+
+  @override
+  String get shareInviteExpiry30Days => '30 днів';
+
+  @override
+  String get shareInviteCreatedTitle => 'Код запрошення створено';
+
+  @override
+  String get shareInviteCreatedHint =>
+      'Надішліть цей код водієві або диспетчеру іншої компанії. Він вводить його у своєму застосунку в розділі «Доступ до календаря».';
+
+  @override
+  String get shareCopyCode => 'Скопіювати код';
+
+  @override
+  String get shareCodeCopied => 'Код скопійовано в буфер обміну';
+
+  @override
+  String get shareRevoke => 'Відкликати';
+
+  @override
+  String get shareGrantedSection => 'Хто бачить мій календар';
+
+  @override
+  String get shareSharedWithMeSection => 'Поділилися зі мною';
+
+  @override
+  String get shareEnterCode => 'Ввести код';
+
+  @override
+  String get shareRedeemTitle => 'Підключити спільний календар';
+
+  @override
+  String get shareRedeemHint => 'Вставте код запрошення або посилання';
+
+  @override
+  String get shareRedeemConnect => 'Підключити';
+
+  @override
+  String shareRedeemSuccess(String name) {
+    return 'Підключено до $name';
+  }
+
+  @override
+  String get shareUnlink => 'Відʼєднати';
+
+  @override
+  String get shareNoInvites => 'Немає активних кодів запрошень';
+
+  @override
+  String get shareNoGrants => 'Ви ні з ким не поділилися своїм календарем';
+
+  @override
+  String get shareNoSharedWithMe => 'З вами не поділилися жодним календарем';
+
+  @override
+  String shareValidUntil(String date) {
+    return 'Дійсний до $date';
+  }
+
+  @override
+  String shareSince(String date) {
+    return 'З $date';
+  }
+
+  @override
+  String shareActionFailed(String error) {
+    return 'Не вдалося виконати дію: $error';
+  }
+
+  @override
+  String get sharedCalendarAvailable => 'Доступний';
+
+  @override
+  String get sharedCalendarBusy => 'Зайнято';
+
+  @override
+  String get sharedCalendarShift => 'Зміна';
+
+  @override
+  String get sharedCalendarEmptyDay => 'Немає змін чи зайнятих слотів';
+
+  @override
+  String get sharedCalendarEmptyWeek =>
+      'Цього тижня немає змін чи зайнятих слотів';
+
+  @override
+  String sharedCalendarTimesHint(String company) {
+    return 'Час змін — як надано компанією $company';
+  }
+
+  @override
+  String get sharedWithMeGroupLabel => 'Поділилися зі мною';
+
+  @override
+  String get myCompanyGroupLabel => 'Моя компанія';
+
+  @override
+  String get addShiftTooltip => 'Додати зміну';
+
+  @override
+  String get addShiftTitle => 'Нова зміна';
+
+  @override
+  String get shiftDateLabel => 'Дата';
+
+  @override
+  String get shiftStartLabel => 'Початок';
+
+  @override
+  String get shiftEndLabel => 'Кінець';
+
+  @override
+  String get shiftRepeatUntilLabel => 'Повторювати щодня до (необовʼязково)';
+
+  @override
+  String get shiftNoteLabel => 'Нотатка (необовʼязково)';
+
+  @override
+  String get shiftCreateButton => 'Створити';
+
+  @override
+  String shiftsCreatedSnack(int count) {
+    return 'Створено змін: $count';
+  }
+
+  @override
+  String get shiftTimeOrderError => 'Початок має бути раніше за кінець';
+
+  @override
+  String get shiftCancelTitle => 'Скасувати цю зміну?';
+
+  @override
+  String get shiftCancelButton => 'Скасувати зміну';
+
+  @override
+  String get shiftCancelledSnack => 'Зміну скасовано';
+
+  @override
+  String get shiftsStripLabel => 'Зміни';
+
+  @override
+  String get noShiftsForDay => 'Немає змін';
 }

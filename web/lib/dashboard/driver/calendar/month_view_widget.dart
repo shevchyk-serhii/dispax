@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/ride_management/models/ride.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../constants/app_colors.dart';
 import 'widgets/ride_badges.dart';
 
@@ -24,6 +25,11 @@ class MonthViewWidget extends StatelessWidget {
   /// already scoped to the chosen driver, so [driverIdFilter] is a no-op for it.
   final List<Ride>? ridesOverride;
 
+  /// The displayed driver's work shifts; days with a shift get a small green
+  /// availability bar above the day number. Cancelled shifts must be filtered
+  /// out by the caller.
+  final List<ScheduleDay> shifts;
+
   const MonthViewWidget({
     super.key,
     required this.selectedDay,
@@ -31,13 +37,15 @@ class MonthViewWidget extends StatelessWidget {
     required this.onMonthChanged,
     this.driverIdFilter,
     this.ridesOverride,
+    this.shifts = const [],
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final ridesOverride = this.ridesOverride;
     if (ridesOverride != null) {
-      return _buildBody(context, colorScheme, ridesOverride!);
+      return _buildBody(context, colorScheme, ridesOverride);
     }
     return BlocBuilder<RideBloc, RideState>(
       buildWhen: (prev, curr) => prev.rides != curr.rides,
@@ -104,20 +112,41 @@ class MonthViewWidget extends StatelessWidget {
         ),
         calendarBuilders: CalendarBuilders<Ride>(
           markerBuilder: (context, day, rides) {
-            if (rides.isEmpty) return null;
+            final hasShift = dayHasShift(day);
+            if (rides.isEmpty && !hasShift) return null;
 
             return Stack(
               children: [
-                Positioned(
-                  left: 1,
-                  bottom: 2,
-                  child: RideBadges.dayMarkers(context, rides, size: 10),
-                ),
-                Positioned(
-                  right: 1,
-                  bottom: 1,
-                  child: buildRideCountIndicator(rides.length),
-                ),
+                // Small green availability bar at the top of days with a
+                // work shift, independent of ride markers.
+                if (hasShift)
+                  Positioned(
+                    top: 2,
+                    left: 10,
+                    right: 10,
+                    child: Container(
+                      key: ValueKey(
+                        'month-shift-${day.year}-${day.month}-${day.day}',
+                      ),
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: AppColors.success,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                if (rides.isNotEmpty) ...[
+                  Positioned(
+                    left: 1,
+                    bottom: 2,
+                    child: RideBadges.dayMarkers(context, rides, size: 10),
+                  ),
+                  Positioned(
+                    right: 1,
+                    bottom: 1,
+                    child: buildRideCountIndicator(rides.length),
+                  ),
+                ],
               ],
             );
           },
@@ -139,6 +168,13 @@ class MonthViewWidget extends StatelessWidget {
       ),
     );
   }
+
+  bool dayHasShift(DateTime day) => shifts.any(
+    (s) =>
+        s.date.year == day.year &&
+        s.date.month == day.month &&
+        s.date.day == day.day,
+  );
 
   List<Ride> getRidesForDay(List<Ride> rides, DateTime day) {
     return rides.where((ride) {

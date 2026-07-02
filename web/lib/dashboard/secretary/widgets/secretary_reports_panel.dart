@@ -7,6 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class SecretaryReportsPanel extends StatefulWidget {
   const SecretaryReportsPanel({super.key});
@@ -18,7 +19,7 @@ class SecretaryReportsPanel extends StatefulWidget {
 class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -44,7 +45,7 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -103,14 +104,20 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
-    if (_error != null) {
+    final error = _error == null ? null : friendlyError(_error, l10n);
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!, style: AppStyles.bodyMedium),
+            Text(
+              error,
+              style: AppStyles.bodyMedium.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadStats, child: Text(l10n.retry)),
           ],
@@ -121,10 +128,10 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
   }
 
   Widget _buildContent() {
-    if (_stats == null) return const SizedBox.shrink();
+    final stats = _stats;
+    if (stats == null) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context)!;
-    final stats = _stats!;
     final total = (stats['totalRides'] ?? 0) as num;
     final completed = (stats['completedRides'] ?? 0) as num;
     final cancelled = (stats['cancelledRides'] ?? 0) as num;

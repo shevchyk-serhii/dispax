@@ -26,8 +26,11 @@ class RideService {
       } else {
         throw ApiException('Failed to fetch rides: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching rides: $e');
+      throw ApiException('Error fetching rides: $e', cause: e);
     }
   }
 
@@ -53,8 +56,11 @@ class RideService {
           'Failed to fetch user rides: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching user rides: $e');
+      throw ApiException('Error fetching user rides: $e', cause: e);
     }
   }
 
@@ -81,9 +87,11 @@ class RideService {
           'Failed to fetch driver earnings: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      if (e is UnauthorizedException) rethrow;
-      throw ApiException('Error fetching driver earnings: $e');
+      throw ApiException('Error fetching driver earnings: $e', cause: e);
     }
   }
 
@@ -106,9 +114,10 @@ class RideService {
         );
       }
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching driver rides: $e');
+      throw ApiException('Error fetching driver rides: $e', cause: e);
     }
   }
 
@@ -124,8 +133,11 @@ class RideService {
       } else {
         throw ApiException('Failed to fetch ride: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching ride: $e');
+      throw ApiException('Error fetching ride: $e', cause: e);
     }
   }
 
@@ -144,8 +156,35 @@ class RideService {
       // don't re-wrap it into an opaque "Error creating ride: ApiException: ..."
       rethrow;
     } catch (e) {
-      throw ApiException('Error creating ride: $e');
+      throw ApiException('Error creating ride: $e', cause: e);
     }
+  }
+
+  /// Create (or reuse) a public guest tracking link for a ride. Returns an absolute URL to share.
+  ///
+  /// Prefers the absolute `url` the backend builds from PUBLIC_BASE_URL. When the backend has no base URL configured
+  /// (url == path, i.e. relative), prefix the current web origin so the link is still shareable as-is.
+  Future<String> createShareLink(String rideId) async {
+    final response = await privateApiClient.post(
+      '/rides/$rideId/share-link',
+      const {},
+    );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      final path = json['path'] as String? ?? '/track/${json['token']}';
+      final url = json['url'] as String? ?? path;
+      // If the backend already returned an absolute URL, use it verbatim.
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      // Otherwise build one from the page origin (web only; off-web Uri.base.origin throws → fall back to path).
+      final base = Uri.base;
+      if (base.scheme == 'http' || base.scheme == 'https') {
+        return '${base.origin}$url';
+      }
+      return url;
+    }
+    throw ApiException.fromResponse(response, 'Failed to create tracking link');
   }
 
   Future<Ride?> updateRide(String id, Ride ride) async {
@@ -160,8 +199,11 @@ class RideService {
       } else {
         throw ApiException('Failed to update ride: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error updating ride: $e');
+      throw ApiException('Error updating ride: $e', cause: e);
     }
   }
 
@@ -180,8 +222,11 @@ class RideService {
           'Failed to update ride status: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error updating ride status: $e');
+      throw ApiException('Error updating ride status: $e', cause: e);
     }
   }
 
@@ -197,8 +242,11 @@ class RideService {
           'Failed to fetch client rides: ${response.statusCode}',
         );
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching client rides: $e');
+      throw ApiException('Error fetching client rides: $e', cause: e);
     }
   }
 
@@ -212,10 +260,17 @@ class RideService {
       } else {
         throw ApiException(
           'Failed to fetch pending rides: ${response.statusCode}',
+          statusCode: response.statusCode,
         );
       }
+    } on ApiException {
+      // Already carries the cause/kind from the ApiClient (e.g. a timeout or a
+      // 4xx with the server's message). Don't re-wrap it into an opaque
+      // "Error fetching pending rides: ApiException: ..." — that double nesting
+      // is exactly what leaked to the dispatcher's screen.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error fetching pending rides: $e');
+      throw ApiException('Error fetching pending rides: $e', cause: e);
     }
   }
 
@@ -239,6 +294,32 @@ class RideService {
     // Surface the backend's `{"error": ...}` message (and status code) instead
     // of a bare "400", so the UI can show the real reason and react to conflicts.
     throw ApiException.fromResponse(response, 'Failed to assign driver');
+  }
+
+  /// Trigger an on-demand flight-status refresh for a ride (same path as the 5-minute
+  /// background monitor): the backend re-reads the board, persists any change and
+  /// broadcasts it. Returns the up-to-date ride plus the outcome — "updated" /
+  /// "unchanged" / "notFound" — so the UI can message the result precisely (a flight
+  /// not yet on the board is "notFound", not a failure).
+  Future<({Ride ride, String outcome})> refreshFlightStatus(
+    String rideId,
+  ) async {
+    final response = await privateApiClient.post(
+      '/rides/$rideId/refresh-flight',
+      <String, dynamic>{},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> json = jsonDecode(response.body);
+      return (
+        ride: Ride.fromJson(json['ride'] as Map<String, dynamic>),
+        outcome: (json['outcome'] as String?) ?? 'unchanged',
+      );
+    }
+    throw ApiException.fromResponse(
+      response,
+      'Failed to refresh flight status',
+    );
   }
 
   Future<Ride> confirmRide(String rideId) async {
@@ -342,8 +423,11 @@ class RideService {
       if (response.statusCode != 200) {
         throw ApiException('Failed to cancel ride: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error cancelling ride: $e');
+      throw ApiException('Error cancelling ride: $e', cause: e);
     }
   }
 
@@ -359,9 +443,10 @@ class RideService {
       }
       throw ApiException.fromResponse(response, 'Failed to set ride price');
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error setting ride price: $e');
+      throw ApiException('Error setting ride price: $e', cause: e);
     }
   }
 
@@ -393,9 +478,10 @@ class RideService {
         'Failed to fetch rides by drivers',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching rides by drivers: $e');
+      throw ApiException('Error fetching rides by drivers: $e', cause: e);
     }
   }
 
@@ -408,8 +494,11 @@ class RideService {
       if (response.statusCode != 204) {
         throw ApiException('Failed to mark checkpoint: ${response.statusCode}');
       }
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
     } catch (e) {
-      throw ApiException('Error marking airport checkpoint: $e');
+      throw ApiException('Error marking airport checkpoint: $e', cause: e);
     }
   }
 
@@ -444,9 +533,10 @@ class RideService {
       }
       throw ApiException.fromResponse(response, 'Failed to hand off ride');
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error handing off ride: $e');
+      throw ApiException('Error handing off ride: $e', cause: e);
     }
   }
 
@@ -465,9 +555,10 @@ class RideService {
         'Failed to fetch partner companies',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching partner companies: $e');
+      throw ApiException('Error fetching partner companies: $e', cause: e);
     }
   }
 
@@ -490,9 +581,10 @@ class RideService {
         'Failed to create partner company',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error creating partner company: $e');
+      throw ApiException('Error creating partner company: $e', cause: e);
     }
   }
 
@@ -511,9 +603,10 @@ class RideService {
         'Failed to fetch external drivers',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error fetching external drivers: $e');
+      throw ApiException('Error fetching external drivers: $e', cause: e);
     }
   }
 
@@ -538,9 +631,47 @@ class RideService {
         'Failed to create external driver',
       );
     } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
       rethrow;
     } catch (e) {
-      throw ApiException('Error creating external driver: $e');
+      throw ApiException('Error creating external driver: $e', cause: e);
+    }
+  }
+
+  /// Upgrades a provisional client by filling in real details.
+  ///
+  /// Calls `PUT /api/users/{clientId}/upgrade-provisional` with a JSON body of
+  /// the non-null fields. Returns the updated user as a raw JSON map.
+  /// Roles allowed by the backend: DISPATCHER, DRIVER, ADMIN.
+  Future<Map<String, dynamic>> upgradeProvisionalClient(
+    String clientId, {
+    String? name,
+    String? phone,
+    String? clientCompanyId,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (clientCompanyId != null && clientCompanyId.isNotEmpty)
+          'clientCompanyId': clientCompanyId,
+      };
+      final response = await privateApiClient.put(
+        '/users/$clientId/upgrade-provisional',
+        body,
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      throw ApiException.fromResponse(
+        response,
+        'Failed to upgrade provisional client',
+      );
+    } on ApiException {
+      // Preserve the original cause/kind from the ApiClient; don't double-wrap.
+      rethrow;
+    } catch (e) {
+      throw ApiException('Error upgrading provisional client: $e', cause: e);
     }
   }
 

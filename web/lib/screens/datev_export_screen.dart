@@ -8,7 +8,9 @@ import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/billing/csv_download_stub.dart'
     if (dart.library.html) '../modules/billing/csv_download_web.dart';
+import '../modules/core/services/error_messages.dart';
 import '../dashboard/superadmin/widgets/billing_widgets.dart';
+import '../modules/core/services/api_client.dart';
 
 class DatevExportScreen extends StatefulWidget {
   const DatevExportScreen({super.key});
@@ -21,7 +23,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isLoading = false;
   bool _isDownloading = false;
-  String? _error;
+  Object? _error;
   Map<String, dynamic>? _data;
 
   @override
@@ -51,13 +53,16 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Server error: ${response.statusCode}';
+          _error = ApiException(
+            'Server error',
+            statusCode: response.statusCode,
+          );
         });
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -147,7 +152,10 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                l10n.downloadFailed(response.statusCode.toString()),
+                friendlyError(
+                  ApiException('download', statusCode: response.statusCode),
+                  l10n,
+                ),
               ),
               backgroundColor: AppColors.error,
             ),
@@ -158,7 +166,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.genericError(e.toString())),
+            content: Text(friendlyError(e, l10n)),
             backgroundColor: AppColors.error,
           ),
         );
@@ -244,7 +252,8 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error == null ? null : friendlyError(_error, l10n);
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -253,7 +262,7 @@ class _DatevExportScreenState extends State<DatevExportScreen> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(_error!, textAlign: TextAlign.center),
+              child: Text(error, textAlign: TextAlign.center),
             ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _loadData, child: Text(l10n.retry)),

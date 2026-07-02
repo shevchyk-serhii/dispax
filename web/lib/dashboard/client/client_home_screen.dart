@@ -205,9 +205,9 @@ class _LiveRideCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => ClientMapScreen(rideId: ride.id)),
-        );
+        Navigator.of(
+          context,
+        ).push(ClientMapScreen.route(context, rideId: ride.id));
       },
       child: Container(
         padding: const EdgeInsets.all(15),

@@ -1,16 +1,94 @@
 import 'dart:convert';
+import '../../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'date_utils.dart';
+import 'navigation_helper.dart';
 import 'models/location.dart';
 import 'models/person.dart';
 import '../ride_management/models/ride.dart';
+import '../ride_management/services/ride_service.dart';
+import '../ride_management/helpers/flight_number_input.dart';
+import '../ride_management/helpers/tag_helpers.dart';
+import '../ride_management/widgets/tag_input_field.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
+import '../../screens/ride_details_screen.dart';
+import '../../screens/create_ride_screen.dart';
+import 'services/api_client.dart';
 
 class NavigationUtils {
+  /// Shows the "Navigate to" picker (pickup / drop-off) and opens Google Maps
+  /// for the chosen leg.
+  ///
+  /// On iOS [showAdaptiveDialog] renders a Cupertino-style dialog whose barrier
+  /// is NOT dismissible by tapping outside, so the dialog must offer an explicit
+  /// exit. The third "Cancel" option provides that exit on every platform;
+  /// without it the driver would be trapped in the dialog on iOS.
+  static Future<void> showNavigateToDialog(
+    BuildContext context,
+    Ride ride,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final choice = await showAdaptiveDialog<String>(
+        context: context,
+        barrierDismissible: true, // helps on Android/web; ignored by Cupertino
+        builder: (BuildContext ctx) => SimpleDialog(
+          title: Text(l10n.navigateTo),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop('pickup'),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.location_on,
+                  color: AppColors.success,
+                ),
+                title: Text(ride.from.address),
+                subtitle: Text(l10n.googleMapsPickup),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop('destination'),
+              child: ListTile(
+                leading: const Icon(Icons.flag, color: AppColors.error),
+                title: Text(ride.to.address),
+                subtitle: Text(l10n.googleMapsDropoff),
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: ListTile(
+                leading: const Icon(Icons.close),
+                title: Text(l10n.cancel),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (choice == null || !context.mounted) return;
+
+      final destination = choice == 'pickup' ? ride.from : ride.to;
+      await openGoogleMapsNavigation(destination);
+
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(context, l10n.openingNavigation);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(
+          context,
+          l10n.couldNotOpenNavigation(friendlyError(e, l10n)),
+          isError: true,
+        );
+      }
+    }
+  }
+
   static Future<void> openGoogleMapsNavigation(Location destination) async {
     final destinationAddress = Uri.encodeComponent(destination.address);
 
@@ -148,6 +226,55 @@ class NavigationUtils {
   static Future<void> navigateToMap(BuildContext context, Ride ride) async {
     await openGoogleMapsRoute(ride.from, ride.to);
   }
+
+  /// Opens the full ride details screen. Used by the driver's Today cards (the
+  /// live/next cards have no other entry into details, which is where the
+  /// "Share" tracking-link button lives).
+  static Future<void> navigateToRideDetails(
+    BuildContext context,
+    Ride ride,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => RideDetailsScreen(ride: ride)),
+    );
+  }
+
+  /// Opens the create-ride form pre-filled from [ride] (the "duplicate" flow).
+  /// The new ride is a fresh request: status defaults to Requested, no driver,
+  /// and a fresh pickup time — only the reusable details (client, route, flight,
+  /// notes, tags, price, payment) are copied via [FormPrefilledFromRide]. The
+  /// original ride is left untouched. Shared by the ride details screen and the
+  /// per-card "Duplicate" actions so the behaviour stays identical everywhere.
+  static Future<void> duplicateRide(BuildContext context, Ride ride) async {
+    final rideBloc = context.read<RideBloc>();
+    final formBloc = CreateRideFormBloc()..add(FormPrefilledFromRide(ride));
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            CreateRideScreen(rideBloc: rideBloc, formBloc: formBloc),
+      ),
+    );
+    await formBloc.close();
+  }
+
+  /// Creates (or reuses) a public guest tracking link for [ride] and copies it
+  /// to the clipboard, showing a localized success/error snackbar. Shared by the
+  /// ride details screen and the driver's Today card so the share behaviour
+  /// stays identical everywhere.
+  static Future<void> shareRide(BuildContext context, Ride ride) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final rideService = RideService(
+      apiClient: context.read<AuthBloc>().apiClient,
+    );
+    try {
+      final url = await rideService.createShareLink(ride.id);
+      await Clipboard.setData(ClipboardData(text: url));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.trackingLinkCopied)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 }
 
 class _EditRideDialog extends StatefulWidget {
@@ -161,64 +288,120 @@ class _EditRideDialog extends StatefulWidget {
 class _EditRideDialogState extends State<_EditRideDialog> {
   late final TextEditingController _fromCtrl;
   late final TextEditingController _toCtrl;
-  late final TextEditingController _dateCtrl;
+  late DateTime _pickupDateTime;
   late final TextEditingController _notesCtrl;
   late final TextEditingController _flightCtrl;
+  late bool _isAirportTransfer;
+  late List<String> _tags;
   bool _saving = false;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
     super.initState();
     _fromCtrl = TextEditingController(text: widget.ride.from.address);
     _toCtrl = TextEditingController(text: widget.ride.to.address);
-    _dateCtrl = TextEditingController(
-      text: DateFormat("yyyy-MM-dd'T'HH:mm").format(widget.ride.pickupDateTime),
-    );
+    // Keep the value as-is (no toLocal/toUtc) to preserve the existing behaviour.
+    _pickupDateTime = widget.ride.pickupDateTime;
     _notesCtrl = TextEditingController(text: widget.ride.notes ?? '');
     _flightCtrl = TextEditingController(text: widget.ride.flightNumber ?? '');
+    _isAirportTransfer = widget.ride.isAirportTransfer;
+    _tags = List<String>.from(widget.ride.tags);
+  }
+
+  /// Opens a Material date picker followed by a time picker and stores the
+  /// combined [DateTime]. Minutes are rounded to the nearest 5, mirroring the
+  /// create-ride flow (CreateRideFormHelper.selectDateTime).
+  Future<void> _pickDateTime() async {
+    // The ride may be in the past or far future, so clamp the picker window
+    // around both the current value and now — showDatePicker asserts that
+    // initialDate is within [firstDate, lastDate].
+    final now = DateTime.now();
+    final earliest = _pickupDateTime.isBefore(now) ? _pickupDateTime : now;
+    final latest = _pickupDateTime.isAfter(now) ? _pickupDateTime : now;
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _pickupDateTime,
+      firstDate: DateTime(earliest.year - 1, earliest.month, earliest.day),
+      lastDate: DateTime(latest.year + 1, latest.month, latest.day),
+    );
+    if (date == null || !mounted) return;
+
+    final initialTime = TimeOfDay.fromDateTime(_pickupDateTime);
+    final roundedInitial = TimeOfDay(
+      hour: initialTime.hour,
+      minute: (initialTime.minute / 5).round() * 5 % 60,
+    );
+    final time = await showTimePicker(
+      context: context,
+      initialTime: roundedInitial,
+    );
+    if (time == null || !mounted) return;
+
+    final roundedMinute = (time.minute / 5).round() * 5;
+    setState(() {
+      _pickupDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour + (roundedMinute == 60 ? 1 : 0),
+        roundedMinute == 60 ? 0 : roundedMinute,
+      );
+    });
+  }
+
+  void _addTag(String raw) {
+    final tag = normalizeTag(raw);
+    if (tag.isEmpty) return;
+    if (_tags.any((t) => t.toLowerCase() == tag.toLowerCase())) return;
+    setState(() => _tags = [..._tags, tag]);
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _tags = _tags.where((t) => t != tag).toList());
   }
 
   @override
   void dispose() {
     _fromCtrl.dispose();
     _toCtrl.dispose();
-    _dateCtrl.dispose();
     _notesCtrl.dispose();
     _flightCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
+    // Block saving a malformed flight number (empty stays allowed — it clears the field).
+    if (_isAirportTransfer && !FlightNumber.isValid(_flightCtrl.text)) {
+      setState(() => _error = l10n.flightNumberInvalidFormat);
+      return;
+    }
+
     setState(() {
       _saving = true;
       _error = null;
     });
 
-    final l10n = AppLocalizations.of(context)!;
     final apiClient = context.read<AuthBloc>().apiClient;
-    // Parse local time and convert to UTC ISO-8601 for the backend
-    DateTime localDt;
-    try {
-      localDt = DateFormat(
-        "yyyy-MM-dd'T'HH:mm",
-      ).parseStrict(_dateCtrl.text.trim());
-    } catch (_) {
-      setState(() {
-        _error = l10n.invalidDateFormatError;
-        _saving = false;
-      });
-      return;
-    }
-    final utcIso = localDt.toUtc().toIso8601String();
+    // Convert the picked local time to UTC ISO-8601 for the backend.
+    final utcIso = _pickupDateTime.toUtc().toIso8601String();
 
     final body = <String, dynamic>{
       'from': {'address': _fromCtrl.text.trim()},
       'to': {'address': _toCtrl.text.trim()},
       'pickupDateTime': utcIso,
-      if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
-      if (_flightCtrl.text.trim().isNotEmpty)
-        'flightNumber': _flightCtrl.text.trim(),
+      // Always send notes and flightNumber (even empty) so clearing them persists — the backend
+      // treats an absent field as "leave unchanged" and an empty string as "clear".
+      'notes': _notesCtrl.text.trim(),
+      'flightNumber': _flightCtrl.text.trim(),
+      // Airportness is an explicit toggle, decoupled from the flight number: the backend keys
+      // specifics on this (true = airport, possibly without a flight; false = un-airport).
+      'isAirportTransfer': _isAirportTransfer,
+      // Always send tags (even empty) so clearing all tags persists — the
+      // backend treats an absent field as "leave unchanged".
+      'tags': _tags,
     };
 
     try {
@@ -228,13 +411,16 @@ class _EditRideDialogState extends State<_EditRideDialog> {
         if (mounted) Navigator.of(context).pop(updated);
       } else {
         setState(() {
-          _error = l10n.serverErrorMessage(response.statusCode.toString());
+          _error = ApiException(
+            'Update ride failed',
+            statusCode: response.statusCode,
+          );
           _saving = false;
         });
       }
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = e;
         _saving = false;
       });
     }
@@ -243,6 +429,7 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     return AlertDialog(
       title: Text(l10n.editRideDialogTitle),
       content: SizedBox(
@@ -267,21 +454,47 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _dateCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.pickupDateTimeLabel,
-                  border: const OutlineInputBorder(),
+              InkWell(
+                key: const Key('edit-ride-pickup-datetime'),
+                onTap: _saving ? null : _pickDateTime,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.pickupDateTimeLabel,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: const Icon(Icons.event),
+                  ),
+                  child: Text(AppDateUtils.formatDateTime(_pickupDateTime)),
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _flightCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.flightNumberOptionalLabel,
-                  border: const OutlineInputBorder(),
-                ),
+              SwitchListTile(
+                key: const Key('edit-ride-airport-toggle'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.airportTransferLabel),
+                value: _isAirportTransfer,
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _isAirportTransfer = value),
               ),
+              // The flight number is optional even when airport is on — it may be unknown.
+              if (_isAirportTransfer) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _flightCtrl,
+                  // Always upper-case as the user types (LH429, not lh429).
+                  inputFormatters: const [UpperCaseTextFormatter()],
+                  // Repaint so the format error below clears/appears live.
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: l10n.flightNumberOptionalLabel,
+                    border: const OutlineInputBorder(),
+                    // Empty is fine (optional); a non-empty value must be plausible.
+                    errorText: FlightNumber.isValid(_flightCtrl.text)
+                        ? null
+                        : l10n.flightNumberInvalidFormat,
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _notesCtrl,
@@ -291,10 +504,19 @@ class _EditRideDialogState extends State<_EditRideDialog> {
                 ),
                 maxLines: 3,
               ),
-              if (_error != null) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TagInputField(
+                  tags: _tags,
+                  onAdded: _addTag,
+                  onRemoved: _removeTag,
+                ),
+              ),
+              if (error != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  _error!,
+                  error,
                   style: const TextStyle(color: AppColors.error, fontSize: 13),
                 ),
               ],

@@ -178,9 +178,10 @@ class PushNotificationService {
 
   Future<void> _getAndRegisterToken() async {
     try {
-      _currentToken = await _messaging.getToken();
-      if (_currentToken != null) {
-        await _registerTokenWithBackend(_currentToken!);
+      final token = await _messaging.getToken();
+      _currentToken = token;
+      if (token != null) {
+        await _registerTokenWithBackend(token);
       }
     } catch (e) {
       final errorMessage = e.toString();
@@ -195,8 +196,9 @@ class PushNotificationService {
   // Call after login with an authenticated apiClient
   Future<void> registerTokenWithClient(ApiClient client) async {
     _authApiClient = client;
-    if (_currentToken != null) {
-      await _registerTokenWithClient(_currentToken!, client);
+    final token = _currentToken;
+    if (token != null) {
+      await _registerTokenWithClient(token, client);
     }
   }
 

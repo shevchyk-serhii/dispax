@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../modules/core/models/person.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
+import '../modules/ride_management/models/payment_method.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/widgets/ride_lifecycle_stepper.dart';
 import '../modules/ride_management/services/ride_service.dart';
@@ -33,6 +35,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   late Ride _currentRide;
   late RideService _rideService;
   bool _isLoading = false;
+  bool _isRefreshingFlight = false;
 
   @override
   void initState() {
@@ -170,7 +173,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '${_currentRide.paymentStatus}${_currentRide.paymentMethod != null ? ' (${_currentRide.paymentMethod})' : ''}',
+                                () {
+                                  final method = PaymentMethod.labelForWire(
+                                    _currentRide.paymentMethod,
+                                    l10n,
+                                  );
+                                  return '${_currentRide.paymentStatus}${method != null ? ' ($method)' : ''}';
+                                }(),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
@@ -218,7 +227,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 l10n.cancellationReasonDetail(
-                                  _currentRide.cancellationReason!,
+                                  _currentRide.cancellationReason ?? '',
                                 ),
                                 style: TextStyle(
                                   fontSize: 13,
@@ -230,7 +239,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               if (_currentRide.cancelledBy != null)
                                 Text(
                                   l10n.cancelledByLabel(
-                                    _currentRide.cancelledBy!,
+                                    _currentRide.cancelledBy ?? '',
                                   ),
                                   style: TextStyle(
                                     fontSize: 12,
@@ -239,11 +248,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                         : AppColors.errorStrong,
                                   ),
                                 ),
-                              if (_currentRide.cancellationFee != null &&
-                                  _currentRide.cancellationFee! > 0)
+                              if ((_currentRide.cancellationFee ?? 0) > 0)
                                 Text(
                                   l10n.cancellationFeeDisplay(
-                                    _currentRide.cancellationFee!
+                                    (_currentRide.cancellationFee ?? 0)
                                         .toStringAsFixed(2),
                                   ),
                                   style: TextStyle(
@@ -290,7 +298,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                 children: List.generate(
                                   5,
                                   (i) => Icon(
-                                    i < _currentRide.rating!
+                                    i < (_currentRide.rating ?? 0)
                                         ? Icons.star
                                         : Icons.star_border,
                                     color: AppColors.warning,
@@ -298,11 +306,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                   ),
                                 ),
                               ),
-                              if (_currentRide.ratingComment != null &&
-                                  _currentRide.ratingComment!.isNotEmpty) ...[
+                              if ((_currentRide.ratingComment ?? '')
+                                  .isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Text(
-                                  _currentRide.ratingComment!,
+                                  _currentRide.ratingComment ?? '',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: isDark
@@ -337,8 +345,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       ],
 
                       // Notes and special requirements
-                      if (_currentRide.notes != null &&
-                          _currentRide.notes!.isNotEmpty) ...[
+                      if ((_currentRide.notes ?? '').isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
@@ -365,7 +372,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _currentRide.notes!,
+                                _currentRide.notes ?? '',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: isDark
@@ -377,12 +384,12 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           ),
                         ),
                       ],
-                      if (_currentRide.specialRequirements != null &&
-                          _currentRide.specialRequirements!.isNotEmpty) ...[
+                      if ((_currentRide.specialRequirements ?? '')
+                          .isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Chip(
                           label: Text(
-                            _currentRide.specialRequirements!,
+                            _currentRide.specialRequirements ?? '',
                             style: const TextStyle(fontSize: 12),
                           ),
                           backgroundColor: Theme.of(
@@ -394,6 +401,36 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           visualDensity: VisualDensity.compact,
                         ),
                       ],
+                      if (_currentRide.tags.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _currentRide.tags
+                              .map(
+                                (tag) => Chip(
+                                  avatar: const Icon(
+                                    Icons.label_outline,
+                                    size: 14,
+                                  ),
+                                  label: Text(
+                                    tag,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
 
                       const SizedBox(height: 16),
 
@@ -401,22 +438,31 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       const SizedBox(height: 16),
 
                       if (_currentRide.isAirportTransfer) ...[
-                        RideFlightCard(ride: _currentRide),
+                        RideFlightCard(
+                          ride: _currentRide,
+                          isRefreshing: _isRefreshingFlight,
+                          // Clients can't refresh (the endpoint is staff-only), so don't
+                          // offer them a button that would only 403.
+                          onRefresh: widget.isClientView
+                              ? null
+                              : _refreshFlightStatus,
+                        ),
                         const SizedBox(height: 16),
                       ],
 
-                      if (widget.isClientView && _currentRide.driver != null)
+                      if (_currentRide.driver case final driver?
+                          when widget.isClientView)
                         RidePersonCard(
-                          person: _currentRide.driver!,
+                          person: driver,
+                          apiClient: context.read<AuthBloc>().apiClient,
                           isDriver: true,
-                          onCall: () =>
-                              _makePhoneCall(_currentRide.driver!.phone),
-                          onMessage: () =>
-                              _sendMessage(_currentRide.driver!.phone),
+                          onCall: () => _makePhoneCall(driver.phone),
+                          onMessage: () => _sendMessage(driver.phone),
                         )
                       else if (!widget.isClientView)
                         RidePersonCard(
                           person: _currentRide.client,
+                          apiClient: context.read<AuthBloc>().apiClient,
                           isDriver: false,
                           onCall: () =>
                               _makePhoneCall(_currentRide.client.phone),
@@ -460,6 +506,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                         onEditRide: _canEditRide()
                             ? () => _editRide(context)
                             : null,
+                        onDuplicateRide: () => _duplicateRide(context),
                         onCancelRide: _canCancelRide()
                             ? () => _cancelRide(context)
                             : null,
@@ -541,6 +588,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     }
   }
 
+  Future<void> _duplicateRide(BuildContext context) =>
+      NavigationUtils.duplicateRide(context, _currentRide);
+
   Future<void> _cancelRide(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final authState = context.read<AuthBloc>().state;
@@ -578,7 +628,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         rideBloc.add(RideUpdated(ride: cancelledRide));
         _showSuccessMessage(l10n.rideCancelledSuccess);
       } catch (e) {
-        _showErrorMessage(l10n.failedToCancelRide(e.toString()));
+        _showErrorMessage(l10n.failedToCancelRide(friendlyError(e, l10n)));
       } finally {
         setState(() => _isLoading = false);
       }
@@ -609,7 +659,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         });
         _showSuccessMessage(l10n.thankYouForRating);
       } catch (e) {
-        _showErrorMessage(l10n.failedToSubmitRating(e.toString()));
+        _showErrorMessage(l10n.failedToSubmitRating(friendlyError(e, l10n)));
       } finally {
         setState(() => _isLoading = false);
       }
@@ -645,16 +695,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _shareRide(BuildContext context) async {
-    final rideDetails =
-        '''
-Ride Details:
-From: ${_currentRide.pickupLocation}
-To: ${_currentRide.dropoffLocation}
-Time: ${_currentRide.pickupTime}
-Status: ${_currentRide.status.name}
-''';
-
-    Navigator.of(context).pop(rideDetails);
+    await NavigationUtils.shareRide(context, _currentRide);
   }
 
   Future<void> _updateRideStatus(RideStatus newStatus) async {
@@ -674,7 +715,7 @@ Status: ${_currentRide.status.name}
 
       _showSuccessMessage(l10n.rideStatusUpdatedSuccess);
     } catch (e) {
-      _showErrorMessage(l10n.failedToUpdateRideStatus(e.toString()));
+      _showErrorMessage(l10n.failedToUpdateRideStatus(friendlyError(e, l10n)));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -695,7 +736,7 @@ Status: ${_currentRide.status.name}
 
       _showSuccessMessage(l10n.driverAssignedSuccess);
     } catch (e) {
-      _showErrorMessage(l10n.failedToAssignDriver(e.toString()));
+      _showErrorMessage(l10n.failedToAssignDriver(friendlyError(e, l10n)));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -725,6 +766,34 @@ Status: ${_currentRide.status.name}
           ),
         ) ??
         false;
+  }
+
+  Future<void> _refreshFlightStatus() async {
+    final l10n = AppLocalizations.of(context)!;
+    // Capture the RideBloc before the async gap so the reference stays valid.
+    final rideBloc = context.read<RideBloc>();
+    setState(() => _isRefreshingFlight = true);
+    try {
+      final result = await _rideService.refreshFlightStatus(_currentRide.id);
+      if (!mounted) return;
+      // Patch ONLY the flight fields onto the existing ride — the refresh DTO is not
+      // fully enriched, so replacing the whole ride would de-enrich the shared
+      // RideBloc copy and blank driverName/optimalEntryTime/avatar/eta on the list
+      // cards (the confirm-vanish overwrite trap). See Ride.withFlightFrom.
+      final patched = _currentRide.withFlightFrom(result.ride);
+      setState(() => _currentRide = patched);
+      // Push the patched ride so other screens (list cards) reflect it too.
+      rideBloc.add(RideUpdated(ride: patched));
+      _showSuccessMessage(switch (result.outcome) {
+        'updated' => l10n.flightStatusRefreshed,
+        'notFound' => l10n.flightNotFoundYet,
+        _ => l10n.flightStatusUnchanged,
+      });
+    } catch (_) {
+      if (mounted) _showErrorMessage(l10n.failedToRefreshFlightStatus);
+    } finally {
+      if (mounted) setState(() => _isRefreshingFlight = false);
+    }
   }
 
   void _showSuccessMessage(String message) {

@@ -1,6 +1,6 @@
 package com.shevchyk.auth.middleware
 
-import com.shevchyk.auth.service.{JwtService, JwtPayload}
+import com.shevchyk.auth.service.JwtService
 import com.shevchyk.auth.domain.{JwtError, InvalidTokenError, ExpiredTokenError}
 import com.shevchyk.core.domain.PersonRole
 import zio.*
@@ -59,8 +59,6 @@ object AuthMiddleware:
                 Response(Status.Unauthorized, body = Body.fromString("""{"error":"Invalid or expired token"}"""))
               case _: JwtError                                 =>
                 Response(Status.Unauthorized, body = Body.fromString("""{"error":"Authentication failed"}"""))
-              case _                                           =>
-                Response(Status.InternalServerError, body = Body.fromString("""{"error":"Internal server error"}"""))
             },
             { payload =>
               val wireRoles = payload.roles

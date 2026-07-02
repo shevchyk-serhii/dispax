@@ -27,10 +27,12 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  // Steps in order
+  // Steps in order. `confirmed` sits between `assigned` and `inProgress`:
+  // the driver has acknowledged the ride but not yet started it.
   static const List<RideStatus> _steps = [
     RideStatus.requested,
     RideStatus.assigned,
+    RideStatus.confirmed,
     RideStatus.inProgress,
     RideStatus.completed,
   ];
@@ -53,9 +55,14 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
     super.dispose();
   }
 
-  /// Returns the index of the current (active) step, or -1 if cancelled.
+  /// Returns the index of the current (active) step, or -1 for the terminal
+  /// statuses ([RideStatus.cancelled] / [RideStatus.handedOff]) which render a
+  /// dedicated indicator instead of the step list.
   int get _currentStepIndex {
-    if (widget.ride.status == RideStatus.cancelled) return -1;
+    if (widget.ride.status == RideStatus.cancelled ||
+        widget.ride.status == RideStatus.handedOff) {
+      return -1;
+    }
     return _steps.indexOf(widget.ride.status);
   }
 
@@ -64,6 +71,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
     final l10n = AppLocalizations.of(context)!;
     final brightness = Theme.of(context).brightness;
     final isCancelled = widget.ride.status == RideStatus.cancelled;
+    final isHandedOff = widget.ride.status == RideStatus.handedOff;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -80,6 +88,8 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
           const SizedBox(height: AppDimensions.paddingMedium),
           if (isCancelled)
             _buildCancelledIndicator(l10n, brightness)
+          else if (isHandedOff)
+            _buildHandedOffIndicator(l10n, brightness)
           else
             ..._buildStepList(l10n, brightness),
         ],
@@ -114,6 +124,40 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
             ),
             Text(l10n.rideHasBeenCancelledLabel, style: AppStyles.bodySmall),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHandedOffIndicator(
+    AppLocalizations l10n,
+    Brightness brightness,
+  ) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.rideHandedOff,
+          ),
+          child: const Icon(LucideCompat.share2, color: Colors.white, size: 12),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.rideStatusHandedOff,
+                style: AppStyles.labelLarge.copyWith(
+                  color: AppColors.rideHandedOff,
+                ),
+              ),
+              Text(l10n.rideHandedOffInfo, style: AppStyles.bodySmall),
+            ],
+          ),
         ),
       ],
     );
@@ -219,7 +263,7 @@ class _RideLifecycleStepperWidgetState extends State<RideLifecycleStepperWidget>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          RideStatusStyles.getStatusDisplayName(status),
+          RideStatusStyles.getStatusDisplayName(status, l10n),
           style: AppStyles.labelLarge.copyWith(
             color: labelColor,
             fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,

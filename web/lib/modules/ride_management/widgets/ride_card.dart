@@ -9,6 +9,7 @@ class RideCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onDuplicate;
 
   const RideCard({
     super.key,
@@ -16,6 +17,7 @@ class RideCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.onDuplicate,
   });
 
   @override
@@ -38,7 +40,7 @@ class RideCard extends StatelessWidget {
   }
 
   Widget? buildActions(BuildContext context) {
-    if (onEdit == null && onDelete == null) return null;
+    if (onEdit == null && onDelete == null && onDuplicate == null) return null;
 
     final l10n = AppLocalizations.of(context)!;
     return PopupMenuButton<String>(
@@ -46,6 +48,9 @@ class RideCard extends StatelessWidget {
         switch (value) {
           case 'edit':
             onEdit?.call();
+            break;
+          case 'duplicate':
+            onDuplicate?.call();
             break;
           case 'delete':
             onDelete?.call();
@@ -59,6 +64,15 @@ class RideCard extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.edit),
               title: Text(l10n.editAction),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        if (onDuplicate != null)
+          PopupMenuItem(
+            value: 'duplicate',
+            child: ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: Text(l10n.duplicateRideAction),
               contentPadding: EdgeInsets.zero,
             ),
           ),

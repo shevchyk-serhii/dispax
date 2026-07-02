@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +19,7 @@ class _EmergencyReassignmentScreenState
     extends State<EmergencyReassignmentScreen> {
   List<Map<String, dynamic>> _reassignments = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _EmergencyReassignmentScreenState
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -137,9 +138,10 @@ class _EmergencyReassignmentScreenState
                               ScaffoldMessenger.of(dialogContext).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    AppLocalizations.of(
-                                      dialogContext,
-                                    )!.genericError(e.toString()),
+                                    friendlyError(
+                                      e,
+                                      AppLocalizations.of(dialogContext)!,
+                                    ),
                                   ),
                                 ),
                               );
@@ -164,7 +166,7 @@ class _EmergencyReassignmentScreenState
                               children: [
                                 Icon(reasonIcons[r], size: 20),
                                 const SizedBox(width: 8),
-                                Text(reasonLabels[r]!),
+                                Text(reasonLabels[r] ?? ''),
                               ],
                             ),
                           ),
@@ -293,9 +295,7 @@ class _EmergencyReassignmentScreenState
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(
-                            dialogContext,
-                          )!.genericError(e.toString()),
+                          friendlyError(e, AppLocalizations.of(dialogContext)!),
                         ),
                       ),
                     );
@@ -328,13 +328,14 @@ class _EmergencyReassignmentScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     return Column(
       children: [
         _buildHeader(l10n),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
-              : _error != null
+              : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -345,7 +346,7 @@ class _EmergencyReassignmentScreenState
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(error),
                       ElevatedButton(
                         onPressed: _loadReassignments,
                         child: Text(l10n.retry),

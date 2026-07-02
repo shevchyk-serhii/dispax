@@ -106,6 +106,24 @@ void main() {
       expect(find.byType(MonthViewWidget), findsNothing);
     });
 
+    testWidgets(
+      'week view is given an onRideSelected so ride blocks are tappable',
+      (tester) async {
+        addTearDown(tester.view.resetPhysicalSize);
+        await _pump(tester, rideBloc);
+
+        await tester.tap(find.text('Week View'));
+        await tester.pumpAndSettle();
+
+        final weekView = tester.widget<WeekViewWidget>(
+          find.byType(WeekViewWidget),
+        );
+        // The client week view must forward the screen's onRideSelected so a
+        // tapped block opens ride details — mirroring its own day view.
+        expect(weekView.onRideSelected, isNotNull);
+      },
+    );
+
     testWidgets("tapping 'Day' segment switches to ClientDayViewWidget", (
       tester,
     ) async {

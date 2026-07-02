@@ -333,7 +333,7 @@ object RideServiceSpec extends ZIOSpecDefault {
             companyId = testCompanyId,
             pickupLocation = Location("Airport Terminal 1"),
             dropoffLocation = Location("Hotel"),
-            specifics = Some(RideSpecifics.AirportTransfer("KBP", "PS123"))
+            specifics = Some(RideSpecifics.AirportTransfer("KBP", Some("PS123")))
           )
 
           for {
@@ -342,7 +342,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(
             ride.isAirportTransfer &&
               ride.specifics.exists { case RideSpecifics.AirportTransfer(code, flight, _) =>
-                code == "KBP" && flight == "PS123"
+                code == "KBP" && flight.contains("PS123")
               }
           )
         }.provide(standardLayers),
@@ -406,6 +406,31 @@ object RideServiceSpec extends ZIOSpecDefault {
             service <- ZIO.service[RideService]
             ride    <- service.createRide(request)
           } yield assertTrue(ride.estimatedPrice.isEmpty)
+        }.provide(standardLayers),
+        test("should persist the supplied paymentMethod") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point"),
+            paymentMethod = Some(PaymentMethod.Payment)
+          )
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(ride.paymentMethod.contains(PaymentMethod.Payment))
+        }.provide(standardLayers),
+        test("should leave paymentMethod None when none is supplied") {
+          val request = CreateRideRequest(
+            clientId = testClientId,
+            companyId = testCompanyId,
+            pickupLocation = Location("Start Point"),
+            dropoffLocation = Location("End Point")
+          )
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(request)
+          } yield assertTrue(ride.paymentMethod.isEmpty)
         }.provide(standardLayers)
       ),
       suite("getRidesForUser")(
@@ -2050,8 +2075,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })
@@ -2112,8 +2137,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })
@@ -2146,8 +2171,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })
@@ -2232,6 +2257,128 @@ object RideServiceSpec extends ZIOSpecDefault {
                          )
             assigned2 <- service.assignDriver(ride2.id, testDriverId)
           } yield assertTrue(assigned2.status == RideStatus.Assigned)
+        }.provide(standardLayers),
+        test("two rides on DIFFERENT DAYS via pickupDateTime do not conflict") {
+          // Repro for the false "Terminkonflikt": the dispatcher creates rides
+          // with the pickup time in pickupDateTime (scheduledTime stays None,
+          // which is the normal non-airport case). The conflict check fell back
+          // to requestTime (when the request was *created*) whenever
+          // scheduledTime was None, so two rides created at about the same
+          // moment but scheduled on different days collided — even though the
+          // driver has nothing overlapping. The check must use pickupDateTime.
+          val day1 = Instant.now().plusSeconds(7200) // today + 2h
+          val day2 = day1.plusSeconds(2 * 24 * 3600) // two days later
+          for {
+            service <- ZIO.service[RideService]
+            ride1   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B"),
+                           pickupDateTime = Some(day1)
+                         )
+                       )
+            _       <- service.assignDriver(ride1.id, testDriverId)
+            ride2   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = vipClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("C"),
+                           dropoffLocation = Location("D"),
+                           pickupDateTime = Some(day2)
+                         )
+                       )
+            result  <- service.assignDriver(ride2.id, testDriverId).exit
+          } yield assertTrue(result match {
+            case Exit.Success(assigned) => assigned.status == RideStatus.Assigned
+            case _                      => false
+          })
+        }.provide(standardLayers),
+        test("two rides at the same pickupDateTime DO conflict (scheduledTime None)") {
+          // Mirror of the airport-case overlap test but for the normal path
+          // where the pickup time lives in pickupDateTime. Both rides scheduled
+          // for the same instant must collide regardless of when the requests
+          // were created — so the check cannot rely on requestTime.
+          val pickupAt = Instant.now().plusSeconds(7200)
+          for {
+            service <- ZIO.service[RideService]
+            ride1   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("A"),
+                           dropoffLocation = Location("B"),
+                           pickupDateTime = Some(pickupAt)
+                         )
+                       )
+            _       <- service.assignDriver(ride1.id, testDriverId)
+            ride2   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = vipClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("C"),
+                           dropoffLocation = Location("D"),
+                           pickupDateTime = Some(pickupAt.plusSeconds(600)) // 10 min later
+                         )
+                       )
+            result  <- service.assignDriver(ride2.id, testDriverId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("conflict carries the conflicting ride's route, client and pickup time") {
+          // The dispatcher dialog needs to name WHICH ride conflicts. The error
+          // carries structured details (id, client, from/to, pickup time) so the
+          // client can render a localized, human-readable message instead of a
+          // raw UUID; the message string itself is a readable fallback.
+          val pickupAt = Instant.now().plusSeconds(7200)
+          val fromAddr = "Maximilianstrasse 10, Munich"
+          val toAddr   = "Munich Airport Terminal 2"
+          for {
+            service <- ZIO.service[RideService]
+            ride1   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = testClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location(fromAddr),
+                           dropoffLocation = Location(toAddr),
+                           pickupDateTime = Some(pickupAt)
+                         )
+                       )
+            _       <- service.assignDriver(ride1.id, testDriverId)
+            ride2   <- service.createRide(
+                         CreateRideRequest(
+                           clientId = vipClientId,
+                           companyId = testCompanyId,
+                           pickupLocation = Location("C"),
+                           dropoffLocation = Location("D"),
+                           pickupDateTime = Some(pickupAt.plusSeconds(600))
+                         )
+                       )
+            result  <- service.assignDriver(ride2.id, testDriverId).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.ScheduleConflict(msg, rideId, clientId, from, to, at) =>
+                  rideId.contains(ride1.id) &&
+                  clientId.contains(testClientId) &&
+                  from.contains(fromAddr) &&
+                  to.contains(toAddr) &&
+                  at.contains(pickupAt) &&
+                  // The fallback message is human-readable: route present, raw
+                  // UUID not used as the sole identifier.
+                  msg.contains(fromAddr) && msg.contains(toAddr) &&
+                  !msg.contains(ride1.id.value.toString)
+                case _                                                               => false
+              }
+            case _                   => false
+          })
         }.provide(standardLayers)
       ),
       suite("createRide validation")(
@@ -2503,8 +2650,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })
@@ -2534,8 +2681,8 @@ object RideServiceSpec extends ZIOSpecDefault {
           } yield assertTrue(result match {
             case Exit.Failure(cause) =>
               cause.failureOption.exists {
-                case RideError.ScheduleConflict(_) => true
-                case _                             => false
+                case RideError.ScheduleConflict(_, _, _, _, _, _) => true
+                case _                                            => false
               }
             case _                   => false
           })

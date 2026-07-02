@@ -7,18 +7,24 @@ import '../../../modules/core/models/person.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../modules/core/services/api_client.dart';
 import '../../../modules/core/widgets/calendar_controls.dart';
+import '../../../modules/schedule_management/models/calendar_share.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
+import '../../../modules/schedule_management/services/calendar_share_service.dart';
 import '../../../modules/schedule_management/services/schedule_service.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../screens/ride_details_screen.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 export '../../../modules/core/widgets/calendar_controls.dart'
     show CalendarViewType;
 import 'month_view_widget.dart';
 import 'week_view_widget.dart';
 import 'day_view_widget.dart';
 import 'multi_column_view_widget.dart';
+import 'shared_calendar_view.dart';
+import 'widgets/shift_strip.dart';
 
 class CalendarScheduleScreen extends StatefulWidget {
   const CalendarScheduleScreen({super.key});
@@ -51,6 +57,24 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   String? _selectedDriverId; // null = own schedule
   String? _selectedDriverName;
 
+  // Cross-company calendars shared with me (via invite codes). Selecting one
+  // swaps the body to the read-only SharedCalendarView instead of feeding the
+  // regular calendar widgets.
+  List<CalendarShareGrant> _sharedWithMe = [];
+  CalendarShareGrant? _selectedShare;
+
+  /// Dropdown value prefix distinguishing a shared-calendar grant from a
+  /// colleague's driverId.
+  static const String _sharePrefix = 'share:';
+
+  /// Work shifts of the currently selected person (self or the picked
+  /// colleague), shared between the shift strip and the grid views. Cancelled
+  /// shifts are already filtered out.
+  List<ScheduleDay> _shifts = [];
+
+  /// Guards against out-of-order shift responses when switching drivers.
+  int _shiftsRequestSeq = 0;
+
   // Rides for the currently selected colleague. Null while "My Schedule" is
   // selected — in that case the calendar reads the shared RideBloc (which is
   // loaded for the logged-in user and kept live across the dashboard tabs).
@@ -66,6 +90,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   late final ApiClient _apiClient;
   late final ScheduleService _scheduleService;
   late final RideService _rideService;
+  late final CalendarShareService _shareService;
 
   @override
   void initState() {
@@ -73,14 +98,58 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     _apiClient = context.read<AuthBloc>().apiClient;
     _scheduleService = ScheduleService(apiClient: _apiClient);
     _rideService = RideService(apiClient: _apiClient);
+    _shareService = CalendarShareService(apiClient: _apiClient);
     _initVisibility();
+    _loadSharedWithMe();
+    _loadShifts();
+  }
+
+  /// Cross-company shares are independent of the intra-company visibility
+  /// flag — load them unconditionally and degrade to none on any failure.
+  Future<void> _loadSharedWithMe() async {
+    try {
+      final shares = await _shareService.getSharedWithMe();
+      if (mounted) setState(() => _sharedWithMe = shares);
+    } catch (_) {
+      if (mounted) setState(() => _sharedWithMe = []);
+    }
+  }
+
+  /// Loads the work shifts of the currently selected person (self by default,
+  /// or the colleague picked in the dropdown) so both the shift strip and the
+  /// calendar grid views can render them. Cancelled shifts are dropped here so
+  /// every consumer sees the same working set. Degrades to empty on failure —
+  /// the shifts are an overlay, never worth blocking the calendar.
+  Future<void> _loadShifts() async {
+    final targetDriverId =
+        _selectedDriverId ?? context.read<AuthBloc>().state.user?.id;
+    if (targetDriverId == null || targetDriverId.startsWith(_sharePrefix)) {
+      if (mounted) setState(() => _shifts = []);
+      return;
+    }
+    final seq = ++_shiftsRequestSeq;
+    try {
+      final shifts = await _scheduleService.getDriverSchedule(targetDriverId);
+      if (mounted && seq == _shiftsRequestSeq) {
+        setState(() {
+          _shifts = shifts
+              .where((s) => s.status != ScheduleDayStatus.cancelled)
+              .toList();
+        });
+      }
+    } catch (_) {
+      if (mounted && seq == _shiftsRequestSeq) {
+        setState(() => _shifts = []);
+      }
+    }
   }
 
   Future<void> _initVisibility() async {
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) return;
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) return;
 
-    final myId = authState.user!.id;
+    final myId = user.id;
 
     try {
       // Check own visibility flag using the dedicated /me endpoint
@@ -117,23 +186,30 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       // If the visibility check fails, gracefully fall back to own schedule only.
       if (mounted) setState(() => _canViewOtherSchedules = false);
     }
-
-    // Load own schedule initially.
-    _loadScheduleFor(myId);
-  }
-
-  void _loadScheduleFor(String driverId) {
-    context.read<ScheduleBloc>().add(
-      ScheduleLoadDriverSchedule(driverId: driverId),
-    );
   }
 
   void _onDriverSelected(String? driverId) {
     final authState = context.read<AuthBloc>().state;
     final myId = authState.user?.id;
 
+    if (driverId != null && driverId.startsWith(_sharePrefix)) {
+      final grantId = driverId.substring(_sharePrefix.length);
+      final share = _sharedWithMe.where((g) => g.id == grantId).firstOrNull;
+      setState(() {
+        _selectedShare = share;
+        _selectedDriverId = driverId;
+        _selectedDriverName = share?.grantorName;
+        _driverRides = null;
+        _loadingDriverRides = false;
+        _driverRidesError = null;
+        _shifts = [];
+      });
+      return;
+    }
+
     if (driverId == null || driverId == myId) {
       setState(() {
+        _selectedShare = null;
         _selectedDriverId = null;
         _selectedDriverName = null;
         // Back to own schedule: drop the colleague override so the calendar
@@ -142,7 +218,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         _loadingDriverRides = false;
         _driverRidesError = null;
       });
-      if (myId != null) _loadScheduleFor(myId);
+      _loadShifts();
     } else {
       final driver = _colleagues.firstWhere(
         (p) => p.id == driverId,
@@ -154,11 +230,12 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         ),
       );
       setState(() {
+        _selectedShare = null;
         _selectedDriverId = driverId;
         _selectedDriverName = driver.name;
       });
-      _loadScheduleFor(driverId);
       _loadDriverRides(driverId);
+      _loadShifts();
     }
   }
 
@@ -194,9 +271,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
     final authState = context.read<AuthBloc>().state;
     final myId = authState.user?.id;
 
-    final String titleText = _selectedDriverName != null
-        ? _selectedDriverName!
-        : 'My Schedule';
+    final String titleText = _selectedDriverName ?? 'My Schedule';
 
     return Scaffold(
       appBar: AppBar(
@@ -208,8 +283,8 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
             // in its own column, so the dropdown has no effect there — show a
             // plain title instead to avoid the misleading control.
             final canPickDriver =
-                _canViewOtherSchedules &&
-                _colleagues.isNotEmpty &&
+                ((_canViewOtherSchedules && _colleagues.isNotEmpty) ||
+                    _sharedWithMe.isNotEmpty) &&
                 viewType != CalendarViewType.multiColumn;
             return canPickDriver
                 ? _buildDriverDropdown(myId, titleText)
@@ -284,46 +359,76 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           if (state.hasError) {
             NavigationHelper.showSnackBar(
               context,
-              state.errorMessage!,
+              friendlyError(
+                state.error ?? state.errorMessage,
+                AppLocalizations.of(context)!,
+              ),
               isError: true,
             );
           }
         },
         child: SafeArea(
-          child: Column(
-            children: [
-              ValueListenableBuilder<DateTime>(
-                valueListenable: selectedDayNotifier,
-                builder: (context, selectedDay, child) {
-                  return ValueListenableBuilder<CalendarViewType>(
-                    valueListenable: viewTypeNotifier,
-                    builder: (context, viewType, child) {
-                      return CalendarControls(
-                        selectedDay: selectedDay,
-                        viewType: viewType,
-                        onPrevious: navigatePrevious,
-                        onNext: navigateNext,
-                        onDatePickerTap: () => showDatePickerDialog(context),
-                      );
-                    },
-                  );
-                },
-              ),
-              Expanded(
-                child: ValueListenableBuilder<CalendarViewType>(
-                  valueListenable: viewTypeNotifier,
-                  builder: (context, viewType, child) {
-                    return ValueListenableBuilder<DateTime>(
+          // A cross-company shared calendar replaces the regular calendar
+          // entirely — it pages weeks itself and renders PII-free chips only.
+          child: _selectedShare != null
+              ? SharedCalendarView(
+                  grantId: _selectedShare!.id,
+                  grantorName: _selectedShare!.grantorName,
+                  grantorCompanyName: _selectedShare!.grantorCompanyName,
+                  service: _shareService,
+                )
+              : Column(
+                  children: [
+                    ValueListenableBuilder<DateTime>(
                       valueListenable: selectedDayNotifier,
                       builder: (context, selectedDay, child) {
-                        return buildCalendarView(viewType, selectedDay);
+                        return ValueListenableBuilder<CalendarViewType>(
+                          valueListenable: viewTypeNotifier,
+                          builder: (context, viewType, child) {
+                            return CalendarControls(
+                              selectedDay: selectedDay,
+                              viewType: viewType,
+                              onPrevious: navigatePrevious,
+                              onNext: navigateNext,
+                              onDatePickerTap: () =>
+                                  showDatePickerDialog(context),
+                            );
+                          },
+                        );
                       },
-                    );
-                  },
+                    ),
+                    // Work-schedule strip: the selected driver's shifts for the
+                    // selected day, with create/cancel for self (and for any
+                    // company driver when the viewer is dispatcher/admin).
+                    ValueListenableBuilder<DateTime>(
+                      valueListenable: selectedDayNotifier,
+                      builder: (context, selectedDay, child) {
+                        return ValueListenableBuilder<CalendarViewType>(
+                          valueListenable: viewTypeNotifier,
+                          builder: (context, viewType, child) {
+                            if (viewType == CalendarViewType.multiColumn) {
+                              return const SizedBox.shrink();
+                            }
+                            return _buildShiftStrip(selectedDay);
+                          },
+                        );
+                      },
+                    ),
+                    Expanded(
+                      child: ValueListenableBuilder<CalendarViewType>(
+                        valueListenable: viewTypeNotifier,
+                        builder: (context, viewType, child) {
+                          return ValueListenableBuilder<DateTime>(
+                            valueListenable: selectedDayNotifier,
+                            builder: (context, selectedDay, child) {
+                              return buildCalendarView(viewType, selectedDay);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
       floatingActionButton: Builder(
@@ -348,6 +453,8 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   /// Drop-down widget shown in the AppBar when the driver has permission to
   /// view colleagues' schedules.
   Widget _buildDriverDropdown(String? myId, String titleText) {
+    final l10n = AppLocalizations.of(context)!;
+    final showColleagues = _canViewOtherSchedules && _colleagues.isNotEmpty;
     final items = <DropdownMenuItem<String?>>[
       const DropdownMenuItem<String?>(
         value: null,
@@ -357,16 +464,41 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      ..._colleagues.map(
-        (p) => DropdownMenuItem<String?>(
-          value: p.id,
-          child: Text(
-            p.name,
-            style: const TextStyle(color: Colors.white),
-            overflow: TextOverflow.ellipsis,
+      if (showColleagues)
+        ..._colleagues.map(
+          (p) => DropdownMenuItem<String?>(
+            value: p.id,
+            child: Text(
+              p.name,
+              style: const TextStyle(color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
-      ),
+      if (_sharedWithMe.isNotEmpty) ...[
+        DropdownMenuItem<String?>(
+          enabled: false,
+          value: '$_sharePrefix-header',
+          child: Text(
+            l10n.sharedWithMeGroupLabel,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        ..._sharedWithMe.map(
+          (g) => DropdownMenuItem<String?>(
+            value: '$_sharePrefix${g.id}',
+            child: Text(
+              '${g.grantorName} · ${g.grantorCompanyName}',
+              style: const TextStyle(color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
     ];
 
     return DropdownButtonHideUnderline(
@@ -378,6 +510,33 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         items: items,
         onChanged: _onDriverSelected,
       ),
+    );
+  }
+
+  /// The shift strip for the currently selected person: self by default, or
+  /// the colleague picked in the AppBar dropdown. Creating/cancelling shifts
+  /// is allowed for oneself and, for dispatchers/admins, for any company
+  /// driver. Hidden while an external shared calendar is displayed (that view
+  /// is read-only and already renders shifts itself).
+  Widget _buildShiftStrip(DateTime selectedDay) {
+    final user = context.read<AuthBloc>().state.user;
+    final myId = user?.id;
+    final targetDriverId = _selectedDriverId ?? myId;
+    if (targetDriverId == null) return const SizedBox.shrink();
+
+    final viewingSelf = _selectedDriverId == null;
+    final isDispatcherOrAdmin =
+        user != null &&
+        (user.hasRole(PersonRole.dispatcher) || user.hasRole(PersonRole.admin));
+    final canManage = viewingSelf || isDispatcherOrAdmin;
+
+    return ShiftStrip(
+      driverId: targetDriverId,
+      selectedDay: selectedDay,
+      canManage: canManage,
+      service: _scheduleService,
+      shifts: _shifts,
+      onChanged: _loadShifts,
     );
   }
 
@@ -416,6 +575,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          shifts: _shifts,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -429,6 +589,8 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          shifts: _shifts,
+          onRideSelected: _openRideDetails,
           onDaySelected: (day) {
             selectedDayNotifier.value = day;
             viewTypeNotifier.value = CalendarViewType.day;
@@ -442,6 +604,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           selectedDay: selectedDay,
           driverIdFilter: filterDriverId,
           ridesOverride: ridesOverride,
+          shifts: _shifts,
           onRideSelected: _openRideDetails,
         );
       case CalendarViewType.multiColumn:
@@ -459,6 +622,10 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         return MultiColumnViewWidget(
           selectedDay: selectedDay,
           drivers: allDrivers,
+          // Cross-company calendars shared with me appear as extra read-only
+          // columns after the company drivers.
+          externalShares: _sharedWithMe,
+          shareService: _shareService,
           onRideSelected: _openRideDetails,
         );
     }
@@ -561,6 +728,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   void dispose() {
     _scheduleService.dispose();
     _rideService.dispose();
+    _shareService.dispose();
     super.dispose();
   }
 }

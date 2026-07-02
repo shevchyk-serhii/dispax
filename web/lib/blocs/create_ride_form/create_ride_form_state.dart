@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/models/ride_estimate.dart';
+import '../../modules/ride_management/models/ride.dart';
 
 enum CreateRideFormStatus { initial, submitting, success, failure }
 
@@ -30,7 +32,11 @@ class CreateRideFormState extends Equatable {
   final bool showNotes;
   final String notes;
   final List<String> specialRequirements;
+
+  /// Free-form operator tags attached to the ride at creation.
+  final List<String> tags;
   final bool isNewClient;
+  final bool isProvisionalClient;
   final String newClientPhone;
 
   // Baseline values for fields that are auto-preselected (driver/client = self).
@@ -38,6 +44,15 @@ class CreateRideFormState extends Equatable {
   final String? baselineClientId;
   final String baselineClientName;
   final String? baselineDriverId;
+
+  /// Operator-supplied ride price (€). Optional — when null the ride is created
+  /// without a price and it can be set later. Independent of the auto-computed
+  /// estimate ([estimateBusiness]/[estimateVan]): the operator types it manually.
+  final double? price;
+
+  /// Operator-selected payment method. Defaults to [PaymentMethod.invoice]
+  /// (Rechnung) and is always submitted with the ride.
+  final PaymentMethod selectedPaymentMethod;
 
   // ─── Client booking extensions ───
   /// Selected vehicle class for the client booking flow.
@@ -75,11 +90,15 @@ class CreateRideFormState extends Equatable {
     this.showNotes = false,
     this.notes = '',
     this.specialRequirements = const [],
+    this.tags = const [],
     this.isNewClient = false,
+    this.isProvisionalClient = false,
     this.newClientPhone = '',
     this.baselineClientId,
     this.baselineClientName = '',
     this.baselineDriverId,
+    this.price,
+    this.selectedPaymentMethod = PaymentMethod.invoice,
     this.selectedVehicleClass = VehicleClass.business,
     this.isScheduled = true,
     this.estimateBusiness,
@@ -104,13 +123,62 @@ class CreateRideFormState extends Equatable {
       status: CreateRideFormStatus.initial,
       notes: '',
       specialRequirements: const [],
+      tags: const [],
       isNewClient: false,
+      isProvisionalClient: false,
       newClientPhone: '',
+      selectedPaymentMethod: PaymentMethod.invoice,
       selectedVehicleClass: VehicleClass.business,
       isScheduled: true,
       estimateBusiness: null,
       estimateVan: null,
       estimateUnavailable: false,
+    );
+  }
+
+  /// Pre-fills the form by copying the reusable details of an existing [ride]
+  /// for the "duplicate ride" flow: the new ride is a brand-new request, so we
+  /// copy the client, route, flight/airport details, notes, requirements, tags,
+  /// price and payment method — but NOT the driver, pickup time, or any status/
+  /// tracking state. The pickup time falls back to the [initial] default
+  /// (now + 1h) so the operator picks a fresh time; the status defaults to
+  /// Requested at submission time.
+  ///
+  /// Gate/terminal are deliberately NOT copied: they are flight-tracking values
+  /// populated automatically by the flight monitor (real airport gates like
+  /// "K14" / terminal "T2"), and they are not part of the gate/terminal pickers'
+  /// fixed option lists. Seeding the form dropdowns with an off-list value would
+  /// crash DropdownButtonFormField (no matching item). They are also unused by
+  /// the create request, so dropping them here is loss-free.
+  factory CreateRideFormState.fromRide(Ride ride) {
+    final base = CreateRideFormState.initial();
+    final notes = ride.notes ?? '';
+    // specialRequirements is stored as a ", "-joined CSV (see the create
+    // submission); split it back into the list the form holds.
+    final requirements = (ride.specialRequirements ?? '')
+        .split(',')
+        .map((r) => r.trim())
+        .where((r) => r.isNotEmpty)
+        .toList();
+    return base.copyWith(
+      selectedClientId: ride.clientId,
+      clientName: ride.clientName,
+      // Treat the copied client as a baseline preselect (like ClientPreselected)
+      // so the unsaved-changes guard does not fire just from duplicating.
+      baselineClientId: ride.clientId,
+      baselineClientName: ride.clientName,
+      fromAddress: ride.from.address,
+      toAddress: ride.to.address,
+      isAirportTransfer: ride.isAirportTransfer,
+      isArrival: ride.isArrival,
+      flightNumber: ride.flightNumber ?? '',
+      notes: notes,
+      showNotes: notes.isNotEmpty,
+      specialRequirements: requirements,
+      tags: List<String>.of(ride.tags),
+      price: ride.price,
+      selectedPaymentMethod:
+          PaymentMethod.fromWire(ride.paymentMethod) ?? PaymentMethod.invoice,
     );
   }
 
@@ -136,13 +204,18 @@ class CreateRideFormState extends Equatable {
     bool? showNotes,
     String? notes,
     List<String>? specialRequirements,
+    List<String>? tags,
     bool? isNewClient,
+    bool? isProvisionalClient,
     String? newClientPhone,
     String? baselineClientId,
     bool clearBaselineClientId = false,
     String? baselineClientName,
     String? baselineDriverId,
     bool clearBaselineDriverId = false,
+    double? price,
+    bool clearPrice = false,
+    PaymentMethod? selectedPaymentMethod,
     VehicleClass? selectedVehicleClass,
     bool? isScheduled,
     RideEstimate? estimateBusiness,
@@ -177,7 +250,9 @@ class CreateRideFormState extends Equatable {
       showNotes: showNotes ?? this.showNotes,
       notes: notes ?? this.notes,
       specialRequirements: specialRequirements ?? this.specialRequirements,
+      tags: tags ?? this.tags,
       isNewClient: isNewClient ?? this.isNewClient,
+      isProvisionalClient: isProvisionalClient ?? this.isProvisionalClient,
       newClientPhone: newClientPhone ?? this.newClientPhone,
       baselineClientId: clearBaselineClientId
           ? null
@@ -186,6 +261,9 @@ class CreateRideFormState extends Equatable {
       baselineDriverId: clearBaselineDriverId
           ? null
           : (baselineDriverId ?? this.baselineDriverId),
+      price: clearPrice ? null : (price ?? this.price),
+      selectedPaymentMethod:
+          selectedPaymentMethod ?? this.selectedPaymentMethod,
       selectedVehicleClass: selectedVehicleClass ?? this.selectedVehicleClass,
       isScheduled: isScheduled ?? this.isScheduled,
       estimateBusiness: clearEstimateBusiness
@@ -204,7 +282,9 @@ class CreateRideFormState extends Equatable {
   bool get isDepartureAutoCompute => isAirportTransfer && !isArrival;
 
   bool get isValid {
-    final clientOk = isNewClient
+    final clientOk = isProvisionalClient
+        ? true
+        : isNewClient
         ? clientName.trim().isNotEmpty
         : selectedClientId != null;
     // For departure rides: flightDepartureTime is required; manualPickupDateTime is optional.
@@ -231,7 +311,9 @@ class CreateRideFormState extends Equatable {
       toAddress.trim().isNotEmpty ||
       flightNumber.trim().isNotEmpty ||
       notes.trim().isNotEmpty ||
-      specialRequirements.isNotEmpty;
+      specialRequirements.isNotEmpty ||
+      tags.isNotEmpty ||
+      price != null;
 
   @override
   List<Object?> get props => [
@@ -252,11 +334,15 @@ class CreateRideFormState extends Equatable {
     showNotes,
     notes,
     specialRequirements,
+    tags,
     isNewClient,
+    isProvisionalClient,
     newClientPhone,
     baselineClientId,
     baselineClientName,
     baselineDriverId,
+    price,
+    selectedPaymentMethod,
     selectedVehicleClass,
     isScheduled,
     estimateBusiness,

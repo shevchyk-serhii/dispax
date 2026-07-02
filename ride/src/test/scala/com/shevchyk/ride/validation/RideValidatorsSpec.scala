@@ -23,7 +23,9 @@ object RideValidatorsSpec extends ZIOSpecDefault {
       clientId: String = validClientId,
       isAirportTransfer: Boolean = false,
       flightNumber: Option[String] = None,
-      price: Option[Double] = None
+      price: Option[Double] = None,
+      tags: Option[List[String]] = None,
+      provisionalClient: Boolean = false
   ) = CreateRideApiRequest(
     clientId = clientId,
     creatorId = validClientId,
@@ -33,7 +35,9 @@ object RideValidatorsSpec extends ZIOSpecDefault {
     clientName = "Test Client",
     isAirportTransfer = isAirportTransfer,
     flightNumber = flightNumber,
-    price = price
+    price = price,
+    tags = tags,
+    provisionalClient = provisionalClient
   )
 
   def suite_createRideApiRequest =
@@ -79,11 +83,21 @@ object RideValidatorsSpec extends ZIOSpecDefault {
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid client ID"))
         }
       },
-      test("rejects airport transfer without flight number") {
-        val req = validCreateRequest(isAirportTransfer = true, flightNumber = None)
+      // Provisional ("from-chat") mode: the client is created server-side, so an empty clientId must NOT
+      // be rejected. Mutation: drop the `if provisionalClient then ZIO.unit` branch → this goes red.
+      test("accepts a provisional request with an empty clientId") {
+        val req = validCreateRequest(clientId = "", provisionalClient = true)
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("still rejects an empty clientId when NOT provisional") {
+        val req = validCreateRequest(clientId = "", provisionalClient = false)
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
-          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Flight number"))
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid client ID"))
         }
+      },
+      test("accepts an airport transfer without a flight number (flight may be unknown at creation)") {
+        val req = validCreateRequest(isAirportTransfer = true, flightNumber = None)
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
       },
       test("accepts airport transfer with flight number") {
         val req = validCreateRequest(isAirportTransfer = true, flightNumber = Some("LH123"))
@@ -129,6 +143,52 @@ object RideValidatorsSpec extends ZIOSpecDefault {
         )
         summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
+      },
+      test("accepts a valid tag list") {
+        val req = validCreateRequest(tags = Some(List("Urgent", "Cash")))
+        summon[Validator[CreateRideApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("rejects more than 15 tags") {
+        val req = validCreateRequest(tags = Some((1 to 16).map(i => s"tag$i").toList))
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("At most 15 tags"))
+        }
+      },
+      test("rejects a tag longer than 30 chars") {
+        val req = validCreateRequest(tags = Some(List("x" * 31)))
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("at most 30 characters"))
+        }
+      },
+      test("rejects a blank-only tag") {
+        val req = validCreateRequest(tags = Some(List("   ")))
+        summon[Validator[CreateRideApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Tags cannot be blank"))
+        }
+      }
+    )
+
+  def suite_updateRideDetailsApiRequest =
+    suite("UpdateRideDetailsApiRequest validator")(
+      test("accepts None tags (unchanged)") {
+        val req = UpdateRideDetailsApiRequest()
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("accepts a valid tag list") {
+        val req = UpdateRideDetailsApiRequest(tags = Some(List("Urgent")))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("rejects more than 15 tags") {
+        val req = UpdateRideDetailsApiRequest(tags = Some((1 to 16).map(i => s"tag$i").toList))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("At most 15 tags"))
+        }
+      },
+      test("rejects a blank-only tag") {
+        val req = UpdateRideDetailsApiRequest(tags = Some(List("  ")))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Tags cannot be blank"))
         }
       }
     )
@@ -377,6 +437,32 @@ object RideValidatorsSpec extends ZIOSpecDefault {
         CreateRideApiRequest
           .toDomain(req, com.shevchyk.core.domain.CompanyId.generate())
           .map(domain => assertTrue(domain.estimatedPrice.isEmpty))
+      },
+      test("normalizes tags (trim, collapse, case-insensitive de-dup)") {
+        val req = validCreateRequest(tags = Some(List("  Urgent ", "urgent", "Cash   Only")))
+        CreateRideApiRequest
+          .toDomain(req, com.shevchyk.core.domain.CompanyId.generate())
+          .map(domain => assertTrue(domain.tags == List("Urgent", "Cash Only")))
+      },
+      test("absent tags become an empty list") {
+        val req = validCreateRequest(tags = None)
+        CreateRideApiRequest
+          .toDomain(req, com.shevchyk.core.domain.CompanyId.generate())
+          .map(domain => assertTrue(domain.tags == Nil))
+      }
+    )
+
+  def suite_updateRideDetailsApiRequestMapping =
+    suite("UpdateRideDetailsApiRequest.toDomain")(
+      test("normalizes tags when present") {
+        val req    = UpdateRideDetailsApiRequest(tags = Some(List("  VIP ", "vip")))
+        val domain = UpdateRideDetailsApiRequest.toDomain(req)
+        assertTrue(domain.tags.contains(List("VIP")))
+      },
+      test("preserves None tags as unchanged") {
+        val req    = UpdateRideDetailsApiRequest(tags = None)
+        val domain = UpdateRideDetailsApiRequest.toDomain(req)
+        assertTrue(domain.tags.isEmpty)
       }
     )
 
@@ -384,6 +470,8 @@ object RideValidatorsSpec extends ZIOSpecDefault {
     suite("RideValidators")(
       suite_createRideApiRequest,
       suite_createRideApiRequestMapping,
+      suite_updateRideDetailsApiRequest,
+      suite_updateRideDetailsApiRequestMapping,
       suite_assignDriverRequest,
       suite_rideStatusUpdateRequest,
       suite_updateRideApiRequest,

@@ -27,7 +27,7 @@ class ScheduleCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+        padding: const EdgeInsets.all(AppDimensions.formCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -56,7 +56,10 @@ class ScheduleCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today, color: AppColors.secretaryColor),
+                    Icon(
+                      Icons.calendar_today,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(width: AppDimensions.paddingMedium),
                     Expanded(
                       child: Column(

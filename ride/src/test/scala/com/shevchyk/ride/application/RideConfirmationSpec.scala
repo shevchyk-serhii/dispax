@@ -18,7 +18,6 @@ import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.*
 import zio.test.*
-import java.time.Instant
 import java.util.UUID
 
 /**

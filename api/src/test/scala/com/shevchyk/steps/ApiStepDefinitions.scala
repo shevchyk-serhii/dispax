@@ -53,10 +53,17 @@ object ApiStepDefinitions {
         runtime.unsafe.fork(serverApp)
       })
 
-      waitForServer(maxWaitMs = 15000, intervalMs = 500)
+      // 15s is plenty for a server start on an idle machine. Under heavy parallel
+      // load (e.g. `make test-everything-parallel` runs unit + integration + BDD +
+      // Flutter at once, starving CPU) the in-memory server can take longer to bind,
+      // so allow overriding the budget via BDD_SERVER_STARTUP_MS. Default unchanged.
+      waitForServer(
+        maxWaitMs = sys.env.get("BDD_SERVER_STARTUP_MS").flatMap(_.toIntOption).getOrElse(15000),
+        intervalMs = 500
+      )
       serverStarted = true
 
-      sys.addShutdownHook {
+      val _ = sys.addShutdownHook {
         stopServer()
       }
 
@@ -95,9 +102,9 @@ object ApiStepDefinitions {
   }
 
   private def healthOk(): Boolean = {
-    import java.net.{HttpURLConnection, URL}
+    import java.net.{HttpURLConnection, URI}
     try {
-      val url        = new URL(s"$baseUrl/health")
+      val url        = URI.create(s"$baseUrl/health").toURL
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
       connection.setConnectTimeout(1000)
@@ -115,9 +122,9 @@ object ApiStepDefinitions {
    * POSTs to `/test/reset` and returns the HTTP status, or -1 if the server is unreachable.
    */
   private def resetStatus(): Int = {
-    import java.net.{HttpURLConnection, URL}
+    import java.net.{HttpURLConnection, URI}
     try {
-      val url        = new URL(s"$baseUrl/test/reset")
+      val url        = URI.create(s"$baseUrl/test/reset").toURL
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setConnectTimeout(2000)
@@ -448,6 +455,13 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     )
   }
 
+  Then("""^the response should not contain "(.+)"$""") { (unexpectedContent: String) =>
+    assert(
+      !lastResponseBody.contains(unexpectedContent),
+      s"Response body '$lastResponseBody' should NOT contain '$unexpectedContent'"
+    )
+  }
+
   // Tenant isolation: a company-B DATEV/EXTF export must never leak company-A ride data.
   // "Viktualienmarkt München" is the dropoff of company A's completed ride (testRideCompleted),
   // a marker unique to company A's exportable data.
@@ -652,7 +666,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
       val response = Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe
           .run(
-            Client.batched(request).provide(Client.default, zio.Scope.default)
+            Client.batched(request).provide(Client.default)
           )
           .getOrThrow()
       }
@@ -2529,7 +2543,7 @@ class ApiStepDefinitions extends ScalaDsl with EN {
     try {
       val response = Unsafe.unsafe { implicit u =>
         Runtime.default.unsafe
-          .run(Client.batched(request).provide(Client.default, zio.Scope.default))
+          .run(Client.batched(request).provide(Client.default))
           .getOrThrow()
       }
       lastResponse = response

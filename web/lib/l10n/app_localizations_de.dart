@@ -103,6 +103,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get selectDriver => 'Fahrer auswählen';
 
   @override
+  String get reassignDriver => 'Fahrer neu zuweisen';
+
+  @override
+  String get noDriversFound => 'Keine Fahrer gefunden';
+
+  @override
   String get reassignRide => 'Fahrt neu zuweisen';
 
   @override
@@ -113,6 +119,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get assign => 'Zuweisen';
+
+  @override
+  String get driverDashboardTitle => 'Fahrer-Dashboard';
+
+  @override
+  String get secretaryDashboardTitle => 'Sekretariat-Dashboard';
+
+  @override
+  String get dispatcherDashboardTitle => 'Dispatcher-Dashboard';
+
+  @override
+  String get adminDashboardTitle => 'Admin-Dashboard';
+
+  @override
+  String get platformAdminTitle => 'Plattform-Admin';
 
   @override
   String get cancel => 'Abbrechen';
@@ -298,6 +319,41 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordTooShort => 'Passwort muss mindestens 6 Zeichen lang sein';
 
   @override
+  String get forcePasswordChangeTitle => 'Neues Passwort festlegen';
+
+  @override
+  String get forcePasswordChangeMessage =>
+      'Ihr Konto verwendet ein temporäres Passwort. Bitte legen Sie ein neues Passwort fest, um fortzufahren.';
+
+  @override
+  String get updateRequired => 'Aktualisierung erforderlich';
+
+  @override
+  String get updateRequiredMessage =>
+      'Diese Version der App wird nicht mehr unterstützt. Bitte aktualisieren Sie auf die neueste Version, um fortzufahren.';
+
+  @override
+  String get updateNow => 'Jetzt aktualisieren';
+
+  @override
+  String get temporaryPassword => 'Temporäres Passwort';
+
+  @override
+  String get temporaryPasswordHint =>
+      'Der Benutzer wird beim ersten Anmelden aufgefordert, es zu ändern.';
+
+  @override
+  String get tempPasswordRules =>
+      'Mindestens 8 Zeichen mit Großbuchstabe, Kleinbuchstabe und Ziffer';
+
+  @override
+  String get setNewPassword => 'Neues Passwort festlegen';
+
+  @override
+  String get userCreatedSharePassword =>
+      'Benutzer erstellt. Teilen Sie ihm das temporäre Passwort mit.';
+
+  @override
   String get notifications => 'Benachrichtigungen';
 
   @override
@@ -376,6 +432,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get appVersion => 'App-Version';
+
+  @override
+  String get backendVersion => 'Backend-Version';
+
+  @override
   String get privacyPolicy => 'Datenschutzrichtlinie';
 
   @override
@@ -449,10 +511,72 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkpointTerminalExit => 'Terminalausgang';
 
   @override
+  String passengerCheckpointStatus(String checkpoint) {
+    return 'Passagier: $checkpoint';
+  }
+
+  @override
   String get markCheckpointButton => 'Ich bin hier';
 
   @override
   String get airportCheckpointPanelTitle => 'Mein Standort im Terminal';
+
+  @override
+  String get airportEntryTitle => 'Terminal-Einfahrtszeit';
+
+  @override
+  String get airportDepartIn => 'Losfahren in:';
+
+  @override
+  String get airportEntryLabel => 'Terminal-Einfahrt:';
+
+  @override
+  String airportEntryAt(String time) {
+    return 'Einfahrt um $time';
+  }
+
+  @override
+  String airportLandingAt(String time) {
+    return 'Landung um $time';
+  }
+
+  @override
+  String airportLandedAt(String time) {
+    return 'Gelandet um $time';
+  }
+
+  @override
+  String airportFlightDelay(int minutes) {
+    return '+$minutes Min Verspätung';
+  }
+
+  @override
+  String airportScheduledVsActual(String scheduled, String actual) {
+    return 'Planmäßig $scheduled → $actual';
+  }
+
+  @override
+  String get airportTravelTime => 'Fahrzeit:';
+
+  @override
+  String airportParkingSavings(String amount) {
+    return 'Parkersparnis: $amount';
+  }
+
+  @override
+  String get airportDepartNow => 'Jetzt losfahren!';
+
+  @override
+  String get airportFlightDelayed =>
+      'Flug verspätet. Einfahrtszeit neu berechnet.';
+
+  @override
+  String airportTimingError(String error) {
+    return 'Fehler beim Laden der Daten: $error';
+  }
+
+  @override
+  String get airportLoadingTiming => 'Einfahrtszeit wird geladen...';
 
   @override
   String checkpointNotifTitle(String checkpoint) {
@@ -542,6 +666,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get pickupTimeComputedAuto =>
       'Automatisch basierend auf dem Abflugzeitpunkt berechnet';
+
+  @override
+  String get addressNotFound =>
+      'Adresse konnte nicht gefunden werden — bitte Schreibweise prüfen.';
+
+  @override
+  String addressOutOfServiceArea(int distanceKm, int radiusKm) {
+    return 'Adresse liegt außerhalb des Liefergebiets (etwa $distanceKm km von München, max. $radiusKm km).';
+  }
+
+  @override
+  String addressOutOfServiceAreaShort(int radiusKm) {
+    return 'Adresse liegt außerhalb des Liefergebiets (max. $radiusKm km von München).';
+  }
 
   @override
   String get markUnavailable => 'Als nicht verfügbar markieren';
@@ -890,6 +1028,33 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get errorNetwork =>
+      'Server nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
+
+  @override
+  String get errorTimeout =>
+      'Der Server hat zu lange gebraucht. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get errorServer =>
+      'Auf unserer Seite ist etwas schiefgelaufen. Bitte versuchen Sie es gleich noch einmal.';
+
+  @override
+  String get errorNotFound =>
+      'Wir konnten nicht finden, wonach Sie gesucht haben.';
+
+  @override
+  String get errorLoadingData => 'Daten konnten nicht geladen werden';
+
+  @override
+  String get errorGeneric =>
+      'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get errorSessionExpired =>
+      'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
+
+  @override
   String get unbilledRidesTitle => 'Nicht fakturierte Fahrten';
 
   @override
@@ -1111,6 +1276,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get refresh => 'Aktualisieren';
+
+  @override
+  String get refreshFlightStatus => 'Flugstatus aktualisieren';
+
+  @override
+  String get flightStatusRefreshed => 'Flugstatus aktualisiert';
+
+  @override
+  String get flightStatusUnchanged => 'Bereits aktuell';
+
+  @override
+  String get flightNotFoundYet => 'Flug noch nicht im System';
+
+  @override
+  String get failedToRefreshFlightStatus =>
+      'Flugstatus konnte nicht aktualisiert werden';
 
   @override
   String get youreOnline => 'Sie sind online';
@@ -1667,6 +1848,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editAction => 'Bearbeiten';
 
   @override
+  String get duplicateRideAction => 'Duplizieren';
+
+  @override
   String get deactivateAction => 'Deaktivieren';
 
   @override
@@ -1959,14 +2143,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get flightNumberHint => 'z.B. LH123, BA456';
 
   @override
-  String get flightNumberRequired =>
-      'Flugnummer ist für Flughafentransfers erforderlich';
+  String get flightNumberRequired => 'Flugnummer ist erforderlich';
+
+  @override
+  String get flightNumberInvalidFormat =>
+      'Gültige Flugnummer eingeben, z.B. LH429';
 
   @override
   String get gateLabel => 'Gate';
 
   @override
   String get terminalLabel => 'Terminal';
+
+  @override
+  String get gateRemote => 'Bus-Gate (Außenposition)';
 
   @override
   String get creatingRideLabel => 'Fahrt wird erstellt...';
@@ -2064,17 +2254,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editRideDialogTitle => 'Fahrt bearbeiten';
 
   @override
-  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)';
+  String get pickupDateTimeLabel => 'Abholdatum/-uhrzeit';
 
   @override
   String get flightNumberOptionalLabel => 'Flugnummer (optional)';
 
   @override
   String get notesOptionalLabel => 'Notizen (optional)';
-
-  @override
-  String get invalidDateFormatError =>
-      'Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm';
 
   @override
   String serverErrorMessage(String statusCode) {
@@ -3116,10 +3302,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get paymentMethodLabel => 'Zahlungsart:';
 
   @override
+  String get paymentMethodSelectLabel => 'Zahlungsart';
+
+  @override
+  String get paymentMethodPayment => 'Zahlung';
+
+  @override
   String get paymentMethodCash => 'Bar';
 
   @override
-  String get paymentMethodCard => 'Karte';
+  String get paymentMethodCard => 'Kreditkarte';
 
   @override
   String get paymentMethodInvoice => 'Rechnung';
@@ -3224,6 +3416,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?';
 
   @override
+  String conflictDialogContentRich(String from, String to, String time) {
+    return 'Der Fahrer ist bereits gebucht: $from → $to um $time.\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?';
+  }
+
+  @override
   String get keepInPoolButton => 'Im Pool belassen';
 
   @override
@@ -3268,6 +3465,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get arrivalsTabLabel => 'Ankünfte';
 
   @override
+  String get arrivalsBoardTitle => 'Ankünfte · Flughafen München';
+
+  @override
   String get departuresTabLabel => 'Abflüge';
 
   @override
@@ -3275,6 +3475,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noDeparturesFound => 'Keine Abflüge gefunden';
+
+  @override
+  String get flightDetailsTitle => 'Flugdetails';
+
+  @override
+  String get gateNotPublished => 'Gate noch nicht veröffentlicht';
+
+  @override
+  String get trackFlightLive => 'Live auf Flightradar24 verfolgen';
+
+  @override
+  String get couldNotOpenFlightTracker =>
+      'Flugverfolgung konnte nicht geöffnet werden';
 
   @override
   String errorLoadingFlights(String error) {
@@ -3310,6 +3523,33 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get flightStatusUnknown => 'Unbekannt';
+
+  @override
+  String get flightStatusScheduled => 'Planmäßig';
+
+  @override
+  String get flightStatusDeparted => 'Gestartet';
+
+  @override
+  String get flightStatusEnRoute => 'Im Flug';
+
+  @override
+  String get flightStatusLanded => 'Gelandet';
+
+  @override
+  String get flightStatusDiverted => 'Umgeleitet';
+
+  @override
+  String get flightInformation => 'Fluginformationen';
+
+  @override
+  String get flightNumber => 'Flugnummer';
+
+  @override
+  String get arrivalTime => 'Ankunftszeit';
+
+  @override
+  String get departureTime => 'Abflugzeit';
 
   @override
   String get flightNotLinked => '— nicht verknüpft';
@@ -3389,4 +3629,181 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addPaymentMethodButton => 'Zahlungsart hinzufügen';
+
+  @override
+  String get shareRideLink => 'Tracking-Link teilen';
+
+  @override
+  String get trackingLinkCopied =>
+      'Tracking-Link in die Zwischenablage kopiert';
+
+  @override
+  String get bookWithoutClient => 'Ohne Kunde (aus Chat)';
+
+  @override
+  String get fromChatRide => 'Aus Chat';
+
+  @override
+  String get linkClient => 'Kunde ergänzen';
+
+  @override
+  String get calendarSharingTitle => 'Kalenderfreigabe';
+
+  @override
+  String get calendarSharingMenuItem => 'Kalenderfreigabe';
+
+  @override
+  String get shareInvitesSection => 'Meine Einladungscodes';
+
+  @override
+  String get shareCreateInvite => 'Einladungscode erstellen';
+
+  @override
+  String get shareInviteExpiry1Day => '1 Tag';
+
+  @override
+  String get shareInviteExpiry7Days => '7 Tage';
+
+  @override
+  String get shareInviteExpiry30Days => '30 Tage';
+
+  @override
+  String get shareInviteCreatedTitle => 'Einladungscode erstellt';
+
+  @override
+  String get shareInviteCreatedHint =>
+      'Senden Sie diesen Code an einen Fahrer oder Disponenten einer anderen Firma. Er wird in deren App unter Kalenderfreigabe eingegeben.';
+
+  @override
+  String get shareCopyCode => 'Code kopieren';
+
+  @override
+  String get shareCodeCopied => 'Code in die Zwischenablage kopiert';
+
+  @override
+  String get shareRevoke => 'Widerrufen';
+
+  @override
+  String get shareGrantedSection => 'Wer sieht meinen Kalender';
+
+  @override
+  String get shareSharedWithMeSection => 'Für mich freigegeben';
+
+  @override
+  String get shareEnterCode => 'Code eingeben';
+
+  @override
+  String get shareRedeemTitle => 'Freigegebenen Kalender verbinden';
+
+  @override
+  String get shareRedeemHint => 'Einladungscode oder Link einfügen';
+
+  @override
+  String get shareRedeemConnect => 'Verbinden';
+
+  @override
+  String shareRedeemSuccess(String name) {
+    return 'Verbunden mit $name';
+  }
+
+  @override
+  String get shareUnlink => 'Trennen';
+
+  @override
+  String get shareNoInvites => 'Keine aktiven Einladungscodes';
+
+  @override
+  String get shareNoGrants => 'Sie haben Ihren Kalender mit niemandem geteilt';
+
+  @override
+  String get shareNoSharedWithMe => 'Keine Kalender für Sie freigegeben';
+
+  @override
+  String shareValidUntil(String date) {
+    return 'Gültig bis $date';
+  }
+
+  @override
+  String shareSince(String date) {
+    return 'Seit $date';
+  }
+
+  @override
+  String shareActionFailed(String error) {
+    return 'Aktion fehlgeschlagen: $error';
+  }
+
+  @override
+  String get sharedCalendarAvailable => 'Verfügbar';
+
+  @override
+  String get sharedCalendarBusy => 'Belegt';
+
+  @override
+  String get sharedCalendarShift => 'Schicht';
+
+  @override
+  String get sharedCalendarEmptyDay => 'Keine Schichten oder belegten Zeiten';
+
+  @override
+  String get sharedCalendarEmptyWeek =>
+      'Keine Schichten oder belegten Zeiten in dieser Woche';
+
+  @override
+  String sharedCalendarTimesHint(String company) {
+    return 'Schichtzeiten wie von $company angegeben';
+  }
+
+  @override
+  String get sharedWithMeGroupLabel => 'Für mich freigegeben';
+
+  @override
+  String get myCompanyGroupLabel => 'Meine Firma';
+
+  @override
+  String get addShiftTooltip => 'Schicht hinzufügen';
+
+  @override
+  String get addShiftTitle => 'Neue Schicht';
+
+  @override
+  String get shiftDateLabel => 'Datum';
+
+  @override
+  String get shiftStartLabel => 'Beginn';
+
+  @override
+  String get shiftEndLabel => 'Ende';
+
+  @override
+  String get shiftRepeatUntilLabel => 'Täglich wiederholen bis (optional)';
+
+  @override
+  String get shiftNoteLabel => 'Notiz (optional)';
+
+  @override
+  String get shiftCreateButton => 'Erstellen';
+
+  @override
+  String shiftsCreatedSnack(int count) {
+    return 'Schichten erstellt: $count';
+  }
+
+  @override
+  String get shiftTimeOrderError => 'Beginn muss vor dem Ende liegen';
+
+  @override
+  String get shiftCancelTitle => 'Diese Schicht stornieren?';
+
+  @override
+  String get shiftCancelButton => 'Schicht stornieren';
+
+  @override
+  String get shiftCancelledSnack => 'Schicht storniert';
+
+  @override
+  String get shiftsStripLabel => 'Schichten';
+
+  @override
+  String get noShiftsForDay => 'Keine Schichten';
 }

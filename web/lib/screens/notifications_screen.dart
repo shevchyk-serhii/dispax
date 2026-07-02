@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/api_client.dart';
 
 class _AppNotification {
   final String id;
@@ -55,7 +57,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<_AppNotification> _notifications = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -84,14 +86,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load notifications';
+          _error = ApiException(
+            'Failed to load notifications',
+            statusCode: response.statusCode,
+          );
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -107,7 +112,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.operationFailed(e.toString())),
+            content: Text(l10n.operationFailed(friendlyError(e, l10n))),
             backgroundColor: AppColors.error,
           ),
         );
@@ -125,7 +130,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.operationFailed(e.toString())),
+            content: Text(l10n.operationFailed(friendlyError(e, l10n))),
             backgroundColor: AppColors.error,
           ),
         );
@@ -162,14 +167,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error == null ? null : friendlyError(_error, l10n);
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!),
+            Text(error),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadNotifications,

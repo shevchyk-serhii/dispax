@@ -83,7 +83,8 @@ class CreateRideFormHelper {
   ) {
     final l10n = AppLocalizations.of(context)!;
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) {
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.authenticationRequiredError),
@@ -93,34 +94,41 @@ class CreateRideFormHelper {
       return;
     }
 
-    if (!formState.isNewClient && formState.selectedClientId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.selectOrCreateClientError),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+    if (!formState.isProvisionalClient) {
+      if (!formState.isNewClient && formState.selectedClientId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.selectOrCreateClientError),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      if (formState.isNewClient && formState.clientName.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.enterClientNameError),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
     }
 
-    if (formState.isNewClient && formState.clientName.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.enterClientNameError),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    // For a new client we use the current user's ID as a placeholder —
-    // for the DRIVER role the backend can override clientId anyway
-    final clientId = formState.selectedClientId ?? authState.user!.id;
+    // Provisional mode: no real client — send an empty clientId and the
+    // provisionalClient flag so the backend creates a placeholder.
+    // Normal mode: use the selected client id (or the current user as
+    // placeholder for the driver role when creating for a new client).
+    final clientId = formState.isProvisionalClient
+        ? ''
+        : (formState.selectedClientId ?? user.id);
 
     final createRequest = CreateRideRequest(
       clientId: clientId,
-      creatorId: authState.user!.id,
-      companyId: authState.user!.companyId ?? '',
+      provisionalClient: formState.isProvisionalClient,
+      creatorId: user.id,
+      companyId: user.companyId ?? '',
       // manualPickupDateTime: null for departure rides without an explicit override
       // signals "compute automatically" to the backend. For all other ride types
       // it carries the operator-selected pickup time.
@@ -129,7 +137,9 @@ class CreateRideFormHelper {
       from: Location(address: formState.fromAddress.trim()),
       to: Location(address: formState.toAddress.trim()),
       clientName: formState.clientName.trim(),
-      newClientPhone: formState.isNewClient
+      newClientPhone:
+          (formState.isNewClient || formState.isProvisionalClient) &&
+              formState.newClientPhone.trim().isNotEmpty
           ? formState.newClientPhone.trim()
           : null,
       flightNumber:
@@ -142,8 +152,11 @@ class CreateRideFormHelper {
       specialRequirements: formState.specialRequirements.isNotEmpty
           ? formState.specialRequirements
           : null,
+      tags: formState.tags.isNotEmpty ? formState.tags : null,
       driverId: formState.selectedDriverId,
       vehicleClass: formState.selectedVehicleClass,
+      paymentMethod: formState.selectedPaymentMethod,
+      price: formState.price,
     );
 
     context.read<RideBloc>().add(RideCreateRequested(request: createRequest));

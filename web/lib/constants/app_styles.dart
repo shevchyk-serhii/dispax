@@ -135,6 +135,22 @@ class AppStyles {
     side: const BorderSide(color: AppColors.primary),
   );
 
+  /// Theme-aware outlined button: foreground + border follow the brightness.
+  /// The static [outlinedButtonStyle] hardcodes graphite (`AppColors.primary`),
+  /// which collides with the dark `surfaceDark` and renders the label/border
+  /// invisible in dark mode — use this factory from widgets instead.
+  static ButtonStyle outlinedButtonStyleOf(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return OutlinedButton.styleFrom(
+      foregroundColor: primary,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+      ),
+      side: BorderSide(color: primary),
+    );
+  }
+
   static ButtonStyle textButtonStyle = TextButton.styleFrom(
     foregroundColor: AppColors.primary,
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -142,6 +158,19 @@ class AppStyles {
       borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
     ),
   );
+
+  /// Theme-aware text button: foreground follows the brightness. The static
+  /// [textButtonStyle] hardcodes graphite (`AppColors.primary`) which is
+  /// unreadable on the dark surface — use this factory from widgets instead.
+  static ButtonStyle textButtonStyleOf(BuildContext context) {
+    return TextButton.styleFrom(
+      foregroundColor: Theme.of(context).colorScheme.primary,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+      ),
+    );
+  }
 
   static ButtonStyle accentButtonStyle = FilledButton.styleFrom(
     backgroundColor: AppColors.accent,
@@ -250,6 +279,50 @@ class AppStyles {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       labelStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
       hintStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textLight),
+    );
+  }
+
+  /// Theme-aware variant of [textFieldDecoration]: borders, labels and the
+  /// focus ring follow the active brightness. The static version hardcodes the
+  /// graphite focus border (`AppColors.primary`), which is invisible against
+  /// the dark field surface — prefer this factory from widgets.
+  static InputDecoration textFieldDecorationOf(
+    BuildContext context, {
+    required String labelText,
+    String? hintText,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(AppDimensions.radiusSmall);
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: scheme.outline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: scheme.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: scheme.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: AppColors.error, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: AppStyles.bodyMedium.copyWith(color: scheme.onSurfaceVariant),
+      hintStyle: AppStyles.bodyMedium.copyWith(color: scheme.onSurfaceVariant),
     );
   }
 

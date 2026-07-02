@@ -17,17 +17,15 @@ import com.shevchyk.core.repository.{
   ClientCompanyRepository,
   CompanySettingsRepository,
   InMemoryClientCompanyRepository,
-  InMemoryCompanySettingsRepository,
   PersonRepository,
   SentConfirmationRequestRepository
 }
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.application.service.{PickupTimeService, PickupTimeResult, RideService}
+import com.shevchyk.ride.application.service.PickupTimeService
 import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 import java.time.Instant
 import java.util.UUID
@@ -170,7 +168,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
 
   def rideLayers(
       travelTime: ZLayer[Any, Nothing, TravelTimeService] = hereAvailable
-  ): ZLayer[Any, Nothing, RideService] =
+  ): ZLayer[Any, Nothing, service.RideService] =
     (InMemoryRideRepository.layer ++
       personRepo ++
       EventHub.layer ++
@@ -184,7 +182,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory) >+> service.RideService.layer
 
   // ── Flight departure time used in all departure tests ───────────────────
   // 2030-06-15T12:00:00Z → with global defaults (buffer=15, checkIn=60) and travel=30:
@@ -200,7 +198,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     companyId = companyId,
     pickupLocation = Location("Munich City", latitude = Some(pickupLat), longitude = Some(pickupLng)),
     dropoffLocation = Location("MUC Airport", latitude = Some(dropoffLat), longitude = Some(dropoffLng)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH001", isArrival = false)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH001"), isArrival = false)),
     scheduledTime = Some(flightDep),
     pickupDateTime = None // ← signal: compute it automatically
   )
@@ -214,7 +212,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     companyId = companyId,
     pickupLocation = Location("MUC Airport", latitude = Some(dropoffLat), longitude = Some(dropoffLng)),
     dropoffLocation = Location("Munich City", latitude = Some(pickupLat), longitude = Some(pickupLng)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH001", isArrival = true)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH001"), isArrival = true)),
     scheduledTime = Some(flightDep),
     pickupDateTime = Some(manualPickup) // required for non-departure
   )
@@ -232,7 +230,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     companyId = companyId,
     pickupLocation = Location("Munich City", latitude = Some(pickupLat), longitude = Some(pickupLng)),
     dropoffLocation = Location("MUC Airport", latitude = Some(dropoffLat), longitude = Some(dropoffLng)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH001", isArrival = false)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH001"), isArrival = false)),
     scheduledTime = None, // no flight time supplied
     pickupDateTime = None // also no manual pickup
   )
@@ -246,7 +244,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
         //   - kills "always pass through enrichedRequest" (departure guard)
         //   - kills "don't call PickupTimeService when pickupDateTime is None" (isEmpty guard)
         for {
-          svc  <- ZIO.service[RideService]
+          svc  <- ZIO.service[service.RideService]
           ride <- svc.createRide(departureRequestNoManualPickup)
         } yield assertTrue(
           ride.pickupDateTime == expectedPickup,
@@ -257,7 +255,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
         // Mutation-verified: kills "always compute pickup, ignore manual" mutation —
         // if the guard `pickupDateTime.isEmpty` were removed, the computed 10:15 would replace 09:00.
         for {
-          svc  <- ZIO.service[RideService]
+          svc  <- ZIO.service[service.RideService]
           ride <- svc.createRide(departureRequestWithManualPickup)
         } yield assertTrue(ride.pickupDateTime == manualPickup)
       }.provide(rideLayers()),
@@ -265,27 +263,27 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
         // Mutation-verified: kills "treat arrivals the same as departures" mutation.
         // If isArrival guard were removed, the service would try to compute pickup for an arrival.
         for {
-          svc  <- ZIO.service[RideService]
+          svc  <- ZIO.service[service.RideService]
           ride <- svc.createRide(arrivalRequest)
         } yield assertTrue(ride.pickupDateTime == manualPickup)
       }.provide(rideLayers()),
       test("regular ride (no airport transfer) → pickupDateTime unchanged") {
         // Mutation-verified: kills "always invoke PickupTimeService regardless of specifics" mutation
         for {
-          svc  <- ZIO.service[RideService]
+          svc  <- ZIO.service[service.RideService]
           ride <- svc.createRide(regularRideRequest)
         } yield assertTrue(ride.pickupDateTime == manualPickup)
       }.provide(rideLayers()),
       test("HERE unavailable (Haversine fallback) → ride still created, no error propagated") {
         // Mutation-verified: kills "propagate HERE error to ride creation" mutation
         for {
-          svc    <- ZIO.service[RideService]
+          svc    <- ZIO.service[service.RideService]
           result <- svc.createRide(departureRequestNoManualPickup).exit
         } yield assertTrue(result.isSuccess)
       }.provide(rideLayers(hereUnavailable)),
       test("HERE unavailable → pickup time is set (Haversine fallback used)") {
         for {
-          svc  <- ZIO.service[RideService]
+          svc  <- ZIO.service[service.RideService]
           ride <- svc.createRide(departureRequestNoManualPickup)
         } yield {
           // With Haversine ~36 min + buffer=15 + checkIn=60 = ~111 min before flight
@@ -298,7 +296,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
         // RideService logs a warning and passes through enrichedRequest unchanged.
         // The ride has no pickupDateTime (None). No error must be raised.
         for {
-          svc    <- ZIO.service[RideService]
+          svc    <- ZIO.service[service.RideService]
           result <- svc.createRide(departureRequestNoFlightTime).exit
         } yield assertTrue(result.isSuccess)
       }.provide(rideLayers())

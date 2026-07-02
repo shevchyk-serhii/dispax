@@ -30,7 +30,7 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
   private def makePerson(
       role: PersonRole = PersonRole.Client,
       name: String = "Test Person",
-      email: String = s"test-${UUID.randomUUID()}@example.com",
+      email: String,
       isVip: Boolean = false
   ): Person = Person(
     id = PersonId(UUID.randomUUID()),
@@ -58,6 +58,28 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get.email == "alice@test.com",
           found.get.role == PersonRole.Client,
           found.get.companyId.contains(testCompanyId)
+        )
+      },
+      test("must_change_password round-trips and defaults to false") {
+        for {
+          xa           <- ZIO.service[Transactor[Task]]
+          _            <- seedCompany(xa)
+          _            <- cleanPersons(xa)
+          repo          = PostgresPersonRepository(xa)
+          // default false on a plainly-created person
+          plain         = makePerson(email = "plain@test.com")
+          _            <- repo.create(plain)
+          plainFound   <- repo.findById(plain.id)
+          // explicitly flagged person persists the flag, and clearing it via update persists too
+          flagged       = makePerson(email = "flagged@test.com").copy(mustChangePassword = true)
+          _            <- repo.create(flagged)
+          flaggedFound <- repo.findById(flagged.id)
+          _            <- repo.update(flagged.copy(mustChangePassword = false))
+          clearedFound <- repo.findById(flagged.id)
+        } yield assertTrue(
+          plainFound.exists(!_.mustChangePassword),
+          flaggedFound.exists(_.mustChangePassword),
+          clearedFound.exists(!_.mustChangePassword)
         )
       },
       test("findByEmail") {
@@ -480,7 +502,6 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
       // Tenant-isolation integration guard: update is company-scoped (IS NOT DISTINCT FROM).
       // A person in another company must not have their language changed even when the ID is guessed.
       test("update is company-scoped — preferredLanguage update does not touch different-company row") {
-        val companyA = CompanyId(UUID.randomUUID())
         val companyB = CompanyId(UUID.randomUUID())
         for {
           xa      <- ZIO.service[Transactor[Task]]

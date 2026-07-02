@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,7 +29,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
   int _activeNav = 0;
   bool _isLoading = true;
   bool _isSaving = false;
-  String? _error;
+  Object? _error;
 
   // Company profile fields
   final _legalNameController = TextEditingController();
@@ -150,7 +151,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -220,7 +221,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!.failedToSaveSettings(e.toString()),
+              AppLocalizations.of(context)!.failedToSaveSettings(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
             ),
             backgroundColor: AppColors.error,
           ),
@@ -309,7 +312,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         children: [
           const Icon(Icons.error_outline, size: 48, color: AppColors.error),
           const SizedBox(height: 12),
-          Text(_error!),
+          Text(friendlyError(_error, l10n)),
           const SizedBox(height: 12),
           ElevatedButton(onPressed: _loadSettings, child: Text(l10n.retry)),
         ],

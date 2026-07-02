@@ -106,7 +106,8 @@ module "cloud_run" {
   project_id             = var.project_id
   region                 = var.region
   image                  = var.app_image                        # Docker образ для запуску
-  connector_id           = module.networking.connector_id       # VPC Connector для зʼєднання з БД
+  vpc_name               = module.networking.vpc_name           # Direct VPC egress: network
+  subnet_name            = module.networking.subnet_name        # Direct VPC egress: subnet
   db_private_ip          = module.cloud_sql.private_ip_address  # Приватний IP PostgreSQL
   cloudrun_sa_email      = module.iam.cloudrun_sa_email         # Сервісний акаунт для Cloud Run
   db_password_secret_id  = module.secrets.db_password_secret_id # Посилання на секрет в Secret Manager
@@ -114,4 +115,17 @@ module "cloud_run" {
   mapbox_token_secret_id = module.secrets.mapbox_token_secret_id
 
   depends_on = [module.cloud_sql, module.secrets, module.iam, module.artifact_registry]
+}
+
+# ── МОДУЛЬ: CPU SCHEDULER ─────────────────────────────────────────────────────
+# Перемикає Cloud Run між always-on (Пн–Пт 06:00–23:00) і scale-to-zero (ночі/вихідні)
+# за розкладом, через Cloud Scheduler → Cloud Run Job → `gcloud run services update`.
+# Економія: платимо за always-on тільки в робочі години, решту часу ~€0.
+module "scheduler" {
+  source          = "../../modules/scheduler"
+  project_id      = var.project_id
+  region          = var.region
+  runtime_sa_name = module.iam.cloudrun_sa_name # для actAs при оновленні сервіса
+
+  depends_on = [module.apis, module.cloud_run]
 }

@@ -5,13 +5,9 @@ import zio.*
 import zio.config.*
 import zio.config.magnolia.*
 import zio.config.typesafe.*
-import doobie.*
-import doobie.hikari.{Config => DoobieConfig, *}
 import doobie.util.transactor.Transactor
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import cats.effect.IO
 import zio.interop.catz.*
-import scala.concurrent.ExecutionContext
 
 case class DatabaseConfig(
     driver: String,

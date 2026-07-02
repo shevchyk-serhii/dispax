@@ -4,8 +4,7 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
   DriverEarnings,
-  ExternalDriver,
-  PartnerCompany,
+  FlightStatusRow,
   Ride,
   RideError,
   RideSpecifics,
@@ -20,7 +19,6 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
 import doobie.postgres.implicits.*
-import doobie.postgres.circe.jsonb.implicits.*
 import zio.*
 import zio.interop.catz.*
 
@@ -110,6 +108,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         )
     }(AirportCheckpoint.toDbString)
 
+  // Postgres text[] <-> List[String] for ride tags (mirrors personRoleListMeta in the core repo).
+  implicit val tagsListMeta: Meta[List[String]] = Meta[Array[String]].imap(_.toList)(_.toArray)
+
   override def create(ride: Ride): Task[Ride] = {
     sql"""
       INSERT INTO rides (
@@ -126,7 +127,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         is_vip_ride, preferred_driver_used,
         pool_id, tariff_id, schedule_day_id, invoice_id, vehicle_class,
         external_driver_id, partner_company_id,
-        confirmed_at, rejection_reason, rejected_by, rejected_at
+        confirmed_at, rejection_reason, rejected_by, rejected_at,
+        tags
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
         _.value
@@ -144,7 +146,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${ride.poolId.map(_.value)}, ${ride.tariffId.map(_.value)}, ${ride.scheduleDayId}, ${ride.invoiceId},
         ${VehicleClass.toDbString(ride.vehicleClass)},
         ${ride.externalDriverId.map(_.value)}, ${ride.partnerCompanyId.map(_.value)},
-        ${ride.confirmedAt}, ${ride.rejectionReason}, ${ride.rejectedBy.map(_.value)}, ${ride.rejectedAt}
+        ${ride.confirmedAt}, ${ride.rejectionReason}, ${ride.rejectedBy.map(_.value)}, ${ride.rejectedAt},
+        ${ride.tags}
       )
     """.update.run
       .transact(xa)
@@ -168,8 +171,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         flight_is_arrival, airport_checkpoint,
         vehicle_class,
         external_driver_id, partner_company_id,
-        confirmed_at, rejection_reason, rejected_by, rejected_at"""
-  // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra
+        confirmed_at, rejection_reason, rejected_by, rejected_at,
+        tags"""
+  // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra/rideReadTags
 
   override def findById(id: RideId): Task[Option[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE id = ${id.value}")
@@ -320,6 +324,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       rejection_reason = ${ride.rejectionReason},
       rejected_by = ${ride.rejectedBy.map(_.value)},
       rejected_at = ${ride.rejectedAt},
+      tags = ${ride.tags},
       updated_at = NOW()"""
 
   override def update(ride: Ride): Task[Ride] =
@@ -597,7 +602,12 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       )
     ]
 
-  implicit val rideRead: Read[Ride] = (rideReadBase, rideReadExtra).mapN {
+  // Tags live in a third Read fragment rather than a 22nd element of rideReadExtra: rideReadBase is
+  // already at Scala 3's 22-tuple limit and rideReadExtra has 21 elements, so adding here would leave
+  // no headroom. A separate single-column fragment keeps existing positions stable and extensible.
+  private val rideReadTags: Read[List[String]] = Read[List[String]]
+
+  implicit val rideRead: Read[Ride] = (rideReadBase, rideReadExtra, rideReadTags).mapN {
     case (
           (
             id,
@@ -645,7 +655,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             rejectionReason,
             rejectedBy,
             rejectedAt
-          )
+          ),
+          tags
         ) =>
       Ride(
         id = RideId(id),
@@ -686,7 +697,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         confirmedAt = confirmedAt,
         rejectionReason = rejectionReason,
         rejectedBy = rejectedBy.map(PersonId.apply),
-        rejectedAt = rejectedAt
+        rejectedAt = rejectedAt,
+        tags = tags
       )
   }
 
@@ -720,6 +732,57 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  override def updateFlightStatus(
+      rideId: RideId,
+      gate: Option[String],
+      terminal: Option[String],
+      flightStatus: Option[String],
+      flightTime: Option[Instant],
+      scheduledTime: Option[Instant],
+      departureTime: Option[Instant]
+  ): Task[Boolean] =
+    sql"""UPDATE rides
+          SET flight_gate = $gate,
+              flight_terminal = $terminal,
+              flight_status = $flightStatus,
+              flight_time = $flightTime,
+              flight_scheduled_time = $scheduledTime,
+              flight_departure_time = $departureTime,
+              updated_at = NOW()
+          WHERE id = ${rideId.value}""".update.run
+      .transact(xa)
+      .map(_ > 0)
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]] =
+    sql"""SELECT flight_gate, flight_terminal, flight_status, flight_time, flight_scheduled_time, flight_departure_time
+          FROM rides WHERE id = ${rideId.value}"""
+      .query[(Option[String], Option[String], Option[String], Option[Instant], Option[Instant], Option[Instant])]
+      .option
+      .transact(xa)
+      .map(_.map { case (gate, terminal, status, time, scheduled, departure) =>
+        FlightStatusRow(gate, terminal, status, time, scheduled, departure)
+      })
+      .mapError(ex => RideError.DatabaseError(ex))
+
+  override def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]] =
+    rideIds match
+      case Nil          => ZIO.succeed(Map.empty)
+      case head :: tail =>
+        val ids = NonEmptyList(head, tail).map(_.value)
+        (fr"""SELECT id, flight_gate, flight_terminal, flight_status, flight_time, flight_scheduled_time,
+                     flight_departure_time
+              FROM rides WHERE""" ++ Fragments.in(fr"id", ids))
+          .query[
+            (UUID, Option[String], Option[String], Option[String], Option[Instant], Option[Instant], Option[Instant])
+          ]
+          .to[List]
+          .transact(xa)
+          .map(_.map { case (id, gate, terminal, status, time, scheduled, departure) =>
+            RideId(id) -> FlightStatusRow(gate, terminal, status, time, scheduled, departure)
+          }.toMap)
+          .mapError(ex => RideError.DatabaseError(ex))
+
   override def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++
       fr"""FROM rides
@@ -734,11 +797,40 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  override def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = {
+    // Any not-yet-finished ride (incl. Requested, no driver) so the flight monitor can
+    // enrich gate/terminal/status before assignment. Completed/Cancelled are excluded.
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE status NOT IN ('Completed', 'Cancelled')
+             AND pickup_datetime > $from
+             AND pickup_datetime <= $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
   override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++
       fr"""FROM rides
            WHERE status = 'Assigned'
              AND driver_id IS NOT NULL
+             AND pickup_datetime >= $from
+             AND pickup_datetime < $to
+        """)
+      .query[Ride]
+      .to[List]
+      .transact(xa)
+      .mapError(ex => RideError.DatabaseError(ex))
+  }
+
+  override def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]] = {
+    (fr"SELECT" ++ rideColumns ++
+      fr"""FROM rides
+           WHERE driver_id = ${driverId.value}
+             AND status <> 'Cancelled'
              AND pickup_datetime >= $from
              AND pickup_datetime < $to
         """)

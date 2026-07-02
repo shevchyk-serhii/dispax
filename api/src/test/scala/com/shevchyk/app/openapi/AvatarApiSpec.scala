@@ -158,10 +158,15 @@ object AvatarApiSpec extends ZIOSpecDefault:
           deviceInfo: Option[String],
           ipAddress: Option[String]
       ): IO[AuthError, LoginResponse] = notImpl
-      def createUser(req: CreateUserRequest): IO[AuthError, UserDto]                                          = notImpl
+      def createUser(req: CreateUserRequest, companyId: CompanyId): IO[AuthError, UserDto]                    = notImpl
       def getUserById(id: UUID): IO[AuthError, UserDto]                                                       = notImpl
       def getUserByEmail(email: String): IO[AuthError, UserDto]                                               = notImpl
       def updateUser(id: UUID, companyId: CompanyId, req: UpdateUserRequest): IO[AuthError, UserDto]          = notImpl
+      def upgradeProvisionalClient(
+          id: UUID,
+          companyId: CompanyId,
+          req: UpgradeProvisionalClientRequest
+      ): IO[AuthError, UserDto] = notImpl
       def deleteUser(id: UUID, companyId: CompanyId): IO[AuthError, Unit]                                     = notImpl
       def changePassword(userId: UUID, companyId: CompanyId, req: ChangePasswordRequest): IO[AuthError, Unit] = notImpl
       def validateToken(token: String): IO[AuthError, UserDto]                                                = notImpl
@@ -176,6 +181,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
     new RideService:
       private def notImpl                                                                                             = ZIO.die(new NotImplementedError("AvatarApiSpec stub"))
       def getRideById(id: RideId): IO[RideError, Ride]                                                                = notImpl
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]                                     = notImpl
       def createRide(req: CreateRideRequest): IO[RideError, Ride]                                                     = notImpl
       def getRidesForUser(id: PersonId): IO[RideError, List[Ride]]                                                    = notImpl
       def startRide(id: RideId, did: PersonId): IO[RideError, Ride]                                                   = notImpl

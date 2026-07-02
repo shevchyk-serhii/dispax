@@ -68,13 +68,35 @@ class Ride {
   final Location to;
   final RideStatus status;
   final String clientName;
+
+  /// Whether the client has a profile photo, so cards can render their avatar.
+  /// Sourced from the backend RideDto (derived from the client's Person).
+  final bool clientHasAvatar;
+
+  /// Whether the assigned driver has a profile photo (mirrors [clientHasAvatar]).
+  /// False when no driver is assigned or the endpoint didn't resolve one.
+  final bool driverHasAvatar;
+
+  /// True when the ride was booked without a real client — a provisional
+  /// placeholder was created by the backend (from-chat flow). The card renders
+  /// the route instead of the placeholder name until the client is linked.
+  final bool clientProvisional;
   final String? flightNumber;
   final DateTime? flightTime;
+  // Scheduled (on-time) flight instant, tracked separately from flightTime (latest known/estimated)
+  // so the card can show the delay = flightTime − flightScheduledTime.
+  final DateTime? flightScheduledTime;
+  // For airport ARRIVAL rides: the origin take-off instant, so the card can animate the en-route
+  // progress as (now − flightDepartureTime) / (flightTime − flightDepartureTime). Null until the
+  // flight monitor has fetched detail data.
+  final DateTime? flightDepartureTime;
   final bool isAirportTransfer;
   final bool isArrival;
   final String? gate;
   final String? terminal;
   final String? flightStatus;
+  // For airport ARRIVAL rides: backend-computed recommended terminal-entry time ("Einfahrt um").
+  final DateTime? optimalEntryTime;
   final String? driverName;
 
   /// The assigned driver's average rating across all their rides (0–5), as
@@ -115,6 +137,10 @@ class Ride {
   /// Set when the ride was handed off to a partner company.
   final String? partnerCompanyId;
 
+  /// Free-form operator labels attached to the ride (e.g. "Urgent", "Cash").
+  /// Normalized server-side; empty when none.
+  final List<String> tags;
+
   const Ride({
     required this.id,
     required this.clientId,
@@ -127,13 +153,19 @@ class Ride {
     required this.to,
     this.status = RideStatus.requested,
     required this.clientName,
+    this.clientHasAvatar = false,
+    this.driverHasAvatar = false,
+    this.clientProvisional = false,
     this.flightNumber,
     this.flightTime,
+    this.flightScheduledTime,
+    this.flightDepartureTime,
     this.isAirportTransfer = false,
     this.isArrival = false,
     this.gate,
     this.terminal,
     this.flightStatus,
+    this.optimalEntryTime,
     this.driverName,
     this.driverRating,
     this.driverRatingCount,
@@ -162,6 +194,7 @@ class Ride {
     this.airportCheckpoint,
     this.externalDriverId,
     this.partnerCompanyId,
+    this.tags = const [],
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) {
@@ -180,12 +213,27 @@ class Ride {
       to: Location.fromJson(json['to']),
       status: RideStatus.fromString(json['status'] ?? 'Requested'),
       clientName: json['clientName'] ?? 'Unknown Client',
+      clientHasAvatar: json['clientHasAvatar'] as bool? ?? false,
+      driverHasAvatar: json['driverHasAvatar'] as bool? ?? false,
+      clientProvisional: json['clientProvisional'] as bool? ?? false,
       flightNumber: json['flightNumber'],
       // Convert to local like pickupDateTime, so airport flight times are not
       // shown in UTC while every other time on the ride is local.
       flightTime: JsonParse.optionalDateTime(json, 'flightTime')?.toLocal(),
+      flightScheduledTime: JsonParse.optionalDateTime(
+        json,
+        'flightScheduledTime',
+      )?.toLocal(),
+      flightDepartureTime: JsonParse.optionalDateTime(
+        json,
+        'flightDepartureTime',
+      )?.toLocal(),
       isAirportTransfer: json['isAirportTransfer'] ?? false,
       isArrival: json['isArrival'] ?? false,
+      optimalEntryTime: JsonParse.optionalDateTime(
+        json,
+        'optimalEntryTime',
+      )?.toLocal(),
       gate: json['gate'],
       terminal: json['terminal'],
       flightStatus: json['flightStatus'],
@@ -224,6 +272,7 @@ class Ride {
       airportCheckpoint: json['airportCheckpoint'],
       externalDriverId: json['externalDriverId']?.toString(),
       partnerCompanyId: json['partnerCompanyId']?.toString(),
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
     );
   }
 
@@ -240,10 +289,16 @@ class Ride {
       'to': to.toJson(),
       'status': status.value,
       'clientName': clientName,
+      'clientHasAvatar': clientHasAvatar,
+      'driverHasAvatar': driverHasAvatar,
+      'clientProvisional': clientProvisional,
       'flightNumber': flightNumber,
       'flightTime': flightTime?.toUtc().toIso8601String(),
+      'flightScheduledTime': flightScheduledTime?.toUtc().toIso8601String(),
+      'flightDepartureTime': flightDepartureTime?.toUtc().toIso8601String(),
       'isAirportTransfer': isAirportTransfer,
       'isArrival': isArrival,
+      'optimalEntryTime': optimalEntryTime?.toUtc().toIso8601String(),
       'gate': gate,
       'terminal': terminal,
       'flightStatus': flightStatus,
@@ -275,6 +330,7 @@ class Ride {
       'airportCheckpoint': airportCheckpoint,
       'externalDriverId': externalDriverId,
       'partnerCompanyId': partnerCompanyId,
+      'tags': tags,
     };
   }
 
@@ -290,13 +346,19 @@ class Ride {
     Location? to,
     RideStatus? status,
     String? clientName,
+    bool? clientHasAvatar,
+    bool? driverHasAvatar,
+    bool? clientProvisional,
     String? flightNumber,
     Object? flightTime = _sentinel,
+    Object? flightScheduledTime = _sentinel,
+    Object? flightDepartureTime = _sentinel,
     bool? isAirportTransfer,
     bool? isArrival,
     String? gate,
     String? terminal,
     String? flightStatus,
+    Object? optimalEntryTime = _sentinel,
     String? driverName,
     double? driverRating,
     int? driverRatingCount,
@@ -325,6 +387,7 @@ class Ride {
     Object? airportCheckpoint = _sentinel,
     Object? externalDriverId = _sentinel,
     Object? partnerCompanyId = _sentinel,
+    List<String>? tags,
   }) {
     return Ride(
       id: id ?? this.id,
@@ -338,12 +401,24 @@ class Ride {
       to: to ?? this.to,
       status: status ?? this.status,
       clientName: clientName ?? this.clientName,
+      clientHasAvatar: clientHasAvatar ?? this.clientHasAvatar,
+      driverHasAvatar: driverHasAvatar ?? this.driverHasAvatar,
+      clientProvisional: clientProvisional ?? this.clientProvisional,
       flightNumber: flightNumber ?? this.flightNumber,
       flightTime: flightTime == _sentinel
           ? this.flightTime
           : flightTime as DateTime?,
+      flightScheduledTime: flightScheduledTime == _sentinel
+          ? this.flightScheduledTime
+          : flightScheduledTime as DateTime?,
+      flightDepartureTime: flightDepartureTime == _sentinel
+          ? this.flightDepartureTime
+          : flightDepartureTime as DateTime?,
       isAirportTransfer: isAirportTransfer ?? this.isAirportTransfer,
       isArrival: isArrival ?? this.isArrival,
+      optimalEntryTime: optimalEntryTime == _sentinel
+          ? this.optimalEntryTime
+          : optimalEntryTime as DateTime?,
       gate: gate ?? this.gate,
       terminal: terminal ?? this.terminal,
       flightStatus: flightStatus ?? this.flightStatus,
@@ -385,6 +460,7 @@ class Ride {
       partnerCompanyId: partnerCompanyId == _sentinel
           ? this.partnerCompanyId
           : partnerCompanyId as String?,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -399,7 +475,10 @@ class Ride {
         other.status == status &&
         other.pickupDateTime == pickupDateTime &&
         other.from == from &&
-        other.to == to;
+        other.to == to &&
+        // Included so a live WebSocket checkpoint update yields a != Ride and the
+        // BLoC actually re-emits (otherwise the row never refreshes on the card).
+        other.airportCheckpoint == airportCheckpoint;
   }
 
   @override
@@ -409,7 +488,8 @@ class Ride {
         status.hashCode ^
         pickupDateTime.hashCode ^
         from.hashCode ^
-        to.hashCode;
+        to.hashCode ^
+        airportCheckpoint.hashCode;
   }
 
   @override
@@ -422,6 +502,73 @@ class Ride {
   /// "Driver assigned" label for a future/pre-departure assigned ride.
   bool get driverEnRoute => driverLocation != null;
   bool get isConfirmed => status == RideStatus.confirmed;
+
+  /// True for an airport pickup where the passenger is arriving (landing) — the
+  /// case that has a recommended terminal-entry time ("Einfahrt um").
+  bool get isArrivalAirportTransfer => isAirportTransfer && isArrival;
+
+  /// Flight delay in minutes (latest known minus scheduled), or null when either
+  /// time is missing. Only positive when the flight is actually late.
+  int? get flightDelayMinutes {
+    final actual = flightTime;
+    final scheduled = flightScheduledTime;
+    if (actual == null || scheduled == null) return null;
+    return actual.difference(scheduled).inMinutes;
+  }
+
+  /// True once the flight has actually landed (the board status is "landed").
+  /// While the aircraft is still airborne (scheduled / boarding / departed /
+  /// en_route) the arrival time is an estimate, not a fact — the card uses this
+  /// to label it "Landung um …" (forecast) vs "Gelandet um …" (actual).
+  bool get flightHasLanded => flightStatus?.toLowerCase().trim() == 'landed';
+
+  /// Position of [now] within the take-off → landing window [start, end] as a
+  /// fraction in [0, 1], or null when the window is missing/degenerate. The single
+  /// source of truth for the en-route airplane's position — both this getter and
+  /// the progress-bar widget call it, so the tested math is the math that renders.
+  static double? flightProgress(DateTime now, DateTime? start, DateTime? end) {
+    if (start == null || end == null) return null;
+    final total = end.difference(start).inSeconds;
+    if (total <= 0) return null; // guard against a bad/zero window
+    final elapsed = now.difference(start).inSeconds;
+    return (elapsed / total).clamp(0.0, 1.0);
+  }
+
+  /// How far along the flight is between take-off and (estimated) landing, as a
+  /// fraction in [0, 1] — drives the airplane icon crawling along the "Im Flug"
+  /// segment of the progress bar. The window is [flightDepartureTime, flightTime]:
+  /// using the live [flightTime] as the end means a delay correctly slows the
+  /// plane down. Null (→ no airplane, plain connector) unless this is an arrival
+  /// with both a known departure and arrival time. [now] is injectable for tests.
+  double? flightProgressFraction(DateTime now) {
+    if (!isArrival) return null;
+    return flightProgress(now, flightDepartureTime, flightTime);
+  }
+
+  /// Returns this ride with ONLY the flight-tracking fields copied from [fresh]
+  /// (gate, terminal, flightStatus, flightTime, flightDepartureTime), keeping every
+  /// other field — driverName, optimalEntryTime, avatar, eta — intact.
+  ///
+  /// Used after a manual flight refresh: the refresh DTO is not fully enriched, so
+  /// pushing it wholesale into the shared RideBloc would blank those fields on the
+  /// list cards (the confirm-vanish overwrite trap). flightTime/flightDepartureTime
+  /// fall back to the current value when [fresh] has none, so a not-found refresh
+  /// never erases a time we already had.
+  Ride withFlightFrom(Ride fresh) => copyWith(
+    gate: fresh.gate,
+    terminal: fresh.terminal,
+    flightStatus: fresh.flightStatus,
+    flightTime: fresh.flightTime ?? flightTime,
+    flightDepartureTime: fresh.flightDepartureTime ?? flightDepartureTime,
+  );
+
+  /// True when the flight is delayed — either the computed delay is positive, or
+  /// the airport board explicitly reports a "delayed" status.
+  bool get isFlightDelayed {
+    final delay = flightDelayMinutes;
+    if (delay != null && delay > 0) return true;
+    return flightStatus?.toLowerCase() == 'delayed';
+  }
 
   /// True when the ride is in a state worth showing on the live map: a driver
   /// has been assigned (or confirmed / handed off to a partner) and the ride is
@@ -452,36 +599,58 @@ class Ride {
     return isArrival ? 'Arrival' : 'Departure';
   }
 
+  /// Status emoji. Neutral (info) for unknown/unmapped so it does not read as an error.
   String get flightStatusIcon {
-    if (flightStatus == null) return '';
-    switch (flightStatus!.toLowerCase()) {
+    final status = flightStatus;
+    if (status == null) return '';
+    switch (status.toLowerCase()) {
       case 'on time':
+      case 'scheduled':
         return '✅';
+      case 'boarding':
+      case 'departed':
+      case 'en_route':
+        return '🛫';
+      case 'landed':
+        return '🛬';
       case 'delayed':
         return '⏰';
       case 'cancelled':
         return '❌';
+      case 'diverted':
+        return '↪️';
       default:
-        return '❓';
+        return 'ℹ️';
     }
   }
 
+  /// True when MUC put the flight on a remote (apron) bus stand — the gate is the
+  /// sentinel "REMOTE" rather than a real code (e.g. "G35"). Such a gate must be shown
+  /// as a localized "bus gate" label, not the raw word, and means a longer walk-out.
+  bool get isRemoteGate => gate?.trim().toUpperCase() == 'REMOTE';
+
+  /// Flight line WITHOUT the status (flight number + gate/terminal). The status is rendered
+  /// separately and localized at the call site (a getter has no BuildContext / AppLocalizations),
+  /// via [RideFlightStatusL10n.localizedFlightStatus].
+  ///
+  /// NOTE: a remote ("REMOTE") gate is rendered here with the raw word as a fallback only;
+  /// prefer [RideFlightStatusL10n.fullFlightInfoLocalized] which localizes it to "Bus gate".
   String get fullFlightInfo {
     if (!isAirportTransfer || flightNumber == null) return '';
 
     List<String> parts = [];
     parts.add('$flightIcon $flightNumber');
 
-    if (gate != null && terminal != null) {
-      parts.add('Gate $gate (Terminal $terminal)');
-    } else if (gate != null) {
-      parts.add('Gate $gate');
+    final gatePart = isRemoteGate
+        ? 'Bus gate'
+        : (gate != null ? 'Gate $gate' : null);
+
+    if (gatePart != null && terminal != null) {
+      parts.add('$gatePart (Terminal $terminal)');
+    } else if (gatePart != null) {
+      parts.add(gatePart);
     } else if (terminal != null) {
       parts.add('Terminal $terminal');
-    }
-
-    if (flightStatus != null) {
-      parts.add('$flightStatusIcon $flightStatus');
     }
 
     return parts.join(' • ');
@@ -512,12 +681,15 @@ class Ride {
   }
 
   Person? get driver {
-    if (driverId == null || driverName == null) return null;
+    final id = driverId;
+    final name = driverName;
+    if (id == null || name == null) return null;
     return Person(
-      id: driverId!,
-      name: driverName!,
+      id: id,
+      name: name,
       email: '',
       role: PersonRole.driver,
+      hasAvatar: driverHasAvatar,
     );
   }
 
@@ -527,6 +699,7 @@ class Ride {
       name: clientName,
       email: '',
       role: PersonRole.client,
+      hasAvatar: clientHasAvatar,
     );
   }
 }

@@ -1,12 +1,26 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import '../../modules/ride_management/models/ride_estimate.dart';
+import '../../modules/ride_management/models/ride.dart';
 
 abstract class CreateRideFormEvent extends Equatable {
   const CreateRideFormEvent();
 
   @override
   List<Object?> get props => [];
+}
+
+/// Pre-fills the form from an existing [ride] for the "duplicate ride" flow.
+/// Replaces the whole form state with [CreateRideFormState.fromRide] so the
+/// copy is atomic (no ordering pitfalls between individual field events).
+class FormPrefilledFromRide extends CreateRideFormEvent {
+  final Ride ride;
+
+  const FormPrefilledFromRide(this.ride);
+
+  @override
+  List<Object?> get props => [ride];
 }
 
 class ClientNameChanged extends CreateRideFormEvent {
@@ -154,6 +168,17 @@ class NotesChanged extends CreateRideFormEvent {
   List<Object?> get props => [notes];
 }
 
+/// Emitted when the operator types or clears the ride price. A null/empty input
+/// clears the price (the ride is then created without one).
+class RidePriceChanged extends CreateRideFormEvent {
+  final double? price;
+
+  const RidePriceChanged(this.price);
+
+  @override
+  List<Object?> get props => [price];
+}
+
 class SpecialRequirementToggled extends CreateRideFormEvent {
   final String requirement;
 
@@ -165,6 +190,27 @@ class SpecialRequirementToggled extends CreateRideFormEvent {
 
 class NotesToggled extends CreateRideFormEvent {
   const NotesToggled();
+}
+
+/// Adds a free-form tag. The bloc normalizes (trim/collapse) and ignores blanks
+/// and case-insensitive duplicates so the UI matches the backend's de-dup.
+class TagAdded extends CreateRideFormEvent {
+  final String tag;
+
+  const TagAdded(this.tag);
+
+  @override
+  List<Object?> get props => [tag];
+}
+
+/// Removes a tag (exact match against the stored, normalized value).
+class TagRemoved extends CreateRideFormEvent {
+  final String tag;
+
+  const TagRemoved(this.tag);
+
+  @override
+  List<Object?> get props => [tag];
 }
 
 class FormCleared extends CreateRideFormEvent {
@@ -210,6 +256,12 @@ class NewClientModeToggled extends CreateRideFormEvent {
   const NewClientModeToggled();
 }
 
+/// Toggles the "without client (from chat)" / provisional-client mode.
+/// When enabled, the client search is hidden and no client is required.
+class ProvisionalClientModeToggled extends CreateRideFormEvent {
+  const ProvisionalClientModeToggled();
+}
+
 class NewClientPhoneChanged extends CreateRideFormEvent {
   final String phone;
   const NewClientPhoneChanged(this.phone);
@@ -226,6 +278,16 @@ class VehicleClassSelected extends CreateRideFormEvent {
 
   @override
   List<Object?> get props => [vehicleClass];
+}
+
+/// Emitted when the operator selects a payment method in the create-ride form.
+class PaymentMethodSelected extends CreateRideFormEvent {
+  final PaymentMethod paymentMethod;
+
+  const PaymentMethodSelected(this.paymentMethod);
+
+  @override
+  List<Object?> get props => [paymentMethod];
 }
 
 /// Emitted when the user toggles the scheduled/now toggle on the client booking flow.

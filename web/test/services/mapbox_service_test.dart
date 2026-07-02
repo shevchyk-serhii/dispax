@@ -2,6 +2,58 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dispax/modules/core/services/mapbox_service.dart';
 
 void main() {
+  group('describeGeocodeFailure', () {
+    test('no-token reason mentions the missing env var', () {
+      final message = describeGeocodeFailure(
+        reason: GeocodeFailureReason.noToken,
+      );
+      expect(message, contains('MAPBOX_ACCESS_TOKEN'));
+    });
+
+    test('httpError reason includes the actual status code', () {
+      final message = describeGeocodeFailure(
+        reason: GeocodeFailureReason.httpError,
+        statusCode: 401,
+      );
+      expect(message, contains('401'));
+    });
+
+    test('malformedResponse reason is distinct from httpError', () {
+      final message = describeGeocodeFailure(
+        reason: GeocodeFailureReason.malformedResponse,
+      );
+      expect(message, contains('unexpected geocoding response shape'));
+      expect(message, isNot(contains('status')));
+    });
+
+    test('exception reason includes the underlying cause', () {
+      final message = describeGeocodeFailure(
+        reason: GeocodeFailureReason.exception,
+        cause: const FormatException('bad json'),
+      );
+      expect(message, contains('bad json'));
+    });
+
+    test('each reason produces a distinguishable message', () {
+      final messages = {
+        describeGeocodeFailure(reason: GeocodeFailureReason.noToken),
+        describeGeocodeFailure(
+          reason: GeocodeFailureReason.httpError,
+          statusCode: 500,
+        ),
+        describeGeocodeFailure(reason: GeocodeFailureReason.malformedResponse),
+        describeGeocodeFailure(
+          reason: GeocodeFailureReason.exception,
+          cause: 'boom',
+        ),
+      };
+      expect(
+        messages,
+        hasLength(4),
+      ); // no two reasons collapse to the same text
+    });
+  });
+
   group('MapboxService.parseGeocodeCoordinates', () {
     test('returns [lat, lng] from a well-formed response', () {
       // Mapbox center is [lng, lat]; we expect [lat, lng] back.

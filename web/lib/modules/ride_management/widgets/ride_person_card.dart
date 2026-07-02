@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../core/models/person.dart';
+import '../../core/services/api_client.dart';
+import '../../core/widgets/avatar_circle.dart';
 import '../../../constants/app_colors.dart';
 
 class RidePersonCard extends StatelessWidget {
@@ -9,9 +11,14 @@ class RidePersonCard extends StatelessWidget {
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
 
+  /// Passed in (not read from context) because this card is shown inside a
+  /// pushed route (RideDetailsScreen) that may sit outside the AuthBloc provider.
+  final ApiClient apiClient;
+
   const RidePersonCard({
     super.key,
     required this.person,
+    required this.apiClient,
     this.isDriver = false,
     this.onCall,
     this.onMessage,
@@ -29,19 +36,8 @@ class RidePersonCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: isDriver
-                      ? AppColors.infoBorder
-                      : AppColors.successBorder,
-                  child: Icon(
-                    isDriver ? Icons.drive_eta : Icons.person,
-                    color: isDriver
-                        ? AppColors.infoStrong
-                        : AppColors.successStrong,
-                    size: 28,
-                  ),
-                ),
+                // Profile photo when set, initials fallback otherwise.
+                AvatarCircle(user: person, apiClient: apiClient, radius: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -61,7 +57,7 @@ class RidePersonCard extends StatelessWidget {
                       ),
                       if (person.phone?.isNotEmpty == true)
                         Text(
-                          person.phone!,
+                          person.phone ?? '',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -129,7 +125,8 @@ class RidePersonCard extends StatelessWidget {
 
   Widget _buildVehicleInfo(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final vehicle = person.vehicleInfo!;
+    final vehicle = person.vehicleInfo;
+    if (vehicle == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +168,7 @@ class RidePersonCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                vehicle.color!,
+                vehicle.color ?? '',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -198,7 +195,7 @@ class RidePersonCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  vehicle.licensePlate!,
+                  vehicle.licensePlate ?? '',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',

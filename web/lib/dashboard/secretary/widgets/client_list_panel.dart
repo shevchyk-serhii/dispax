@@ -5,11 +5,14 @@ import '../../../blocs/client/client_bloc.dart';
 import '../../../blocs/client/client_event.dart';
 import '../../../blocs/client/client_state.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/widgets/error_widget.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/models/user_requests.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
+import '../../../utils/temp_password.dart';
 import 'client_detail_screen.dart';
 
 class ClientListPanel extends StatefulWidget {
@@ -47,7 +50,10 @@ class _ClientListPanelState extends State<ClientListPanel> {
         foregroundColor: AppColors.textOnPrimary,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: AppDimensions.appBarElevation,
-        automaticallyImplyLeading: false,
+        // Show a back button only when this panel is pushed as its own route
+        // (e.g. from the secretary front desk). Inside an IndexedStack tab
+        // (dispatcher More menu) there is nothing to pop, so none is shown.
+        automaticallyImplyLeading: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -58,129 +64,143 @@ class _ClientListPanelState extends State<ClientListPanel> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.secretaryColor,
+        // No backgroundColor override: the hardcoded graphite secretaryColor
+        // was invisible on the dark background. The theme's FAB colors
+        // (colorScheme.primary/onPrimary) stay legible in both modes.
         onPressed: () => _showCreateClientDialog(context),
         child: const Icon(Icons.person_add),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingMedium),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: l10n.searchClientsHint,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          context.read<ClientBloc>().add(
-                            const ClientSearchRequested(query: ''),
-                          );
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusMedium,
-                  ),
-                ),
+      // Surface mutation failures (create/update/deactivate) as a SnackBar.
+      // The list below only renders an error view when it has no clients to
+      // show, so without this listener a failed mutation was fully silent.
+      body: BlocListener<ClientBloc, ClientState>(
+        listenWhen: (previous, current) =>
+            current.hasError &&
+            previous.status != current.status &&
+            current.clients.isNotEmpty,
+        listener: (context, state) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                friendlyError(state.error ?? state.errorMessage, l10n),
               ),
-              onChanged: (query) {
-                context.read<ClientBloc>().add(
-                  ClientSearchRequested(query: query),
-                );
-                setState(() {});
-              },
+              backgroundColor: AppColors.error,
             ),
-          ),
-          Expanded(
-            child: BlocBuilder<ClientBloc, ClientState>(
-              builder: (context, state) {
-                if (state.isLoading && state.clients.isEmpty) {
-                  return Center(child: CircularProgressIndicator.adaptive());
-                }
-
-                if (state.hasError && state.clients.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: AppColors.error,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(state.errorMessage ?? 'An error occurred'),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
+          );
+        },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppDimensions.paddingMedium),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: l10n.searchClientsHint,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
                           onPressed: () {
+                            _searchController.clear();
                             context.read<ClientBloc>().add(
-                              const ClientLoadRequested(),
+                              const ClientSearchRequested(query: ''),
                             );
                           },
-                          child: Text(l10n.retry),
-                        ),
-                      ],
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusMedium,
                     ),
-                  );
-                }
-
-                final clients = state.filteredClients;
-
-                if (clients.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          state.searchQuery.isNotEmpty
-                              ? l10n.noClientsMatchSearch
-                              : l10n.noClientsYet,
-                          style: AppStyles.bodyLarge.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    context.read<ClientBloc>().add(const ClientLoadRequested());
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppDimensions.paddingMedium,
-                    ),
-                    itemCount: clients.length,
-                    itemBuilder: (context, index) {
-                      return _buildClientCard(context, clients[index]);
-                    },
                   ),
-                );
-              },
+                ),
+                onChanged: (query) {
+                  context.read<ClientBloc>().add(
+                    ClientSearchRequested(query: query),
+                  );
+                  setState(() {});
+                },
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: BlocBuilder<ClientBloc, ClientState>(
+                builder: (context, state) {
+                  if (state.isLoading && state.clients.isEmpty) {
+                    return Center(child: CircularProgressIndicator.adaptive());
+                  }
+
+                  if (state.hasError && state.clients.isEmpty) {
+                    return ErrorDisplayWidget(
+                      title: l10n.errorLoadingData,
+                      message: friendlyError(
+                        state.error ?? state.errorMessage,
+                        l10n,
+                      ),
+                      onRetry: () {
+                        context.read<ClientBloc>().add(
+                          const ClientLoadRequested(),
+                        );
+                      },
+                      retryLabel: l10n.retry,
+                    );
+                  }
+
+                  final clients = state.filteredClients;
+
+                  if (clients.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            state.searchQuery.isNotEmpty
+                                ? l10n.noClientsMatchSearch
+                                : l10n.noClientsYet,
+                            style: AppStyles.bodyLarge.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<ClientBloc>().add(
+                        const ClientLoadRequested(),
+                      );
+                    },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.paddingMedium,
+                      ),
+                      itemCount: clients.length,
+                      itemBuilder: (context, index) {
+                        return _buildClientCard(context, clients[index]);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildClientCard(BuildContext context, Person client) {
     final l10n = AppLocalizations.of(context)!;
+    final phone = client.phone;
     return Card(
       margin: const EdgeInsets.only(bottom: AppDimensions.paddingSmall),
       child: ListTile(
@@ -193,14 +213,21 @@ class _ClientListPanelState extends State<ClientListPanel> {
               : Text(
                   client.name.isNotEmpty ? client.name[0].toUpperCase() : '?',
                   style: TextStyle(
-                    color: AppColors.secretaryColor,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
         ),
         title: Row(
           children: [
-            Flexible(child: Text(client.name, style: AppStyles.titleSmall)),
+            Flexible(
+              child: Text(
+                client.name,
+                style: AppStyles.titleSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
             if (client.isVip) ...[
               const SizedBox(width: 6),
               Container(
@@ -225,8 +252,8 @@ class _ClientListPanelState extends State<ClientListPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(client.email, style: AppStyles.bodySmall),
-            if (client.phone != null && client.phone!.isNotEmpty)
-              Text(client.phone!, style: AppStyles.bodySmall),
+            if (phone != null && phone.isNotEmpty)
+              Text(phone, style: AppStyles.bodySmall),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -264,6 +291,12 @@ class _ClientListPanelState extends State<ClientListPanel> {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
+    // Pre-filled so the dispatcher can submit right away; shown in plain text
+    // because it is shared with the client out-of-band, and the client is
+    // forced to change it on first login (mustChangePassword on the backend).
+    final passwordController = TextEditingController(
+      text: generateTempPassword(),
+    );
     final formKey = GlobalKey<FormState>();
 
     showAdaptiveDialog(
@@ -312,6 +345,26 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     ),
                     keyboardType: TextInputType.phone,
                   ),
+                  const SizedBox(height: AppDimensions.paddingMedium),
+                  TextFormField(
+                    controller: passwordController,
+                    decoration: InputDecoration(
+                      labelText: l10n.temporaryPassword,
+                      helperText: l10n.temporaryPasswordHint,
+                      helperMaxLines: 2,
+                      prefixIcon: const Icon(Icons.key),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.refresh),
+                        tooltip: l10n.temporaryPassword,
+                        onPressed: () {
+                          passwordController.text = generateTempPassword();
+                        },
+                      ),
+                    ),
+                    validator: (v) => v == null || !isValidTempPassword(v)
+                        ? l10n.tempPasswordRules
+                        : null,
+                  ),
                 ],
               ),
             ),
@@ -327,12 +380,13 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 foregroundColor: AppColors.textOnPrimary,
               ),
               onPressed: () {
-                if (formKey.currentState!.validate()) {
+                if (formKey.currentState?.validate() ?? false) {
                   context.read<ClientBloc>().add(
                     ClientCreateRequested(
                       request: CreateUserRequest(
                         name: nameController.text.trim(),
                         email: emailController.text.trim(),
+                        password: passwordController.text,
                         phone: phoneController.text.trim().isNotEmpty
                             ? phoneController.text.trim()
                             : null,
@@ -437,7 +491,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     foregroundColor: AppColors.textOnPrimary,
                   ),
                   onPressed: () {
-                    if (formKey.currentState!.validate()) {
+                    if (formKey.currentState?.validate() ?? false) {
                       context.read<ClientBloc>().add(
                         ClientUpdateRequested(
                           clientId: client.id,

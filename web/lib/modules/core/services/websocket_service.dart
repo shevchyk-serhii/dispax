@@ -31,7 +31,7 @@ class WebSocketService implements WebSocketServiceBase {
   String get _wsUrl {
     final uri = Uri.parse(
       '$_wsBaseUrl/api/ws',
-    ).replace(queryParameters: {'token': _token!});
+    ).replace(queryParameters: {'token': _token ?? ''});
     return uri.toString();
   }
 
@@ -54,10 +54,11 @@ class WebSocketService implements WebSocketServiceBase {
       _channel?.sink.close(ws_status.normalClosure);
       // Browser WebSocket can't send custom headers; the token is carried in
       // the query string (`?token=...`, see `_wsUrl`), which the server accepts.
-      _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      final channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      _channel = channel;
       debugPrint('WebSocket connected');
 
-      _channel!.stream.listen(
+      channel.stream.listen(
         (data) {
           // Receiving any frame confirms a live connection — reset the backoff
           // here rather than on connect, so a flapping socket keeps backing off.

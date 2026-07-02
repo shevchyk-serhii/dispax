@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../modules/core/services/api_client.dart' show ApiException;
 import '../../modules/schedule_management/models/schedule_day.dart';
 
 enum ScheduleStateStatus { initial, loading, loaded, error }
@@ -7,12 +8,19 @@ class ScheduleState extends Equatable {
   final ScheduleStateStatus status;
   final List<ScheduleDay> scheduleDays;
   final String? errorMessage;
+
+  /// Typed cause behind an error state, when available. The UI passes this to
+  /// `friendlyError` to render a localized, non-technical message instead of the
+  /// raw [errorMessage]. Additive: emit sites that set only [errorMessage] keep
+  /// working.
+  final Object? error;
   final String? lastDriverId;
 
   const ScheduleState({
     this.status = ScheduleStateStatus.initial,
     this.scheduleDays = const [],
     this.errorMessage,
+    this.error,
     this.lastDriverId,
   });
 
@@ -32,10 +40,11 @@ class ScheduleState extends Equatable {
     );
   }
 
-  factory ScheduleState.error(String message) {
+  factory ScheduleState.error(String message, {Object? cause}) {
     return ScheduleState(
       status: ScheduleStateStatus.error,
       errorMessage: message,
+      error: cause,
     );
   }
 
@@ -43,12 +52,14 @@ class ScheduleState extends Equatable {
     ScheduleStateStatus? status,
     List<ScheduleDay>? scheduleDays,
     String? errorMessage,
+    Object? error,
     String? lastDriverId,
   }) {
     return ScheduleState(
       status: status ?? this.status,
       scheduleDays: scheduleDays ?? this.scheduleDays,
       errorMessage: errorMessage,
+      error: error,
       lastDriverId: lastDriverId ?? this.lastDriverId,
     );
   }
@@ -70,5 +81,14 @@ class ScheduleState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [status, scheduleDays, errorMessage, lastDriverId];
+  List<Object?> get props => [
+    status,
+    scheduleDays,
+    errorMessage,
+    // ApiException has no value equality; key on its kind (stable) so two error
+    // states of the same kind compare equal. errorMessage above distinguishes
+    // different messages.
+    error is ApiException ? (error as ApiException).kind : error?.runtimeType,
+    lastDriverId,
+  ];
 }

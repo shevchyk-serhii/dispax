@@ -6,20 +6,18 @@ import com.shevchyk.ride.application.service.{
   ClientLocationService,
   AirportCheckpointService,
   AirportConfigService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   PickupTimeService
 }
-import com.shevchyk.core.config.AirportPickupConfig
+import com.shevchyk.core.config.{AirportArrivalTimingConfig, AirportPickupConfig}
 import com.shevchyk.app.HereTravelTimeAdapter
 import com.shevchyk.ride.repository.{
   RideRepository,
-  PostgresRideRepository,
   AirportConfigRepository,
   ClientLocationRepository,
-  PostgresClientLocationRepository,
   ClientAddressRepository,
-  PostgresClientAddressRepository,
   ChatMessageRepository,
   ExpenseRepository,
   ExternalDriverRepository,
@@ -28,21 +26,23 @@ import com.shevchyk.ride.repository.{
   PostgresPartnerCompanyRepository,
   RideTemplateRepository,
   RideRatingRepository,
-  TariffRepository,
-  PostgresExpenseRepository,
-  PostgresRideRatingRepository,
-  PostgresRideTemplateRepository
+  TariffRepository
 }
 import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.core.config.HereConfig
+import com.shevchyk.core.config.MapboxConfig
+import com.shevchyk.core.config.PublicLinkConfig
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.schedule.application.{
+  CalendarShareService,
   ScheduleAvailabilityChecker,
   ScheduleDayLookupAdapter,
   ScheduleService => ScheduleSvc
 }
 import com.shevchyk.schedule.repository.{
+  CalendarShareGrantRepository,
+  CalendarShareInviteRepository,
   DriverScheduleVisibilityRepository,
   DriverUnavailabilityRepository,
   ScheduleDayRepository
@@ -53,21 +53,19 @@ import com.shevchyk.billing.repository.{
   ClientCompanyRepository => BillingClientCompanyRepository,
   CompanyBillingProfileRepository
 }
-import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes, HealthRoutes}
+import com.shevchyk.app.routes.{WebSocketRoutes, DevRoutes, HealthRoutes, TrackPageRoutes}
 import com.shevchyk.core.repository.{
   PersonRepository,
   CompanyRepository,
   CompanySettingsRepository,
-  PostgresCompanySettingsRepository,
-  ClientCompanyRepository,
-  PostgresClientCompanyRepository
+  ClientCompanyRepository
 }
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.application.{AvatarService, EventHub, AuditService, PostgresAuditService, GeofenceService}
+import com.shevchyk.core.application.{AvatarService, EventHub, AuditService, GeofenceService}
 import com.shevchyk.core.repository.{
   GeofenceRepository,
   GdprRepository,
@@ -75,14 +73,7 @@ import com.shevchyk.core.repository.{
   BlacklistRepository,
   EmergencyReassignmentRepository,
   RidePoolRepository,
-  NotificationPreferenceRepository,
-  PostgresGeofenceRepository,
-  PostgresGdprRepository,
-  PostgresSessionRepository,
-  PostgresBlacklistRepository,
-  PostgresEmergencyReassignmentRepository,
-  PostgresRidePoolRepository,
-  PostgresNotificationPreferenceRepository
+  NotificationPreferenceRepository
 }
 import com.shevchyk.notification.application.{
   EmailTemplateService,
@@ -96,17 +87,14 @@ import com.shevchyk.app.{
   ReminderScheduler,
   InvoiceReminderScheduler,
   PredictiveEtaMonitor,
+  FlightStatusMonitor,
   ConfirmationReminderScheduler,
   SentryInit
 }
 import com.shevchyk.notification.repository.{
   CheckpointNotificationRepository,
-  InMemoryFcmTokenRepository,
-  InMemoryNotificationRepository,
   NotificationRepository,
   FcmTokenRepository,
-  PostgresFcmTokenRepository,
-  PostgresNotificationRepository,
   SentReminderRepository,
   PostgresSentConfirmationRequestRepository,
   EtaAlertRepository
@@ -177,12 +165,40 @@ object Application extends ZIOAppDefault:
 
   private val wsRoutes = WebSocketRoutes.wsRoutes
 
+  // Public server-rendered guest tracking page (GET /track/{token}) — plain HTML + Mapbox GL JS, no app/login.
+  private val trackPageRoutes = TrackPageRoutes.routes
+
+  // Maximum accepted request body size. zio-http's `Server.Config.default` disables request streaming
+  // with a 100 KB cap, so any larger body is rejected by Netty with a 413 BEFORE reaching the endpoint —
+  // smaller than the 5 MB profile-photo limit enforced in `AvatarService`, which made avatar uploads fail.
+  // Raise it above 5 MB + multipart overhead so the app-level `FileTooLarge` (5 MB) becomes the real limit.
+  val MaxRequestBytes: Int = 10 * 1024 * 1024 // 10 MB
+
+  // Server config with the raised body-size limit. Exposed (package-private) so a test can assert the limit
+  // without booting a server — a service-layer test would never reach Netty's cap.
+  private[shevchyk] def serverConfig(host: String, port: Int): Server.Config = Server.Config.default
+    .binding(host, port)
+    .disableRequestStreaming(MaxRequestBytes)
+
+  // ASCII art startup banner, printed to the console as the first log line on boot.
+  val Banner: String =
+    """
+      |  ____  _                          _
+      | |  _ \(_)___ _ __   __ ___  __  __| | ___
+      | | | | | / __| '_ \ / _` \ \/ /  / _` |/ _ \
+      | | |_| | \__ \ |_) | (_| |>  <  | (_| |  __/
+      | |____/|_|___/ .__/ \__,_/_/\_\(_)__,_|\___|
+      |             |_|
+      |""".stripMargin
+
   def run: ZIO[Any, Throwable, Nothing] = ZIO
     .serviceWithZIO[ServerConfig] { serverConfig =>
-      PushNotificationListener.start *>
+      ZIO.logInfo(Banner) *>
+        PushNotificationListener.start *>
         ReminderScheduler.start *>
         InvoiceReminderScheduler.start *>
         PredictiveEtaMonitor.start *>
+        FlightStatusMonitor.start *>
         ConfirmationReminderScheduler.start *>
         ZIO.logInfo("Starting Dispax API Server (PostgreSQL)...") *>
         ZIO.logInfo("📋 Available APIs:") *>
@@ -206,7 +222,7 @@ object Application extends ZIOAppDefault:
         ZIO.logInfo("🏗️  Modules: core + auth + ride + driver + schedule + notification + PostgreSQL repositories") *>
         ZIO.logInfo(s"🌐 Server running on http://${serverConfig.host}:${serverConfig.port}") *>
         Server.serve(
-          (publicRoutes ++ openApiRoutes ++ devRoutes ++ wsRoutes)
+          (publicRoutes ++ openApiRoutes ++ devRoutes ++ wsRoutes ++ trackPageRoutes)
             .handleErrorCauseZIO { cause =>
               ZIO
                 .logErrorCause("Unhandled server error", cause)
@@ -223,9 +239,8 @@ object Application extends ZIOAppDefault:
         )
     }
     .provide(
-      ZLayer.service[ServerConfig] >>> ZLayer.fromFunction((config: ServerConfig) =>
-        Server.Config.default.binding(config.host, config.port)
-      ) >>> Server.live,
+      ZLayer.service[ServerConfig] >>> ZLayer
+        .fromFunction((config: ServerConfig) => serverConfig(config.host, config.port)) >>> Server.live,
       ServerConfig.liveLayer,
       PersonRepository.layer,
       AvatarService.layer,
@@ -233,6 +248,8 @@ object Application extends ZIOAppDefault:
       TokenRepository.layer,
       RideRepository.layer,
       RideService.layer,
+      com.shevchyk.ride.repository.RideShareTokenRepository.layer,
+      com.shevchyk.ride.application.service.RideShareTokenService.layer,
       DriverLocationRepository.layer,
       DriverLocationService.layer,
       DriverLocationService.providerLayer,
@@ -242,6 +259,10 @@ object Application extends ZIOAppDefault:
       ScheduleAvailabilityChecker.layer,
       ScheduleDayLookupAdapter.layer,
       ScheduleSvc.layer,
+      CalendarShareInviteRepository.layer,
+      CalendarShareGrantRepository.layer,
+      com.shevchyk.ride.application.service.RideBusySlotAdapter.layer,
+      CalendarShareService.layer,
       ClientLocationRepository.layer,
       AirportConfigRepository.layer,
       AirportConfigService.layer,
@@ -287,11 +308,17 @@ object Application extends ZIOAppDefault:
       InvoiceService.layerWithLanguage(sys.env.getOrElse("EMAIL_DEFAULT_LANG", "de")),
       PaymentChecker.mockLayer,
       HereConfig.liveLayer,
+      com.shevchyk.core.config.MucFlightConfig.liveLayer,
+      com.shevchyk.ride.application.service.MucFlightStatusProvider.layer,
+      MapboxConfig.liveLayer,
+      PublicLinkConfig.liveLayer,
       AirportPickupConfig.liveLayer,
+      AirportArrivalTimingConfig.liveLayer,
       GeocodingService.layer,
       HereRoutingService.layer,
       HereTravelTimeAdapter.layer,
       PickupTimeService.layer,
+      AirportTimingService.layer,
       EtaService.layer,
       Client.default,
       JwtConfig.live,

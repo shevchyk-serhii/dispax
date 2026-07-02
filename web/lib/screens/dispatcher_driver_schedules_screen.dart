@@ -8,6 +8,7 @@ import '../modules/core/services/api_client.dart';
 import '../modules/schedule_management/models/schedule_day.dart';
 import '../modules/schedule_management/services/schedule_service.dart';
 import '../constants/app_colors.dart';
+import '../modules/core/services/error_messages.dart';
 
 /// Dispatcher/Admin screen: pick any driver in the company and view that
 /// driver's full schedule. Reads are served by GET /api/schedules/driver/{id},
@@ -32,7 +33,7 @@ class _DispatcherDriverSchedulesScreenState
 
   bool _loadingDrivers = true;
   bool _loadingSchedule = false;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -69,7 +70,7 @@ class _DispatcherDriverSchedulesScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e;
           _loadingDrivers = false;
         });
       }
@@ -94,7 +95,7 @@ class _DispatcherDriverSchedulesScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e;
           _loadingSchedule = false;
         });
       }
@@ -115,8 +116,9 @@ class _DispatcherDriverSchedulesScreenState
             icon: const Icon(Icons.refresh),
             tooltip: l10n.retry,
             onPressed: () {
-              if (_selectedDriver != null) {
-                _loadSchedule(_selectedDriver!);
+              final selectedDriver = _selectedDriver;
+              if (selectedDriver != null) {
+                _loadSchedule(selectedDriver);
               } else {
                 _loadDrivers();
               }
@@ -172,7 +174,8 @@ class _DispatcherDriverSchedulesScreenState
   }
 
   Widget _buildScheduleArea(AppLocalizations l10n) {
-    if (_selectedDriver == null) {
+    final selectedDriver = _selectedDriver;
+    if (selectedDriver == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -188,7 +191,7 @@ class _DispatcherDriverSchedulesScreenState
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return _buildError(l10n, () => _loadSchedule(_selectedDriver!));
+      return _buildError(l10n, () => _loadSchedule(selectedDriver));
     }
     if (_schedule.isEmpty) {
       return Center(child: Text(l10n.noScheduleForDriver));
@@ -242,7 +245,7 @@ class _DispatcherDriverSchedulesScreenState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
-              _error ?? '',
+              friendlyError(_error, l10n),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.error),
             ),

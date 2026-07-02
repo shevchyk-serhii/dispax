@@ -3,7 +3,6 @@ package com.shevchyk.ride.repository
 import com.shevchyk.core.domain.PersonId
 import com.shevchyk.ride.domain.{ClientAddress, ClientAddressId}
 import com.shevchyk.core.database.DatabaseConfig
-import doobie.Transactor
 import zio.*
 
 trait ClientAddressRepository:

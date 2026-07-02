@@ -5,6 +5,8 @@ import '../../ride_management/models/ride.dart';
 import '../../../screens/ride_details_screen.dart';
 import '../../core/widgets/ride_info_row.dart';
 import 'ride_quick_actions.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../ride_management/helpers/flight_status_l10n.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
@@ -35,6 +37,37 @@ class TodayRideCard extends StatelessWidget {
     this.onViewDetails,
   });
 
+  /// Arrival line: "Gelandet um HH:mm" once the flight has landed (actual time) or
+  /// "Landung um HH:mm" while still airborne (forecast), with a delay suffix
+  /// ("• +N Min Verspätung") when the flight is late.
+  static String _landingText(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
+    final base = l10n.airportArrivalText(ride);
+    if (!ride.isFlightDelayed) return base;
+    final delay = ride.flightDelayMinutes;
+    final suffix = delay != null && delay > 0
+        ? l10n.airportFlightDelay(delay)
+        : l10n.flightStatusDelayed;
+    return '$base  •  $suffix';
+  }
+
+  /// Two-line variant shown when we know both the scheduled and actual flight
+  /// time and they differ: "Planmäßig HH:mm → HH:mm" then, only if the flight
+  /// is actually late, "+N Min Verspätung" on its own line. [RideInfoRow]'s text
+  /// has no maxLines cap, so embedding a newline renders both lines under the
+  /// single "Flight" label instead of duplicating the label across two rows.
+  /// Returns null when there's nothing to show beyond the existing [_landingText].
+  static String? _scheduledVsActualText(BuildContext context, Ride ride) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheduledLine = l10n.airportScheduledLine(ride);
+    if (scheduledLine == null) return null;
+    final delay = ride.flightDelayMinutes;
+    if (delay != null && delay > 0) {
+      return '$scheduledLine\n${l10n.airportFlightDelay(delay)}';
+    }
+    return scheduledLine;
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
@@ -54,8 +87,9 @@ class TodayRideCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: () {
             HapticFeedback.selectionClick();
+            final onViewDetails = this.onViewDetails;
             if (onViewDetails != null) {
-              onViewDetails!();
+              onViewDetails();
             } else {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -92,6 +126,7 @@ class TodayRideCard extends StatelessWidget {
     Duration timeUntilRide,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final distance = approachingDistanceMeters;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -153,7 +188,7 @@ class TodayRideCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (approachingDistanceMeters != null)
+                if (distance != null)
                   Flexible(
                     child: Container(
                       margin: const EdgeInsets.only(left: 6),
@@ -162,9 +197,9 @@ class TodayRideCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: approachingDistanceMeters! <= 100
+                        color: distance <= 100
                             ? AppColors.success
-                            : approachingDistanceMeters! <= 500
+                            : distance <= 500
                             ? AppColors.accent
                             : AppColors.info,
                         borderRadius: BorderRadius.circular(10),
@@ -180,11 +215,11 @@ class TodayRideCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              approachingDistanceMeters! <= 100
+                              distance <= 100
                                   ? 'Arrived'
-                                  : approachingDistanceMeters! < 1000
-                                  ? '${approachingDistanceMeters}m'
-                                  : '${(approachingDistanceMeters! / 1000).toStringAsFixed(1)}km',
+                                  : distance < 1000
+                                  ? '${distance}m'
+                                  : '${(distance / 1000).toStringAsFixed(1)}km',
                               overflow: TextOverflow.ellipsis,
                               softWrap: false,
                               style: const TextStyle(
@@ -238,18 +273,28 @@ class TodayRideCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              RideStatusStyles.getStatusLabel(ride.status),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+          // Flexible + ellipsis so a long localized status label (e.g. German
+          // "In Bearbeitung") shrinks instead of stealing width from the chip
+          // group and squeezing the chips into an overflow on a narrow screen.
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                RideStatusStyles.getStatusLabel(
+                  ride.status,
+                  AppLocalizations.of(context)!,
+                ),
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -259,6 +304,7 @@ class TodayRideCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final optimalEntryTime = ride.optimalEntryTime;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -284,8 +330,41 @@ class TodayRideCard extends StatelessWidget {
             const SizedBox(height: 12),
             RideInfoRow(
               icon: Icons.flight,
-              text: ride.fullFlightInfo,
+              text: () {
+                final statusText = AppLocalizations.of(
+                  context,
+                )!.localizedFlightStatus(ride.flightStatus);
+                return statusText.isEmpty
+                    ? ride.fullFlightInfo
+                    : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+              }(),
               label: 'Flight',
+            ),
+          ],
+          // Flight arrival/landing time ("Landung um HH:mm"), with a delay suffix when late.
+          // The live flight time comes from the airport board on the ride DTO. When both the
+          // scheduled and actual time are known and differ, shows "Planmäßig HH:mm → HH:mm"
+          // plus a separate delay line instead of the single-line fallback.
+          if (ride.isAirportTransfer && ride.flightTime != null) ...[
+            const SizedBox(height: 12),
+            RideInfoRow(
+              icon: Icons.flight_land,
+              text:
+                  _scheduledVsActualText(context, ride) ??
+                  _landingText(context, ride),
+              label: 'Flight',
+            ),
+          ],
+          // Recommended terminal-entry time for an arrival pickup ("Einfahrt um HH:mm").
+          // Backend-computed (terminal-aware walk buffer), GPS-free, so it shows on the static card.
+          if (ride.isArrivalAirportTransfer && optimalEntryTime != null) ...[
+            const SizedBox(height: 12),
+            RideInfoRow(
+              icon: Icons.login,
+              text: AppLocalizations.of(
+                context,
+              )!.airportEntryAt(DateFormat.Hm().format(optimalEntryTime)),
+              label: AppLocalizations.of(context)!.airportEntryLabel,
             ),
           ],
           const SizedBox(height: 16),

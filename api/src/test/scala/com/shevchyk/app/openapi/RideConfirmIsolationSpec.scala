@@ -1,12 +1,16 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.core.application.EventHub
+
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
+import com.shevchyk.core.config.AirportArrivalTimingConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -112,6 +116,8 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
         rides.get(rideId) match
           case Some(r) => ZIO.succeed(r)
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
+
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
 
       def confirmRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride] =
         confirmCalledRef.set(true) *> {
@@ -313,7 +319,12 @@ object RideConfirmIsolationSpec extends ZIOSpecDefault:
       stubPersonRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
-      GeocodingService.noop
+      GeocodingService.noop ++
+      AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
+      EventHub.layer ++
+      StubFlightStatusProvider.layer ++
+      StubRideRepository.layer
 
   // ---------------------------------------------------------------------------
   // HTTP runner

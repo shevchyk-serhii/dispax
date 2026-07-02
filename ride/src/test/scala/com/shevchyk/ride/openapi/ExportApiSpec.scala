@@ -1,12 +1,9 @@
 package com.shevchyk.ride.openapi
 
 import com.shevchyk.core.domain.{CompanyId, Location, PersonId, RideId}
-import com.shevchyk.core.repository.{CompanySettingsRepository, InMemoryCompanySettingsRepository}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryExpenseRepository, InMemoryRideRepository}
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 import java.nio.charset.Charset
 import java.time.{Instant, YearMonth}
@@ -47,7 +44,7 @@ object ExportApiSpec extends ZIOSpecDefault {
       companyId: CompanyId = companyA,
       clientId: PersonId = clientA1,
       endTime: Instant = Instant.parse("2025-05-10T12:00:00Z"),
-      estimatedPrice: Option[BigDecimal] = Some(BigDecimal("50.00")),
+      estimatedPrice: Option[BigDecimal],
       finalPrice: Option[BigDecimal] = None,
       paymentMethod: Option[PaymentMethod] = Some(PaymentMethod.Cash)
   ): Ride = Ride(
@@ -64,22 +61,6 @@ object ExportApiSpec extends ZIOSpecDefault {
     estimatedPrice = estimatedPrice,
     finalPrice = finalPrice,
     paymentMethod = paymentMethod
-  )
-
-  private def makeExpense(
-      id: ExpenseId = ExpenseId.generate(),
-      companyId: CompanyId = companyA,
-      driverId: PersonId = driverA,
-      amount: BigDecimal = BigDecimal("12.50"),
-      category: ExpenseCategory = ExpenseCategory.Fuel
-  ): Expense = Expense(
-    id = id,
-    driverId = driverId,
-    companyId = companyId,
-    category = category,
-    amount = amount,
-    currency = "EUR",
-    description = Some("test")
   )
 
   // ── Spec ─────────────────────────────────────────────────────────────────
@@ -258,6 +239,46 @@ object ExportApiSpec extends ZIOSpecDefault {
             lines(2).contains("75,00"),
             lines(2).contains(";S;EUR;")
           )
+        },
+        test("Payment method books to the cashless counter account 12000 (like Card/Bank)") {
+          val ride  = makeCompletedRide(
+            estimatedPrice = Some(BigDecimal("60.00")),
+            paymentMethod = Some(PaymentMethod.Payment)
+          )
+          val bytes = ExportApi.buildExtf(
+            rides = List(ride),
+            expenses = Nil,
+            clientNames = Map(clientA1 -> "Test Client"),
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          val text  = new String(bytes, win1252)
+          val book  = text.split("\r\n", -1)(2)
+          // Mutation guard: Cash → 10000, so finding 12000 (not 10000) proves the
+          // new Payment value is mapped to the cashless account, not the catch-all default.
+          assertTrue(book.contains("12000"), !book.contains("10000"))
+        },
+        test("Cash method books to the cash counter account 10000") {
+          val ride  = makeCompletedRide(
+            estimatedPrice = Some(BigDecimal("60.00")),
+            paymentMethod = Some(PaymentMethod.Cash)
+          )
+          val bytes = ExportApi.buildExtf(
+            rides = List(ride),
+            expenses = Nil,
+            clientNames = Map(clientA1 -> "Test Client"),
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          val text  = new String(bytes, win1252)
+          val book  = text.split("\r\n", -1)(2)
+          assertTrue(book.contains("10000"), !book.contains("12000"))
         },
         test("booking row amounts use German comma not dot") {
           val ride     = makeCompletedRide(estimatedPrice = Some(BigDecimal("99.50")))

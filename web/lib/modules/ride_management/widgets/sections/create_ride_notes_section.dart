@@ -4,10 +4,15 @@ import '../../../../blocs/blocs.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
 import '../clearable_text_field.dart';
+import '../tag_input_field.dart';
 
 class CreateRideNotesSection extends StatelessWidget {
   final String notes;
   final List<String> specialRequirements;
+  final List<String> tags;
+
+  /// Previously-used tags offered as quick-add chips in the tag editor.
+  final List<String> tagSuggestions;
 
   static const List<String> availableRequirements = [
     'Wheelchair',
@@ -21,6 +26,8 @@ class CreateRideNotesSection extends StatelessWidget {
     super.key,
     required this.notes,
     required this.specialRequirements,
+    this.tags = const [],
+    this.tagSuggestions = const [],
   });
 
   @override
@@ -43,7 +50,11 @@ class CreateRideNotesSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.note_alt, color: AppColors.secretaryColor, size: 20),
+              Icon(
+                Icons.note_alt,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Notes & Special Requirements',
@@ -81,10 +92,21 @@ class CreateRideNotesSection extends StatelessWidget {
                     SpecialRequirementToggled(req),
                   );
                 },
-                selectedColor: AppColors.secretaryColor.withAlpha(40),
-                checkmarkColor: AppColors.secretaryColor,
+                selectedColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withAlpha(40),
+                checkmarkColor: Theme.of(context).colorScheme.primary,
               );
             }).toList(),
+          ),
+          const SizedBox(height: AppDimensions.paddingMedium),
+          TagInputField(
+            tags: tags,
+            suggestions: tagSuggestions,
+            onAdded: (tag) =>
+                context.read<CreateRideFormBloc>().add(TagAdded(tag)),
+            onRemoved: (tag) =>
+                context.read<CreateRideFormBloc>().add(TagRemoved(tag)),
           ),
         ],
       ),

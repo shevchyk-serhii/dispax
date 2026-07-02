@@ -4,7 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
+import '../l10n/app_localizations.dart';
 import '../modules/core/models/person.dart';
+import '../modules/core/services/error_messages.dart';
 
 /// Biometric unlock screen — shown when biometrics are available + enabled and
 /// the user has a saved session. Allows the user to unlock with Face ID / Touch
@@ -28,6 +30,12 @@ class BiometricUnlockScreen extends StatelessWidget {
           child: BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
               final person = state.user;
+              // Network-class biometric failures carry a typed cause → localized
+              // message; domain messages ("not available/configured") verbatim.
+              final l10n = AppLocalizations.of(context);
+              final errorMessage = (state.error != null && l10n != null)
+                  ? friendlyError(state.error, l10n)
+                  : state.errorMessage;
               return Column(
                 children: [
                   // ── Header ──────────────────────────────────────────────
@@ -125,7 +133,7 @@ class BiometricUnlockScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         // Error message
-                        if (state.hasError && state.errorMessage != null) ...[
+                        if (state.hasError && errorMessage != null) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
@@ -137,7 +145,7 @@ class BiometricUnlockScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              state.errorMessage!,
+                              errorMessage,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: AppColors.error,

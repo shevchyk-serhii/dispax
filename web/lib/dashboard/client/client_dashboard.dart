@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../modules/core/services/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import '../../l10n/app_localizations.dart';
+import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
@@ -138,9 +140,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
             formBloc: _createRideFormBloc,
             rideBloc: _rideBloc,
             onCreated: () {
-              context.read<RideBloc>().add(
-                RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-              );
+              final user = context.read<AuthBloc>().state.user;
+              if (user != null) {
+                context.read<RideBloc>().add(RideLoadRequested(user: user));
+              }
               setState(() => _selectedIndex = 0);
             },
           ),
@@ -184,8 +187,9 @@ class MyRidesTab extends StatelessWidget {
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
@@ -196,10 +200,9 @@ class MyRidesTab extends StatelessWidget {
       builder: (context, rideState) {
         if (rideState.status == RideStateStatus.initial) {
           final authState = context.read<AuthBloc>().state;
-          if (authState.user != null) {
-            context.read<RideBloc>().add(
-              RideLoadRequested(user: authState.user!),
-            );
+          final user = authState.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
           }
         }
 
@@ -210,7 +213,7 @@ class MyRidesTab extends StatelessWidget {
         if (rideState.hasError && rideState.rides.isEmpty) {
           return ErrorDisplayWidget(
             title: l10n.failedToLoadRides,
-            message: rideState.errorMessage!,
+            message: rideState.errorMessage ?? '',
             onRetry: () => loadRides(context),
           );
         }
@@ -274,12 +277,16 @@ class MyRidesTab extends StatelessWidget {
                         (ride) => AirportEntryTimer(
                           ride: ride,
                           onEntryTimeReached: () {
+                            final statusText = l10n.localizedFlightStatus(
+                              ride.flightStatus,
+                            );
+                            final flightLine = statusText.isEmpty
+                                ? ride.fullFlightInfo
+                                : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  l10n.departureTimeReachedFlight(
-                                    ride.fullFlightInfo,
-                                  ),
+                                  l10n.departureTimeReachedFlight(flightLine),
                                 ),
                               ),
                             );
@@ -337,16 +344,18 @@ class MyRidesTab extends StatelessWidget {
                                 child: OutlinedButton.icon(
                                   onPressed: () {
                                     Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            ClientMapScreen(rideId: ride.id),
+                                      ClientMapScreen.route(
+                                        context,
+                                        rideId: ride.id,
                                       ),
                                     );
                                   },
                                   icon: const Icon(Icons.location_on, size: 16),
                                   label: Text(l10n.trackDriver),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.clientColor,
+                                    foregroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -391,15 +400,18 @@ class MyRidesTab extends StatelessWidget {
       try {
         await rideService.cancelRide(ride.id, result['reason'] as String);
         if (context.mounted) {
-          context.read<RideBloc>().add(
-            RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-          );
+          final user = context.read<AuthBloc>().state.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
+          }
         }
       } catch (e) {
         if (context.mounted) {
           final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToCancelRide(e.toString()))),
+            SnackBar(
+              content: Text(l10n.failedToCancelRide(friendlyError(e, l10n))),
+            ),
           );
         }
       }

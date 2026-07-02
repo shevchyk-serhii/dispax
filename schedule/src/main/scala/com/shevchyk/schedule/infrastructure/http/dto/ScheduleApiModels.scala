@@ -1,6 +1,6 @@
 package com.shevchyk.schedule.infrastructure.http.dto
 
-import com.shevchyk.core.domain.{CompanyId, DriverUnavailabilityId, PersonId, ScheduleDayId}
+import com.shevchyk.core.domain.{CompanyId, PersonId}
 import com.shevchyk.schedule.domain.{
   CreateDriverUnavailabilityRequest,
   CreateScheduleBatchDay,

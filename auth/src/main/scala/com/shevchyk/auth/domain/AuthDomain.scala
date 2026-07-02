@@ -31,7 +31,12 @@ case class UserDto(
     companyId: Option[UUID] = None,
     createdAt: Option[String] = None,
     roles: List[String] = Nil,
-    preferredLanguage: Option[String] = None
+    preferredLanguage: Option[String] = None,
+    mustChangePassword: Boolean = false,
+    // true when the person has a profile photo. Carried on login (and other UserDto
+    // responses) so the app bar shows the avatar immediately, not just after a
+    // separate /users/profile refresh. Raw bytes are served via GET /api/users/{id}/avatar.
+    hasAvatar: Boolean = false
 ) derives JsonCodec
 
 case class CreateUserRequest(
@@ -79,6 +84,21 @@ case class UpdateUserRequest(
 
 object UpdateUserRequest:
   given Schema[UpdateUserRequest] = Schema.derived
+
+/**
+ * Fill in a provisional ("from-chat / walk-in") client and promote it to a real client. All fields are optional — the
+ * operator fills in whatever became known after the ride. Applying this clears the `provisional` flag, so the client
+ * then behaves like any normal client (appears in billing once `clientCompanyId` is linked).
+ */
+case class UpgradeProvisionalClientRequest(
+    name: Option[String] = None,
+    phone: Option[String] = None,
+    // Link to a billing client-company so completed rides become invoiceable. Plain UUID string; absent leaves it unset.
+    clientCompanyId: Option[String] = None
+) derives JsonCodec
+
+object UpgradeProvisionalClientRequest:
+  given Schema[UpgradeProvisionalClientRequest] = Schema.derived
 
 case class ChangePasswordRequest(
     currentPassword: String,
@@ -155,5 +175,7 @@ object UserDto:
     status = Some(person.status.toString),
     companyId = person.companyId.map(_.value),
     roles = person.effectiveRoles.map(PersonRole.toWire).toList,
-    preferredLanguage = person.preferredLanguage
+    preferredLanguage = person.preferredLanguage,
+    mustChangePassword = person.mustChangePassword,
+    hasAvatar = person.avatarPresent
   )

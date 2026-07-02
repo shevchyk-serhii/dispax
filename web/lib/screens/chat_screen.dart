@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../modules/core/services/error_messages.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -83,7 +84,9 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSendMessage(e.toString()))),
+          SnackBar(
+            content: Text(l10n.failedToSendMessage(friendlyError(e, l10n))),
+          ),
         );
       }
     }

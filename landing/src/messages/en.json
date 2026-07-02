@@ -1,9 +1,18 @@
 {
+  "siteMeta": {
+    "title": "Dispax — Ride dispatch for Munich & surroundings",
+    "description": "The dispatch platform for taxi and transfer businesses where punctuality matters. Assign rides, track drivers in real time, and coordinate airport pickups."
+  },
   "nav": {
     "features": "Features",
     "how": "How it works",
     "benefits": "Benefits",
     "contact": "Contact",
+    "about": "About",
+    "solutions": "Solutions",
+    "forDispatchers": "For dispatchers",
+    "forDrivers": "For drivers",
+    "forClients": "For clients",
     "cta": "Request a demo"
   },
   "hero": {
@@ -148,8 +157,284 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "sending": "Sending…"
   },
+  "forDispatchers": {
+    "meta": {
+      "title": "Dispax for dispatchers — assign rides on time",
+      "description": "Pending requests at a glance, one-click assignment with travel-time validation, predictive ETA alerts and DATEV-ready billing — built for dispatchers."
+    },
+    "hero": {
+      "eyebrow": "FOR DISPATCHERS",
+      "title": "Run the whole operation from one board",
+      "subtitle": "Every pending request, every driver shift and every at-risk pickup in one view. Assign in a click — the system checks travel time and conflicts for you.",
+      "ctaPrimary": "Request a demo",
+      "ctaSecondary": "See all features"
+    },
+    "rows": [
+      {
+        "title": "One-click dispatch",
+        "desc": "Pending requests sit in a single queue. Assign the right driver in one click — Dispax validates real travel time and flags schedule conflicts before you commit.",
+        "status": "live",
+        "bullets": [
+          "Pending requests queue with urgency flags",
+          "Travel-time validation via routing API on every assignment",
+          "Conflict detection against the driver's existing shift"
+        ]
+      },
+      {
+        "title": "Predictive ETA alerts",
+        "desc": "A background monitor recalculates every assigned ride each minute. When a pickup is at risk, you are alerted 5+ minutes before the client would ever call — with the nearest backup drivers ready.",
+        "status": "live",
+        "bullets": [
+          "Live ETA recomputed every minute",
+          "At-risk alert when the buffer drops below 5 minutes",
+          "Nearest available drivers suggested instantly"
+        ]
+      },
+      {
+        "title": "Hand-off & emergency reassign",
+        "desc": "A driver breaks down mid-shift? Hand the ride to another driver in seconds. Live WebSocket status keeps every screen in sync without a refresh.",
+        "status": "live",
+        "bullets": [
+          "Hand a ride to another driver in seconds",
+          "Live status sync over WebSocket",
+          "Nearest-driver suggestion for emergency reassignment"
+        ]
+      },
+      {
+        "title": "Billing & DATEV export",
+        "desc": "Invoices auto-fill from completed rides and export in the format German tax accounting expects — no double entry, no spreadsheet wrangling.",
+        "status": "soon",
+        "bullets": [
+          "Auto-filled invoices from completed rides",
+          "PDF generation and email delivery",
+          "DATEV-ready CSV export"
+        ]
+      }
+    ],
+    "cta": {
+      "title": "Give your dispatch desk an on-time engine",
+      "subtitle": "See Dispax with your own routes and drivers. We'll get back to you within one business day."
+    }
+  },
+  "forDrivers": {
+    "meta": {
+      "title": "Dispax for drivers — clear rides, less phone tag",
+      "description": "Today's rides, live status, airport checkpoint guidance and a clear shift schedule — in German, English or Ukrainian."
+    },
+    "hero": {
+      "eyebrow": "FOR DRIVERS",
+      "title": "Know exactly where to be, and when",
+      "subtitle": "Your rides for the day, the meeting point at the terminal, and live status that keeps the dispatcher in the loop — without endless calls.",
+      "ctaPrimary": "Request a demo",
+      "ctaSecondary": "See all features"
+    },
+    "rows": [
+      {
+        "title": "Airport made simple",
+        "desc": "A checkpoint chain walks the client from landed to the exit, and tells you the optimal moment to enter so you're not burning expensive parking minutes.",
+        "status": "live",
+        "bullets": [
+          "Checkpoint chain: landed → baggage → exit T1/T2",
+          "Two-way live location with the client",
+          "Optimal-entry timing to cut parking costs"
+        ]
+      },
+      {
+        "title": "Live status, no phone tag",
+        "desc": "Accept, start and complete rides with a tap. Status flows to the dispatcher and client in real time — no calls to confirm you're on the way.",
+        "status": "live",
+        "bullets": [
+          "Accept, start and complete with one tap",
+          "Live location shared with the client",
+          "Real-time status sync to the dispatcher"
+        ]
+      },
+      {
+        "title": "Your shift, at a glance",
+        "desc": "See today's and upcoming rides on a clear schedule board. The system never books you an impossible back-to-back — travel time is checked first.",
+        "status": "live",
+        "bullets": [
+          "Today and upcoming rides on one board",
+          "Impossible back-to-backs prevented automatically",
+          "Available in German, English and Ukrainian"
+        ]
+      }
+    ],
+    "cta": {
+      "title": "Less guesswork, more on-time rides",
+      "subtitle": "Curious how Dispax feels behind the wheel? Ask for a walkthrough."
+    }
+  },
+  "forClients": {
+    "meta": {
+      "title": "Dispax for clients — see your ride coming",
+      "description": "Live driver tracking, a real arrival time and smooth airport pickups. Know exactly when your car is there."
+    },
+    "hero": {
+      "eyebrow": "FOR CLIENTS",
+      "title": "Never wonder where your ride is",
+      "subtitle": "Watch the driver approach in real time, see a real arrival time, and meet at the right spot at the airport — every time.",
+      "ctaPrimary": "Request a demo",
+      "ctaSecondary": "See all features"
+    },
+    "rows": [
+      {
+        "title": "Live tracking & real ETA",
+        "desc": "See your driver move toward you on the map and a live arrival time you can trust — recomputed continuously, not a static guess.",
+        "status": "live",
+        "bullets": [
+          "Driver position live on the map",
+          "Arrival time recomputed every minute",
+          "Approaching alert when the car is near"
+        ]
+      },
+      {
+        "title": "Airport pickups that just work",
+        "desc": "From the moment you land, a clear path to the meeting point — and the car arrives when you're actually at the exit, not circling the terminal.",
+        "status": "live",
+        "bullets": [
+          "Guided meeting point at the terminal",
+          "Two-way live location with the driver",
+          "Car timed to your real exit, not the schedule"
+        ]
+      },
+      {
+        "title": "Punctuality you can rely on",
+        "desc": "Behind the scenes, dispatchers are alerted before a pickup is ever at risk — so for time-critical transfers, the car is simply there.",
+        "status": "live",
+        "bullets": [
+          "Proactive late-risk monitoring",
+          "Driver details and live status shared with you",
+          "Built for time-critical business transfers"
+        ]
+      }
+    ],
+    "cta": {
+      "title": "Ready to stop waiting and wondering?",
+      "subtitle": "Ask your transfer provider about Dispax, or get in touch with us directly."
+    }
+  },
+  "featuresPage": {
+    "meta": {
+      "title": "Features — everything for the on-time transfer | Dispax",
+      "description": "Dispatch, live tracking, predictive ETA, airport coordination, billing/DATEV and multi-role access — the full Dispax feature set."
+    },
+    "hero": {
+      "eyebrow": "FEATURES",
+      "title": "Everything for the on-time transfer",
+      "subtitle": "From the first request to the final invoice — the complete toolkit for small and medium transport businesses.",
+      "ctaPrimary": "Request a demo",
+      "ctaSecondary": "Talk to us"
+    },
+    "groups": [
+      {
+        "title": "Dispatch & assignment",
+        "items": [
+          { "title": "One-click dispatch", "desc": "Pending requests in a single queue; assign the right driver in one click.", "status": "live" },
+          { "title": "Travel-time validation", "desc": "Every assignment is checked against real routing time before it commits.", "status": "live" },
+          { "title": "Conflict detection", "desc": "Overlapping shifts are flagged automatically — no impossible bookings.", "status": "live" },
+          { "title": "Hand-off & reassign", "desc": "Move a ride to another driver in seconds when plans change.", "status": "live" }
+        ]
+      },
+      {
+        "title": "Tracking & ETA",
+        "items": [
+          { "title": "Live driver tracking", "desc": "Driver position on the map in real time for dispatcher and client.", "status": "live" },
+          { "title": "Predictive ETA monitoring", "desc": "Arrival time recomputed each minute; at-risk alerts 5+ minutes ahead.", "status": "live" },
+          { "title": "Approaching alerts", "desc": "The client is notified the moment the car is near.", "status": "live" }
+        ]
+      },
+      {
+        "title": "Airport coordination",
+        "items": [
+          { "title": "Checkpoint chain", "desc": "Guides the client from landed to the exit meeting point.", "status": "live" },
+          { "title": "Two-way live location", "desc": "Driver and client see each other in real time.", "status": "live" },
+          { "title": "Optimal-entry timing", "desc": "Keeps the car out of expensive parking until the client is at the exit.", "status": "live" }
+        ]
+      },
+      {
+        "title": "Billing & finance",
+        "items": [
+          { "title": "Auto-filled invoices", "desc": "Invoices build themselves from completed rides.", "status": "soon" },
+          { "title": "PDF & email delivery", "desc": "Generate and send invoices as PDF in a click.", "status": "soon" },
+          { "title": "DATEV export", "desc": "Export rides and expenses in the format German accounting expects.", "status": "soon" }
+        ]
+      },
+      {
+        "title": "Roles & security",
+        "items": [
+          { "title": "Multi-role platform", "desc": "Dispatcher, driver, client, secretary and admin — each with a tailored view.", "status": "live" },
+          { "title": "Tenant isolation", "desc": "Every company sees only its own data — strict separation by company.", "status": "live" },
+          { "title": "Multilingual", "desc": "German, English and Ukrainian, per-user.", "status": "live" }
+        ]
+      }
+    ]
+  },
+  "about": {
+    "meta": {
+      "title": "About Dispax — on-time transfers for Munich",
+      "description": "Dispax is a ride dispatching platform for small and medium transport businesses around Munich, where punctuality decides."
+    },
+    "hero": {
+      "eyebrow": "ABOUT",
+      "title": "Built so the client never waits",
+      "subtitle": "Dispax is a ride dispatching platform for taxi and transfer businesses around Munich, where minutes decide and the client does not wait.",
+      "ctaPrimary": "Get in touch",
+      "ctaSecondary": "See features"
+    },
+    "story": {
+      "title": "Why Dispax",
+      "body": "For time-critical business transfers, dispatching with paper, phone and chat costs clients. We built Dispax to put every request, driver and pickup in one place — with live tracking, predictive ETA and airport coordination — so small and medium operators can promise punctuality and keep it."
+    },
+    "market": {
+      "title": "Focused on Munich",
+      "body": "The platform targets Munich and its surroundings, up to a 100 km radius, where airport transfers and corporate rides are the daily reality. Starting narrow lets us solve the hard parts — airport pickups, on-time guarantees — properly."
+    },
+    "identity": {
+      "title": "Who's behind it",
+      "provider": "Vitaliia Shevchyk",
+      "legalForm": "Sole proprietorship (non-registered), Munich",
+      "duns": "D-U-N-S 317214244",
+      "note": "Full legal details are on the Imprint page."
+    }
+  },
+  "kontakt": {
+    "meta": {
+      "title": "Contact Dispax — request a demo",
+      "description": "Request a demo or early access to Dispax. We reply within one business day."
+    },
+    "hero": {
+      "eyebrow": "CONTACT",
+      "title": "Let's get your transfers on time",
+      "subtitle": "Request a demo, ask a question, or secure early access. We'll get back to you within one business day."
+    },
+    "form": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Your name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@company.com",
+      "companyLabel": "Company",
+      "companyPlaceholder": "Your company (optional)",
+      "messageLabel": "Message",
+      "messagePlaceholder": "How can we help?",
+      "submit": "Send message",
+      "sending": "Sending…",
+      "success": "Thanks! We'll be in touch within one business day.",
+      "errorEmail": "Please enter a valid email address.",
+      "errorRequired": "Please fill in your name and message.",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "note": "We never share your data. Unsubscribe anytime."
+    },
+    "direct": {
+      "title": "Or reach us directly",
+      "email": "hallo@dispax.de",
+      "phone": "+49 176 48733359",
+      "city": "Munich, Germany"
+    }
+  },
   "footer": {
     "tagline": "Ride dispatch for taxi and transfer businesses. Munich & surroundings.",
+    "solutions": "Solutions",
     "product": "Product",
     "company": "Company",
     "contact": "Contact",
@@ -159,10 +444,51 @@
       "how": "How it works",
       "benefits": "Benefits",
       "contact": "Contact",
+      "about": "About",
+      "forDispatchers": "For dispatchers",
+      "forDrivers": "For drivers",
+      "forClients": "For clients",
       "imprint": "Imprint",
       "privacy": "Privacy"
     },
     "copyright": "© 2026 Dispax. All rights reserved.",
     "langs": "Deutsch · English"
+  },
+  "legal": {
+    "back": "Back to home",
+    "imprint": {
+      "title": "Legal Notice (Impressum)",
+      "intro": "Information pursuant to § 5 TMG",
+      "providerLabel": "Service provider",
+      "provider": "Vitaliia Shevchyk",
+      "legalForm": "Sole proprietorship",
+      "addressLabel": "Address",
+      "address": "Paula-Hahn-Weinheimer-Weg 11\n80997 Munich\nGermany",
+      "contactLabel": "Contact",
+      "phone": "Phone: +49 176 48733359",
+      "email": "Email: hallo@dispax.de",
+      "responsibleLabel": "Responsible for content pursuant to § 18 (2) MStV",
+      "responsible": "Vitaliia Shevchyk, address as above",
+      "disputeLabel": "Dispute resolution",
+      "dispute": "The European Commission provides a platform for online dispute resolution (ODR): https://ec.europa.eu/consumers/odr. We are neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
+      "liabilityLabel": "Liability for content",
+      "liability": "The contents of these pages were created with the greatest care. However, we cannot guarantee the accuracy, completeness, or timeliness of the content."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "We take the protection of your personal data seriously. This policy informs you about the nature, scope, and purpose of the processing of personal data on this website in accordance with the General Data Protection Regulation (GDPR).",
+      "controllerLabel": "Controller",
+      "controller": "Vitaliia Shevchyk\nPaula-Hahn-Weinheimer-Weg 11\n80997 Munich\nGermany\nEmail: hallo@dispax.de",
+      "collectLabel": "What data we collect",
+      "collect": "When you request a demo or join the waitlist through the form on this website, we process the email address you provide solely to respond to your request and to inform you about the availability of Dispax.",
+      "purposeLabel": "Purpose and legal basis",
+      "purpose": "The legal basis for processing is Art. 6 (1) (a) GDPR (consent) and (b) GDPR (steps prior to entering into a contract). Your data is not shared with third parties.",
+      "retentionLabel": "Retention period",
+      "retention": "We retain your data only for as long as necessary for the stated purposes or until you withdraw your consent.",
+      "rightsLabel": "Your rights",
+      "rights": "You have the right to access, rectification, erasure, restriction of processing, data portability, and objection. You also have the right to withdraw consent at any time and to lodge a complaint with a supervisory authority. To do so, contact hallo@dispax.de.",
+      "hostingLabel": "Hosting and server logs",
+      "hosting": "This website is hosted by a service provider that processes technically necessary data (e.g. IP address, time of access) in server log files to deliver the site. The legal basis is Art. 6 (1) (f) GDPR (legitimate interest in the secure operation of the website)."
+    }
   }
 }

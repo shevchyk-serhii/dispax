@@ -247,8 +247,6 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
       suite("handOffToExternal")(
         // AC-B1: happy path
         test("AC-B1: Requested ride + valid driver + partner company → HandedOff, IDs set") {
-          val extDriver   = makeExtDriver(extDriverId, testCompanyId, Some(partnerCompId))
-          val partnerComp = makePartnerComp(partnerCompId, testCompanyId)
           for {
             service   <- ZIO.service[RideService]
             ride      <- service.createRide(mkRide())

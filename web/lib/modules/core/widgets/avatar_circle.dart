@@ -66,11 +66,11 @@ class _AvatarCircleState extends State<AvatarCircle> {
     return FutureBuilder<Uint8List?>(
       future: _avatarFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done &&
-            snapshot.data != null) {
+        final data = snapshot.data;
+        if (snapshot.connectionState == ConnectionState.done && data != null) {
           return CircleAvatar(
             radius: widget.radius,
-            backgroundImage: MemoryImage(snapshot.data!),
+            backgroundImage: MemoryImage(data),
           );
         }
         // While loading or on error / null (avatar removed), show initials

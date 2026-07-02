@@ -119,7 +119,7 @@ class RideCalendarCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final statusColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusText = RideStatusStyles.getStatusLabel(ride.status);
+    final statusText = RideStatusStyles.getStatusLabel(ride.status, l10n);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -180,7 +180,7 @@ class RideCalendarCard extends StatelessWidget {
                               : null,
                           child: ride.price != null
                               ? Text(
-                                  '€${ride.price!.toStringAsFixed(2)}',
+                                  '€${ride.price?.toStringAsFixed(2) ?? ''}',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -234,7 +234,10 @@ class RideCalendarCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Time on the left, price on the top-right of the same row so
+                    // the body below has the full width for the client name/route.
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           DateFormat.Hm().format(ride.pickupDateTime),
@@ -254,44 +257,54 @@ class RideCalendarCard extends StatelessWidget {
                             color: AppColors.info,
                           ),
                         ],
+                        if (ride.price != null || onPriceEdited != null) ...[
+                          const Spacer(),
+                          // Flexible + ellipsis so a long price/"Set price" label
+                          // can never push the row past the narrow column width.
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: onPriceEdited != null
+                                  ? () => _showPriceDialog(context)
+                                  : null,
+                              child: ride.price != null
+                                  ? Text(
+                                      '€${ride.price?.toStringAsFixed(2) ?? ''}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurfaceVariant,
+                                        decoration: onPriceEdited != null
+                                            ? TextDecoration.underline
+                                            : null,
+                                      ),
+                                    )
+                                  : Text(
+                                      l10n.setPrice,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontStyle: FontStyle.italic,
+                                        color: colorScheme.onSurfaceVariant
+                                            .withAlpha(153),
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    if (ride.price != null || onPriceEdited != null) ...[
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: onPriceEdited != null
-                            ? () => _showPriceDialog(context)
-                            : null,
-                        child: ride.price != null
-                            ? Text(
-                                '€${ride.price!.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onSurfaceVariant,
-                                  decoration: onPriceEdited != null
-                                      ? TextDecoration.underline
-                                      : null,
-                                ),
-                              )
-                            : Text(
-                                l10n.setPrice,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
-                                  color: colorScheme.onSurfaceVariant.withAlpha(
-                                    153,
-                                  ),
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                      ),
-                    ],
                     const SizedBox(height: 6),
+                    // Client name may wrap to two lines so the full name (e.g.
+                    // "BMW AG - Herr Schneider") is visible, not ellipsized.
                     _compactInfoRow(
                       context,
                       Icons.person_outline,
                       ride.clientName,
+                      maxLines: 2,
                     ),
                     const SizedBox(height: 4),
                     _compactInfoRow(
@@ -324,7 +337,7 @@ class RideCalendarCard extends StatelessWidget {
               ],
               if (showActions && actionsWidget != null) ...[
                 const SizedBox(height: 12),
-                actionsWidget!,
+                actionsWidget ?? const SizedBox.shrink(),
               ],
             ],
           ),
@@ -333,19 +346,26 @@ class RideCalendarCard extends StatelessWidget {
     );
   }
 
-  /// A terse single-line icon + text row for the compact board card (client
-  /// name, pickup, dropoff). Truncates with an ellipsis so a long address can
-  /// never push the card past the column width.
-  Widget _compactInfoRow(BuildContext context, IconData icon, String value) {
+  /// A terse icon + text row for the compact board card (client name, pickup,
+  /// dropoff). [maxLines] lines then ellipsis, so a long value can never push
+  /// the card past the column width. The client name uses 2 lines (full name
+  /// visible); addresses stay on 1.
+  Widget _compactInfoRow(
+    BuildContext context,
+    IconData icon,
+    String value, {
+    int maxLines = 1,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 12, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
             value,
-            maxLines: 1,
+            maxLines: maxLines,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
           ),

@@ -46,17 +46,17 @@ assembled in `api/.../Application.scala`.
 
 **File naming (follow exactly):**
 
-| Kind                | File                          | Example                       |
-|---------------------|-------------------------------|-------------------------------|
-| Domain trait/enum   | `<Domain>.scala`              | `RideDomain.scala`            |
-| Service             | `<Name>Service.scala`         | `RideService.scala` (trait + `RideServiceImpl`) |
-| Repository trait    | `<Name>Repository.scala`      | `RideRepository.scala`        |
-| Postgres impl       | `Postgres<Name>Repository.scala` | `PostgresRideRepository.scala` |
-| DTOs                | `<Name>ApiModels.scala`       | `RideApiModels.scala`         |
-| Mapper              | `<Name>Mapper.scala`          | `RideMapper.scala`            |
-| Tapir endpoints     | `<Name>Api.scala`             | `RideApi.scala`               |
-| Test spec           | `<Name>Spec.scala`            | `AvatarApiSpec.scala`         |
-| In-memory double    | `InMemory<Name>.scala`        | `InMemoryPersonRepository.scala` |
+| Kind              | File                             | Example                                         |
+|-------------------|----------------------------------|-------------------------------------------------|
+| Domain trait/enum | `<Domain>.scala`                 | `RideDomain.scala`                              |
+| Service           | `<Name>Service.scala`            | `RideService.scala` (trait + `RideServiceImpl`) |
+| Repository trait  | `<Name>Repository.scala`         | `RideRepository.scala`                          |
+| Postgres impl     | `Postgres<Name>Repository.scala` | `PostgresRideRepository.scala`                  |
+| DTOs              | `<Name>ApiModels.scala`          | `RideApiModels.scala`                           |
+| Mapper            | `<Name>Mapper.scala`             | `RideMapper.scala`                              |
+| Tapir endpoints   | `<Name>Api.scala`                | `RideApi.scala`                                 |
+| Test spec         | `<Name>Spec.scala`               | `AvatarApiSpec.scala`                           |
+| In-memory double  | `InMemory<Name>.scala`           | `InMemoryPersonRepository.scala`                |
 
 ---
 
@@ -319,7 +319,34 @@ Canonical spec with stub layers: `api/src/test/.../AvatarApiSpec.scala`.
 
 ---
 
-## 15. What NOT to do (Scala)
+## 15. Compiler warnings (`-Werror`)
+
+The build compiles with `-Werror` (set in `build.sbt`, alongside `-Wunused:all`,
+`-Wvalue-discard`, `-Wnonunit-statement`). **Every compiler warning is a build error** — a warning
+that the compiler used to tolerate now fails `compile`/`Test/compile`, so it cannot be merged or
+deployed.
+
+- **Unused imports are forbidden** — remove the import the moment it is no longer used; the build
+  will not let one through. The same holds for any `-Wunused:all` finding (unused local definitions,
+  private members, pattern variables, explicit parameters): delete the dead code, or rename an
+  unavoidable unused binding to `_`.
+- **Do not silence warnings globally** — never weaken `scalacOptions` or drop `-Werror` to make a
+  warning go away.
+- **Targeted suppression only for a justified false positive** — annotate the single site with
+  `@nowarn("cat=<category>")` (e.g. `cat=deprecation`) and a comment explaining *why* it is safe.
+  This is the exception, not the norm; fix the warning instead whenever possible.
+
+Verify locally before pushing — this must pass cleanly (no `[error]`):
+
+```bash
+sbt clean compile Test/compile
+```
+
+CI runs the same compile, so an unused import (or any warning) fails the pipeline.
+
+---
+
+## 16. What NOT to do (Scala)
 
 - ❌ `throw` or `Future` anywhere — only ZIO effects, fail with `ZIO.fail`.
 - ❌ `ZIO.succeed(None)` / `ZIO.succeed(Some(x))` / `ZIO.succeed(())` — use `ZIO.none` / `ZIO.some(x)` / `ZIO.unit`.
@@ -331,4 +358,6 @@ Canonical spec with stub layers: `api/src/test/.../AvatarApiSpec.scala`.
 - ❌ Hardcoding secrets — only via env/config.
 - ❌ New/changed behaviour without a test in the same change.
 - ❌ Trusting a test without a mutation check (false-green).
+- ❌ An unused import — or any other compiler warning. The build runs with `-Werror` and will fail.
+- ❌ Weakening `scalacOptions` / dropping `-Werror` (or a blanket `@nowarn`) to hide a warning.
 - ❌ Comments, identifiers, or commit messages in any language other than English.

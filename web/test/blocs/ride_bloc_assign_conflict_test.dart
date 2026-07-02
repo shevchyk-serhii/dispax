@@ -65,6 +65,63 @@ void main() {
       ],
     );
 
+    // ── 409 with structured details → conflictInfo carried into the state ────
+
+    blocTest<RideBloc, RideState>(
+      'RideAssignRequested carries the backend scheduleConflict details into '
+      'the assignConflict state so the dialog can show route + time',
+      build: () {
+        when(
+          () => mockRideService.assignDriver(
+            'ride-1',
+            'driver-1',
+            overrideScheduleConflict: false,
+          ),
+        ).thenThrow(
+          ApiException(
+            'Driver already has a ride from A to B at ... overlap',
+            statusCode: 409,
+            scheduleConflict: const ScheduleConflictInfo(
+              rideId: 'other-ride',
+              clientId: 'other-client',
+              from: 'Maximilianstrasse 10',
+              to: 'Munich Airport T2',
+              pickupAt: '2026-06-27T07:18:00Z',
+            ),
+          ),
+        );
+        return buildBloc();
+      },
+      seed: () => RideState.loaded([testRide]),
+      act: (bloc) => bloc.add(
+        const RideAssignRequested(
+          rideId: 'ride-1',
+          driverId: 'driver-1',
+          overrideScheduleConflict: false,
+        ),
+      ),
+      expect: () => [
+        isA<RideState>().having((s) => s.isAssigning, 'isAssigning', true),
+        isA<RideState>()
+            .having((s) => s.hasAssignConflict, 'hasAssignConflict', true)
+            .having(
+              (s) => s.conflictInfo?.from,
+              'conflictInfo.from',
+              'Maximilianstrasse 10',
+            )
+            .having(
+              (s) => s.conflictInfo?.to,
+              'conflictInfo.to',
+              'Munich Airport T2',
+            )
+            .having(
+              (s) => s.conflictInfo?.pickupAt,
+              'conflictInfo.pickupAt',
+              '2026-06-27T07:18:00Z',
+            ),
+      ],
+    );
+
     // ── 409 WITH override → plain error (not assignConflict) ─────────────────
 
     blocTest<RideBloc, RideState>(

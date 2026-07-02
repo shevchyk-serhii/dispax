@@ -155,6 +155,44 @@ void main() {
       );
     });
 
+    group('getBytes (binary endpoints, e.g. avatar)', () {
+      test(
+        'sends Accept: */* (not application/json) so an image endpoint does '
+        'not reject it with 406',
+        () async {
+          late Map<String, String> capturedHeaders;
+          final client = MockClient((request) async {
+            capturedHeaders = request.headers;
+            return http.Response.bytes([0xFF, 0xD8, 0xFF], 200); // JPEG magic
+          });
+          final apiClient = ApiClient(
+            client: client,
+            baseUrl: 'http://localhost:8080/api',
+          );
+          apiClient.setAuthToken('t');
+
+          final bytes = await apiClient.getBytes('/users/1/avatar');
+
+          expect(capturedHeaders['Accept'], '*/*');
+          // Must NOT claim to accept only JSON — that is what caused the 406.
+          expect(capturedHeaders['Accept'], isNot('application/json'));
+          expect(bytes, isNotNull);
+          expect(bytes!.length, 3);
+        },
+      );
+
+      test('returns null on 404 (no avatar) so the caller can fall back', () async {
+        final client = MockClient((_) async => http.Response('', 404));
+        final apiClient = ApiClient(
+          client: client,
+          baseUrl: 'http://localhost:8080/api',
+        );
+        apiClient.setAuthToken('t');
+
+        expect(await apiClient.getBytes('/users/1/avatar'), isNull);
+      });
+    });
+
     group('RideService shares ApiClient without closing it', () {
       test('dispose on RideService does not close a shared ApiClient', () async {
         // Regression: services that receive an external ApiClient must not
@@ -218,6 +256,45 @@ void main() {
 
         expect(ex.message, 'Failed to create ride: status 400');
         expect(ex.statusCode, 400);
+      });
+
+      test('parses structured scheduleConflict details', () {
+        final body = jsonEncode({
+          'error': 'Driver already has a ride ... overlap',
+          'scheduleConflict': {
+            'rideId': 'ride-1',
+            'clientId': 'client-1',
+            'from': 'Maximilianstrasse 10',
+            'to': 'Munich Airport T2',
+            'pickupAt': '2026-06-27T07:18:00Z',
+          },
+        });
+
+        final ex = ApiException.fromResponse(
+          http.Response(body, 409),
+          'Failed to assign driver',
+        );
+
+        expect(ex.statusCode, 409);
+        expect(ex.message, contains('overlap'));
+        expect(ex.scheduleConflict, isNotNull);
+        expect(ex.scheduleConflict!.rideId, 'ride-1');
+        expect(ex.scheduleConflict!.clientId, 'client-1');
+        expect(ex.scheduleConflict!.from, 'Maximilianstrasse 10');
+        expect(ex.scheduleConflict!.to, 'Munich Airport T2');
+        expect(ex.scheduleConflict!.pickupAt, '2026-06-27T07:18:00Z');
+      });
+
+      test('no scheduleConflict field → details are null', () {
+        final body = jsonEncode({'error': 'Validation error: bad'});
+
+        final ex = ApiException.fromResponse(
+          http.Response(body, 400),
+          'Failed to create ride',
+        );
+
+        expect(ex.scheduleConflict, isNull);
+        expect(ex.message, contains('Validation error: bad'));
       });
     });
 

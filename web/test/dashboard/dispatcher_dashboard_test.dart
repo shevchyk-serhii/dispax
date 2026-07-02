@@ -12,9 +12,11 @@ import 'package:dispax/blocs/create_ride_form/create_ride_form_bloc.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_event.dart';
 import 'package:dispax/blocs/create_ride_form/create_ride_form_state.dart';
 import 'package:dispax/dashboard/dispatcher/dispatcher_dashboard.dart';
+import 'package:dispax/dashboard/secretary/widgets/client_list_panel.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/flight_management/services/arrivals_board_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -98,6 +100,10 @@ void main() {
       () => apiClient.get(any()),
     ).thenAnswer((_) async => http.Response('[]', 200));
 
+    // The dispatcher arrivals board reads from this singleton; configure it with
+    // the mocked client so the screen builds (mirrors AuthBloc.configure on login).
+    ArrivalsBoardService.configure(apiClient);
+
     // RideBloc: idle loaded state, silently accept events.
     when(() => rideBloc.state).thenReturn(RideState.loaded(const []));
     when(() => rideBloc.add(any())).thenAnswer((_) {});
@@ -180,8 +186,8 @@ void main() {
   // ===========================================================================
   //
   // NOTE on tap-navigation tests: the IndexedStack builds all children eagerly.
-  // TodayRidesScreen (screen 30), DriverMapScreen (screen 29), and
-  // CalendarScheduleScreen (screen 31) depend on WebSocketService,
+  // TodayRidesScreen (screen 32), DriverMapScreen (screen 31), and
+  // CalendarScheduleScreen (screen 33) depend on WebSocketService,
   // LocationService, and Mapbox platform channels that are not available in the
   // headless test environment. These screens throw on initState or during their
   // first build. Tap-navigation assertions that require switching to those
@@ -610,6 +616,98 @@ void main() {
         isFalse,
         reason: 'the bare hardcoded "Schedules" label must no longer appear',
       );
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mobile — "Manage Clients" tile is present in the More grid so a dispatcher
+  // can reach client creation. Verified for BOTH canDrive values because the
+  // tile's screen index must stay stable regardless of the canDrive-gated
+  // driver screens appended after it.
+  // ---------------------------------------------------------------------------
+  for (final entry in {
+    'canDrive=true': true,
+    'canDrive=false': false,
+  }.entries) {
+    testWidgets(
+      'mobile More-menu (${entry.key}): contains a "Manage Clients" tile',
+      (tester) async {
+        tester.view.physicalSize = const Size(420, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          buildApp(entry.value ? _dispatcherWithDrive() : _dispatcherOnly()),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomNavigationBar),
+            matching: find.text('More'),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final grid = find.byType(Scrollable).last;
+        await tester.scrollUntilVisible(
+          find.text('Manage Clients'),
+          200.0,
+          scrollable: grid,
+        );
+        expect(
+          find.text('Manage Clients'),
+          findsOneWidget,
+          reason:
+              'More grid must expose a "Manage Clients" tile (${entry.key})',
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mobile — tapping the "Manage Clients" tile actually opens ClientListPanel.
+  // This proves the tile's screenIndex points at the right IndexedStack child
+  // (the index-shift guard): a wrong index would surface a different screen.
+  // ---------------------------------------------------------------------------
+  testWidgets(
+    'mobile More-menu: tapping "Manage Clients" opens the client list panel',
+    (tester) async {
+      tester.view.physicalSize = const Size(420, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // canDrive=false keeps the index just past the always-present screens, so
+      // this also guards against the canDrive append shifting it.
+      await tester.pumpWidget(buildApp(_dispatcherOnly()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomNavigationBar),
+          matching: find.text('More'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final grid = find.byType(Scrollable).last;
+      await tester.scrollUntilVisible(
+        find.text('Manage Clients'),
+        200.0,
+        scrollable: grid,
+      );
+      await tester.tap(find.text('Manage Clients'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // ClientListPanel renders its own search field with this hint and an
+      // "add client" FAB — both confirm we landed on the right screen.
+      expect(find.byType(ClientListPanel), findsOneWidget);
+      expect(find.byIcon(Icons.person_add), findsOneWidget);
     },
   );
 }

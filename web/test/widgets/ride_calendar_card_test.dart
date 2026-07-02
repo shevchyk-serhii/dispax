@@ -316,10 +316,8 @@ void main() {
       },
     );
 
-    testWidgets('compact mode shows client name and route (single-line)', (
-      tester,
-    ) async {
-      // Compact cards now surface the client and the From → To route so the
+    testWidgets('compact mode shows client name and route', (tester) async {
+      // Compact cards surface the client and the From → To route so the
       // dispatcher can triage without opening details. The long unbreakable
       // strings must still render WITHOUT overflow (Expanded + ellipsis),
       // which the overflow guard above asserts; here we assert they're present.
@@ -327,11 +325,16 @@ void main() {
       expect(find.text(longClientName), findsOneWidget);
       // Both From and To use the same long address fixture, so it appears twice.
       expect(find.text(longAddress), findsNWidgets(2));
-      // Each compact info row is capped at one line with an ellipsis.
+      // Addresses stay capped at one line with an ellipsis (they must never
+      // grow the card).
       for (final t in tester.widgetList<Text>(find.text(longAddress))) {
         expect(t.maxLines, 1);
         expect(t.overflow, TextOverflow.ellipsis);
       }
+      // The client name is allowed two lines so a long name is fully visible.
+      final clientText = tester.widget<Text>(find.text(longClientName));
+      expect(clientText.maxLines, 2);
+      expect(clientText.overflow, TextOverflow.ellipsis);
     });
 
     testWidgets(
@@ -444,6 +447,51 @@ void main() {
         ),
       );
       expect(find.text(actionTag), findsNothing);
+    });
+
+    testWidgets('compact shows the price top-right, on the time row', (
+      tester,
+    ) async {
+      final ride = Ride(
+        id: 'compact-price',
+        clientId: 'c1',
+        creatorId: 'u1',
+        companyId: 'co1',
+        pickupDateTime: DateTime(2026, 6, 22, 3, 29),
+        from: const Location(address: 'A'),
+        to: const Location(address: 'B'),
+        clientName: 'Client',
+        status: RideStatus.assigned,
+        price: 300,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          theme: ThemeData(useMaterial3: true),
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 400,
+              child: RideCalendarCard(
+                ride: ride,
+                compact: true,
+                showActions: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      final timeRect = tester.getRect(find.text('03:29'));
+      final priceRect = tester.getRect(find.text('€300.00'));
+      // Price sits to the RIGHT of the time…
+      expect(priceRect.left, greaterThan(timeRect.right));
+      // …pushed to the right edge by a Spacer (a clear gap, not hugging the
+      // time which would leave only the ~4px SizedBox between them)…
+      expect(priceRect.left - timeRect.right, greaterThan(10));
+      // …and on the SAME row (vertical centres roughly aligned, not stacked).
+      expect((priceRect.center.dy - timeRect.center.dy).abs(), lessThan(8));
     });
   });
 }

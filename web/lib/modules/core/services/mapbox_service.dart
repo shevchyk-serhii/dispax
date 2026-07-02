@@ -7,6 +7,31 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../../ride_management/models/ride.dart';
 import '../models/location.dart' as app_location;
 
+/// Why [MapboxService.geocodeAddress] returned `null`. Callers currently only
+/// see the `null` (which the create-ride form surfaces as a single "Address
+/// could not be located" warning regardless of cause) — this classification
+/// exists so the underlying reason can be logged and diagnosed on-device.
+enum GeocodeFailureReason { noToken, httpError, malformedResponse, exception }
+
+/// Builds a human-readable, cause-specific message for a failed geocode
+/// request. Pure (no I/O) so it is unit-testable without mocking HTTP.
+String describeGeocodeFailure({
+  required GeocodeFailureReason reason,
+  int? statusCode,
+  Object? cause,
+}) {
+  switch (reason) {
+    case GeocodeFailureReason.noToken:
+      return 'MapboxService: MAPBOX_ACCESS_TOKEN not set, geocoding unavailable';
+    case GeocodeFailureReason.httpError:
+      return 'MapboxService: Geocoding failed with status $statusCode';
+    case GeocodeFailureReason.malformedResponse:
+      return 'MapboxService: unexpected geocoding response shape';
+    case GeocodeFailureReason.exception:
+      return 'MapboxService: Geocoding error: $cause';
+  }
+}
+
 class MapboxService {
   static const String _accessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
@@ -62,8 +87,8 @@ class MapboxService {
 
   static Future<List<double>?> geocodeAddress(String address) async {
     if (_accessToken.isEmpty) {
-      debugPrint(
-        'MapboxService: MAPBOX_ACCESS_TOKEN not set, geocoding unavailable',
+      _logGeocodeFailure(
+        describeGeocodeFailure(reason: GeocodeFailureReason.noToken),
       );
       return null;
     }
@@ -80,17 +105,39 @@ class MapboxService {
       if (response.statusCode == 200) {
         final coords = parseGeocodeCoordinates(jsonDecode(response.body));
         if (coords != null) return coords;
-        debugPrint('MapboxService: unexpected geocoding response shape');
+        _logGeocodeFailure(
+          describeGeocodeFailure(
+            reason: GeocodeFailureReason.malformedResponse,
+          ),
+        );
       } else {
-        debugPrint(
-          'MapboxService: Geocoding failed with status ${response.statusCode}',
+        _logGeocodeFailure(
+          describeGeocodeFailure(
+            reason: GeocodeFailureReason.httpError,
+            statusCode: response.statusCode,
+          ),
         );
       }
     } catch (e) {
-      debugPrint('MapboxService: Geocoding error: $e');
+      _logGeocodeFailure(
+        describeGeocodeFailure(
+          reason: GeocodeFailureReason.exception,
+          cause: e,
+        ),
+      );
     }
 
     return null;
+  }
+
+  /// Logs a geocoding failure via `dart:developer` `log()` (visible in the
+  /// Xcode/Android Studio console and DevTools even in profile/release runs
+  /// launched from an IDE, unlike `debugPrint` which release builds swallow)
+  /// so the actual reason ("Address could not be located" can mean a missing
+  /// token, an HTTP error, or a malformed response) is diagnosable on-device
+  /// instead of collapsing into an indistinguishable `null`.
+  static void _logGeocodeFailure(String message) {
+    developer.log(message, name: 'MapboxService', level: 900);
   }
 
   /// Extracts `[latitude, longitude]` from a decoded Mapbox geocoding response.
@@ -271,12 +318,12 @@ class MapboxService {
   }) {
     final List<CircleAnnotationOptions> markers = [];
 
-    if (from.latitude != null && from.longitude != null) {
+    final fromLat = from.latitude;
+    final fromLng = from.longitude;
+    if (fromLat != null && fromLng != null) {
       markers.add(
         CircleAnnotationOptions(
-          geometry: Point(
-            coordinates: Position(from.longitude!, from.latitude!),
-          ),
+          geometry: Point(coordinates: Position(fromLng, fromLat)),
           circleRadius: 8.0,
           circleColor: _parseColor('green'),
           circleStrokeWidth: 2.0,
@@ -285,10 +332,12 @@ class MapboxService {
       );
     }
 
-    if (to.latitude != null && to.longitude != null) {
+    final toLat = to.latitude;
+    final toLng = to.longitude;
+    if (toLat != null && toLng != null) {
       markers.add(
         CircleAnnotationOptions(
-          geometry: Point(coordinates: Position(to.longitude!, to.latitude!)),
+          geometry: Point(coordinates: Position(toLng, toLat)),
           circleRadius: 8.0,
           circleColor: _parseColor('red'),
           circleStrokeWidth: 2.0,
@@ -307,12 +356,16 @@ class MapboxService {
   }) {
     final List<Position> positions = [];
 
-    if (from.latitude != null && from.longitude != null) {
-      positions.add(Position(from.longitude!, from.latitude!));
+    final fromLat = from.latitude;
+    final fromLng = from.longitude;
+    if (fromLat != null && fromLng != null) {
+      positions.add(Position(fromLng, fromLat));
     }
 
-    if (to.latitude != null && to.longitude != null) {
-      positions.add(Position(to.longitude!, to.latitude!));
+    final toLat = to.latitude;
+    final toLng = to.longitude;
+    if (toLat != null && toLng != null) {
+      positions.add(Position(toLng, toLat));
     }
 
     if (currentPosition != null) {

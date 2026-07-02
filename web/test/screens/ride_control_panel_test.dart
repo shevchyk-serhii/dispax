@@ -4,6 +4,7 @@ import 'package:dispax/constants/app_colors.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/screens/widgets/ride_control_panel.dart';
 import 'package:dispax/theme/app_theme.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 
 import '../helpers/test_fixtures.dart';
 
@@ -29,6 +30,8 @@ void main() {
     return tester.pumpWidget(
       MaterialApp(
         theme: theme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: RideControlPanel(
             ride: ride,
@@ -121,6 +124,62 @@ void main() {
         AppColors.rideAssignedBg,
       );
       expect(textColor(tester, 'Assigned'), AppColors.rideAssignedText);
+    });
+  });
+
+  group('RideControlPanel price', () {
+    testWidgets('shows the fare with a euro symbol when priced', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned, price: 45.5);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(find.text('€45.5'), findsOneWidget);
+    });
+
+    testWidgets('whole-euro fare drops the trailing decimal', (tester) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned, price: 60);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(find.text('€60'), findsOneWidget);
+    });
+
+    testWidgets('shows no fare row when the ride has no price', (tester) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && (w.data?.startsWith('€') ?? false),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
+  group('RideControlPanel payment method', () {
+    testWidgets('shows the localized payment label when present', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        status: RideStatus.assigned,
+        paymentMethod: 'Invoice',
+      );
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      expect(find.text('Invoice'), findsOneWidget);
+    });
+
+    testWidgets('shows no payment row when the ride has no method', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(status: RideStatus.assigned);
+      await pumpPanel(tester, theme: AppTheme.theme, ride: ride);
+
+      // No method-name labels for any of the four offered methods.
+      for (final label in ['Invoice', 'Cash', 'Credit Card', 'Payment']) {
+        expect(find.text(label), findsNothing);
+      }
     });
   });
 

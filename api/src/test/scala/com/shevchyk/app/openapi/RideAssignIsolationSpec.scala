@@ -1,12 +1,16 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.core.application.EventHub
+
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
+import com.shevchyk.core.config.AirportArrivalTimingConfig
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
@@ -140,6 +144,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           case Some(r) => ZIO.succeed(r)
           case None    => ZIO.fail(RideError.RideNotFound(rideId))
 
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
+
       def assignDriver(
           rideId: RideId,
           driverId: PersonId,
@@ -164,6 +170,7 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
 
       // createRide echoes a fresh Requested ride for the request's client/company, so the
       // create endpoint reaches RideDto.fromDomain and the clientName-enrichment path is exercised.
+      // It also echoes paymentMethod so the end-to-end wire→domain→DTO path can be asserted.
       def createRide(req: CreateRideRequest): IO[RideError, Ride] = ZIO.succeed(
         Ride(
           id = rideAId,
@@ -174,7 +181,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           pickupLocation = req.pickupLocation,
           dropoffLocation = req.dropoffLocation,
           pickupDateTime = req.pickupDateTime.getOrElse(Instant.now().plusSeconds(3600)),
-          requestTime = Instant.now()
+          requestTime = Instant.now(),
+          paymentMethod = req.paymentMethod
         )
       )
 
@@ -289,7 +297,9 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
     role = PersonRole.Client,
     passwordHash = "hash",
     companyId = Some(companyAId),
-    status = UserStatus.ACTIVE
+    status = UserStatus.ACTIVE,
+    // Has a profile photo so the clientHasAvatar enrichment can be asserted.
+    avatarPresent = true
   )
 
   private def makePersonRepo(known: Map[PersonId, Person]): ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
@@ -392,7 +402,12 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       personRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
-      GeocodingService.noop
+      GeocodingService.noop ++
+      AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
+      EventHub.layer ++
+      StubFlightStatusProvider.layer ++
+      StubRideRepository.layer
 
   // ---------------------------------------------------------------------------
   // HTTP runner
@@ -428,6 +443,15 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       """"clientName":"ignored-by-server"}"""
   )
 
+  // Create-ride body carrying a payment method wire value (e.g. "Payment").
+  private def createBodyWithPayment(clientId: PersonId, paymentMethod: String): Body = Body.fromString(
+    s"""{"clientId":"${clientId.value}","creatorId":"${clientId.value}",""" +
+      s""""paymentMethod":"$paymentMethod",""" +
+      """"pickupDateTime":"2090-01-01T10:00:00Z",""" +
+      """"from":{"address":"Munich Airport"},"to":{"address":"City Center"},""" +
+      """"clientName":"ignored-by-server"}"""
+  )
+
   // Create-ride body that also requests an optional self-assign to `driverId`.
   private def createBodyWithDriver(clientId: PersonId, driverId: PersonId): Body = Body.fromString(
     s"""{"clientId":"${clientId.value}","creatorId":"${clientId.value}",""" +
@@ -446,6 +470,8 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
   ): ZLayer[Any, Nothing, RideService] = ZLayer.succeed(
     new RideService:
       private def notImplemented = ZIO.die(new NotImplementedError("crossTenantAssignRideService stub"))
+
+      def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] = notImplemented
 
       def createRide(req: CreateRideRequest): IO[RideError, Ride] = ZIO.succeed(
         Ride(
@@ -573,7 +599,12 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
       clientPersonRepo ++
       stubTariffRepo ++
       stubRideEstimateService ++
-      GeocodingService.noop
+      GeocodingService.noop ++
+      AirportTimingService.noopLayer ++
+      AirportArrivalTimingConfig.liveLayer ++
+      EventHub.layer ++
+      StubFlightStatusProvider.layer ++
+      StubRideRepository.layer
 
   private val updateBody: Body = Body.fromString("""{"notes":"updated"}""")
 
@@ -812,6 +843,89 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
           body.contains("\"clientName\":\"Anna Schmidt\""),
           !body.contains("Unknown Client"),
           !body.contains("ignored-by-server")
+        )
+      },
+
+      // ── clientHasAvatar enrichment: GET /rides/{id} surfaces the client's avatar flag ──
+      // The driver/dispatcher card renders the client's photo; the ride DTO must report
+      // whether the client has one, derived from the same Person already loaded for clientName.
+      test("[REGRESSION] GET /rides/{id} reports clientHasAvatar=true when the client has a photo") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .get(URL.decode(s"/api/rides/${rideAId.value}").toOption.get)
+                             .addHeader(Header.Authorization.Bearer(token))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientHasAvatar\":true")
+        )
+      },
+
+      // ── clientHasAvatar enrichment: absent client → false (never true by accident) ──
+      test("[REGRESSION] GET /rides/{id} reports clientHasAvatar=false when the client is unknown") {
+        val rideA = makeAssignedRide(rideAId, companyAId)
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          // stubPersonRepo knows no persons, so the client lookup returns None.
+          layers         = buildLayers(Map(rideAId -> rideA), assignedRef, reassignedRef)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .get(URL.decode(s"/api/rides/${rideAId.value}").toOption.get)
+                             .addHeader(Header.Authorization.Bearer(token))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"clientHasAvatar\":false")
+        )
+      },
+
+      // ── End-to-end: create-ride carries the payment method wire→domain→DTO ──
+      // POST /api/rides with paymentMethod="Payment" must parse the wire value in
+      // CreateRideApiRequest.toDomain, thread it through createRide, and surface it
+      // back in the RideDto response. Proves the full HTTP create path for the new
+      // Payment value (not just the per-layer unit tests).
+      test("[E2E] create-ride with paymentMethod='Payment' returns it in the response") {
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map.empty, assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .post(URL.decode("/api/rides").toOption.get, createBodyWithPayment(clientAId, "Payment"))
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Created,
+          body.contains("\"paymentMethod\":\"Payment\"")
+        )
+      },
+
+      // ── End-to-end: omitting paymentMethod leaves it absent in the response ──
+      test("[E2E] create-ride without a paymentMethod does not surface one") {
+        for {
+          assignedRef   <- Ref.make(false)
+          reassignedRef <- Ref.make(false)
+          layers         = buildLayers(Map.empty, assignedRef, reassignedRef, clientPersonRepo)
+          token         <- generateToken(PersonRole.Dispatcher, companyAId).provideLayer(testJwtService)
+          req            = Request
+                             .post(URL.decode("/api/rides").toOption.get, createBody(clientAId))
+                             .addHeader(Header.Authorization.Bearer(token))
+                             .addHeader(Header.ContentType(zio.http.MediaType.application.json))
+          resp          <- run(req, layers)
+          body          <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Created,
+          !body.contains("\"paymentMethod\":\"Payment\"")
         )
       },
 

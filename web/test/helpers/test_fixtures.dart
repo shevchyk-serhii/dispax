@@ -3,6 +3,7 @@ import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import 'package:dispax/modules/ride_management/models/create_ride_request.dart';
+import 'package:dispax/modules/ride_management/models/payment_method.dart';
 
 class TestFixtures {
   static Location location({
@@ -23,6 +24,8 @@ class TestFixtures {
     String? phone = '+491234567890',
     VehicleInfo? vehicleInfo,
     String? preferredLanguage,
+    bool mustChangePassword = false,
+    bool hasAvatar = false,
   }) {
     return Person(
       id: id,
@@ -34,6 +37,8 @@ class TestFixtures {
       phone: phone,
       vehicleInfo: vehicleInfo,
       preferredLanguage: preferredLanguage,
+      mustChangePassword: mustChangePassword,
+      hasAvatar: hasAvatar,
     );
   }
 
@@ -83,15 +88,22 @@ class TestFixtures {
     Location? to,
     RideStatus status = RideStatus.requested,
     String clientName = 'Test Client',
+    bool clientHasAvatar = false,
     String? flightNumber,
     DateTime? flightTime,
+    DateTime? flightScheduledTime,
+    DateTime? flightDepartureTime,
     bool isAirportTransfer = false,
     bool isArrival = false,
     String? gate,
     String? terminal,
     String? flightStatus,
+    DateTime? optimalEntryTime,
+    String? airportCheckpoint,
     String? driverName,
     double? price,
+    String? paymentMethod,
+    List<String> tags = const [],
   }) {
     return Ride(
       id: id,
@@ -104,15 +116,22 @@ class TestFixtures {
       to: to ?? location(address: 'Dropoff St 2'),
       status: status,
       clientName: clientName,
+      clientHasAvatar: clientHasAvatar,
       flightNumber: flightNumber,
       flightTime: flightTime,
+      flightScheduledTime: flightScheduledTime,
+      flightDepartureTime: flightDepartureTime,
       isAirportTransfer: isAirportTransfer,
       isArrival: isArrival,
       gate: gate,
       terminal: terminal,
       flightStatus: flightStatus,
+      optimalEntryTime: optimalEntryTime,
+      airportCheckpoint: airportCheckpoint,
       driverName: driverName,
       price: price,
+      paymentMethod: paymentMethod,
+      tags: tags,
     );
   }
 
@@ -123,6 +142,7 @@ class TestFixtures {
     String? gate = 'G12',
     String? terminal = 'T2',
     String? flightStatus = 'On Time',
+    DateTime? optimalEntryTime,
   }) {
     return ride(
       id: id,
@@ -133,6 +153,7 @@ class TestFixtures {
       gate: gate,
       terminal: terminal,
       flightStatus: flightStatus,
+      optimalEntryTime: optimalEntryTime,
     );
   }
 
@@ -173,6 +194,8 @@ class TestFixtures {
     String? flightNumber,
     bool isAirportTransfer = false,
     String? driverId,
+    double? price,
+    PaymentMethod paymentMethod = PaymentMethod.invoice,
   }) {
     return CreateRideRequest(
       clientId: clientId,
@@ -185,6 +208,8 @@ class TestFixtures {
       flightNumber: flightNumber,
       isAirportTransfer: isAirportTransfer,
       driverId: driverId,
+      price: price,
+      paymentMethod: paymentMethod,
     );
   }
 
@@ -202,6 +227,7 @@ class TestFixtures {
       'to': {'address': 'Dropoff St', 'latitude': 48.2, 'longitude': 11.6},
       'status': status,
       'clientName': 'Test Client',
+      'clientHasAvatar': false,
       'isAirportTransfer': false,
       'isArrival': false,
       'driverApproaching': false,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -121,7 +122,8 @@ class CompaniesLoaded extends SuperAdminCompanyState {
 
 class CompaniesError extends SuperAdminCompanyState {
   final String message;
-  CompaniesError(this.message);
+  final Object? error;
+  CompaniesError(this.message, {this.error});
 }
 
 // ---------------------------------------------------------------------------
@@ -161,7 +163,7 @@ class SuperAdminCompanyBloc
         emit(CompaniesError('Failed to load companies'));
       }
     } catch (e) {
-      emit(CompaniesError(e.toString()));
+      emit(CompaniesError('Operation failed', error: e));
     }
   }
 
@@ -175,7 +177,7 @@ class SuperAdminCompanyBloc
       });
       add(LoadCompanies());
     } catch (e) {
-      emit(CompaniesError(e.toString()));
+      emit(CompaniesError('Operation failed', error: e));
     }
   }
 
@@ -196,11 +198,17 @@ class SuperAdminCompanyBloc
         add(LoadCompanies());
       } else {
         emit(
-          CompaniesError('Failed to create company: ${response.statusCode}'),
+          CompaniesError(
+            'Failed to create company',
+            error: ApiException(
+              'company create',
+              statusCode: response.statusCode,
+            ),
+          ),
         );
       }
     } catch (e) {
-      emit(CompaniesError(e.toString()));
+      emit(CompaniesError('Operation failed', error: e));
     }
   }
 
@@ -222,11 +230,17 @@ class SuperAdminCompanyBloc
         add(LoadCompanies());
       } else {
         emit(
-          CompaniesError('Failed to update company: ${response.statusCode}'),
+          CompaniesError(
+            'Failed to update company',
+            error: ApiException(
+              'company update',
+              statusCode: response.statusCode,
+            ),
+          ),
         );
       }
     } catch (e) {
-      emit(CompaniesError(e.toString()));
+      emit(CompaniesError('Operation failed', error: e));
     }
   }
 
@@ -243,12 +257,16 @@ class SuperAdminCompanyBloc
       } else {
         emit(
           CompaniesError(
-            'Failed to deactivate company: ${response.statusCode}',
+            'Failed to deactivate company',
+            error: ApiException(
+              'company deactivate',
+              statusCode: response.statusCode,
+            ),
           ),
         );
       }
     } catch (e) {
-      emit(CompaniesError(e.toString()));
+      emit(CompaniesError('Operation failed', error: e));
     }
   }
 }
@@ -291,12 +309,13 @@ class _CompaniesView extends StatelessWidget {
                 return Center(child: CircularProgressIndicator.adaptive());
               }
               if (state is CompaniesError) {
+                final l10n = AppLocalizations.of(context)!;
                 return Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Error: ${state.message}',
+                        friendlyError(state.error ?? state.message, l10n),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),
@@ -847,11 +866,12 @@ class _CompanyFormDialogState extends State<_CompanyFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_isEdit) {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final company = widget.company;
+    if (company != null) {
       widget.bloc.add(
         UpdateCompany(
-          companyId: widget.company!.id,
+          companyId: company.id,
           name: _nameCtrl.text.trim(),
           email: _emailCtrl.text.trim(),
           phone: _phoneCtrl.text.trim(),

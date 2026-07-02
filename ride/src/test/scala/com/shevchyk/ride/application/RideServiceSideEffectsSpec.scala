@@ -165,19 +165,19 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
                           // concurrently, so skip any events from sibling tests and
                           // keep taking until this ride's own RideCreated arrives.
                           evt  <- sub.take.repeatUntil {
-                                    case WebSocketEvent.RideCreated(rideId, _, _) => rideId == ride.id.value
-                                    case _                                        => false
+                                    case WebSocketEvent.RideCreated(rideId, _, _, _) => rideId == ride.id.value
+                                    case _                                           => false
                                   }
                         } yield (ride, evt)
                       }
         (ride, evt) = result
       } yield assertTrue(
         evt match {
-          case WebSocketEvent.RideCreated(rideId, clientId, companyId) =>
+          case WebSocketEvent.RideCreated(rideId, clientId, companyId, _) =>
             rideId == ride.id.value &&
             clientId == ride.clientId.value &&
             companyId == ride.companyId.value
-          case _                                                       => false
+          case _                                                          => false
         }
       )
     },

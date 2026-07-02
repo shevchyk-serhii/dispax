@@ -16,6 +16,7 @@ class RideStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final estimatedPrice = ride.estimatedPrice;
     return Card(
       elevation: 4,
       child: Padding(
@@ -32,7 +33,7 @@ class RideStatusCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Status: ${RideStatusStyles.getStatusDisplayName(ride.status)}',
+                  'Status: ${RideStatusStyles.getStatusDisplayName(ride.status, l10n)}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: RideStatusStyles.getStatusColor(ride.status),
                     fontWeight: FontWeight.bold,
@@ -47,7 +48,7 @@ class RideStatusCard extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            if (ride.estimatedPrice != null) ...[
+            if (estimatedPrice != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -61,7 +62,7 @@ class RideStatusCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'Price: ${ride.estimatedPrice!.toStringAsFixed(0)} UAH',
+                  'Price: ${estimatedPrice.toStringAsFixed(0)} UAH',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,

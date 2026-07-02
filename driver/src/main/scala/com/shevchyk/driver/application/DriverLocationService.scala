@@ -5,7 +5,7 @@ import com.shevchyk.core.application.{EventHub, GeofenceService, ActiveRideInfo}
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
-import com.shevchyk.ride.domain.{Ride, RideStatus}
+import com.shevchyk.ride.domain.RideStatus
 import com.shevchyk.ride.repository.RideRepository
 import zio.*
 import java.time.Instant

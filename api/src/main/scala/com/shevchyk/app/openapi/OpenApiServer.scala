@@ -1,5 +1,6 @@
 package com.shevchyk.app.openapi
 
+import com.shevchyk.app.BuildInfo
 import com.shevchyk.auth.application.AuthService
 import com.shevchyk.auth.middleware.RateLimiter
 import com.shevchyk.auth.openapi.AuthApi
@@ -26,24 +27,28 @@ import com.shevchyk.core.repository.{
   RidePoolRepository,
   SessionRepository
 }
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.openapi.DriverApi
 import com.shevchyk.notification.application.FcmService
 import com.shevchyk.notification.repository.NotificationRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
   AirportConfigService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  FlightStatusProvider,
   RideEstimateService,
-  RideService
+  RideService,
+  RideShareTokenService
 }
 import com.shevchyk.ride.openapi.{
   ClientAddressApi,
   ExternalDriverApi,
   ExpenseApi,
   ExportApi,
+  FlightApi,
   PartnerCompanyApi,
   RideApi,
   RideTemplateApi,
@@ -57,8 +62,8 @@ import com.shevchyk.ride.repository.{
   RideTemplateRepository,
   TariffRepository
 }
-import com.shevchyk.schedule.application.ScheduleService
-import com.shevchyk.schedule.openapi.ScheduleApi
+import com.shevchyk.schedule.application.{CalendarShareService, ScheduleService}
+import com.shevchyk.schedule.openapi.{CalendarShareApi, ScheduleApi}
 import sttp.tapir.AnyEndpoint
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
@@ -83,14 +88,16 @@ object OpenApiServer:
    */
   type ApiEnv =
     JwtService & AuthService & RateLimiter & PersonRepository & AvatarService & FcmService & RideService &
-      ScheduleService & InvoiceService & InvoiceRepository & ClientCompanyRepository & BillingClientCompanyRepository &
-      CompanyBillingProfileRepository & GdprRepository & RideRepository & ExpenseRepository & NotificationRepository &
-      AuditService & SessionRepository & TokenRepository & NotificationPreferenceRepository & BlacklistRepository &
-      CompanySettingsRepository & GeofenceRepository & GeofenceService & RidePoolRepository & EventHub &
-      EmergencyReassignmentRepository & RideRatingRepository & ClientAddressService & ClientLocationService &
-      AirportCheckpointService & AirportConfigService & ChatService & RideTemplateRepository & DriverLocationService &
-      HereRoutingService & GeocodingService & ClientLocationRepository & CompanyRepository & TariffRepository &
-      RideEstimateService
+      ScheduleService & CalendarShareService & InvoiceService & InvoiceRepository & ClientCompanyRepository &
+      BillingClientCompanyRepository & CompanyBillingProfileRepository & GdprRepository & RideRepository &
+      ExpenseRepository & NotificationRepository & AuditService & SessionRepository & TokenRepository &
+      NotificationPreferenceRepository & BlacklistRepository & CompanySettingsRepository & GeofenceRepository &
+      GeofenceService & RidePoolRepository & EventHub & EmergencyReassignmentRepository & RideRatingRepository &
+      ClientAddressService & ClientLocationService & AirportCheckpointService & AirportConfigService &
+      AirportTimingService & ChatService & RideTemplateRepository & DriverLocationService & HereRoutingService &
+      GeocodingService & ClientLocationRepository & CompanyRepository & TariffRepository & RideEstimateService &
+      RideShareTokenService & EtaService & FlightStatusProvider & com.shevchyk.core.config.PublicLinkConfig &
+      com.shevchyk.core.config.AirportArrivalTimingConfig
 
   // `ZServerEndpoint`'s environment is invariant, so module lists cannot be merged
   // into one typed list. But `zio.http.Routes` is contravariant in its environment, so
@@ -109,9 +116,11 @@ object OpenApiServer:
       ExportApi.serverEndpoints.map(_.endpoint) :::
       RideTemplateApi.serverEndpoints.map(_.endpoint) :::
       StatsApi.serverEndpoints.map(_.endpoint) :::
+      FlightApi.serverEndpoints.map(_.endpoint) :::
       ClientAddressApi.serverEndpoints.map(_.endpoint) :::
       DriverApi.serverEndpoints.map(_.endpoint) :::
       ScheduleApi.serverEndpoints.map(_.endpoint) :::
+      CalendarShareApi.serverEndpoints.map(_.endpoint) :::
       InvoiceApi.serverEndpoints.map(_.endpoint) :::
       BillingClientCompanyApi.serverEndpoints.map(_.endpoint) :::
       BillingProfileApi.serverEndpoints.map(_.endpoint) :::
@@ -129,13 +138,15 @@ object OpenApiServer:
       SuperAdminApi.serverEndpoints.map(_.endpoint) :::
       SuperAdminAirportApi.serverEndpoints.map(_.endpoint) :::
       PartnerCompanyApi.serverEndpoints.map(_.endpoint) :::
-      ExternalDriverApi.serverEndpoints.map(_.endpoint)
+      ExternalDriverApi.serverEndpoints.map(_.endpoint) :::
+      TrackApi.serverEndpoints.map(_.endpoint) :::
+      VersionApi.serverEndpoints.map(_.endpoint)
 
   /**
    * Swagger UI + the generated OpenAPI document, served under `/docs`.
    */
   private val swaggerEndpoints: List[ServerEndpoint[Any, Task]] = SwaggerInterpreter()
-    .fromEndpoints[Task](allEndpoints, "Dispax API", "0.1.0")
+    .fromEndpoints[Task](allEndpoints, "Dispax API", BuildInfo.version)
 
   /**
    * zio-http routes that serve the documented API and the Swagger UI.
@@ -148,9 +159,11 @@ object OpenApiServer:
       http(ExportApi.serverEndpoints) ++
       http(RideTemplateApi.serverEndpoints) ++
       http(StatsApi.serverEndpoints) ++
+      http(FlightApi.serverEndpoints) ++
       http(ClientAddressApi.serverEndpoints) ++
       http(DriverApi.serverEndpoints) ++
       http(ScheduleApi.serverEndpoints) ++
+      http(CalendarShareApi.serverEndpoints) ++
       http(InvoiceApi.serverEndpoints) ++
       http(BillingClientCompanyApi.serverEndpoints) ++
       http(BillingProfileApi.serverEndpoints) ++
@@ -169,4 +182,6 @@ object OpenApiServer:
       http(SuperAdminAirportApi.serverEndpoints) ++
       http(PartnerCompanyApi.serverEndpoints) ++
       http(ExternalDriverApi.serverEndpoints) ++
+      http(TrackApi.serverEndpoints) ++
+      http(VersionApi.serverEndpoints) ++
       http(swaggerEndpoints)

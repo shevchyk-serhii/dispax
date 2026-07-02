@@ -2,7 +2,6 @@ package com.shevchyk.core.repository
 
 import com.shevchyk.core.domain.*
 import zio.*
-import java.time.Instant
 
 trait BlacklistRepository:
   def create(entry: BlacklistEntry): Task[BlacklistEntry]

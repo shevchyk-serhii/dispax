@@ -6,7 +6,6 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.CreateExternalDriverRequest
 import com.shevchyk.ride.infrastructure.http.dto.{CreateExternalDriverApiRequest, ExternalDriverDto, given}
-import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*

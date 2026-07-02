@@ -8,6 +8,8 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
+import '../../../modules/core/services/error_messages.dart';
+import '../../../modules/core/services/api_client.dart';
 
 class PayrollScreen extends StatefulWidget {
   const PayrollScreen({super.key});
@@ -24,7 +26,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
   Map<String, dynamic>? _payrollData;
   bool _isLoading = false;
   bool _isLoadingDrivers = true;
-  String? _error;
+  Object? _error;
   double _commissionPercent = 20.0;
 
   @override
@@ -49,7 +51,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
       if (mounted) {
         setState(() {
           _isLoadingDrivers = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -80,28 +82,32 @@ class _PayrollScreenState extends State<PayrollScreen> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load payroll data';
+          _error = ApiException(
+            'Failed to load payroll data',
+            statusCode: response.statusCode,
+          );
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
   }
 
   void _copyPayrollCsv() {
-    if (_payrollData == null) return;
+    final payrollData = _payrollData;
+    if (payrollData == null) return;
 
     final driverName =
         _drivers.where((d) => d.id == _selectedDriverId).firstOrNull?.name ??
         'Unknown';
-    final totalRides = _payrollData!['totalRides'] ?? 0;
-    final totalEarnings = (_payrollData!['totalEarnings'] ?? 0).toDouble();
-    final totalExpenses = (_payrollData!['totalExpenses'] ?? 0).toDouble();
+    final totalRides = payrollData['totalRides'] ?? 0;
+    final totalEarnings = (payrollData['totalEarnings'] ?? 0).toDouble();
+    final totalExpenses = (payrollData['totalExpenses'] ?? 0).toDouble();
     final commission = totalEarnings * (_commissionPercent / 100);
     final netPay = totalEarnings - totalExpenses - commission;
 
@@ -307,7 +313,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
           if (_error != null)
             Center(
               child: Text(
-                _error!,
+                friendlyError(_error, l10n),
                 style: const TextStyle(color: AppColors.error),
               ),
             ),
@@ -320,9 +326,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
 
   Widget _buildPayrollSummary() {
     final l10n = AppLocalizations.of(context)!;
-    final totalRides = _payrollData!['totalRides'] ?? 0;
-    final totalEarnings = (_payrollData!['totalEarnings'] ?? 0).toDouble();
-    final totalExpenses = (_payrollData!['totalExpenses'] ?? 0).toDouble();
+    final payrollData = _payrollData ?? const <String, dynamic>{};
+    final totalRides = payrollData['totalRides'] ?? 0;
+    final totalEarnings = (payrollData['totalEarnings'] ?? 0).toDouble();
+    final totalExpenses = (payrollData['totalExpenses'] ?? 0).toDouble();
     final commission = totalEarnings * (_commissionPercent / 100);
     final netPay = totalEarnings - totalExpenses - commission;
 

@@ -12,8 +12,17 @@ variable "image" {
   type = string # Повний шлях до Docker образу в Artifact Registry
 }
 
-variable "connector_id" {
-  type = string # ID VPC Connector для зʼєднання з Cloud SQL
+variable "vpc_name" {
+  type = string # VPC network name for Direct VPC egress (reach Cloud SQL private IP)
+}
+
+variable "subnet_name" {
+  type = string # Regional subnet name for Direct VPC egress (must match the run region)
+}
+
+variable "public_base_url" {
+  type    = string
+  default = "https://dispax-o2trzxjbva-ew.a.run.app" # Base for guest-tracking links
 }
 
 variable "db_private_ip" {
@@ -60,24 +69,40 @@ resource "google_cloud_run_v2_service" "app" {
     timeout = "3600s" # Максимальний час запиту 1 година (для WebSocket зʼєднань)
 
     scaling {
-      min_instance_count = 1  # Завжди є мінімум 1 запущений екземпляр
-                               # → немає cold start, WebSocket зʼєднання не рвуться
+      # NOTE: min_instance_count and resources.cpu_idle are RUNTIME-OWNED by the
+      # scheduler module (cron flips them on/off) — see lifecycle.ignore_changes
+      # below. The values here are only the baseline used when the service is first
+      # created / fully recreated; the scheduler overrides them on a schedule.
+      min_instance_count = 0  # baseline = scale-to-zero (off-hours / weekends)
       max_instance_count = 10 # Максимум 10 екземплярів при навантаженні
     }
 
+    # Direct VPC egress — connects Cloud Run straight to the VPC subnet to reach
+    # Cloud SQL over its private IP, WITHOUT a Serverless VPC Access connector.
+    # This removes the connector's always-on e2-micro machines (~€10/mo Compute Engine).
     vpc_access {
-      connector = var.connector_id      # Через який VPC Connector йти до приватної мережі
-      egress    = "PRIVATE_RANGES_ONLY" # Через VPC йде тільки трафік до приватних IP
-                                         # Публічний трафік (Firebase, APIs) йде напряму
+      network_interfaces {
+        network    = var.vpc_name    # Private VPC network
+        subnetwork = var.subnet_name # Regional subnet (must match Cloud Run region)
+      }
+      egress = "PRIVATE_RANGES_ONLY" # Only private-IP traffic goes through the VPC;
+                                      # public traffic (Firebase, APIs) goes direct
     }
 
     containers {
       image = var.image # Docker образ з Artifact Registry
 
       resources {
+        cpu_idle          = true # baseline = CPU throttled (runtime-owned by scheduler,
+                                 # see lifecycle.ignore_changes — cron flips it on/off)
+        startup_cpu_boost = true # Faster JVM cold start (matches live config)
         limits = {
-          cpu    = "1"     # 1 vCPU на екземпляр
-          memory = "512Mi" # 512 MB RAM (JVM налаштований на -XX:MaxRAMPercentage=75%)
+          cpu = "1" # 1 vCPU на екземпляр
+          # 1 GiB RAM. 512Mi was too tight for JVM cold start (OOM at ~532Mi during
+          # startup, revision never reached Ready → 500s on a true cold start from
+          # scale-to-zero). Memory is billed only during active request-seconds /
+          # the always-on window, so this costs ~a couple EUR/mo at most.
+          memory = "1Gi"
         }
       }
 
@@ -99,6 +124,13 @@ resource "google_cloud_run_v2_service" "app" {
       env {
         name  = "APP_ENV"
         value = "production" # Вмикає production режим Flyway (без seed даних)
+      }
+
+      env {
+        name  = "PUBLIC_BASE_URL"
+        # Base for absolute guest-tracking links (<base>/track/<token>).
+        # Managed in TF so a targeted apply does not drop it (was set out-of-band).
+        value = var.public_base_url
       }
 
       # ── ENV ЗМІННІ (з Secret Manager) ─────────────────────────────────────
@@ -161,6 +193,16 @@ resource "google_cloud_run_v2_service" "app" {
         failure_threshold = 3  # 3 невдалі спроби → рестарт контейнера
       }
     }
+  }
+
+  # The scheduler module (cron) owns these two fields at runtime — flipping them
+  # on/off on a schedule. Without ignore_changes, the next `terraform apply` would
+  # revert whatever the scheduler last set, and the two systems would drift-war.
+  lifecycle {
+    ignore_changes = [
+      template[0].scaling[0].min_instance_count,
+      template[0].containers[0].resources[0].cpu_idle,
+    ]
   }
 }
 

@@ -8,6 +8,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/ride_management/helpers/flight_status_l10n.dart';
 
 // ─── Driver candidate model ──────────────────────────────────────────────────
 
@@ -114,8 +115,9 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
         fit = _CandidateFit.late;
       }
 
-      final label = schedule.notes?.isNotEmpty == true
-          ? schedule.notes!
+      final notes = schedule.notes;
+      final label = notes != null && notes.isNotEmpty
+          ? notes
           : 'Driver ${schedule.driverId.length > 8 ? schedule.driverId.substring(0, 8) : schedule.driverId}…';
 
       candidates.add(
@@ -289,7 +291,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    style: AppStyles.textButtonStyle,
+                    style: AppStyles.textButtonStyleOf(context),
                     onPressed: _isReassigning
                         ? null
                         : () => Navigator.pop(context),
@@ -361,10 +363,14 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               Expanded(
                 child: Text(
                   l10n.driverDelayedMessage(driverLabel, slackStr),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.errorStrong,
+                    // On the dark rideCancelledBgDark surface the dark
+                    // errorStrong red is invisible; use the light *Dark variant.
+                    color: isDark
+                        ? AppColors.rideCancelledTextDark
+                        : AppColors.errorStrong,
                   ),
                 ),
               ),
@@ -448,16 +454,42 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
               '${DateFormat('HH:mm').format(ride.pickupDateTime)} — ${ride.clientName}',
               style: const TextStyle(fontSize: 13),
             ),
-            subtitle: Text(
-              '${ride.from.address} → ${ride.to.address}',
-              style: TextStyle(
-                fontSize: 11,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${ride.from.address} → ${ride.to.address}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                // Flight info for airport rides so the dispatcher can tell
+                // airport transfers apart when bulk-reassigning.
+                if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty)
+                  Text(
+                    () {
+                      final statusText = l10n.localizedFlightStatus(
+                        ride.flightStatus,
+                      );
+                      return statusText.isEmpty
+                          ? ride.fullFlightInfo
+                          : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+                    }(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
         ),
@@ -726,13 +758,15 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
   // ── Execute reassign ──────────────────────────────────────────────────────
 
   void _executeBulkReassign() {
+    final selectedDriverId = _selectedDriverId;
+    if (selectedDriverId == null) return;
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isReassigning = true);
 
     final rideBloc = context.read<RideBloc>();
     for (final rideId in _selectedRideIds) {
       rideBloc.add(
-        RideReassignRequested(rideId: rideId, newDriverId: _selectedDriverId!),
+        RideReassignRequested(rideId: rideId, newDriverId: selectedDriverId),
       );
     }
 

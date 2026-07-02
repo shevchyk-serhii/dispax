@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../flight_management/models/airport_timing.dart';
 import '../../ride_management/models/ride.dart';
 import '../../flight_management/services/airport_timing_service.dart';
@@ -47,9 +48,18 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
     });
   }
 
+  /// The timing card is shown for any active airport transfer (arrival or departure). For an arrival it advises the
+  /// driver when to enter the terminal parking; for a departure it serves the client's "don't miss the flight"
+  /// reminder. The active statuses where it is useful: assigned/confirmed/in-progress/handed-off.
+  bool get _shouldShow =>
+      widget.ride.isAirportTransfer &&
+      (widget.ride.status == RideStatus.assigned ||
+          widget.ride.status == RideStatus.confirmed ||
+          widget.ride.status == RideStatus.inProgress ||
+          widget.ride.status == RideStatus.handedOff);
+
   Future<void> _loadAirportTiming() async {
-    if (!widget.ride.isAirportTransfer ||
-        widget.ride.status != RideStatus.assigned) {
+    if (!_shouldShow) {
       return;
     }
 
@@ -84,7 +94,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Error loading data: $e';
+          _errorMessage = e.toString();
           _isLoading = false;
         });
       }
@@ -134,7 +144,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
       children: [
         Icon(
           Icons.flight_land,
-          color: AppColors.driverColor,
+          color: AppColors.textOnPrimary,
           size: AppDimensions.iconMedium,
         ),
         const SizedBox(width: AppDimensions.paddingSmall),
@@ -143,13 +153,13 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Airport Entry Time',
+                AppLocalizations.of(context)!.airportEntryTitle,
                 style: AppStyles.titleMedium.copyWith(
                   color: AppColors.textOnPrimary,
                 ),
               ),
               Text(
-                '${widget.ride.flightNumber} • ${widget.ride.terminal} • Gate ${widget.ride.gate}',
+                '${widget.ride.flightNumber} • ${widget.ride.terminal} • ${widget.ride.isRemoteGate ? AppLocalizations.of(context)!.gateRemote : 'Gate ${widget.ride.gate}'}',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textOnPrimary.withAlpha(180),
                 ),
@@ -184,7 +194,9 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              _errorMessage!,
+              AppLocalizations.of(
+                context,
+              )!.airportTimingError(_errorMessage ?? ''),
               style: AppStyles.bodySmall.copyWith(color: AppColors.error),
             ),
           ),
@@ -195,7 +207,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
 
   Widget _buildEmptyState() {
     return Text(
-      'Loading entry time data...',
+      AppLocalizations.of(context)!.airportLoadingTiming,
       style: AppStyles.bodyMedium.copyWith(
         color: AppColors.textOnPrimary.withAlpha(180),
       ),
@@ -203,7 +215,8 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
   }
 
   Widget _buildTimingInfo() {
-    final timing = _airportTiming!;
+    final timing = _airportTiming;
+    if (timing == null) return const SizedBox.shrink();
 
     return Column(
       children: [
@@ -234,13 +247,15 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Depart in:',
+                AppLocalizations.of(context)!.airportDepartIn,
                 style: AppStyles.bodyLarge.copyWith(
                   color: AppColors.textOnPrimary,
                 ),
               ),
               Text(
-                timing.formattedTimeToDepart,
+                timing.shouldDepartNow
+                    ? AppLocalizations.of(context)!.airportDepartNow
+                    : timing.formattedTimeToDepart,
                 style: AppStyles.titleLarge.copyWith(
                   color: timing.shouldDepartNow
                       ? AppColors.error
@@ -259,7 +274,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Airport entry:',
+                AppLocalizations.of(context)!.airportEntryLabel,
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textOnPrimary.withAlpha(200),
                 ),
@@ -280,7 +295,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Travel time:',
+                AppLocalizations.of(context)!.airportTravelTime,
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textOnPrimary.withAlpha(200),
                 ),
@@ -315,7 +330,9 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              'Parking savings: ${timing.formattedSavings}',
+              AppLocalizations.of(
+                context,
+              )!.airportParkingSavings(timing.formattedSavings),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.success,
                 fontWeight: FontWeight.w600,
@@ -344,7 +361,7 @@ class _AirportEntryTimerState extends State<AirportEntryTimer> {
           const SizedBox(width: AppDimensions.paddingSmall),
           Expanded(
             child: Text(
-              'Flight delayed. Entry time recalculated.',
+              AppLocalizations.of(context)!.airportFlightDelayed,
               style: AppStyles.bodySmall.copyWith(color: AppColors.warning),
             ),
           ),

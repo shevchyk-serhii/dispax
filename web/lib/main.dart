@@ -15,6 +15,8 @@ import 'l10n/app_localizations.dart';
 import 'locale_notifier.dart';
 import 'blocs/blocs.dart';
 import 'auth/login_screen.dart';
+import 'screens/force_password_change_screen.dart';
+import 'screens/force_update_gate.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'modules/ride_management/services/ride_service.dart';
 import 'modules/ride_management/models/ride.dart';
@@ -81,6 +83,10 @@ void main() async {
   themeModeNotifier.value = themeFromString(prefs.getString('theme_mode'));
   localeNotifier.value = localeFromString(prefs.getString('language'));
 
+  // Note: the public guest tracking link `/track/<token>` is served as a standalone server-rendered HTML page
+  // (Mapbox GL JS) by the backend, NOT by this Flutter app — mapbox_maps_flutter does not render on web. So there is
+  // no in-app route for it here.
+
   // Mapbox Maps is not supported on web; its initializer calls
   // bool.fromEnvironment non-const, which throws on the DDC/web compiler
   // and crashes main() before runApp (white screen). Skip it on web.
@@ -141,7 +147,7 @@ class MyApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const AppRoot(),
+            home: const ForceUpdateGate(child: AppRoot()),
           ),
         ),
       ),
@@ -252,6 +258,13 @@ class _AppRootState extends State<AppRoot> {
           );
         }
 
+        // Logged in with a temporary password: gate behind the forced
+        // password-change screen until the user sets a new password.
+        final mustChangeUser = authState.user;
+        if (authState.mustChangePassword && mustChangeUser != null) {
+          return ForcePasswordChangeScreen(user: mustChangeUser);
+        }
+
         if (authState.isAuthenticated) {
           final authBloc = context.read<AuthBloc>();
           return MultiBlocProvider(
@@ -298,17 +311,28 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
     super.initState();
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
+      final statusRideId = event.rideId;
+      final newStatus = event.newStatus;
       if (event.isRideStatusChanged &&
-          event.rideId != null &&
-          event.newStatus != null) {
-        final parsedStatus = RideStatus.fromStringOrNull(event.newStatus!);
+          statusRideId != null &&
+          newStatus != null) {
+        final parsedStatus = RideStatus.fromStringOrNull(newStatus);
         if (parsedStatus != null) {
           context.read<RideBloc>().add(
-            RideStatusReceived(rideId: event.rideId!, newStatus: parsedStatus),
+            RideStatusReceived(rideId: statusRideId, newStatus: parsedStatus),
           );
         } else {
           debugPrint(
             'WS RideStatusChanged: unrecognised status "${event.newStatus}" for ride ${event.rideId} — skipping BLoC update',
+          );
+        }
+        return;
+      }
+      if (event.isAirportCheckpointReached && statusRideId != null) {
+        final cp = event.checkpointType;
+        if (cp != null) {
+          context.read<RideBloc>().add(
+            RideCheckpointReceived(rideId: statusRideId, checkpoint: cp),
           );
         }
         return;
@@ -342,8 +366,9 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
 
   void _refreshRides() {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideRefreshRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideRefreshRequested(user: user));
     }
   }
 

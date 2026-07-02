@@ -15,7 +15,8 @@ object RideMapperSpec extends ZIOSpecDefault {
 
   private def makeRequest(
       scheduledTime: Option[Instant] = None,
-      vehicleClass: VehicleClass = VehicleClass.Default
+      vehicleClass: VehicleClass = VehicleClass.Default,
+      paymentMethod: Option[PaymentMethod] = None
   ) = CreateRideRequest(
     clientId = clientId,
     companyId = companyId,
@@ -25,7 +26,8 @@ object RideMapperSpec extends ZIOSpecDefault {
     notes = Some("Test note"),
     specifics = None,
     specialRequirements = Some("Wheelchair"),
-    vehicleClass = vehicleClass
+    vehicleClass = vehicleClass,
+    paymentMethod = paymentMethod
   )
 
   def spec =
@@ -69,15 +71,25 @@ object RideMapperSpec extends ZIOSpecDefault {
         assertTrue(ride.status == RideStatus.Requested)
       },
       test("maps specifics when provided") {
-        val req  = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123")))
+        val req  = makeRequest().copy(specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"))))
         val ride = RideMapper.fromRequest(req)
-        assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", "LH123")))
+        assertTrue(ride.specifics.contains(RideSpecifics.AirportTransfer("MUC", Some("LH123"))))
       },
       // [HIGH] vehicleClass = request.vehicleClass — mutation to VehicleClass.Default survives the existing tests
       // because they all use the default.  This test uses Van (a non-default class) so the mutation is caught.
       test("preserves non-default vehicleClass from request") {
         val ride = RideMapper.fromRequest(makeRequest(vehicleClass = VehicleClass.Van))
         assertTrue(ride.vehicleClass == VehicleClass.Van)
+      },
+      // paymentMethod = request.paymentMethod — mutation to None survives if the request leaves it None,
+      // so this test passes a concrete method and asserts it is carried through to the ride.
+      test("carries paymentMethod from request to ride") {
+        val ride = RideMapper.fromRequest(makeRequest(paymentMethod = Some(PaymentMethod.Payment)))
+        assertTrue(ride.paymentMethod.contains(PaymentMethod.Payment))
+      },
+      test("leaves paymentMethod None when request omits it") {
+        val ride = RideMapper.fromRequest(makeRequest(paymentMethod = None))
+        assertTrue(ride.paymentMethod.isEmpty)
       },
       // [MEDIUM] requestTime = Instant.now() — mutation to Instant.EPOCH survives existing tests.
       // We verify that requestTime is not the epoch and is within a 10-second window around now().

@@ -1,7 +1,15 @@
 package com.shevchyk.ride.repository
 
 import com.shevchyk.core.domain.{RideId, PersonId, CompanyId}
-import com.shevchyk.ride.domain.{AirportCheckpoint, DriverEarnings, PaymentMethod, PaymentStatus, Ride, RideStatus}
+import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
+  DriverEarnings,
+  FlightStatusRow,
+  PaymentMethod,
+  PaymentStatus,
+  Ride,
+  RideStatus
+}
 import zio.*
 import java.time.{Instant, ZoneOffset}
 
@@ -219,6 +227,17 @@ class InMemoryRideRepository extends RideRepository:
       .toList
   )
 
+  override def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]] = rides.get.map(
+    _.values
+      .filter(r =>
+        r.status != RideStatus.Completed &&
+          r.status != RideStatus.Cancelled &&
+          r.pickupDateTime.isAfter(from) &&
+          !r.pickupDateTime.isAfter(to)
+      )
+      .toList
+  )
+
   override def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = rides.get.map(
     _.values
       .filter(r =>
@@ -229,6 +248,18 @@ class InMemoryRideRepository extends RideRepository:
       )
       .toList
   )
+
+  override def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]] = rides.get
+    .map(
+      _.values
+        .filter(r =>
+          r.driverId.contains(driverId) &&
+            r.status != RideStatus.Cancelled &&
+            !r.pickupDateTime.isBefore(from) &&
+            r.pickupDateTime.isBefore(to)
+        )
+        .toList
+    )
 
   override def clearReminders(rideId: RideId): Task[Unit] = ZIO.unit
 
@@ -277,6 +308,38 @@ class InMemoryRideRepository extends RideRepository:
           (true, m.updated(rideId, ride.copy(airportCheckpoint = Some(checkpoint))))
         else (false, m)
   }
+
+  // Flight-tracking columns live outside the Ride domain object; keep them in a side map keyed by ride id.
+  private val flightStatuses = Unsafe.unsafe { implicit unsafe =>
+    Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[RideId, FlightStatusRow])).getOrThrowFiberFailure()
+  }
+
+  override def updateFlightStatus(
+      rideId: RideId,
+      gate: Option[String],
+      terminal: Option[String],
+      flightStatus: Option[String],
+      flightTime: Option[Instant],
+      scheduledTime: Option[Instant],
+      departureTime: Option[Instant]
+  ): Task[Boolean] = rides.get.flatMap { m =>
+    if !m.contains(rideId) then ZIO.succeed(false)
+    else
+      flightStatuses
+        .update(
+          _.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime, departureTime))
+        )
+        .as(true)
+  }
+
+  override def findFlightStatus(rideId: RideId): Task[Option[FlightStatusRow]] = rides.get.flatMap { m =>
+    if !m.contains(rideId) then ZIO.none
+    else flightStatuses.get.map(fs => Some(fs.getOrElse(rideId, FlightStatusRow())))
+  }
+
+  override def findFlightStatusFor(rideIds: List[RideId]): Task[Map[RideId, FlightStatusRow]] = flightStatuses.get.map(
+    fs => rideIds.flatMap(id => fs.get(id).map(id -> _)).toMap
+  )
 
 object InMemoryRideRepository:
   val layer: ZLayer[Any, Nothing, RideRepository] = ZLayer.succeed(new InMemoryRideRepository)

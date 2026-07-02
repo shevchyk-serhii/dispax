@@ -104,13 +104,24 @@ void main() {
       expect(find.text('In Progress'), findsOneWidget);
     });
 
-    testWidgets('completed: shows all 4 step labels', (tester) async {
+    testWidgets('confirmed: shows "Confirmed" label as a step', (tester) async {
+      await tester.pumpWidget(
+        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.confirmed))),
+      );
+      await tester.pump(Duration.zero);
+      // Regression: confirmed was missing from _steps → the whole chain rendered
+      // grey with no current step. It must now appear as its own step label.
+      expect(find.text('Confirmed'), findsOneWidget);
+    });
+
+    testWidgets('completed: shows all 5 step labels', (tester) async {
       await tester.pumpWidget(
         _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.completed))),
       );
       await tester.pump(Duration.zero);
       expect(find.text('Requested'), findsOneWidget);
       expect(find.text('Assigned'), findsOneWidget);
+      expect(find.text('Confirmed'), findsOneWidget);
       expect(find.text('In Progress'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
     });
@@ -121,6 +132,23 @@ void main() {
       );
       await tester.pump(Duration.zero);
       expect(find.text('Cancelled'), findsOneWidget);
+    });
+
+    testWidgets('handedOff: shows the hand-off indicator (not all grey)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.handedOff))),
+      );
+      await tester.pump(Duration.zero);
+      // Regression: handedOff was missing from _steps and had no terminal
+      // branch → the whole chain rendered grey. It must now show a dedicated
+      // hand-off indicator with the status label and info text.
+      expect(find.text('Handed Off'), findsOneWidget);
+      expect(
+        find.text('Ride handed off to the external partner.'),
+        findsOneWidget,
+      );
     });
   });
 
@@ -155,9 +183,25 @@ void main() {
       );
     });
 
-    // For `inProgress` (index 2): steps 0 and 1 completed → 2 checkmarks.
+    // For `confirmed` (index 2): steps 0 and 1 completed → 2 checkmarks.
     testWidgets(
-      'inProgress: exactly 2 checkmarks (Requested + Assigned done)',
+      'confirmed: exactly 2 checkmarks (Requested + Assigned done)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.confirmed))),
+        );
+        await tester.pump(Duration.zero);
+        expect(
+          _countIcons(tester, LucideCompat.check),
+          equals(2),
+          reason: 'Requested and Assigned are completed; Confirmed is current',
+        );
+      },
+    );
+
+    // For `inProgress` (index 3): steps 0, 1, 2 completed → 3 checkmarks.
+    testWidgets(
+      'inProgress: exactly 3 checkmarks (Requested + Assigned + Confirmed done)',
       (tester) async {
         await tester.pumpWidget(
           _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.inProgress))),
@@ -165,17 +209,19 @@ void main() {
         await tester.pump(Duration.zero);
         expect(
           _countIcons(tester, LucideCompat.check),
-          equals(2),
-          reason: 'Requested and Assigned are completed; InProgress is current',
+          equals(3),
+          reason:
+              'Requested, Assigned and Confirmed are completed; '
+              'InProgress is current',
         );
       },
     );
 
-    // For `completed` (index 3): steps 0, 1, 2 have isCompleted=true
-    // (i < _currentStepIndex=3) → 3 checkmarks.
-    // Step 3 (Completed itself) is isCurrent=true → pulsing dot, no checkmark.
+    // For `completed` (index 4): steps 0, 1, 2, 3 have isCompleted=true
+    // (i < _currentStepIndex=4) → 4 checkmarks.
+    // Step 4 (Completed itself) is isCurrent=true → pulsing dot, no checkmark.
     testWidgets(
-      'completed: exactly 3 checkmarks (steps 0-2 done; step 3 is current)',
+      'completed: exactly 4 checkmarks (steps 0-3 done; step 4 is current)',
       (tester) async {
         await tester.pumpWidget(
           _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.completed))),
@@ -183,10 +229,11 @@ void main() {
         await tester.pump(Duration.zero);
         expect(
           _countIcons(tester, LucideCompat.check),
-          equals(3),
+          equals(4),
           reason:
-              'steps 0,1,2 (Requested,Assigned,InProgress) are completed; '
-              'step 3 (Completed) is the current step and shows a pulsing dot',
+              'steps 0,1,2,3 (Requested,Assigned,Confirmed,InProgress) are '
+              'completed; step 4 (Completed) is the current step and shows a '
+              'pulsing dot',
         );
       },
     );
@@ -208,6 +255,27 @@ void main() {
         _countIcons(tester, LucideCompat.x),
         greaterThanOrEqualTo(1),
         reason: 'cancelled indicator uses LucideCompat.x',
+      );
+    });
+
+    // For `handedOff`: the terminal indicator uses LucideCompat.share2, not the
+    // step check icons.
+    testWidgets('handedOff: shows share icon (not check), no checkmarks', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.handedOff))),
+      );
+      await tester.pump(Duration.zero);
+      expect(
+        _countIcons(tester, LucideCompat.check),
+        equals(0),
+        reason: 'handedOff uses the share indicator, not the step check icons',
+      );
+      expect(
+        _countIcons(tester, LucideCompat.share2),
+        greaterThanOrEqualTo(1),
+        reason: 'handedOff indicator uses LucideCompat.share2',
       );
     });
   });
@@ -322,6 +390,26 @@ void main() {
           equals(baselineCount),
           reason:
               'cancelled uses the special indicator widget (no AnimatedBuilder step dot)',
+        );
+      },
+    );
+
+    testWidgets(
+      'handedOff: NO extra AnimatedBuilder vs baseline (no pulsing dot)',
+      (tester) async {
+        await tester.pumpWidget(baseline());
+        final baselineCount = abCount(tester);
+
+        await tester.pumpWidget(
+          _wrap(RideLifecycleStepperWidget(ride: _ride(RideStatus.handedOff))),
+        );
+        await tester.pump(Duration.zero);
+
+        expect(
+          abCount(tester),
+          equals(baselineCount),
+          reason:
+              'handedOff uses the terminal indicator widget (no AnimatedBuilder step dot)',
         );
       },
     );

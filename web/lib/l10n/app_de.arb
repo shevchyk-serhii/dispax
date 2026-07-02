@@ -35,10 +35,17 @@
   "rideAlreadyAssignedInfo": "Diese Fahrt wurde bereits zugewiesen. Die Liste wurde aktualisiert.",
   "allRidesAssigned": "Alle Fahrten wurden zugewiesen",
   "selectDriver": "Fahrer auswählen",
+  "reassignDriver": "Fahrer neu zuweisen",
+  "noDriversFound": "Keine Fahrer gefunden",
   "reassignRide": "Fahrt neu zuweisen",
   "confirmReassignment": "Neuzuweisung bestätigen",
   "reassign": "Neu zuweisen",
   "assign": "Zuweisen",
+  "driverDashboardTitle": "Fahrer-Dashboard",
+  "secretaryDashboardTitle": "Sekretariat-Dashboard",
+  "dispatcherDashboardTitle": "Dispatcher-Dashboard",
+  "adminDashboardTitle": "Admin-Dashboard",
+  "platformAdminTitle": "Plattform-Admin",
   "cancel": "Abbrechen",
   "confirm": "Bestätigen",
   "retry": "Wiederholen",
@@ -103,6 +110,16 @@
   "passwordChanged": "Passwort erfolgreich geändert",
   "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
   "passwordTooShort": "Passwort muss mindestens 6 Zeichen lang sein",
+  "forcePasswordChangeTitle": "Neues Passwort festlegen",
+  "forcePasswordChangeMessage": "Ihr Konto verwendet ein temporäres Passwort. Bitte legen Sie ein neues Passwort fest, um fortzufahren.",
+  "updateRequired": "Aktualisierung erforderlich",
+  "updateRequiredMessage": "Diese Version der App wird nicht mehr unterstützt. Bitte aktualisieren Sie auf die neueste Version, um fortzufahren.",
+  "updateNow": "Jetzt aktualisieren",
+  "temporaryPassword": "Temporäres Passwort",
+  "temporaryPasswordHint": "Der Benutzer wird beim ersten Anmelden aufgefordert, es zu ändern.",
+  "tempPasswordRules": "Mindestens 8 Zeichen mit Großbuchstabe, Kleinbuchstabe und Ziffer",
+  "setNewPassword": "Neues Passwort festlegen",
+  "userCreatedSharePassword": "Benutzer erstellt. Teilen Sie ihm das temporäre Passwort mit.",
 
   "notifications": "Benachrichtigungen",
   "pushNotifications": "Push-Benachrichtigungen",
@@ -135,6 +152,8 @@
 
   "about": "Über",
   "version": "Version",
+  "appVersion": "App-Version",
+  "backendVersion": "Backend-Version",
   "privacyPolicy": "Datenschutzrichtlinie",
   "termsOfService": "Nutzungsbedingungen",
 
@@ -161,8 +180,59 @@
   "checkpointLanded": "Gelandet",
   "checkpointArrivalsHall": "Ankunftshalle",
   "checkpointTerminalExit": "Terminalausgang",
+  "passengerCheckpointStatus": "Passagier: {checkpoint}",
   "markCheckpointButton": "Ich bin hier",
   "airportCheckpointPanelTitle": "Mein Standort im Terminal",
+  "airportEntryTitle": "Terminal-Einfahrtszeit",
+  "airportDepartIn": "Losfahren in:",
+  "airportEntryLabel": "Terminal-Einfahrt:",
+  "airportEntryAt": "Einfahrt um {time}",
+  "@airportEntryAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandingAt": "Landung um {time}",
+  "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandedAt": "Gelandet um {time}",
+  "@airportLandedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportFlightDelay": "+{minutes} Min Verspätung",
+  "@airportFlightDelay": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "airportScheduledVsActual": "Planmäßig {scheduled} → {actual}",
+  "@airportScheduledVsActual": {
+    "placeholders": {
+      "scheduled": {"type": "String"},
+      "actual": {"type": "String"}
+    }
+  },
+  "airportTravelTime": "Fahrzeit:",
+  "airportParkingSavings": "Parkersparnis: {amount}",
+  "@airportParkingSavings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "airportDepartNow": "Jetzt losfahren!",
+  "airportFlightDelayed": "Flug verspätet. Einfahrtszeit neu berechnet.",
+  "airportTimingError": "Fehler beim Laden der Daten: {error}",
+  "@airportTimingError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "airportLoadingTiming": "Einfahrtszeit wird geladen...",
   "checkpointNotifTitle": "Fahrgast hat {checkpoint} erreicht",
   "@checkpointNotifTitle": {
     "placeholders": {
@@ -212,6 +282,20 @@
     }
   },
   "pickupTimeComputedAuto": "Automatisch basierend auf dem Abflugzeitpunkt berechnet",
+  "addressNotFound": "Adresse konnte nicht gefunden werden — bitte Schreibweise prüfen.",
+  "addressOutOfServiceArea": "Adresse liegt außerhalb des Liefergebiets (etwa {distanceKm} km von München, max. {radiusKm} km).",
+  "@addressOutOfServiceArea": {
+    "placeholders": {
+      "distanceKm": {"type": "int"},
+      "radiusKm": {"type": "int"}
+    }
+  },
+  "addressOutOfServiceAreaShort": "Adresse liegt außerhalb des Liefergebiets (max. {radiusKm} km von München).",
+  "@addressOutOfServiceAreaShort": {
+    "placeholders": {
+      "radiusKm": {"type": "int"}
+    }
+  },
   "markUnavailable": "Als nicht verfügbar markieren",
   "driverUnavailable": "Fahrer nicht verfügbar",
   "unavailabilityReason": "Grund",
@@ -362,6 +446,13 @@
   "clientsRailLabel": "Clients",
   "datevRailLabel": "DATEV",
   "genericError": "Fehler: {error}",
+  "errorNetwork": "Server nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+  "errorTimeout": "Der Server hat zu lange gebraucht. Bitte versuchen Sie es erneut.",
+  "errorServer": "Auf unserer Seite ist etwas schiefgelaufen. Bitte versuchen Sie es gleich noch einmal.",
+  "errorNotFound": "Wir konnten nicht finden, wonach Sie gesucht haben.",
+  "errorLoadingData": "Daten konnten nicht geladen werden",
+  "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+  "errorSessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
   "@genericError": {
     "placeholders": {
       "error": {"type": "String"}
@@ -506,6 +597,11 @@
   },
   "noCompletedRides": "Noch keine abgeschlossenen Fahrten",
   "refresh": "Aktualisieren",
+  "refreshFlightStatus": "Flugstatus aktualisieren",
+  "flightStatusRefreshed": "Flugstatus aktualisiert",
+  "flightStatusUnchanged": "Bereits aktuell",
+  "flightNotFoundYet": "Flug noch nicht im System",
+  "failedToRefreshFlightStatus": "Flugstatus konnte nicht aktualisiert werden",
   "youreOnline": "Sie sind online",
   "youreOffline": "Sie sind offline",
   "discardChangesTitle": "Änderungen verwerfen?",
@@ -712,6 +808,7 @@
   "invalidEmail": "Ungültige E-Mail",
   "addButton": "Hinzufügen",
   "editAction": "Bearbeiten",
+  "duplicateRideAction": "Duplizieren",
   "deactivateAction": "Deaktivieren",
   "editClientTitle": "Kunde bearbeiten",
   "clientUpdatedSuccess": "Kunde erfolgreich aktualisiert",
@@ -850,9 +947,11 @@
   "airportArrivalHint": "Vom Flughafen",
   "flightNumberLabel": "Flugnummer",
   "flightNumberHint": "z.B. LH123, BA456",
-  "flightNumberRequired": "Flugnummer ist für Flughafentransfers erforderlich",
+  "flightNumberRequired": "Flugnummer ist erforderlich",
+  "flightNumberInvalidFormat": "Gültige Flugnummer eingeben, z.B. LH429",
   "gateLabel": "Gate",
   "terminalLabel": "Terminal",
+  "gateRemote": "Bus-Gate (Außenposition)",
 
   "creatingRideLabel": "Fahrt wird erstellt...",
   "createRideButton": "Fahrt erstellen",
@@ -889,10 +988,9 @@
   "enterClientNameError": "Bitte geben Sie den Kundennamen ein",
 
   "editRideDialogTitle": "Fahrt bearbeiten",
-  "pickupDateTimeLabel": "Abholdatum/-uhrzeit (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Abholdatum/-uhrzeit",
   "flightNumberOptionalLabel": "Flugnummer (optional)",
   "notesOptionalLabel": "Notizen (optional)",
-  "invalidDateFormatError": "Ungültiges Datumsformat. Verwenden Sie: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Serverfehler: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {
@@ -1414,8 +1512,10 @@
   "allRidesPaidLabel": "Alle Fahrten sind bezahlt",
   "markAsPaidDialogTitle": "Als bezahlt markieren",
   "paymentMethodLabel": "Zahlungsart:",
+  "paymentMethodSelectLabel": "Zahlungsart",
+  "paymentMethodPayment": "Zahlung",
   "paymentMethodCash": "Bar",
-  "paymentMethodCard": "Karte",
+  "paymentMethodCard": "Kreditkarte",
   "paymentMethodInvoice": "Rechnung",
   "amountLabel": "Betrag: {amount} EUR",
   "@amountLabel": {
@@ -1503,6 +1603,14 @@
     }
   },
   "conflictDialogContentDefault": "Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?",
+  "conflictDialogContentRich": "Der Fahrer ist bereits gebucht: {from} → {to} um {time}.\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?",
+  "@conflictDialogContentRich": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "keepInPoolButton": "Im Pool belassen",
   "assignAnywayButton": "Trotzdem zuweisen",
 
@@ -1524,8 +1632,13 @@
   "flightsMunichAirportTitle": "Flüge · Flughafen München",
   "autoSyncedLabel": "automatisch synchronisiert",
   "arrivalsTabLabel": "Ankünfte",
+  "arrivalsBoardTitle": "Ankünfte · Flughafen München",
   "departuresTabLabel": "Abflüge",
   "noArrivalsFound": "Keine Ankünfte gefunden",
+  "flightDetailsTitle": "Flugdetails",
+  "gateNotPublished": "Gate noch nicht veröffentlicht",
+  "trackFlightLive": "Live auf Flightradar24 verfolgen",
+  "couldNotOpenFlightTracker": "Flugverfolgung konnte nicht geöffnet werden",
   "noDeparturesFound": "Keine Abflüge gefunden",
   "errorLoadingFlights": "Fehler beim Laden der Flüge: {error}",
   "@errorLoadingFlights": {
@@ -1543,6 +1656,15 @@
   "flightStatusBoarding": "Boarding",
   "flightStatusCancelled": "Gestrichen",
   "flightStatusUnknown": "Unbekannt",
+  "flightStatusScheduled": "Planmäßig",
+  "flightStatusDeparted": "Gestartet",
+  "flightStatusEnRoute": "Im Flug",
+  "flightStatusLanded": "Gelandet",
+  "flightStatusDiverted": "Umgeleitet",
+  "flightInformation": "Fluginformationen",
+  "flightNumber": "Flugnummer",
+  "arrivalTime": "Ankunftszeit",
+  "departureTime": "Abflugzeit",
   "flightNotLinked": "— nicht verknüpft",
 
   "whoCanSeeWhomTitle": "Wer sieht wen",
@@ -1586,5 +1708,67 @@
   "clientPaymentTitle": "Zahlung",
   "paymentMethodsSectionLabel": "ZAHLUNGSARTEN",
   "corporateInvoiceLabel": "Firmenrechnung",
-  "addPaymentMethodButton": "Zahlungsart hinzufügen"
+  "addPaymentMethodButton": "Zahlungsart hinzufügen",
+
+  "shareRideLink": "Tracking-Link teilen",
+  "trackingLinkCopied": "Tracking-Link in die Zwischenablage kopiert",
+
+  "bookWithoutClient": "Ohne Kunde (aus Chat)",
+  "fromChatRide": "Aus Chat",
+  "linkClient": "Kunde ergänzen",
+"calendarSharingTitle": "Kalenderfreigabe",
+  "calendarSharingMenuItem": "Kalenderfreigabe",
+  "shareInvitesSection": "Meine Einladungscodes",
+  "shareCreateInvite": "Einladungscode erstellen",
+  "shareInviteExpiry1Day": "1 Tag",
+  "shareInviteExpiry7Days": "7 Tage",
+  "shareInviteExpiry30Days": "30 Tage",
+  "shareInviteCreatedTitle": "Einladungscode erstellt",
+  "shareInviteCreatedHint": "Senden Sie diesen Code an einen Fahrer oder Disponenten einer anderen Firma. Er wird in deren App unter Kalenderfreigabe eingegeben.",
+  "shareCopyCode": "Code kopieren",
+  "shareCodeCopied": "Code in die Zwischenablage kopiert",
+  "shareRevoke": "Widerrufen",
+  "shareGrantedSection": "Wer sieht meinen Kalender",
+  "shareSharedWithMeSection": "Für mich freigegeben",
+  "shareEnterCode": "Code eingeben",
+  "shareRedeemTitle": "Freigegebenen Kalender verbinden",
+  "shareRedeemHint": "Einladungscode oder Link einfügen",
+  "shareRedeemConnect": "Verbinden",
+  "shareRedeemSuccess": "Verbunden mit {name}",
+  "@shareRedeemSuccess": {"placeholders": {"name": {"type": "String"}}},
+  "shareUnlink": "Trennen",
+  "shareNoInvites": "Keine aktiven Einladungscodes",
+  "shareNoGrants": "Sie haben Ihren Kalender mit niemandem geteilt",
+  "shareNoSharedWithMe": "Keine Kalender für Sie freigegeben",
+  "shareValidUntil": "Gültig bis {date}",
+  "@shareValidUntil": {"placeholders": {"date": {"type": "String"}}},
+  "shareSince": "Seit {date}",
+  "@shareSince": {"placeholders": {"date": {"type": "String"}}},
+  "shareActionFailed": "Aktion fehlgeschlagen: {error}",
+  "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
+  "sharedCalendarAvailable": "Verfügbar",
+  "sharedCalendarBusy": "Belegt",
+  "sharedCalendarShift": "Schicht",
+  "sharedCalendarEmptyDay": "Keine Schichten oder belegten Zeiten",
+  "sharedCalendarEmptyWeek": "Keine Schichten oder belegten Zeiten in dieser Woche",
+  "sharedCalendarTimesHint": "Schichtzeiten wie von {company} angegeben",
+  "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
+  "sharedWithMeGroupLabel": "Für mich freigegeben",
+  "myCompanyGroupLabel": "Meine Firma",
+"addShiftTooltip": "Schicht hinzufügen",
+  "addShiftTitle": "Neue Schicht",
+  "shiftDateLabel": "Datum",
+  "shiftStartLabel": "Beginn",
+  "shiftEndLabel": "Ende",
+  "shiftRepeatUntilLabel": "Täglich wiederholen bis (optional)",
+  "shiftNoteLabel": "Notiz (optional)",
+  "shiftCreateButton": "Erstellen",
+  "shiftsCreatedSnack": "Schichten erstellt: {count}",
+  "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftTimeOrderError": "Beginn muss vor dem Ende liegen",
+  "shiftCancelTitle": "Diese Schicht stornieren?",
+  "shiftCancelButton": "Schicht stornieren",
+  "shiftCancelledSnack": "Schicht storniert",
+  "shiftsStripLabel": "Schichten",
+  "noShiftsForDay": "Keine Schichten"
 }

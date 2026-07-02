@@ -71,7 +71,10 @@ void main() {
       act: (bloc) => bloc.add(const ClientLoadRequested()),
       expect: () => [
         ClientState.loading(),
-        isA<ClientState>().having((s) => s.hasError, 'hasError', true),
+        isA<ClientState>()
+            .having((s) => s.hasError, 'hasError', true)
+            // Phase 3: typed cause carried for friendlyError.
+            .having((s) => s.error, 'error', isA<ApiException>()),
       ],
     );
 
@@ -90,7 +93,11 @@ void main() {
       seed: () => ClientState.loaded([testClient]),
       act: (bloc) => bloc.add(
         const ClientCreateRequested(
-          request: CreateUserRequest(name: 'New', email: 'new@test.com'),
+          request: CreateUserRequest(
+            name: 'New',
+            email: 'new@test.com',
+            password: 'Temp1234',
+          ),
         ),
       ),
       expect: () => [
@@ -112,7 +119,11 @@ void main() {
       seed: () => ClientState.loaded([testClient]),
       act: (bloc) => bloc.add(
         const ClientCreateRequested(
-          request: CreateUserRequest(name: 'X', email: 'x@test.com'),
+          request: CreateUserRequest(
+            name: 'X',
+            email: 'x@test.com',
+            password: 'Temp1234',
+          ),
         ),
       ),
       expect: () => [

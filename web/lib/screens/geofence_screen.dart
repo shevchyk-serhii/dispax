@@ -8,6 +8,8 @@ import '../constants/app_dimensions.dart';
 import '../constants/app_styles.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/models/geofence.dart';
+import '../modules/core/services/error_messages.dart';
+import '../modules/core/services/api_client.dart';
 
 class GeofenceScreen extends StatefulWidget {
   const GeofenceScreen({super.key});
@@ -24,8 +26,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
   List<GeofenceAlert> _alerts = [];
   bool _isLoadingGeofences = true;
   bool _isLoadingAlerts = true;
-  String? _geofenceError;
-  String? _alertError;
+  Object? _geofenceError;
+  Object? _alertError;
   String _alertFilter = 'All';
 
   // Optimistic toggle state: tracks geofence IDs that are being toggled
@@ -63,17 +65,16 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         });
       } else {
         setState(() {
-          _geofenceError = mounted
-              ? AppLocalizations.of(
-                  context,
-                )!.failedToLoadGeofences(response.statusCode.toString())
-              : 'Failed to load geofences (${response.statusCode})';
+          _geofenceError = ApiException(
+            'Failed to load geofences',
+            statusCode: response.statusCode,
+          );
           _isLoadingGeofences = false;
         });
       }
     } catch (e) {
       setState(() {
-        _geofenceError = e.toString();
+        _geofenceError = e;
         _isLoadingGeofences = false;
       });
     }
@@ -95,17 +96,16 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         });
       } else {
         setState(() {
-          _alertError = mounted
-              ? AppLocalizations.of(
-                  context,
-                )!.failedToLoadAlerts(response.statusCode.toString())
-              : 'Failed to load alerts (${response.statusCode})';
+          _alertError = ApiException(
+            'Failed to load alerts',
+            statusCode: response.statusCode,
+          );
           _isLoadingAlerts = false;
         });
       }
     } catch (e) {
       setState(() {
-        _alertError = e.toString();
+        _alertError = e;
         _isLoadingAlerts = false;
       });
     }
@@ -151,9 +151,15 @@ class _GeofenceScreenState extends State<GeofenceScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(
-                  context,
-                )!.failedToToggleGeofence(response.statusCode.toString()),
+                AppLocalizations.of(context)!.failedToToggleGeofence(
+                  friendlyError(
+                    ApiException(
+                      'toggle geofence',
+                      statusCode: response.statusCode,
+                    ),
+                    AppLocalizations.of(context)!,
+                  ),
+                ),
               ),
             ),
           );
@@ -192,9 +198,9 @@ class _GeofenceScreenState extends State<GeofenceScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(
-                context,
-              )!.failedToDeleteGeofence(e.toString()),
+              AppLocalizations.of(context)!.failedToDeleteGeofence(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
             ),
           ),
         );
@@ -222,9 +228,15 @@ class _GeofenceScreenState extends State<GeofenceScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                AppLocalizations.of(
-                  context,
-                )!.failedToCreateGeofence(response.statusCode.toString()),
+                AppLocalizations.of(context)!.failedToCreateGeofence(
+                  friendlyError(
+                    ApiException(
+                      'create geofence',
+                      statusCode: response.statusCode,
+                    ),
+                    AppLocalizations.of(context)!,
+                  ),
+                ),
               ),
             ),
           );
@@ -234,9 +246,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              AppLocalizations.of(context)!.genericError(e.toString()),
-            ),
+            content: Text(friendlyError(e, AppLocalizations.of(context)!)),
           ),
         );
       }
@@ -318,14 +328,16 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                       children: [
                         TextField(
                           controller: nameController,
-                          decoration: AppStyles.textFieldDecoration(
+                          decoration: AppStyles.textFieldDecorationOf(
+                            context,
                             labelText: l10n.zoneNameLabel,
                           ),
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
                           initialValue: selectedType,
-                          decoration: AppStyles.textFieldDecoration(
+                          decoration: AppStyles.textFieldDecorationOf(
+                            context,
                             labelText: l10n.geofenceTypeLabel,
                           ),
                           items: [
@@ -363,7 +375,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                       decimal: true,
                                       signed: true,
                                     ),
-                                decoration: AppStyles.textFieldDecoration(
+                                decoration: AppStyles.textFieldDecorationOf(
+                                  context,
                                   labelText: l10n.latitudeLabel,
                                 ),
                               ),
@@ -377,7 +390,8 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                                       decimal: true,
                                       signed: true,
                                     ),
-                                decoration: AppStyles.textFieldDecoration(
+                                decoration: AppStyles.textFieldDecorationOf(
+                                  context,
                                   labelText: l10n.longitudeLabel,
                                 ),
                               ),
@@ -442,7 +456,7 @@ class _GeofenceScreenState extends State<GeofenceScreen>
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        style: AppStyles.textButtonStyle,
+                        style: AppStyles.textButtonStyleOf(context),
                         onPressed: () => Navigator.pop(ctx),
                         child: Text(l10n.cancel),
                       ),
@@ -656,14 +670,17 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_geofenceError != null) {
+    final geofenceError = _geofenceError == null
+        ? null
+        : friendlyError(_geofenceError, l10n);
+    if (geofenceError != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_geofenceError!),
+            Text(geofenceError),
             const SizedBox(height: 12),
             FilledButton(
               style: AppStyles.accentButtonStyle,
@@ -932,14 +949,17 @@ class _GeofenceScreenState extends State<GeofenceScreen>
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_alertError != null) {
+    final alertError = _alertError == null
+        ? null
+        : friendlyError(_alertError, l10n);
+    if (alertError != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_alertError!),
+            Text(alertError),
             const SizedBox(height: 12),
             FilledButton(
               style: AppStyles.accentButtonStyle,

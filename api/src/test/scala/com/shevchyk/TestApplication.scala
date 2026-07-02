@@ -51,18 +51,20 @@ import com.shevchyk.core.repository.{
 import com.shevchyk.notification.application.{FcmService, LoggingEmailSmsService}
 import com.shevchyk.notification.domain.{AppNotification, AppNotificationId, FcmToken}
 import com.shevchyk.notification.repository.{FcmTokenRepository, NotificationRepository}
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.repository.DriverLocationRepository
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
   AirportConfigService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
   PickupTimeService,
   RideEstimateService,
-  RideService
+  RideService,
+  RideShareTokenService
 }
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
@@ -96,13 +98,27 @@ import com.shevchyk.ride.repository.{
   PartnerCompanyRepository,
   RideRatingRepository,
   RideRepository,
+  RideShareTokenRepository,
   RideTemplateRepository,
   TariffRepository,
   TimeBucket
 }
-import com.shevchyk.schedule.application.{ScheduleDayLookupAdapter, ScheduleService => ScheduleSvc}
-import com.shevchyk.schedule.domain.{DriverUnavailability, DriverScheduleVisibility, ScheduleDay, ScheduleError}
+import com.shevchyk.schedule.application.{
+  CalendarShareService,
+  ScheduleDayLookupAdapter,
+  ScheduleService => ScheduleSvc
+}
+import com.shevchyk.schedule.domain.{
+  CalendarShareGrant,
+  CalendarShareInvite,
+  DriverUnavailability,
+  DriverScheduleVisibility,
+  ScheduleDay,
+  ScheduleError
+}
 import com.shevchyk.schedule.repository.{
+  CalendarShareGrantRepository,
+  CalendarShareInviteRepository,
   DriverScheduleVisibilityRepository,
   DriverUnavailabilityRepository,
   ScheduleDayRepository
@@ -568,7 +584,7 @@ object TestApplication extends ZIOAppDefault:
     pickupDateTime = Instant.now().minusSeconds(1200),
     scheduledTime = Some(Instant.now().minusSeconds(1200)),
     startTime = Some(Instant.now().minusSeconds(1200)),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH456", isArrival = true))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH456"), isArrival = true))
   )
 
   private def rideSeed: Map[RideId, Ride] = Map[RideId, Ride](
@@ -733,6 +749,14 @@ object TestApplication extends ZIOAppDefault:
               )
               .toList
           )
+          def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                             = ridesRef.get.map(
+            _.values
+              .filter(r =>
+                r.status != RideStatus.Completed && r.status != RideStatus.Cancelled &&
+                  r.pickupDateTime.isAfter(from) && !r.pickupDateTime.isAfter(to)
+              )
+              .toList
+          )
           def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]                        = ridesRef.get.map(
             _.values
               .filter(r =>
@@ -742,6 +766,15 @@ object TestApplication extends ZIOAppDefault:
               )
               .toList
           )
+          def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]]          = ridesRef.get
+            .map(
+              _.values
+                .filter(r =>
+                  r.driverId.contains(driverId) && r.status != RideStatus.Cancelled &&
+                    !r.pickupDateTime.isBefore(from) && r.pickupDateTime.isBefore(to)
+                )
+                .toList
+            )
           def clearReminders(id: RideId): Task[Unit]                                                            = ZIO.unit
           // Platform-level analytics (SuperAdmin) — stub implementations
           def countAllRidesByStatus(): Task[Map[String, Int]]                                                   = ridesRef.get
@@ -778,7 +811,43 @@ object TestApplication extends ZIOAppDefault:
                   (true, m.updated(id, ride.copy(airportCheckpoint = Some(checkpoint))))
                 else (false, m)
           }
+          def updateFlightStatus(
+              rideId: RideId,
+              gate: Option[String],
+              terminal: Option[String],
+              flightStatus: Option[String],
+              flightTime: Option[java.time.Instant],
+              scheduledTime: Option[java.time.Instant],
+              departureTime: Option[java.time.Instant]
+          ): Task[Boolean] = ZIO.succeed(false)
+          def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]          = ZIO.none
+          def findFlightStatusFor(
+              rideIds: List[RideId]
+          ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = ZIO.succeed(Map.empty)
           private def periodTime(r: Ride): Instant                                                              = r.endTime.getOrElse(r.pickupDateTime)
+      }
+  )
+
+  // In-memory guest share tokens. Starts empty and accumulates; reset between scenarios.
+  private val inMemoryRideShareTokenRepositoryLayer: ZLayer[Any, Nothing, RideShareTokenRepository] = ZLayer.fromZIO(
+    Ref.Synchronized
+      .make(Map.empty[com.shevchyk.core.domain.RideShareTokenId, com.shevchyk.ride.domain.RideShareToken])
+      .map {
+        tokensRef =>
+          registerReset(tokensRef.set(Map.empty))
+          new RideShareTokenRepository:
+            def create(t: com.shevchyk.ride.domain.RideShareToken): Task[com.shevchyk.ride.domain.RideShareToken] =
+              tokensRef.update(_.updated(t.id, t)).as(t)
+            def findByToken(token: String): Task[Option[com.shevchyk.ride.domain.RideShareToken]]                 = tokensRef.get
+              .map(_.values.find(_.token == token))
+            def findActiveByRideId(rideId: RideId): Task[Option[com.shevchyk.ride.domain.RideShareToken]]         =
+              tokensRef.get.map(
+                _.values
+                  .filter(t => t.rideId == rideId && t.expiresAt.isAfter(Instant.now()))
+                  .toList
+                  .sortBy(_.createdAt)
+                  .lastOption
+              )
       }
   )
 
@@ -957,7 +1026,7 @@ object TestApplication extends ZIOAppDefault:
       def addItems(items: List[InvoiceItem]): Task[Unit]                                                     = ZIO.succeed(
         items.groupBy(_.invoiceId).foreach((k, v) => itemsStore.put(k, v))
       )
-      def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = ZIO.succeed(itemsStore.remove(invoiceId))
+      def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                      = ZIO.succeed(itemsStore.remove(invoiceId): Unit)
       def replaceItems(invoiceId: InvoiceId, taxiCompanyId: CompanyId, items: List[InvoiceItem]): Task[Unit] = ZIO
         .succeed {
           if items.isEmpty then itemsStore.remove(invoiceId) else itemsStore.put(invoiceId, items)
@@ -1026,11 +1095,11 @@ object TestApplication extends ZIOAppDefault:
       private val availability                                                                = new ConcurrentHashMap[PersonId, String]()
       registerReset(ZIO.succeed { locations.clear(); availability.clear() })
       def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO.succeed(
-        locations.put(driverId, DriverLocation(driverId, latitude, longitude))
+        locations.put(driverId, DriverLocation(driverId, latitude, longitude)): Unit
       )
       def getLocation(driverId: PersonId): Task[Option[DriverLocation]]                       = ZIO.succeed(Option(locations.get(driverId)))
       def updateAvailability(driverId: PersonId, status: String): Task[Unit]                  = ZIO.succeed(
-        availability.put(driverId, status)
+        availability.put(driverId, status): Unit
       )
       def getAvailability(driverId: PersonId): Task[Option[String]]                           = ZIO.succeed(Option(availability.get(driverId)))
       def findAvailableByCompanyId(
@@ -1065,7 +1134,7 @@ object TestApplication extends ZIOAppDefault:
       private val store                                                                                       = new ConcurrentHashMap[RideId, ClientLocation]()
       registerReset(ZIO.succeed(store.clear()))
       def updateLocation(rideId: RideId, clientId: PersonId, latitude: Double, longitude: Double): Task[Unit] = ZIO
-        .succeed(store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude)))
+        .succeed(store.put(rideId, ClientLocation(rideId, clientId, latitude, longitude)): Unit)
       def getLocation(rideId: RideId): Task[Option[ClientLocation]]                                           = ZIO.succeed(Option(store.get(rideId)))
   }
 
@@ -1251,6 +1320,20 @@ object TestApplication extends ZIOAppDefault:
   // /estimate endpoint and ride pricing resolve a tariff without a DB.
   private val inMemoryTariffRepositoryLayer: ZLayer[Any, Nothing, TariffRepository] = ZLayer.succeed(
     InMemoryTariffRepository.withDefaults(testCompanyId1)
+  )
+
+  // Empty in-memory flight provider — the dispatcher arrivals board (FlightApi) needs a FlightStatusProvider,
+  // but the test app does not exercise it, so an empty board (graceful-degradation contract) is enough.
+  private val inMemoryFlightStatusProviderLayer
+      : ZLayer[Any, Nothing, com.shevchyk.ride.application.service.FlightStatusProvider] = ZLayer.succeed(
+    new com.shevchyk.ride.application.service.FlightStatusProvider:
+      def lookup(
+          flightNumber: String,
+          date: java.time.LocalDate,
+          isArrival: Boolean
+      ): Task[Option[com.shevchyk.ride.domain.FlightInfo]] = ZIO.none
+      def list(date: java.time.LocalDate, isArrival: Boolean): Task[List[com.shevchyk.ride.domain.FlightInfo]] = ZIO
+        .succeed(Nil)
   )
 
   // ─── Seeded test Geofence ─────────────────────────────────────────────────
@@ -1546,6 +1629,10 @@ object TestApplication extends ZIOAppDefault:
       ZLayer.fromZIO(RateLimiter.make(maxRequests = 1000, windowSeconds = 60)),
       // Ride
       inMemoryRideRepositoryLayer,
+      inMemoryRideShareTokenRepositoryLayer,
+      RideShareTokenService.layer,
+      com.shevchyk.core.config.PublicLinkConfig.liveLayer,
+      EtaService.layer,
       inMemoryExpenseRepositoryLayer,
       RideEstimateService.live,
       ZLayer.succeed[RideRatingRepository] {
@@ -1583,6 +1670,16 @@ object TestApplication extends ZIOAppDefault:
       ClientAddressService.layer,
       inMemoryClientAddressRepositoryLayer,
       PickupTimeService.noopLayer,
+      // Real airport-timing service so the airport-timing endpoint is exercised end-to-end in BDD. A stub
+      // TravelTimeService returns a fixed 20-minute drive (the timing math itself is unit-tested separately).
+      ZLayer.succeed[com.shevchyk.ride.application.TravelTimeService](
+        new com.shevchyk.ride.application.TravelTimeService:
+          def travelMinutes(fromLat: Double, fromLng: Double, toLat: Double, toLng: Double): zio.Task[Option[Int]] = ZIO
+            .some(20)
+      ),
+      com.shevchyk.core.config.AirportArrivalTimingConfig.liveLayer,
+      com.shevchyk.core.config.AirportPickupConfig.liveLayer,
+      AirportTimingService.layer,
       // DriverAvailabilityChecker: noop for tests (no unavailability windows set up by default)
       ZLayer.succeed[DriverAvailabilityChecker](
         new DriverAvailabilityChecker:
@@ -1677,6 +1774,77 @@ object TestApplication extends ZIOAppDefault:
         }
       ),
       ScheduleSvc.layer,
+      // Calendar sharing (cross-company): in-memory repos + adapter + service
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[com.shevchyk.core.domain.CalendarShareInviteId, CalendarShareInvite]).map {
+          store =>
+            registerReset(store.set(Map.empty))
+            new CalendarShareInviteRepository:
+              import com.shevchyk.core.domain.CalendarShareInviteId
+              import java.time.Instant
+              def create(invite: CalendarShareInvite): Task[CalendarShareInvite]                                = store
+                .update(_.updated(invite.id, invite))
+                .as(invite)
+              def findByToken(token: String): Task[Option[CalendarShareInvite]]                                 = store.get.map(
+                _.values.find(_.token == token)
+              )
+              def findActiveByGrantor(grantorPersonId: PersonId, now: Instant): Task[List[CalendarShareInvite]] =
+                store.get.map(
+                  _.values.filter(i => i.grantorPersonId == grantorPersonId && i.isActive(now)).toList
+                )
+              def revoke(id: CalendarShareInviteId, grantorPersonId: PersonId, now: Instant): Task[Boolean]     = store
+                .modify { invites =>
+                  invites.get(id).filter(i => i.grantorPersonId == grantorPersonId && i.revokedAt.isEmpty) match
+                    case Some(invite) => (true, invites.updated(id, invite.copy(revokedAt = Some(now))))
+                    case None         => (false, invites)
+                }
+        }
+      ),
+      ZLayer.fromZIO(
+        Ref.Synchronized.make(Map.empty[com.shevchyk.core.domain.CalendarShareGrantId, CalendarShareGrant]).map {
+          store =>
+            registerReset(store.set(Map.empty))
+            new CalendarShareGrantRepository:
+              import com.shevchyk.core.domain.CalendarShareGrantId
+              import java.time.Instant
+              def create(grant: CalendarShareGrant): Task[CalendarShareGrant]                            = store.modifyZIO { grants =>
+                val duplicate = grants.values.exists(g =>
+                  g.grantorPersonId == grant.grantorPersonId &&
+                    g.granteePersonId == grant.granteePersonId && g.revokedAt.isEmpty
+                )
+                if duplicate then ZIO.fail(new RuntimeException("duplicate active grant"))
+                else ZIO.succeed((grant, grants.updated(grant.id, grant)))
+              }
+              def findById(id: CalendarShareGrantId): Task[Option[CalendarShareGrant]]                   = store.get.map(_.get(id))
+              def findActivePair(grantorPersonId: PersonId, granteePersonId: PersonId)
+                  : Task[Option[CalendarShareGrant]] = store.get.map(
+                _.values.find(g =>
+                  g.grantorPersonId == grantorPersonId && g.granteePersonId == granteePersonId && g.revokedAt.isEmpty
+                )
+              )
+              def findActiveByGrantor(grantorPersonId: PersonId): Task[List[CalendarShareGrant]]         = store.get.map(
+                _.values.filter(g => g.grantorPersonId == grantorPersonId && g.revokedAt.isEmpty).toList
+              )
+              def findActiveByGrantee(granteePersonId: PersonId): Task[List[CalendarShareGrant]]         = store.get.map(
+                _.values.filter(g => g.granteePersonId == granteePersonId && g.revokedAt.isEmpty).toList
+              )
+              def countActiveByGrantor(grantorPersonId: PersonId): Task[Int]                             = store.get.map(
+                _.values.count(g => g.grantorPersonId == grantorPersonId && g.revokedAt.isEmpty)
+              )
+              def revoke(id: CalendarShareGrantId, partyPersonId: PersonId, now: Instant): Task[Boolean] = store
+                .modify { grants =>
+                  grants
+                    .get(id)
+                    .filter(g =>
+                      (g.grantorPersonId == partyPersonId || g.granteePersonId == partyPersonId) && g.revokedAt.isEmpty
+                    ) match
+                    case Some(grant) => (true, grants.updated(id, grant.copy(revokedAt = Some(now))))
+                    case None        => (false, grants)
+                }
+        }
+      ),
+      com.shevchyk.ride.application.service.RideBusySlotAdapter.layer,
+      CalendarShareService.layer,
       // Notification
       inMemoryNotificationRepositoryLayer,
       resettableNotificationPreferenceRepositoryLayer,
@@ -1696,7 +1864,7 @@ object TestApplication extends ZIOAppDefault:
       stubGeocodingServiceLayer,
       // SuperAdmin CompanyRepository stub (platform-level; not exercised in BDD tests)
       ZLayer.succeed[CompanyRepository] {
-        import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus, SubscriptionPlan}
+        import com.shevchyk.core.domain.{Company, CompanyId, CompanyStatus}
         new CompanyRepository:
           def findAll(): Task[List[Company]]                   = ZIO.succeed(Nil)
           def findById(id: CompanyId): Task[Option[Company]]   = ZIO.none
@@ -1808,6 +1976,8 @@ object TestApplication extends ZIOAppDefault:
       ChatService.layer,
       inMemoryRideTemplateRepositoryLayer,
       inMemoryTariffRepositoryLayer,
+      // Flights (dispatcher arrivals board)
+      inMemoryFlightStatusProviderLayer,
       // Avatar
       AvatarService.layer
     )

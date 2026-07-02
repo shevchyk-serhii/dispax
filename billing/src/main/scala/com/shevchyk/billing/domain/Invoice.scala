@@ -1,6 +1,6 @@
 package com.shevchyk.billing.domain
 
-import com.shevchyk.core.domain.{ClientCompanyId, CompanyId, PersonId}
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId}
 import zio.json.*
 import com.github.f4b6a3.uuid.UuidCreator
 

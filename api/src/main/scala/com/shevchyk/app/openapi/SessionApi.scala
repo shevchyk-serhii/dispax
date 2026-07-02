@@ -3,7 +3,6 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.repository.TokenRepository
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.SessionRepository
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*

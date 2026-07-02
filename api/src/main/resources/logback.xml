@@ -18,7 +18,20 @@
   <logger name="java.rmi" level="ERROR" />
   <logger name="sun.rmi.transport.tcp" level="ERROR" />
 
-  <root level="DEBUG">
+  <!-- Quiet routine framework noise. The root is INFO (was DEBUG) because the
+       biggest offender, "ReadTimeoutException caught", is emitted via
+       ZIO.logDebug from zio-http's NettyConnectionPool$ReadTimeoutErrorHandler
+       when an idle outbound keep-alive connection is reaped by Netty's read
+       timeout — routine cleanup, not an error. Netty/Hikari/Postgres dump
+       verbose DEBUG on startup (PlatformDependent probes, HikariConfig), so pin
+       them at WARN; keep Flyway at INFO so migration progress stays visible.
+       Mirrors logback-test.xml. App logs stay at INFO via root. -->
+  <logger name="io.netty" level="WARN" />
+  <logger name="com.zaxxer.hikari" level="WARN" />
+  <logger name="org.postgresql" level="WARN" />
+  <logger name="org.flywaydb" level="INFO" />
+
+  <root level="INFO">
     <appender-ref ref="STDOUT" />
     <appender-ref ref="SENTRY" />
   </root>

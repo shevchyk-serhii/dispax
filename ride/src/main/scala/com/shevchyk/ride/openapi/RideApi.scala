@@ -2,14 +2,19 @@ package com.shevchyk.ride.openapi
 
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeocodingService
-import com.shevchyk.core.domain.{ExternalDriverId, PartnerCompanyId, PersonId}
+import com.shevchyk.core.config.AirportArrivalTimingConfig
+import com.shevchyk.core.domain.{ExternalDriverId, PartnerCompanyId, Person, PersonId}
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
+import com.shevchyk.core.application.EventHub
 import com.shevchyk.ride.application.service.{
   AirportCheckpointService,
+  AirportTimingService,
   ChatService,
   ClientAddressService,
   ClientLocationService,
+  FlightStatusProvider,
+  FlightStatusRefresher,
   RideEstimateService,
   RideService
 }
@@ -17,7 +22,7 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.infrastructure.http.dto.{*, given}
 import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
-import com.shevchyk.ride.repository.{RideRatingRepository, TariffRepository}
+import com.shevchyk.ride.repository.{RideRatingRepository, RideRepository, TariffRepository}
 import com.shevchyk.ride.validation.Validator.validate
 import com.shevchyk.ride.validation.given
 import sttp.model.{MediaType, StatusCode}
@@ -54,17 +59,8 @@ object RideApi:
   // -- Environment ---------------------------------------------------------
   type RideEnv =
     RideService & ClientAddressService & ClientLocationService & AirportCheckpointService & ChatService &
-      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService
-
-  // NOTE: AirportTimingConfig is used ONLY by the advisory `airport-timing` endpoint.
-  // For the ride creation pickup-time computation, use PickupTimeService (configurable per
-  // company/client, 3-level hierarchy). A follow-up cleanup ticket should remove this config
-  // once the advisory endpoint is also migrated to the configurable approach.
-  private object AirportTimingConfig:
-    val travelTimeMinutes: Int        = 45
-    val bufferTimeMinutes: Int        = 30
-    val optimalParkingCost: Double    = 12.50
-    val earlyEntryParkingCost: Double = 25.00
+      RideRatingRepository & PersonRepository & JwtService & TariffRepository & RideEstimateService & GeocodingService &
+      AirportTimingService & RideRepository & AirportArrivalTimingConfig & FlightStatusProvider & EventHub
 
   // ======================================================================
   // Endpoint descriptions
@@ -124,6 +120,7 @@ object RideApi:
 
   val airportTimingEndpoint = secureEndpoint.post
     .in("api" / "rides" / path[String]("rideId") / "airport-timing")
+    .in(jsonBody[AirportTimingRequest])
     .out(stringBody.and(header(sttp.model.Header.contentType(MediaType.ApplicationJson))))
     .tag(rideTag)
     .summary("Compute optimal airport timing for a ride")
@@ -161,6 +158,12 @@ object RideApi:
     .out(jsonBody[RideDto])
     .tag(rideTag)
     .summary("Get a ride by id")
+
+  val refreshFlightEndpoint = secureEndpoint.post
+    .in("api" / "rides" / path[String]("rideId") / "refresh-flight")
+    .out(jsonBody[RefreshFlightResponse])
+    .tag(rideTag)
+    .summary("Refresh a ride's flight status now (on-demand, same as the background monitor)")
 
   val listRidesEndpoint = secureEndpoint.get
     .in("api" / "rides")
@@ -289,6 +292,7 @@ object RideApi:
     handOffRideEndpoint,
     updateRideEndpoint,
     getRideEndpoint,
+    refreshFlightEndpoint,
     listRidesEndpoint,
     estimateRideEndpoint,
     updateClientLocationEndpoint,
@@ -311,35 +315,58 @@ object RideApi:
 
   private val createRideServer: ZServerEndpoint[RideEnv, Any] = createRideEndpoint.serverLogic { user => apiRequest =>
     for {
-      _              <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
-      companyId      <- requireCompanyId(user.companyId)
-      validRequest   <- apiRequest.validate.mapError(fromRideError)
-      domainRequest  <- CreateRideApiRequest
-                          .toDomain(validRequest, companyId)
-                          .mapError(_ => (StatusCode.BadRequest, ApiError("Invalid UUID format")))
-                          .map { req =>
-                            if (user.role.toUpperCase == "CLIENT")
-                              req.copy(clientId = PersonId(user.userId))
-                            else if (user.role.toUpperCase == "DRIVER" && validRequest.clientId == user.userId.toString)
-                              req.copy(clientId = PersonId(user.userId))
-                            else
-                              req
-                          }
+      _               <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
+      companyId       <- requireCompanyId(user.companyId)
+      validRequest    <- apiRequest.validate.mapError(fromRideError)
+      personRepo      <- ZIO.service[PersonRepository]
+      // Provisional ("from-chat") ride: no real client is known. Create a lightweight provisional
+      // client carrying the typed clientName/clientPhone (which were previously discarded), stamped
+      // with the creator's companyId for tenant isolation, and book the ride against it. This replaces
+      // the old "clientId == own userId" driver hack, which silently booked the ride onto the driver.
+      provisionalOpt  <-
+        ZIO
+          .when(validRequest.provisionalClient) {
+            val provisional = Person.provisionalClient(
+              name = Option(validRequest.clientName).map(_.trim).filter(_.nonEmpty),
+              phone = validRequest.clientPhone,
+              companyId = companyId
+            )
+            personRepo
+              .create(provisional)
+              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+          }
+      // For a client booking, the client is always the authenticated user. For a provisional ride,
+      // point clientId at the freshly created provisional client. Otherwise use the supplied clientId.
+      effectiveRequest =
+        provisionalOpt match
+          case Some(p) => validRequest.copy(clientId = p.id.value.toString)
+          case None    =>
+            if (user.role.toUpperCase == "CLIENT")
+              validRequest.copy(clientId = user.userId.toString)
+            else
+              validRequest
+      domainRequest   <- CreateRideApiRequest
+                           .toDomain(effectiveRequest, companyId)
+                           .mapError(_ => (StatusCode.BadRequest, ApiError("Invalid UUID format")))
       // Resolve the client's clientCompanyId so PickupTimeService can apply per-client timing
       // overrides (e.g. a corporate account with a custom check-in window). The lookup is
       // best-effort: if the person is not found or has no company affiliation, we proceed
-      // without a client override (company/global defaults apply).
-      personRepo     <- ZIO.service[PersonRepository]
-      clientPerson   <- personRepo
-                          .findById(domainRequest.clientId)
-                          .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
-      enrichedRequest =
+      // without a client override (company/global defaults apply). For a provisional ride we already
+      // hold the Person, so skip the round-trip.
+      clientPerson    <-
+        provisionalOpt match
+          case Some(p) => ZIO.some(p)
+          case None    =>
+            personRepo
+              .findById(domainRequest.clientId)
+              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+      enrichedRequest  =
         clientPerson
           .flatMap(_.clientCompanyId)
           .fold(domainRequest)(ccId => domainRequest.copy(clientCompanyId = Some(ccId)))
-      service        <- ZIO.service[RideService]
-      ride0          <- service.createRide(enrichedRequest).mapError(fromRideError)
-      ride           <-
+      service         <- ZIO.service[RideService]
+      ride0           <- service.createRide(enrichedRequest).mapError(fromRideError)
+      ride            <-
         validRequest.driverId match
           case Some(driverIdStr) =>
             parsePersonId(driverIdStr).flatMap { driverPid =>
@@ -358,24 +385,29 @@ object RideApi:
               service
                 .assignDriver(ride0.id, driverPid)
                 .catchSome {
-                  case RideError.ScheduleConflict(_)                           => ZIO.succeed(ride0)
+                  case _: RideError.ScheduleConflict                           => ZIO.succeed(ride0)
                   case RideError.BusinessRuleViolation("company_isolation", _) => ZIO.succeed(ride0)
                 }
                 .mapError(fromRideError)
             }
           case None              => ZIO.succeed(ride0)
-      addrService    <- ZIO.service[ClientAddressService]
-      _              <-
+      addrService     <- ZIO.service[ClientAddressService]
+      _               <-
         addrService
           .recordUsage(ride.clientId, ride.pickupLocation.address, "Pickup", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record from address: $e"))
           .ignore
-      _              <-
+      _               <-
         addrService
           .recordUsage(ride.clientId, ride.dropoffLocation.address, "Dropoff", None, None)
           .tapError(e => ZIO.logWarning(s"Failed to record to address: $e"))
           .ignore
-    } yield RideDto.fromDomain(ride, clientName = clientPerson.map(_.name))
+    } yield RideDto.fromDomain(
+      ride,
+      clientName = clientPerson.map(_.name),
+      clientHasAvatar = clientPerson.exists(_.avatarPresent),
+      clientProvisional = clientPerson.exists(_.provisional)
+    )
   }
 
   private val getPendingRidesServer: ZServerEndpoint[RideEnv, Any] = getPendingRidesEndpoint.serverLogic { user => _ =>
@@ -390,14 +422,21 @@ object RideApi:
       persons     <- ZIO
                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                        .mapError(fromRideError)
-      clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+      clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
       ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
     } yield rides.map { r =>
       val (rating, count) = r.driverId
         .flatMap(ratingStats.get)
         .map { case (avg, n) => (Some(avg), Some(n)) }
         .getOrElse((None, None))
-      RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      RideDto.fromDomain(
+        r,
+        clientName = clientMap.get(r.clientId).map(_.name),
+        clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+        clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
+        driverRating = rating,
+        driverRatingCount = count
+      )
     }
   }
 
@@ -413,75 +452,103 @@ object RideApi:
       persons     <- ZIO
                        .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
                        .mapError(fromRideError)
-      clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
+      clientMap    = persons.collect { case (id, Some(p)) => id -> p }.toMap
       ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
     } yield rides.map { r =>
       val (rating, count) = r.driverId
         .flatMap(ratingStats.get)
         .map { case (avg, n) => (Some(avg), Some(n)) }
         .getOrElse((None, None))
-      RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+      RideDto.fromDomain(
+        r,
+        clientName = clientMap.get(r.clientId).map(_.name),
+        clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+        clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
+        driverRating = rating,
+        driverRatingCount = count
+      )
     }
   }
 
   private val getDriverRidesServer: ZServerEndpoint[RideEnv, Any] = getDriverRidesEndpoint.serverLogic {
     user => driverId =>
       for {
-        driverPid   <- parsePersonId(driverId)
-        _           <- checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
-        companyId   <- requireCompanyId(user.companyId)
-        service     <- ZIO.service[RideService]
-        personRepo  <- ZIO.service[PersonRepository]
-        ratingRepo  <- ZIO.service[RideRatingRepository]
-        rides       <- service.getDriverRides(driverPid, companyId).mapError(fromRideError)
-        clientIds    = rides.map(_.clientId).distinct
-        persons     <- ZIO
-                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                         .mapError(fromRideError)
-        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        driverPid    <- parsePersonId(driverId)
+        _            <- checkRoleOrOwner(user, driverPid.value, "DISPATCHER")
+        companyId    <- requireCompanyId(user.companyId)
+        service      <- ZIO.service[RideService]
+        personRepo   <- ZIO.service[PersonRepository]
+        ratingRepo   <- ZIO.service[RideRatingRepository]
+        rideRepo     <- ZIO.service[RideRepository]
+        rides        <- service.getDriverRides(driverPid, companyId).mapError(fromRideError)
+        clientIds     = rides.map(_.clientId).distinct
+        persons      <- ZIO
+                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                          .mapError(fromRideError)
+        clientMap     = persons.collect { case (id, Some(p)) => id -> p }.toMap
+        ratingStats  <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        // Live flight gate/terminal/status (kept fresh by FlightStatusMonitor) for airport rides,
+        // loaded in one bulk query so the driver "Today" cards show it without an N+1. Mirrors the
+        // dispatcher "My Rides" endpoint (getRidesByDriversServer) which already enriches flight data.
+        airportIds    = rides.filter(_.isAirportTransfer).map(_.id)
+        flightMap    <- rideRepo.findFlightStatusFor(airportIds).mapError(fromRideError)
+        timingConfig <- ZIO.service[AirportArrivalTimingConfig]
       } yield rides.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
           .map { case (avg, n) => (Some(avg), Some(n)) }
           .getOrElse((None, None))
-        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+        val flight          = flightMap.get(r.id)
+        RideDto.fromDomain(
+          r,
+          clientName = clientMap.get(r.clientId).map(_.name),
+          clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
+          driverRating = rating,
+          driverRatingCount = count,
+          flight = flight,
+          optimalEntryTime = optimalEntryFor(r, flight, timingConfig)
+        )
       }
   }
 
   private val getClientRidesServer: ZServerEndpoint[RideEnv, Any] = getClientRidesEndpoint.serverLogic {
     user => clientId =>
       for {
-        clientPid   <- parsePersonId(clientId)
-        _           <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
-        companyId   <- requireCompanyId(user.companyId)
-        service     <- ZIO.service[RideService]
-        personRepo  <- ZIO.service[PersonRepository]
-        ratingRepo  <- ZIO.service[RideRatingRepository]
-        rides       <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
-        clientName  <- personRepo.findById(clientPid).map(_.map(_.name)).mapError(fromRideError)
+        clientPid     <- parsePersonId(clientId)
+        _             <- checkRoleOrOwner(user, clientPid.value, "DISPATCHER", "SECRETARY", "CLIENT_SECRETARY")
+        companyId     <- requireCompanyId(user.companyId)
+        service       <- ZIO.service[RideService]
+        personRepo    <- ZIO.service[PersonRepository]
+        ratingRepo    <- ZIO.service[RideRatingRepository]
+        rides         <- service.getClientRides(clientPid, companyId).mapError(fromRideError)
+        clientPerson  <- personRepo.findById(clientPid).mapError(fromRideError)
         // Resolve every distinct driver name once in parallel instead of one sequential
         // findById per ride (was N+1).
-        driverIds    = rides.flatMap(_.driverId).distinct
-        driverNames <- ZIO
-                         .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p.map(_.name)))
-                         .map(_.toMap)
-                         .mapError(fromRideError)
-        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
-        rideDtos     = rides.map { r =>
-                         val driverName          = r.driverId.flatMap(driverNames.getOrElse(_, None))
-                         val (rating, rateCount) = r.driverId
-                           .flatMap(ratingStats.get)
-                           .map { case (avg, n) => (Some(avg), Some(n)) }
-                           .getOrElse((None, None))
-                         RideDto.fromDomain(
-                           r,
-                           clientName = clientName,
-                           driverName = driverName,
-                           driverRating = rating,
-                           driverRatingCount = rateCount
-                         )
-                       }
+        driverIds      = rides.flatMap(_.driverId).distinct
+        // Resolve each driver once (parallel) as a full Person so we can surface
+        // both the name and whether they have a profile photo (avatarPresent).
+        driverPersons <- ZIO
+                           .foreachPar(driverIds)(id => personRepo.findById(id).map(p => id -> p))
+                           .map(_.toMap)
+                           .mapError(fromRideError)
+        ratingStats   <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        rideDtos       = rides.map { r =>
+                           val driverPerson        = r.driverId.flatMap(driverPersons.getOrElse(_, None))
+                           val (rating, rateCount) = r.driverId
+                             .flatMap(ratingStats.get)
+                             .map { case (avg, n) => (Some(avg), Some(n)) }
+                             .getOrElse((None, None))
+                           RideDto.fromDomain(
+                             r,
+                             clientName = clientPerson.map(_.name),
+                             clientHasAvatar = clientPerson.exists(_.avatarPresent),
+                             driverName = driverPerson.map(_.name),
+                             driverHasAvatar = driverPerson.exists(_.avatarPresent),
+                             driverRating = rating,
+                             driverRatingCount = rateCount
+                           )
+                         }
       } yield rideDtos
   }
 
@@ -501,8 +568,13 @@ object RideApi:
                             toPersonRole(user.role)
                           )
                           .mapError(fromRideError)
-        clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
+      )
   }
 
   private val assignDriverServer: ZServerEndpoint[RideEnv, Any] = assignDriverEndpoint.serverLogic {
@@ -525,8 +597,13 @@ object RideApi:
         ride           <- service
                             .assignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
-        clientName     <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson   <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
+      )
   }
 
   private val reassignDriverServer: ZServerEndpoint[RideEnv, Any] = reassignDriverEndpoint.serverLogic {
@@ -548,8 +625,13 @@ object RideApi:
         ride           <- service
                             .reassignDriver(parsedRideId, parsedDriverId, validated.overrideScheduleConflict)
                             .mapError(fromRideError)
-        clientName     <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson   <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
+      )
   }
 
   private val updateRideServer: ZServerEndpoint[RideEnv, Any] = updateRideEndpoint.serverLogic {
@@ -558,19 +640,25 @@ object RideApi:
         _            <- checkRole(user, "DRIVER", "DISPATCHER", "SECRETARY", "CLIENT")
         parsedRideId <- parseRideId(rideId)
         companyId    <- requireCompanyId(user.companyId)
+        validRequest <- apiRequest.validate.mapError(fromRideError)
         service      <- ZIO.service[RideService]
         personRepo   <- ZIO.service[PersonRepository]
         ride         <- service
                           .updateRideDetails(
                             parsedRideId,
-                            UpdateRideDetailsApiRequest.toDomain(apiRequest),
+                            UpdateRideDetailsApiRequest.toDomain(validRequest),
                             PersonId(user.userId),
                             toPersonRole(user.role),
                             Some(companyId)
                           )
                           .mapError(fromRideError)
-        clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-      } yield RideDto.fromDomain(ride, clientName = clientName)
+        clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+      } yield RideDto.fromDomain(
+        ride,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
+      )
   }
 
   private val getRideServer: ZServerEndpoint[RideEnv, Any] = getRideEndpoint.serverLogic { user => rideId =>
@@ -593,45 +681,106 @@ object RideApi:
                         .fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
                         .when(user.role.toUpperCase == "DRIVER" && !ride.driverId.exists(_.value == user.userId))
                         .mapError(fromRideError)
-      clientName   <- personRepo.findById(ride.clientId).map(_.map(_.name)).mapError(fromRideError)
-    } yield RideDto.fromDomain(ride, clientName = clientName)
+      clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+    } yield RideDto.fromDomain(
+      ride,
+      clientName = clientPerson.map(_.name),
+      clientHasAvatar = clientPerson.exists(_.avatarPresent),
+      clientProvisional = clientPerson.exists(_.provisional)
+    )
   }
 
-  private val airportTimingServer: ZServerEndpoint[RideEnv, Any] = airportTimingEndpoint.serverLogic { user => rideId =>
+  private val refreshFlightServer: ZServerEndpoint[RideEnv, Any] = refreshFlightEndpoint.serverLogic { user => rideId =>
     for {
-      _            <- checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+      // Anyone who works the ride and sees its card may trigger a refresh — it only re-reads the
+      // public flight board and never mutates booking data.
+      _            <- checkRole(user, "DISPATCHER", "DRIVER", "SECRETARY")
       parsedRideId <- parseRideId(rideId)
-      service      <- ZIO.service[RideService]
-      ride         <- service.getRideById(parsedRideId).mapError(fromRideError)
       companyId    <- requireCompanyId(user.companyId)
+      service      <- ZIO.service[RideService]
+      personRepo   <- ZIO.service[PersonRepository]
+      rideRepo     <- ZIO.service[RideRepository]
+      provider     <- ZIO.service[FlightStatusProvider]
+      eventHub     <- ZIO.service[EventHub]
+      ride         <- service.getRideById(parsedRideId).mapError(fromRideError)
+      // Company isolation: hide cross-tenant rides as not found instead of leaking their existence.
       _            <- ZIO
-                        .fail(RideError.UnauthorizedAccess(PersonId(user.userId), parsedRideId))
+                        .fail(RideError.RideNotFound(parsedRideId))
                         .when(ride.companyId != companyId)
                         .mapError(fromRideError)
-      now           = java.time.Instant.now()
-      flightTime    = ride.scheduledTime.getOrElse(now.plusSeconds(7200))
-      travelTime    = AirportTimingConfig.travelTimeMinutes
-      bufferTime    = AirportTimingConfig.bufferTimeMinutes
-      totalTime     = travelTime + bufferTime
-      optimalEntry  = flightTime.minusSeconds(totalTime * 60)
-      latestEntry   = flightTime.minusSeconds(bufferTime * 60)
-      timeToDepart  = java.time.Duration.between(now, optimalEntry).toMinutes.toInt
-      optimalCost   = AirportTimingConfig.optimalParkingCost
-      earlyCost     = AirportTimingConfig.earlyEntryParkingCost
-      savings       = earlyCost - optimalCost
-      body          =
-        s"""{
-          "optimalEntryTime": "${optimalEntry}",
-          "latestEntryTime": "${latestEntry}",
-          "travelTimeMinutes": $travelTime,
-          "bufferTimeMinutes": $bufferTime,
-          "optimalParkingCost": $optimalCost,
-          "earlyEntryParkingCost": $earlyCost,
-          "savings": $savings,
-          "flightStatus": "On time",
-          "timeToDepartMinutes": $timeToDepart
-        }"""
-    } yield body
+      result       <- FlightStatusRefresher.refresh(ride, rideRepo, provider, eventHub).mapError(fromRideError)
+      outcome       =
+        result match
+          case FlightStatusRefresher.RefreshResult.Updated(_) => "updated"
+          case FlightStatusRefresher.RefreshResult.Unchanged  => "unchanged"
+          case FlightStatusRefresher.RefreshResult.NotFound   => "notFound"
+      // Re-read the persisted flight row so the response reflects the latest stored data (incl. an
+      // unchanged or not-found case, where we still return the current row, not an empty one).
+      flightRow    <- rideRepo.findFlightStatus(parsedRideId).mapError(fromRideError)
+      clientPerson <- personRepo.findById(ride.clientId).mapError(fromRideError)
+    } yield RefreshFlightResponse(
+      ride = RideDto.fromDomain(
+        ride,
+        flight = flightRow,
+        clientName = clientPerson.map(_.name),
+        clientHasAvatar = clientPerson.exists(_.avatarPresent),
+        clientProvisional = clientPerson.exists(_.provisional)
+      ),
+      outcome = outcome
+    )
+  }
+
+  /**
+   * GPS-free recommended terminal-entry instant ("Einfahrt um") for a ride, for list cards. Only airport ARRIVAL rides
+   * get a value; everything else is None. The arrival time prefers the live flight time over the booking's scheduled
+   * time; the gate (else terminal) from the live flight row selects the satellite vs normal walk buffer.
+   */
+  private def optimalEntryFor(
+      ride: Ride,
+      flight: Option[FlightStatusRow],
+      config: AirportArrivalTimingConfig
+  ): Option[java.time.Instant] =
+    if !ride.isArrivalAirportTransfer then None
+    else
+      val arrivalTime = flight.flatMap(_.flightTime).orElse(ride.scheduledTime)
+      AirportTimingService.arrivalOptimalEntry(arrivalTime, flight.flatMap(_.gate), flight.flatMap(_.terminal), config)
+
+  private def fromAirportTimingError(error: AirportTimingService.Error): Err =
+    error match
+      case AirportTimingService.Error.NotFound              => (StatusCode.NotFound, ApiError("Ride not found"))
+      case AirportTimingService.Error.NotAnAirportTransfer  =>
+        (StatusCode.BadRequest, ApiError("Ride is not an airport transfer"))
+      case AirportTimingService.Error.SettingsLoadFailed(_) =>
+        (StatusCode.InternalServerError, ApiError("Internal server error"))
+
+  private val airportTimingServer: ZServerEndpoint[RideEnv, Any] = airportTimingEndpoint.serverLogic {
+    user => (rideId, request) =>
+      for {
+        _             <- checkRole(user, "CLIENT", "DRIVER", "DISPATCHER")
+        parsedRideId  <- parseRideId(rideId)
+        companyId     <- requireCompanyId(user.companyId)
+        service       <- ZIO.service[AirportTimingService]
+        fallbackCoords =
+          (request.driverLatitude, request.driverLongitude) match
+            case (Some(lat), Some(lng)) => Some((lat, lng))
+            case _                      => None
+        result        <- service
+                           .compute(parsedRideId, companyId, fallbackCoords)
+                           .mapError(fromAirportTimingError)
+        body           =
+          s"""{
+            "optimalEntryTime": "${result.optimalEntryTime}",
+            "latestEntryTime": "${result.latestEntryTime}",
+            "travelTimeMinutes": ${result.travelMinutes},
+            "bufferTimeMinutes": ${result.walkBufferMinutes},
+            "optimalParkingCost": ${result.optimalParkingCost},
+            "earlyEntryParkingCost": ${result.earlyEntryParkingCost},
+            "savings": ${result.savings},
+            "flightStatus": "${result.flightStatus}",
+            "actualArrivalTime": "${result.actualArrivalTime}",
+            "timeToDepartMinutes": ${result.timeToDepartMinutes}
+          }"""
+      } yield body
   }
 
   private val markPaymentServer: ZServerEndpoint[RideEnv, Any] = markPaymentEndpoint.serverLogic {
@@ -705,25 +854,41 @@ object RideApi:
   private val listRidesServer: ZServerEndpoint[RideEnv, Any] = listRidesEndpoint.serverLogic {
     user => (offsetOpt, limitOpt) =>
       for {
-        companyId   <- requireCompanyId(user.companyId)
-        offset       = Paging.clampOffset(offsetOpt.getOrElse(0))
-        limit        = Paging.clampLimit(limitOpt.getOrElse(50))
-        service     <- ZIO.service[RideService]
-        personRepo  <- ZIO.service[PersonRepository]
-        ratingRepo  <- ZIO.service[RideRatingRepository]
-        rides       <- service.getRidesByCompanyPaginated(companyId, offset, limit).mapError(fromRideError)
-        clientIds    = rides.map(_.clientId).distinct
-        persons     <- ZIO
-                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                         .mapError(fromRideError)
-        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        companyId    <- requireCompanyId(user.companyId)
+        offset        = Paging.clampOffset(offsetOpt.getOrElse(0))
+        limit         = Paging.clampLimit(limitOpt.getOrElse(50))
+        service      <- ZIO.service[RideService]
+        personRepo   <- ZIO.service[PersonRepository]
+        ratingRepo   <- ZIO.service[RideRatingRepository]
+        rideRepo     <- ZIO.service[RideRepository]
+        rides        <- service.getRidesByCompanyPaginated(companyId, offset, limit).mapError(fromRideError)
+        clientIds     = rides.map(_.clientId).distinct
+        persons      <- ZIO
+                          .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
+                          .mapError(fromRideError)
+        clientMap     = persons.collect { case (id, Some(p)) => id -> p }.toMap
+        ratingStats  <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        // Live flight gate/terminal/status (kept fresh by FlightStatusMonitor) for airport rides,
+        // loaded in one bulk query so the dispatcher schedule/list can show the gate without an N+1.
+        airportIds    = rides.filter(_.isAirportTransfer).map(_.id)
+        flightMap    <- rideRepo.findFlightStatusFor(airportIds).mapError(fromRideError)
+        timingConfig <- ZIO.service[AirportArrivalTimingConfig]
       } yield rides.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
           .map { case (avg, n) => (Some(avg), Some(n)) }
           .getOrElse((None, None))
-        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+        val flight          = flightMap.get(r.id)
+        RideDto.fromDomain(
+          r,
+          clientName = clientMap.get(r.clientId).map(_.name),
+          clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
+          driverRating = rating,
+          driverRatingCount = count,
+          flight = flight,
+          optimalEntryTime = optimalEntryFor(r, flight, timingConfig)
+        )
       }
   }
 
@@ -996,11 +1161,11 @@ object RideApi:
   private val getRidesByDriversServer: ZServerEndpoint[RideEnv, Any] = getRidesByDriversEndpoint.serverLogic {
     user => (driverIdsStr, fromDateOpt, toDateOpt) =>
       for {
-        _           <- checkRole(user, "DISPATCHER", "DRIVER")
-        companyId   <- requireCompanyId(user.companyId)
+        _            <- checkRole(user, "DISPATCHER", "DRIVER")
+        companyId    <- requireCompanyId(user.companyId)
         // Parse comma-separated driver IDs — request-parsing concern stays in the handler.
         // Cap to 10 to guard against DoS via very long ID lists.
-        driverPids  <-
+        driverPids   <-
           ZIO
             .foreach(
               driverIdsStr
@@ -1010,24 +1175,45 @@ object RideApi:
                 .take(10)
                 .toList
             )(parsePersonId)
-        service     <- ZIO.service[RideService]
-        personRepo  <- ZIO.service[PersonRepository]
-        ratingRepo  <- ZIO.service[RideRatingRepository]
+        service      <- ZIO.service[RideService]
+        personRepo   <- ZIO.service[PersonRepository]
+        ratingRepo   <- ZIO.service[RideRatingRepository]
+        rideRepo     <- ZIO.service[RideRepository]
         // Business logic (parallel fetch + date-filter) lives in the service layer.
-        filtered    <- service.getRidesByDrivers(driverPids, fromDateOpt, toDateOpt, companyId).mapError(fromRideError)
+        filtered     <- service.getRidesByDrivers(driverPids, fromDateOpt, toDateOpt, companyId).mapError(fromRideError)
         // DTO enrichment: client names and per-driver rating stats (presentational, not business logic).
-        clientIds    = filtered.map(_.clientId).distinct
-        persons     <- ZIO
-                         .foreachPar(clientIds)(id => personRepo.findById(id).map(p => id -> p))
-                         .mapError(fromRideError)
-        clientMap    = persons.collect { case (id, Some(p)) => id -> p.name }.toMap
-        ratingStats <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        // Resolve both client and driver Persons in one bulk fetch so the cards
+        // can show each one's name and profile photo (avatarPresent) without N+1.
+        peopleIds     = (filtered.map(_.clientId) ++ filtered.flatMap(_.driverId)).distinct
+        persons      <- ZIO
+                          .foreachPar(peopleIds)(id => personRepo.findById(id).map(p => id -> p))
+                          .mapError(fromRideError)
+        personMap     = persons.collect { case (id, Some(p)) => id -> p }.toMap
+        clientMap     = personMap
+        ratingStats  <- ratingRepo.driverRatingStatsByCompany(companyId).mapError(fromRideError)
+        // Live flight gate/terminal/status (kept fresh by FlightStatusMonitor) for airport rides,
+        // loaded in one bulk query so the dispatcher "My Rides" cards can show it without an N+1.
+        airportIds    = filtered.filter(_.isAirportTransfer).map(_.id)
+        flightMap    <- rideRepo.findFlightStatusFor(airportIds).mapError(fromRideError)
+        timingConfig <- ZIO.service[AirportArrivalTimingConfig]
       } yield filtered.map { r =>
         val (rating, count) = r.driverId
           .flatMap(ratingStats.get)
           .map { case (avg, n) => (Some(avg), Some(n)) }
           .getOrElse((None, None))
-        RideDto.fromDomain(r, clientName = clientMap.get(r.clientId), driverRating = rating, driverRatingCount = count)
+        val flight          = flightMap.get(r.id)
+        RideDto.fromDomain(
+          r,
+          clientName = clientMap.get(r.clientId).map(_.name),
+          clientHasAvatar = clientMap.get(r.clientId).exists(_.avatarPresent),
+          clientProvisional = clientMap.get(r.clientId).exists(_.provisional),
+          driverName = r.driverId.flatMap(personMap.get).map(_.name),
+          driverHasAvatar = r.driverId.flatMap(personMap.get).exists(_.avatarPresent),
+          driverRating = rating,
+          driverRatingCount = count,
+          flight = flight,
+          optimalEntryTime = optimalEntryFor(r, flight, timingConfig)
+        )
       }
   }
 
@@ -1054,6 +1240,7 @@ object RideApi:
     setRidePriceServer,
     getRidesByDriversServer,
     getRideServer,
+    refreshFlightServer,
     listRidesServer,
     updateClientLocationServer,
     getRideLocationsServer,

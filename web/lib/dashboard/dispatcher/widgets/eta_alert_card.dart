@@ -108,7 +108,11 @@ class EtaAlertCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.errorStrong,
+                                    // On the dark translucent-red card the dark
+                                    // errorStrong is unreadable; brighten it.
+                                    color: isDark
+                                        ? AppColors.rideCancelledTextDark
+                                        : AppColors.errorStrong,
                                   ),
                                 ),
                                 const SizedBox(height: 4),

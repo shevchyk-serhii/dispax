@@ -51,9 +51,9 @@ object RideRepositoryPlatformSpec extends ZIOSpecDefault:
         test("counts rides across all companies by status") {
           for {
             repo   <- ZIO.service[RideRepository]
-            r1     <- repo.create(ride(company1, RideStatus.Completed))
-            r2     <- repo.create(ride(company2, RideStatus.Completed))
-            r3     <- repo.create(ride(company1, RideStatus.Requested))
+            _      <- repo.create(ride(company1, RideStatus.Completed))
+            _      <- repo.create(ride(company2, RideStatus.Completed))
+            _      <- repo.create(ride(company1, RideStatus.Requested))
             counts <- repo.countAllRidesByStatus()
           } yield assertTrue(
             counts.getOrElse("Completed", 0) >= 2,

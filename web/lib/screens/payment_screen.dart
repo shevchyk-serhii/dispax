@@ -8,6 +8,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../l10n/app_localizations.dart';
+import '../modules/core/services/error_messages.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -19,7 +20,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   List<Ride> _unpaidRides = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -56,7 +57,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = e.toString();
+          _error = e;
         });
       }
     }
@@ -91,7 +92,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      dialogL10n.amountLabel(ride.price!.toStringAsFixed(2)),
+                      dialogL10n.amountLabel(
+                        (ride.price ?? 0).toStringAsFixed(2),
+                      ),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -170,7 +173,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.genericError(e.toString())),
+          content: Text(friendlyError(e, l10n)),
           backgroundColor: AppColors.error,
         ),
       );
@@ -232,14 +235,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return Center(child: CircularProgressIndicator.adaptive());
     }
 
-    if (_error != null) {
+    final error = _error == null ? null : friendlyError(_error, l10n);
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 12),
-            Text(_error!),
+            Text(error),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadUnpaidRides,
@@ -365,7 +369,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   if (ride.price != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      '${ride.price!.toStringAsFixed(2)} EUR',
+                      '${(ride.price ?? 0).toStringAsFixed(2)} EUR',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

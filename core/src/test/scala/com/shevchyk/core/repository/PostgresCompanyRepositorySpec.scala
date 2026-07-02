@@ -24,7 +24,7 @@ object PostgresCompanyRepositorySpec extends ZIOSpecDefault:
 
   private def makeCompany(
       name: String = "Test Firma GmbH",
-      email: String = s"test-${UUID.randomUUID()}@superadmin-test.de",
+      email: String,
       status: CompanyStatus = CompanyStatus.Active,
       plan: SubscriptionPlan = SubscriptionPlan.Free
   ): Company = Company(

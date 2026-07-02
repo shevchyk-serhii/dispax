@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_styles.dart';
 import '../../modules/core/date_utils.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../utils/ride_status_styles.dart';
 
@@ -31,8 +34,12 @@ class RideControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+    final paymentLabel = PaymentMethod.labelForWire(ride.paymentMethod, l10n);
+    final price = ride.price;
+    final checkpoint = airportCheckpoint;
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.paddingLarge),
@@ -110,6 +117,47 @@ class RideControlPanel extends StatelessWidget {
             ],
           ),
 
+          if (price != null) ...[
+            const SizedBox(height: AppDimensions.paddingSmall),
+            Row(
+              children: [
+                Icon(
+                  Icons.euro,
+                  color: onSurfaceVariant,
+                  size: AppDimensions.iconSmall,
+                ),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
+                  // Currency symbol + amount is locale-neutral; drop a trailing
+                  // ".0" so a whole-euro fare reads "45", not "45.0".
+                  '€${price == price.roundToDouble() ? price.toStringAsFixed(0) : price}',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          if (paymentLabel != null) ...[
+            const SizedBox(height: AppDimensions.paddingSmall),
+            Row(
+              children: [
+                Icon(
+                  Icons.payments_outlined,
+                  color: onSurfaceVariant,
+                  size: AppDimensions.iconSmall,
+                ),
+                const SizedBox(width: AppDimensions.paddingSmall),
+                Text(
+                  paymentLabel,
+                  style: AppStyles.bodyMedium.copyWith(color: onSurface),
+                ),
+              ],
+            ),
+          ],
+
           if (ride.etaMinutes != null) ...[
             const SizedBox(height: AppDimensions.paddingSmall),
             Row(
@@ -141,17 +189,22 @@ class RideControlPanel extends StatelessWidget {
                   size: AppDimensions.iconSmall,
                 ),
                 const SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  ride.fullFlightInfo,
-                  style: AppStyles.bodyMedium.copyWith(color: onSurface),
-                ),
+                Text(() {
+                  final flightInfo = l10n.fullFlightInfoLocalized(ride);
+                  final statusText = l10n.localizedFlightStatus(
+                    ride.flightStatus,
+                  );
+                  return statusText.isEmpty
+                      ? flightInfo
+                      : '$flightInfo • ${ride.flightStatusIcon} $statusText';
+                }(), style: AppStyles.bodyMedium.copyWith(color: onSurface)),
               ],
             ),
           ],
 
-          if (airportCheckpoint != null) ...[
+          if (checkpoint != null) ...[
             const SizedBox(height: AppDimensions.paddingSmall),
-            airportCheckpoint!,
+            checkpoint,
           ],
 
           const SizedBox(height: AppDimensions.paddingLarge),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../modules/core/services/error_messages.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +10,7 @@ import '../../../modules/core/navigation_utils.dart';
 import '../../../modules/core/navigation_helper.dart';
 import '../../../constants/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
 import 'widgets/ride_calendar_card.dart';
 
 class DayViewWidget extends StatelessWidget {
@@ -26,19 +28,26 @@ class DayViewWidget extends StatelessWidget {
   /// already scoped to the chosen driver, so [driverIdFilter] is a no-op for it.
   final List<Ride>? ridesOverride;
 
+  /// The displayed driver's work shifts; the ones falling on [selectedDay]
+  /// render as availability chips under the day header. Cancelled shifts must
+  /// be filtered out by the caller.
+  final List<ScheduleDay> shifts;
+
   const DayViewWidget({
     super.key,
     required this.selectedDay,
     required this.onRideSelected,
     this.driverIdFilter,
     this.ridesOverride,
+    this.shifts = const [],
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (ridesOverride != null) {
-      return _buildBody(context, colorScheme, ridesOverride!);
+    final override = ridesOverride;
+    if (override != null) {
+      return _buildBody(context, colorScheme, override);
     }
     return BlocBuilder<RideBloc, RideState>(
       builder: (context, rideState) =>
@@ -71,12 +80,73 @@ class DayViewWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildDayHeader(context),
+          buildShiftRow(context),
           Expanded(
             child: dayRides.isEmpty
                 ? buildEmptyState(context)
                 : buildRidesList(context, dayRides),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Availability chips for the selected day's work shifts, right under the
+  /// header. Collapses to nothing when the day has no shifts.
+  Widget buildShiftRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final dayShifts =
+        shifts
+            .where(
+              (s) =>
+                  s.date.year == selectedDay.year &&
+                  s.date.month == selectedDay.month &&
+                  s.date.day == selectedDay.day,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    if (dayShifts.isEmpty) return const SizedBox.shrink();
+
+    String hhmm(String raw) => raw.length >= 5 ? raw.substring(0, 5) : raw;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: dayShifts
+            .map(
+              (shift) => Container(
+                key: ValueKey('day-shift-${shift.id}'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.schedule, size: 14, color: AppColors.success),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${l10n.sharedCalendarShift} ${hhmm(shift.startTime)}–${hhmm(shift.endTime)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -229,7 +299,9 @@ class DayViewWidget extends StatelessWidget {
           if (context.mounted) {
             NavigationHelper.showSnackBar(
               context,
-              AppLocalizations.of(context)!.failedToSetPrice(e.toString()),
+              AppLocalizations.of(context)!.failedToSetPrice(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
               isError: true,
             );
           }
@@ -251,7 +323,8 @@ class DayViewWidget extends StatelessWidget {
                 tooltip: l10n.callClient,
               ),
               IconButton(
-                onPressed: () => _handleNavigation(context, ride),
+                onPressed: () =>
+                    NavigationUtils.showNavigateToDialog(context, ride),
                 icon: const Icon(Icons.navigation, color: AppColors.info),
                 tooltip: l10n.startNavigation,
               ),
@@ -339,56 +412,6 @@ class DayViewWidget extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _handleNavigation(BuildContext context, Ride ride) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final choice = await showAdaptiveDialog<String>(
-        context: context,
-        builder: (ctx) => SimpleDialog(
-          title: Text(l10n.navigateTo),
-          children: [
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'pickup'),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.location_on,
-                  color: AppColors.success,
-                ),
-                title: Text(ride.from.address),
-                subtitle: Text(l10n.pickupLocation),
-              ),
-            ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, 'dropoff'),
-              child: ListTile(
-                leading: const Icon(Icons.flag, color: AppColors.error),
-                title: Text(ride.to.address),
-                subtitle: Text(l10n.dropoffLocation),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (choice == null) return;
-
-      switch (choice) {
-        case 'pickup':
-          await NavigationUtils.openGoogleMapsNavigation(ride.from);
-        case 'dropoff':
-          await NavigationUtils.openGoogleMapsNavigation(ride.to);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          l10n.couldNotOpenNavigation(e.toString()),
-          isError: true,
-        );
-      }
-    }
   }
 
   Widget buildTravelTimeIndicator(BuildContext context, int minutes) {

@@ -130,6 +130,67 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           }
         }
       }.provide(baseLayers),
+      test("RideAssigned includes the fare in the driver notification when priced") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, Some(BigDecimal("45.5"))),
+            PersonId(driverId)
+          ).map { notifs =>
+            val assigned = notifs.filter(_.notificationType == "ride_assigned")
+            assertTrue(
+              // The amount is appended to the body and carried in the data map.
+              assigned.exists(_.body.contains("€45.5")),
+              assigned.exists(_.data.exists(_.contains("\"price\":\"€45.5\"")))
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("RideAssigned omits the fare when the ride has no price") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, None),
+            PersonId(driverId)
+          ).map { notifs =>
+            val assigned = notifs.filter(_.notificationType == "ride_assigned")
+            assertTrue(
+              assigned.nonEmpty,
+              assigned.forall(!_.body.contains("€")),
+              assigned.forall(!_.data.exists(_.contains("\"price\"")))
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("RideCreated includes the fare in the client booking confirmation when priced") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideCreated(rideId, clientId, companyId, Some(BigDecimal("60"))),
+            PersonId(clientId)
+          ).map { notifs =>
+            val created = notifs.filter(_.notificationType == "ride_created")
+            assertTrue(
+              // Whole euros render without a trailing ".0".
+              created.exists(_.body.contains("€60")),
+              created.forall(!_.body.contains("€60.0")),
+              created.exists(_.data.exists(_.contains("\"price\":\"€60\"")))
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("RideCreated omits the fare when the ride has no price") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideCreated(rideId, clientId, companyId, None),
+            PersonId(clientId)
+          ).map { notifs =>
+            val created = notifs.filter(_.notificationType == "ride_created")
+            assertTrue(
+              created.nonEmpty,
+              created.forall(!_.body.contains("€")),
+              created.forall(!_.data.exists(_.contains("\"price\"")))
+            )
+          }
+        }
+      }.provide(baseLayers),
       test("RideStatusChanged InProgress saves Ride Started notification for driver") {
         ZIO.scoped {
           publishAndCollect(
@@ -325,16 +386,16 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       test("AirportCheckpointReached does NOT send duplicate push when same checkpointType sent twice") {
         ZIO.scoped {
           for {
-            _              <- PushNotificationListener.start
-            eventHub       <- ZIO.service[EventHub]
-            notifRepo      <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
-            checkpointRepo <- ZIO.service[com.shevchyk.notification.repository.CheckpointNotificationRepository]
-            event           = WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
-            _              <- eventHub.publish(event)
-            _              <- TestClock.adjust(200.millis)
-            _              <- eventHub.publish(event)
-            _              <- TestClock.adjust(200.millis)
-            notifs         <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
+            _         <- PushNotificationListener.start
+            eventHub  <- ZIO.service[EventHub]
+            notifRepo <- ZIO.service[com.shevchyk.notification.repository.NotificationRepository]
+            _         <- ZIO.service[com.shevchyk.notification.repository.CheckpointNotificationRepository]
+            event      = WebSocketEvent.AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+            _         <- eventHub.publish(event)
+            _         <- TestClock.adjust(200.millis)
+            _         <- eventHub.publish(event)
+            _         <- TestClock.adjust(200.millis)
+            notifs    <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
           } yield assertTrue(
             notifs.count(_.notificationType == "airport_checkpoint") == 1
           )

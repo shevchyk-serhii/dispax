@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,7 +17,7 @@ class RidePoolScreen extends StatefulWidget {
 class _RidePoolScreenState extends State<RidePoolScreen> {
   List<Map<String, dynamic>> _pools = [];
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -40,7 +41,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
@@ -142,9 +143,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(
-                            dialogContext,
-                          )!.genericError(e.toString()),
+                          friendlyError(e, AppLocalizations.of(dialogContext)!),
                         ),
                       ),
                     );
@@ -284,9 +283,9 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(
-                context,
-              )!.errorLoadingPoolDetails(e.toString()),
+              AppLocalizations.of(context)!.errorLoadingPoolDetails(
+                friendlyError(e, AppLocalizations.of(context)!),
+              ),
             ),
           ),
         );
@@ -342,7 +341,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(friendlyError(_error, l10n)),
                       ElevatedButton(
                         onPressed: _loadPools,
                         child: Text(l10n.retry),
@@ -554,17 +553,17 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.drive_eta,
                         size: 14,
-                        color: AppColors.driverColor,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Driver: ${_shortId(driverId.toString())}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.driverColor,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

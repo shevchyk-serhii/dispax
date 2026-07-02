@@ -4,7 +4,16 @@ import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.repository.{PersonRepository, SessionRepository}
-import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, Session, SessionId, UserStatus}
+import com.shevchyk.core.domain.{
+  ClientCompanyId,
+  CompanyId,
+  Person,
+  PersonId,
+  PersonRole,
+  Session,
+  SessionId,
+  UserStatus
+}
 import zio.*
 import java.time.Instant
 import java.util.UUID
@@ -23,7 +32,13 @@ trait AuthService:
       deviceInfo: Option[String] = None,
       ipAddress: Option[String] = None
   ): ZIO[Any, AuthError, LoginResponse]
-  def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto]
+
+  /**
+   * Creates a user inside the given company. `companyId` comes from the creating dispatcher's/admin's JWT (never from
+   * the request body) so a caller cannot place a user into another tenant. The new user is created with a temporary
+   * password and `mustChangePassword = true`, forcing a password change on first login.
+   */
+  def createUser(request: CreateUserRequest, companyId: CompanyId): ZIO[Any, AuthError, UserDto]
   def getUserById(id: UUID): ZIO[Any, AuthError, UserDto]
   def getUserByEmail(email: String): ZIO[Any, AuthError, UserDto]
 
@@ -33,6 +48,18 @@ trait AuthService:
    * the preceding read used `findById` (no company) while the SQL update was already company-guarded.
    */
   def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
+
+  /**
+   * Promote a provisional ("from-chat / walk-in") client to a real client, scoped to `companyId`: the row is read and
+   * updated only when it belongs to that company AND is currently provisional. Fills in name/phone/clientCompanyId and
+   * clears the `provisional` flag in place, so the ride keeps its `clientId` and history. Fails `UserNotFound` for a
+   * missing/cross-tenant id (no existence leak) and `ValidationError` when the target is not provisional.
+   */
+  def upgradeProvisionalClient(
+      id: UUID,
+      companyId: CompanyId,
+      request: UpgradeProvisionalClientRequest
+  ): ZIO[Any, AuthError, UserDto]
 
   /**
    * Hard-deletes a user by id, scoped to `companyId`: the row is only removed when it belongs to that company, so a
@@ -130,7 +157,7 @@ class AuthServiceImpl(
     if errors.nonEmpty then Left(s"Invalid roles: ${errors.mkString(", ")}")
     else Right(parsed.collect { case Right(r) => r }.toSet)
 
-  override def createUser(request: CreateUserRequest): ZIO[Any, AuthError, UserDto] =
+  override def createUser(request: CreateUserRequest, companyId: CompanyId): ZIO[Any, AuthError, UserDto] =
     for
       _        <- ZIO.when(!validateEmail(request.email))(ZIO.fail(ValidationError("email", "Invalid email format")))
       _        <-
@@ -164,10 +191,13 @@ class AuthServiceImpl(
                     name = request.name,
                     email = request.email,
                     role = role,
+                    companyId = Some(companyId),
                     passwordHash = pwHash,
                     phone = request.phone,
                     status = UserStatus.ACTIVE,
-                    roles = rolesSet
+                    roles = rolesSet,
+                    // The creator sets a temporary password and shares it out-of-band; force a change on first login.
+                    mustChangePassword = true
                   )
       created  <- personRepository.create(person).orElseFail(ValidationError("user", "Failed to create user"))
       // If the new person has the Driver role, ensure a drivers row exists for location/status tracking
@@ -234,6 +264,31 @@ class AuthServiceImpl(
           )
     yield UserDto.fromPerson(saved)
 
+  override def upgradeProvisionalClient(
+      id: UUID,
+      companyId: CompanyId,
+      request: UpgradeProvisionalClientRequest
+  ): ZIO[Any, AuthError, UserDto] =
+    for
+      existingOpt     <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
+      existing        <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
+      _               <- ZIO.when(!existing.provisional)(ZIO.fail(ValidationError("provisional", "Client is not provisional")))
+      clientCompanyId <-
+        request.clientCompanyId.fold(ZIO.succeed(existing.clientCompanyId))(raw =>
+          ZIO
+            .attempt(ClientCompanyId(UUID.fromString(raw)))
+            .mapBoth(_ => ValidationError("clientCompanyId", "Invalid clientCompanyId format"), Some(_))
+        )
+      // Upgrade in place: keep id/email so the ride's clientId and history stay intact; clear the provisional flag.
+      updated          = existing.copy(
+                           name = request.name.map(_.trim).filter(_.nonEmpty).getOrElse(existing.name),
+                           phone = request.phone.map(_.trim).filter(_.nonEmpty).orElse(existing.phone),
+                           clientCompanyId = clientCompanyId,
+                           provisional = false
+                         )
+      saved           <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to upgrade client"))
+    yield UserDto.fromPerson(saved)
+
   override def deleteUser(id: UUID, companyId: CompanyId): ZIO[Any, AuthError, Unit] =
     for
       personOpt <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
@@ -263,7 +318,9 @@ class AuthServiceImpl(
                    )
       _         <- ZIO.when(!pwMatch)(ZIO.fail(InvalidCredentials(person.email)))
       newHash   <- hashPassword(request.newPassword).orElseFail(ValidationError("password", "Failed to hash password"))
-      updated    = person.copy(passwordHash = newHash)
+      // Clearing the temporary-password flag lifts the forced-change gate (this is also the first-login change path).
+      // Clearing the temporary-password flag lifts the forced-change gate (this is also the first-login change path).
+      updated    = person.copy(passwordHash = newHash, mustChangePassword = false)
       _         <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update password"))
       _         <- tokenRepository.deleteByUserId(userId).orElseFail(ValidationError("token", "Failed to invalidate tokens"))
     yield ()

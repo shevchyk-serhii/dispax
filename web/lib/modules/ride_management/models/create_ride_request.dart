@@ -1,4 +1,5 @@
 import '../../core/models/location.dart';
+import 'payment_method.dart';
 import 'vehicle_class.dart';
 
 /// Request model for creating a ride.
@@ -32,9 +33,26 @@ class CreateRideRequest {
 
   final String? notes;
   final List<String>? specialRequirements;
+
+  /// Free-form operator tags. Sent as a JSON array (unlike specialRequirements,
+  /// which is joined into a CSV string). Omitted from the payload when empty.
+  final List<String>? tags;
   final String? driverId;
   final String? newClientPhone;
   final VehicleClass vehicleClass;
+
+  /// Operator-selected payment method. Defaults to [PaymentMethod.invoice]
+  /// (Rechnung) and is always sent to the backend.
+  final PaymentMethod paymentMethod;
+
+  /// Operator-supplied ride price (€). Optional — omitted from the payload when
+  /// null, in which case the backend creates the ride without a price.
+  final double? price;
+
+  /// When true, the ride is booked "from chat" without a real client: the backend creates a
+  /// lightweight provisional client (carrying [clientName]/[newClientPhone]) and books the ride
+  /// onto it, to be upgraded into a real client later. [clientId] is sent empty in this mode.
+  final bool provisionalClient;
 
   const CreateRideRequest({
     required this.clientId,
@@ -50,22 +68,31 @@ class CreateRideRequest {
     this.manualPickupDateTime,
     this.notes,
     this.specialRequirements,
+    this.tags,
     this.driverId,
     this.newClientPhone,
     this.vehicleClass = VehicleClass.business,
+    this.paymentMethod = PaymentMethod.invoice,
+    this.price,
+    this.provisionalClient = false,
   });
 
   Map<String, dynamic> toJson() {
-    final isDeparture = isAirportTransfer && !isArrival;
+    final pickup = manualPickupDateTime;
+    final flightTime = flightDepartureTime;
+    final requirements = specialRequirements;
+    final tagsList = tags;
+    final clientPhone = newClientPhone;
 
     return {
       'clientId': clientId,
       'creatorId': creatorId,
       'companyId': companyId,
       // For departure rides without a manual pickup time, omit pickupDateTime so
-      // the backend knows to compute it from flightTime. For all other cases include it.
-      if (!isDeparture || manualPickupDateTime != null)
-        'pickupDateTime': manualPickupDateTime!.toUtc().toIso8601String(),
+      // the backend knows to compute it from flightTime. For all other cases include
+      // the manual pickup time when present (a non-departure ride is expected to
+      // carry one).
+      if (pickup != null) 'pickupDateTime': pickup.toUtc().toIso8601String(),
       'from': from.toJson(),
       'to': to.toJson(),
       'status': 'Requested',
@@ -73,15 +100,18 @@ class CreateRideRequest {
       if (flightNumber != null) 'flightNumber': flightNumber,
       'isAirportTransfer': isAirportTransfer,
       'isArrival': isArrival,
-      if (flightDepartureTime != null)
-        'flightTime': flightDepartureTime!.toUtc().toIso8601String(),
+      if (flightTime != null)
+        'flightTime': flightTime.toUtc().toIso8601String(),
       if (notes != null) 'notes': notes,
-      if (specialRequirements != null)
-        'specialRequirements': specialRequirements!.join(', '),
+      if (requirements != null) 'specialRequirements': requirements.join(', '),
+      if (tagsList != null && tagsList.isNotEmpty) 'tags': tagsList,
       if (driverId != null) 'driverId': driverId,
-      if (newClientPhone != null && newClientPhone!.isNotEmpty)
-        'clientPhone': newClientPhone,
+      if (clientPhone != null && clientPhone.isNotEmpty)
+        'clientPhone': clientPhone,
       'vehicleClass': vehicleClass.wire,
+      'paymentMethod': paymentMethod.wire,
+      if (price != null) 'price': price,
+      if (provisionalClient) 'provisionalClient': true,
     };
   }
 

@@ -3,12 +3,15 @@ package com.shevchyk.ride.infrastructure.http.dto
 import com.shevchyk.auth.middleware.UuidParser
 import com.shevchyk.core.domain.{Location, CompanyId}
 import com.shevchyk.ride.domain.{
+  AirportCheckpoint,
   Ride,
   CreateRideRequest,
+  FlightStatusRow,
   RideSpecifics,
   RideStatus,
   PaymentStatus,
   PaymentMethod,
+  TagNormalizer,
   UpdateRideDetailsRequest,
   VehicleClass
 }
@@ -18,7 +21,7 @@ import zio.json.*
 import java.time.Instant
 
 given JsonCodec[RideStatus] = JsonCodec.string.transformOrFail(
-  str => scala.util.Try(RideStatus.valueOf(str)).toEither.left.map(e => s"Unknown RideStatus: $str"),
+  str => scala.util.Try(RideStatus.valueOf(str)).toEither.left.map(_ => s"Unknown RideStatus: $str"),
   status => status.toString
 )
 
@@ -49,14 +52,34 @@ case class RideDto(
     to: LocationDto,
     status: String,
     clientName: String,
+    // Whether the client has a profile photo, so a driver/dispatcher card can render their avatar.
+    // Derived from the client Person already loaded for clientName; defaults false for backward compatibility.
+    clientHasAvatar: Boolean = false,
+    // True when the client is a provisional ("from-chat / walk-in") placeholder not yet filled in. The card
+    // then shows the route instead of the placeholder name, and an action to upgrade it to a real client.
+    clientProvisional: Boolean = false,
     flightNumber: Option[String] = None,
+    // The latest known flight instant (estimated/live, else scheduled) — what the card shows as the arrival.
     flightTime: Option[String] = None,
+    // The scheduled (on-time) flight instant, tracked separately so the card can show the delay
+    // (flightTime − flightScheduledTime). None until the flight monitor has fetched data.
+    flightScheduledTime: Option[String] = None,
+    // For airport ARRIVAL rides: the origin take-off instant, so the card can animate the en-route progress as
+    // (now − flightDepartureTime) / (flightTime − flightDepartureTime). None until the monitor's detail lookup runs.
+    flightDepartureTime: Option[String] = None,
     isAirportTransfer: Boolean = false,
     isArrival: Boolean = false,
     gate: Option[String] = None,
     terminal: Option[String] = None,
     flightStatus: Option[String] = None,
+    // For airport ARRIVAL rides: the recommended instant to enter the terminal parking
+    // (arrival + walk-out buffer − free-parking window), computed terminal-aware on the backend.
+    // The driver card renders it as "Einfahrt um HH:mm". None when not an arrival or no config/arrival time.
+    optimalEntryTime: Option[String] = None,
     driverName: Option[String] = None,
+    // true when the assigned driver has a profile photo (mirrors clientHasAvatar).
+    // Default false: unassigned rides / endpoints that don't resolve the driver.
+    driverHasAvatar: Boolean = false,
     driverLocation: Option[LocationDto] = None,
     driverApproaching: Boolean = false,
     driverDistanceMeters: Option[Int] = None,
@@ -84,7 +107,13 @@ case class RideDto(
     partnerCompanyId: Option[String] = None,
     confirmed: Boolean = false,
     confirmedAt: Option[String] = None,
-    rejectionReason: Option[String] = None
+    rejectionReason: Option[String] = None,
+    // Free-form operator tags attached to the ride.
+    tags: List[String] = Nil,
+    // Passenger-reported airport progress for arrival transfers: "landed" | "arrivals_hall" |
+    // "terminal_exit" (None until the passenger reports). Surfaced so the driver/dispatcher card
+    // can show the live status without an extra request.
+    airportCheckpoint: Option[String] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -114,7 +143,17 @@ case class CreateRideApiRequest(
     notes: Option[String] = None,
     specialRequirements: Option[String] = None,
     driverId: Option[String] = None,
-    vehicleClass: Option[String] = None
+    vehicleClass: Option[String] = None,
+    // Operator-selected payment method (wire enum name, e.g. "Invoice"). Absent leaves it unset.
+    paymentMethod: Option[String] = None,
+    // Free-form operator tags. Normalized server-side before persistence.
+    tags: Option[List[String]] = None,
+    // When true, the ride is booked without a real client (e.g. taken from a chat): the backend creates a
+    // lightweight provisional client carrying clientName/clientPhone, to be upgraded into a real client later.
+    // Set by driver/dispatcher. Replaces the old "clientId == own userId" driver hack.
+    provisionalClient: Boolean = false,
+    // Optional phone for the provisional client, when known from the chat. Ignored unless provisionalClient=true.
+    clientPhone: Option[String] = None
 ) derives JsonCodec
 
 case class UpdateRideApiRequest(
@@ -137,6 +176,16 @@ case class RideStatusUpdateResponse(
     status: String
 ) derives JsonCodec
 
+// Result of a manual flight-status refresh: the up-to-date ride plus which of the three
+// outcomes occurred, so the UI can show the right message:
+//   "updated"  – the board had newer data, persisted + broadcast
+//   "unchanged"– the board matched what we already had
+//   "notFound" – the flight is not on the board yet (or the ride has no usable flight number)
+case class RefreshFlightResponse(
+    ride: RideDto,
+    outcome: String
+) derives JsonCodec
+
 case class UpdateRideDetailsApiRequest(
     from: Option[LocationDto] = None,
     to: Option[LocationDto] = None,
@@ -144,7 +193,9 @@ case class UpdateRideDetailsApiRequest(
     notes: Option[String] = None,
     flightNumber: Option[String] = None,
     isAirportTransfer: Option[Boolean] = None,
-    specialRequirements: Option[String] = None
+    specialRequirements: Option[String] = None,
+    // None = leave tags unchanged; Some(list) = replace. Normalized server-side in toDomain.
+    tags: Option[List[String]] = None
 ) derives JsonCodec
 
 object UpdateRideDetailsApiRequest:
@@ -156,12 +207,27 @@ object UpdateRideDetailsApiRequest:
       .toOption
 
   def toDomain(request: UpdateRideDetailsApiRequest): UpdateRideDetailsRequest =
-    import com.shevchyk.ride.domain.{UpdateRideDetailsRequest, RideSpecifics}
-    val specifics =
-      for {
-        isAirport <- request.isAirportTransfer if isAirport
-        flight    <- request.flightNumber
-      } yield RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight)
+    import com.shevchyk.ride.domain.{UpdateRideDetailsRequest, RideSpecifics, FieldUpdate}
+    // Airportness is now an explicit signal, decoupled from the flight number (a ride can be an
+    // airport transfer with no flight number yet). The dialog sends `isAirportTransfer`:
+    //   Some(false) → Clear: drop the airport-transfer specifics (un-airport the ride)
+    //   Some(true)  → Set: keep/make it an airport transfer; the flight number (empty = none, value
+    //                 = set) fills the optional flight. The service preserves the existing
+    //                 airportCode/isArrival so editing never flips the direction.
+    //   None        → fall back to flight-only logic for older callers that don't send the toggle:
+    //                 absent flight = Unchanged, empty = Clear, value = Set.
+    val flight                                = request.flightNumber.map(_.trim).filter(_.nonEmpty)
+    val specifics: FieldUpdate[RideSpecifics] =
+      request.isAirportTransfer match
+        case Some(false) => FieldUpdate.Clear
+        case Some(true)  =>
+          FieldUpdate.Set(RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight))
+        case None        =>
+          request.flightNumber match
+            case None                 => FieldUpdate.Unchanged
+            case Some(s) if s.isEmpty => FieldUpdate.Clear
+            case Some(_)              =>
+              FieldUpdate.Set(RideSpecifics.AirportTransfer(airportCode = "UNKNOWN", flightNumber = flight))
 
     UpdateRideDetailsRequest(
       pickupLocation = request.from.map(LocationDto.toDomain),
@@ -169,7 +235,9 @@ object UpdateRideDetailsApiRequest:
       pickupDateTime = request.pickupDateTime.flatMap(parseInstant),
       notes = request.notes,
       specifics = specifics,
-      specialRequirements = request.specialRequirements
+      specialRequirements = request.specialRequirements,
+      // Preserve None (= unchanged); normalize when present so the tag filter never splits casing.
+      tags = request.tags.map(TagNormalizer.normalize)
     )
 
 case class UpdateClientLocationRequest(
@@ -273,6 +341,19 @@ case class EstimateRideResponse(
     currency: String
 ) derives JsonCodec
 
+// -- Airport timing DTOs -------------------------------------------------------
+
+/**
+ * Request body for `POST /api/rides/{rideId}/airport-timing`. The driver app sends its live GPS so the backend can
+ * estimate the travel time to the terminal. The coordinates are optional (the backend also reads the driver's stored
+ * live location) and are used for the travel estimate only — never for authorization (the ride's company is verified
+ * against the JWT).
+ */
+case class AirportTimingRequest(
+    driverLatitude: Option[Double] = None,
+    driverLongitude: Option[Double] = None
+) derives JsonCodec
+
 // -- Airport checkpoint DTOs ---------------------------------------------------
 
 case class MarkCheckpointRequest(
@@ -289,6 +370,7 @@ case class CheckpointStateResponse(
 given sttp.tapir.Schema[PaymentStatus]                  = sttp.tapir.Schema.string
 given sttp.tapir.Schema[PaymentMethod]                  = sttp.tapir.Schema.string
 given sttp.tapir.Schema[RideDto]                        = sttp.tapir.Schema.derived[RideDto]
+given sttp.tapir.Schema[RefreshFlightResponse]          = sttp.tapir.Schema.derived[RefreshFlightResponse]
 given sttp.tapir.Schema[CreateRideApiRequest]           = sttp.tapir.Schema.derived[CreateRideApiRequest]
 given sttp.tapir.Schema[RideStatusUpdateRequest]        = sttp.tapir.Schema.derived[RideStatusUpdateRequest]
 given sttp.tapir.Schema[AssignDriverRequest]            = sttp.tapir.Schema.derived[AssignDriverRequest]
@@ -302,6 +384,7 @@ given sttp.tapir.Schema[ExternalDriverDto]              = sttp.tapir.Schema.deri
 given sttp.tapir.Schema[CreateExternalDriverApiRequest] = sttp.tapir.Schema.derived[CreateExternalDriverApiRequest]
 given sttp.tapir.Schema[UpdateClientLocationRequest]    = sttp.tapir.Schema.derived[UpdateClientLocationRequest]
 given sttp.tapir.Schema[SendChatMessageRequest]         = sttp.tapir.Schema.derived[SendChatMessageRequest]
+given sttp.tapir.Schema[AirportTimingRequest]           = sttp.tapir.Schema.derived[AirportTimingRequest]
 given sttp.tapir.Schema[MarkCheckpointRequest]          = sttp.tapir.Schema.derived[MarkCheckpointRequest]
 given sttp.tapir.Schema[CheckpointStateResponse]        = sttp.tapir.Schema.derived[CheckpointStateResponse]
 given sttp.tapir.Schema[SetRidePriceRequest]            = sttp.tapir.Schema.derived[SetRidePriceRequest]
@@ -334,14 +417,25 @@ object RideDto:
       driverLat: Option[Double] = None,
       driverLng: Option[Double] = None,
       clientName: Option[String] = None,
+      clientHasAvatar: Boolean = false,
+      clientProvisional: Boolean = false,
       driverName: Option[String] = None,
+      driverHasAvatar: Boolean = false,
       etaMinutes: Option[Int] = None,
       driverRating: Option[Double] = None,
-      driverRatingCount: Option[Int] = None
+      driverRatingCount: Option[Int] = None,
+      // Live flight-tracking columns (gate/terminal/status/time) are stored outside the Ride domain object;
+      // a caller that has loaded them (RideRepository.findFlightStatus) passes them here so the DTO surfaces
+      // real values instead of None. Defaults to empty → unchanged behaviour for callers that don't.
+      flight: Option[FlightStatusRow] = None,
+      // For airport ARRIVAL rides: the backend-computed terminal-entry instant ("Einfahrt um"). Computed in the
+      // route layer (it needs the airport timing config); passed in as a ready value so this DTO mapper stays a
+      // pure presentation mapper. Defaults to None → unchanged behaviour for callers that don't compute it.
+      optimalEntryTime: Option[Instant] = None
   ): RideDto =
     val (flightNumber, isAirportTransfer, isArrival) =
       ride.specifics match {
-        case Some(RideSpecifics.AirportTransfer(_, flight, arr)) => (Some(flight), true, arr)
+        case Some(RideSpecifics.AirportTransfer(_, flight, arr)) => (flight, true, arr)
         case None                                                => (None, false, false)
       }
 
@@ -382,14 +476,22 @@ object RideDto:
       to = LocationDto.fromDomain(ride.dropoffLocation),
       status = ride.status.toString,
       clientName = clientName.getOrElse("Unknown Client"),
+      clientHasAvatar = clientHasAvatar,
+      clientProvisional = clientProvisional,
       flightNumber = flightNumber,
-      flightTime = ride.scheduledTime.map(_.toString),
+      // Prefer the live flight time (when the monitor has fetched one) over the booking's scheduledTime.
+      flightTime = flight.flatMap(_.flightTime).map(_.toString).orElse(ride.scheduledTime.map(_.toString)),
+      // The on-time scheduled instant (from the flight monitor), surfaced so the card can show the delay.
+      flightScheduledTime = flight.flatMap(_.scheduledTime).map(_.toString),
+      flightDepartureTime = flight.flatMap(_.departureTime).map(_.toString),
       isAirportTransfer = isAirportTransfer,
       isArrival = isArrival,
-      gate = None,
-      terminal = None,
-      flightStatus = None,
+      gate = flight.flatMap(_.gate),
+      terminal = flight.flatMap(_.terminal),
+      flightStatus = flight.flatMap(_.flightStatus),
+      optimalEntryTime = optimalEntryTime.map(_.toString),
       driverName = driverName,
+      driverHasAvatar = driverHasAvatar,
       driverLocation = driverLoc,
       driverApproaching = approaching,
       driverDistanceMeters = distanceMeters,
@@ -414,7 +516,9 @@ object RideDto:
       partnerCompanyId = ride.partnerCompanyId.map(_.value.toString),
       confirmed = ride.status == RideStatus.Confirmed,
       confirmedAt = ride.confirmedAt.map(_.toString),
-      rejectionReason = ride.rejectionReason
+      rejectionReason = ride.rejectionReason,
+      tags = ride.tags,
+      airportCheckpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString)
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
@@ -441,19 +545,25 @@ object CreateRideApiRequest:
     // or when a flight number is supplied.
     val specifics =
       if (request.isAirportTransfer || request.flightNumber.isDefined) {
-        request.flightNumber.map { flight =>
+        Some(
           RideSpecifics.AirportTransfer(
             airportCode = extractAirportCode(request),
-            flightNumber = flight,
+            // Optional: an airport transfer may be created before the flight number is known.
+            flightNumber = request.flightNumber.map(_.trim).filter(_.nonEmpty),
             isArrival = request.isArrival
           )
-        }
+        )
       }
       else {
         None
       }
 
     val parsedVehicleClass = request.vehicleClass.flatMap(VehicleClass.fromString).getOrElse(VehicleClass.Default)
+
+    // paymentMethod: parse the wire enum name (e.g. "Invoice"); unknown/absent values stay None.
+    val parsedPaymentMethod: Option[PaymentMethod] = request.paymentMethod.flatMap(s =>
+      scala.util.Try(PaymentMethod.valueOf(s)).toOption
+    )
 
     // pickupDateTime: parse the operator-supplied value when present; pass None otherwise.
     // A None signals "compute automatically" for airport departure rides.
@@ -474,9 +584,12 @@ object CreateRideApiRequest:
         specifics = specifics,
         specialRequirements = request.specialRequirements,
         vehicleClass = parsedVehicleClass,
+        paymentMethod = parsedPaymentMethod,
         // Convert the wire Double price into the domain BigDecimal estimate (None stays None).
         estimatedPrice = request.price.map(BigDecimal(_)),
-        pickupDateTime = parsedPickupDateTime
+        pickupDateTime = parsedPickupDateTime,
+        // Normalize free-form tags once, here, so the rest of the stack sees canonical values.
+        tags = TagNormalizer.normalize(request.tags.getOrElse(Nil))
       )
     }
 

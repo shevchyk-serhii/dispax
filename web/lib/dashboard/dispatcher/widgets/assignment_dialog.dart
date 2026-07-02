@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../../../modules/ride_management/models/payment_method.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/ride_management/helpers/flight_status_l10n.dart';
 
 class AssignmentDialog extends StatelessWidget {
   final Ride ride;
@@ -135,7 +137,10 @@ class AssignmentDialog extends StatelessWidget {
                               context,
                               icon: Icons.flight,
                               label: l10n.flightLabel,
-                              value: ride.flightNumber!,
+                              // Show gate/terminal/status next to the number so
+                              // the dispatcher sees where the ride is going
+                              // before picking a driver, not just the flight no.
+                              value: _flightDetails(l10n, ride),
                               isDark: isDark,
                             ),
                           if (ride.price != null)
@@ -143,9 +148,26 @@ class AssignmentDialog extends StatelessWidget {
                               context,
                               icon: Icons.euro_outlined,
                               label: l10n.fareLabel,
-                              value: '€${ride.price!.toStringAsFixed(2)}',
+                              value: '€${ride.price?.toStringAsFixed(2) ?? ''}',
                               isDark: isDark,
                               accent: true,
+                            ),
+                          if (PaymentMethod.labelForWire(
+                                ride.paymentMethod,
+                                l10n,
+                              ) !=
+                              null)
+                            _infoRow(
+                              context,
+                              icon: Icons.payments_outlined,
+                              label: l10n.paymentMethodSelectLabel,
+                              value:
+                                  PaymentMethod.labelForWire(
+                                    ride.paymentMethod,
+                                    l10n,
+                                  ) ??
+                                  '',
+                              isDark: isDark,
                             ),
                         ],
                       ),
@@ -288,7 +310,7 @@ class AssignmentDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    style: AppStyles.textButtonStyle,
+                    style: AppStyles.textButtonStyleOf(context),
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(l10n.cancel),
                   ),
@@ -343,6 +365,31 @@ class AssignmentDialog extends StatelessWidget {
         letterSpacing: 0.8,
       ),
     );
+  }
+
+  /// Flight number plus gate/terminal/status on one line. Mirrors
+  /// [Ride.fullFlightInfo] but drops its leading ✈ glyph because this row
+  /// already renders a flight icon, and skips the 🛬/🛫 status glyph to keep
+  /// the value plain text inside [_infoRow].
+  String _flightDetails(AppLocalizations l10n, Ride ride) {
+    final parts = <String>[ride.flightNumber ?? ''];
+    // A remote stand has no real code → its label is self-describing (no "Gate" prefix).
+    final gate = l10n.localizedGate(ride);
+    final gateText = ride.isRemoteGate
+        ? gate
+        : (gate != null ? '${l10n.gateLabel} $gate' : null);
+    if (gateText != null && ride.terminal != null) {
+      parts.add('$gateText (${l10n.terminalLabel} ${ride.terminal})');
+    } else if (gateText != null) {
+      parts.add(gateText);
+    } else if (ride.terminal != null) {
+      parts.add('${l10n.terminalLabel} ${ride.terminal}');
+    }
+    final statusText = l10n.localizedFlightStatus(ride.flightStatus);
+    if (statusText.isNotEmpty) {
+      parts.add(statusText);
+    }
+    return parts.join(' • ');
   }
 
   Widget _infoRow(

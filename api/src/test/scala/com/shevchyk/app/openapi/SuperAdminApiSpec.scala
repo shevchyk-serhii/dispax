@@ -6,12 +6,10 @@ import com.shevchyk.billing.repository.InvoiceRepository
 import com.shevchyk.billing.domain.InvoiceStatus
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.{CompanyRepository, SessionRepository}
-import com.shevchyk.ride.domain.{Ride, RideStatus, DriverEarnings}
-import com.shevchyk.ride.repository.{RideRepository, TimeBucket}
+import com.shevchyk.ride.repository.RideRepository
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import zio.*
 import zio.http.*
-import zio.json.*
 import zio.test.*
 
 import java.util.UUID
@@ -201,9 +199,15 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
           bucket: TimeBucket
       ): Task[List[(java.time.Instant, BigDecimal)]] = ZIO.succeed(Nil)
       def findAssignedRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]              = ZIO.succeed(Nil)
+      def findActiveRidesInWindow(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]                = ZIO.succeed(Nil)
       def findRidesNeedingConfirmation(from: java.time.Instant, to: java.time.Instant): Task[List[Ride]]           = ZIO.succeed(
         Nil
       )
+      def findByDriverIdInWindow(
+          driverId: PersonId,
+          from: java.time.Instant,
+          to: java.time.Instant
+      ): Task[List[Ride]] = ZIO.succeed(Nil)
       def clearReminders(rideId: RideId): Task[Unit]                                                               = ZIO.unit
       def countAllRidesByStatus(): Task[Map[String, Int]]                                                          = ZIO.succeed(Map.empty)
       def sumAllRevenue(from: java.time.Instant, to: java.time.Instant): Task[BigDecimal]                          = ZIO.succeed(BigDecimal(0))
@@ -214,6 +218,19 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
         .succeed(Map.empty)
       def updateCheckpoint(rideId: RideId, checkpoint: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean]  = ZIO
         .succeed(false)
+      def updateFlightStatus(
+          rideId: RideId,
+          gate: Option[String],
+          terminal: Option[String],
+          flightStatus: Option[String],
+          flightTime: Option[java.time.Instant],
+          scheduledTime: Option[java.time.Instant],
+          departureTime: Option[java.time.Instant]
+      ): Task[Boolean] = ZIO.succeed(false)
+      def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                 = ZIO.none
+      def findFlightStatusFor(
+          rideIds: List[RideId]
+      ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = ZIO.succeed(Map.empty)
   )
 
   private val stubSessionRepo: ZLayer[Any, Nothing, SessionRepository] = SessionRepository.inMemory

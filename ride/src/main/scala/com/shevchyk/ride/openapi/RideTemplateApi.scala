@@ -150,7 +150,12 @@ object RideTemplateApi:
                          val scheduledInstant = date.atTime(tmpl.pickupTime).toInstant(java.time.ZoneOffset.UTC)
                          val specifics        =
                            if (tmpl.isAirportTransfer)
-                             Some(RideSpecifics.AirportTransfer("UNKNOWN", tmpl.flightNumber.getOrElse("")))
+                             Some(
+                               RideSpecifics.AirportTransfer(
+                                 "UNKNOWN",
+                                 tmpl.flightNumber.map(_.trim).filter(_.nonEmpty)
+                               )
+                             )
                            else
                              None
                          val createReq        = CreateRideRequest(

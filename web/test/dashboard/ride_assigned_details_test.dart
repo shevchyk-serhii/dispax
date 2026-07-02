@@ -1,4 +1,5 @@
 import 'package:dispax/dashboard/driver/ride_assigned_details.dart';
+import 'package:dispax/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,6 +19,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: RideAssignedDetails(ride: ride)),
           ),
         );
@@ -38,6 +41,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: RideAssignedDetails(ride: ride)),
         ),
       );
@@ -50,10 +55,53 @@ void main() {
       );
     });
 
+    testWidgets('shows the localized payment method label when present', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        paymentMethod: 'Card',
+        from: TestFixtures.location(address: 'Marienplatz 1'),
+        to: TestFixtures.location(address: 'Airport T2'),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: RideAssignedDetails(ride: ride)),
+        ),
+      );
+
+      expect(find.text('Credit Card'), findsOneWidget);
+    });
+
+    testWidgets('omits payment row when ride.paymentMethod is null', (
+      tester,
+    ) async {
+      final ride = TestFixtures.ride(
+        from: TestFixtures.location(address: 'Marienplatz 1'),
+        to: TestFixtures.location(address: 'Airport T2'),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: RideAssignedDetails(ride: ride)),
+        ),
+      );
+
+      for (final label in ['Invoice', 'Cash', 'Credit Card', 'Payment']) {
+        expect(find.text(label), findsNothing);
+      }
+    });
+
     testWidgets('shows fallback text when ride is null', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: RideAssignedDetails(ride: null)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: RideAssignedDetails(ride: null)),
         ),
       );
 

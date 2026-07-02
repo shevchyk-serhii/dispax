@@ -25,6 +25,22 @@ class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
 
+/// Change the password of the currently logged-in (temporary-password) user.
+/// Used by the forced password-change screen; on success the user becomes fully
+/// authenticated. `currentPassword` is the temporary password the dispatcher set.
+class AuthPasswordChangeRequested extends AuthEvent {
+  final String currentPassword;
+  final String newPassword;
+
+  const AuthPasswordChangeRequested({
+    required this.currentPassword,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object> get props => [currentPassword, newPassword];
+}
+
 /// Forced logout triggered by a 401 from the API (expired/invalid token).
 /// Clears the session like a normal logout, but leaves the login screen with a
 /// "session expired" message instead of dropping to it silently.

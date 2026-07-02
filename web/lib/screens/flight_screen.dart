@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../modules/core/services/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -122,7 +123,9 @@ class _FlightScreenState extends State<FlightScreen>
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorLoadingFlights(e.toString()))),
+        SnackBar(
+          content: Text(l10n.errorLoadingFlights(friendlyError(e, l10n))),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -357,7 +360,7 @@ class _FlightScreenState extends State<FlightScreen>
                   .where(
                     (r) =>
                         r.flightNumber != null &&
-                        r.flightNumber!.toUpperCase() == callsign.toUpperCase(),
+                        r.flightNumber?.toUpperCase() == callsign.toUpperCase(),
                   )
                   .firstOrNull;
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../../../modules/ride_management/models/ride.dart';
 import '../../../../constants/app_colors.dart';
 
@@ -45,11 +47,19 @@ class RideBadges {
         color = AppColors.error;
     }
 
+    final l10n = AppLocalizations.of(context)!;
+    final fullInfo = l10n.fullFlightInfoLocalized(ride);
+    final base = fullInfo.isNotEmpty
+        ? fullInfo
+        : '${ride.flightTypeText} ${ride.flightNumber}';
+    final statusText = l10n.localizedFlightStatus(ride.flightStatus);
+    final label = statusText.isEmpty
+        ? base
+        : '$base • ${ride.flightStatusIcon} $statusText';
+
     return _Badge(
       icon: ride.flightIconData ?? Icons.flight,
-      label: ride.fullFlightInfo.isNotEmpty
-          ? ride.fullFlightInfo
-          : '${ride.flightTypeText} ${ride.flightNumber}',
+      label: label,
       color: color,
     );
   }
@@ -110,9 +120,8 @@ class RideBadges {
     final hasVip = rides.any((r) => r.isVipRide);
     final hasRequirements = rides.any(
       (r) =>
-          (r.specialRequirements != null &&
-              r.specialRequirements!.isNotEmpty) ||
-          (r.notes != null && r.notes!.isNotEmpty),
+          (r.specialRequirements?.isNotEmpty ?? false) ||
+          (r.notes?.isNotEmpty ?? false),
     );
 
     final icons = <Widget>[
@@ -130,9 +139,8 @@ class RideBadges {
   /// timeline: airport / VIP / special requirements.
   static Widget blockMarkers(Ride ride, {double size = 10}) {
     final hasRequirements =
-        (ride.specialRequirements != null &&
-            ride.specialRequirements!.isNotEmpty) ||
-        (ride.notes != null && ride.notes!.isNotEmpty);
+        (ride.specialRequirements?.isNotEmpty ?? false) ||
+        (ride.notes?.isNotEmpty ?? false);
 
     final icons = <Widget>[
       if (ride.isAirportTransfer)
@@ -147,16 +155,21 @@ class RideBadges {
   }
 
   /// One-line plain-text summary of a ride for tooltips/hover (week view).
-  static String tooltip(Ride ride) {
+  static String tooltip(BuildContext context, Ride ride) {
+    final statusText = AppLocalizations.of(
+      context,
+    )!.localizedFlightStatus(ride.flightStatus);
+    final flightLine = statusText.isEmpty
+        ? ride.fullFlightInfo
+        : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+    final price = ride.price;
+    final requirements = ride.specialRequirements;
     final parts = <String>[
       ride.clientName,
-      if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty)
-        ride.fullFlightInfo,
+      if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) flightLine,
       if (ride.isVipRide) 'VIP',
-      if (ride.price != null) '€${ride.price!.toStringAsFixed(2)}',
-      if (ride.specialRequirements != null &&
-          ride.specialRequirements!.isNotEmpty)
-        ride.specialRequirements!,
+      if (price != null) '€${price.toStringAsFixed(2)}',
+      if (requirements != null && requirements.isNotEmpty) requirements,
       ride.to.address,
     ];
     return parts.join(' • ');
@@ -164,11 +177,11 @@ class RideBadges {
 
   /// Special requirements / notes line, shown only when present.
   static Widget requirements(BuildContext context, Ride ride) {
+    final requirements = ride.specialRequirements;
+    final notes = ride.notes;
     final parts = <String>[
-      if (ride.specialRequirements != null &&
-          ride.specialRequirements!.isNotEmpty)
-        ride.specialRequirements!,
-      if (ride.notes != null && ride.notes!.isNotEmpty) ride.notes!,
+      if (requirements != null && requirements.isNotEmpty) requirements,
+      if (notes != null && notes.isNotEmpty) notes,
     ];
     if (parts.isEmpty) return const SizedBox.shrink();
 

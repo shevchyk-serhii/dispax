@@ -6,16 +6,24 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
+import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/core/services/api_client.dart';
+import '../../modules/core/services/error_messages.dart';
+import '../../modules/core/widgets/avatar_circle.dart';
+import '../../modules/flight_management/flight_tracker.dart';
+import '../../modules/flight_management/widgets/flight_progress_bar.dart';
 import '../../modules/driver_management/services/driver_availability_service.dart';
 import '../../modules/driver_management/widgets/widgets.dart';
 import '../../modules/core/widgets/widgets.dart';
 import '../../modules/core/navigation_helper.dart';
+import '../../modules/core/navigation_utils.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../modules/ride_management/helpers/flight_status_l10n.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
@@ -101,6 +109,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
   RideService? _rideService;
   final Map<String, int> _approachingDistances = {};
   final Map<String, int> _etaMinutes = {};
+  // Ride ids whose flight status is currently being manually refreshed (spinner on the card).
+  final Set<String> _refreshingFlightIds = {};
   Timer? _etaTimer;
 
   // ── New: tab + pulse animation ─────────────────────────────────────────────
@@ -124,15 +134,17 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     // ── Preserved verbatim: WS event listener ──────────────────────────────
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
-      if (event.isDriverApproaching && event.rideId != null) {
+      final approachingRideId = event.rideId;
+      if (event.isDriverApproaching && approachingRideId != null) {
         setState(() {
-          _approachingDistances[event.rideId!] = event.distanceMeters ?? 0;
+          _approachingDistances[approachingRideId] = event.distanceMeters ?? 0;
         });
       }
-      if (event.isRideAssigned && event.rideId != null) {
+      final assignedRideId = event.rideId;
+      if (event.isRideAssigned && assignedRideId != null) {
         final authState = context.read<AuthBloc>().state;
         if (event.driverId == authState.user?.id) {
-          _showRideAssignedDialog(event.rideId!);
+          _showRideAssignedDialog(assignedRideId);
         }
       }
     });
@@ -147,7 +159,8 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
 
   // ── Preserved verbatim ────────────────────────────────────────────────────
   Future<void> _refreshEta() async {
-    if (!mounted || _rideService == null) return;
+    final rideService = _rideService;
+    if (!mounted || rideService == null) return;
     final myId = context.read<AuthBloc>().state.user?.id;
     final rideState = context.read<RideBloc>().state;
     final activeRides = rideState.rides.where(
@@ -158,7 +171,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
               r.status == RideStatus.inProgress),
     );
     for (final ride in activeRides) {
-      final data = await _rideService!.getDriverProximity(ride.id);
+      final data = await rideService.getDriverProximity(ride.id);
       if (!mounted) return;
       final eta = data?['etaMinutes'] as int?;
       if (eta != null) {
@@ -201,16 +214,18 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     if (!mounted) return;
 
     if (accepted == true) {
-      context.read<RideBloc>().add(
-        RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-      );
+      final user = context.read<AuthBloc>().state.user;
+      if (user != null) {
+        context.read<RideBloc>().add(RideLoadRequested(user: user));
+      }
     } else {
       try {
         await _rideService?.updateRideStatus(rideId, RideStatus.requested);
         if (mounted) {
-          context.read<RideBloc>().add(
-            RideLoadRequested(user: context.read<AuthBloc>().state.user!),
-          );
+          final user = context.read<AuthBloc>().state.user;
+          if (user != null) {
+            context.read<RideBloc>().add(RideLoadRequested(user: user));
+          }
         }
       } catch (_) {
         // best-effort
@@ -260,29 +275,32 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
 
   void _sendLocationUpdate(double latitude, double longitude) {
     final now = DateTime.now();
-    if (_lastLocationSent != null &&
-        now.difference(_lastLocationSent!).inSeconds < 10) {
+    final lastSent = _lastLocationSent;
+    if (lastSent != null && now.difference(lastSent).inSeconds < 10) {
       return;
     }
     _lastLocationSent = now;
 
     final authState = context.read<AuthBloc>().state;
-    if (!authState.isAuthenticated || authState.user == null) return;
+    final user = authState.user;
+    if (!authState.isAuthenticated || user == null) return;
 
-    _rideService?.updateDriverLocation(authState.user!.id, latitude, longitude);
+    _rideService?.updateDriverLocation(user.id, latitude, longitude);
   }
 
   void loadTodayRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideLoadRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideLoadRequested(user: user));
     }
   }
 
   void refreshRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    if (authState.isAuthenticated && authState.user != null) {
-      context.read<RideBloc>().add(RideRefreshRequested(user: authState.user!));
+    final user = authState.user;
+    if (authState.isAuthenticated && user != null) {
+      context.read<RideBloc>().add(RideRefreshRequested(user: user));
     }
   }
 
@@ -299,13 +317,14 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
           Expanded(
             child: BlocListener<RideBloc, RideState>(
               listener: (context, state) {
-                if (state.hasError) {
-                  NavigationHelper.showSnackBar(
-                    context,
-                    rideErrorMessageOrFallback(state.errorMessage, context),
-                    isError: true,
-                  );
-                }
+                // A load error is shown inline by _buildTabContent
+                // (ErrorDisplayWidget with a Retry) when the list is empty. We
+                // deliberately do NOT also raise a SnackBar here: the RideBloc
+                // is shared across the dashboard (this screen is the dispatcher's
+                // "My Rides" tab in an IndexedStack), so a background failure
+                // from another tab — e.g. the pending-rides timeout — would pop
+                // an error toast over an unrelated screen.
+
                 // Restore tracking if the ride is already in progress (after screen reload)
                 if (state.status == RideStateStatus.loaded &&
                     !_trackingStarted) {
@@ -459,7 +478,15 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
           onRefresh: () => refreshRides(context),
         );
       case _TodayTab.history:
-        return _EmbeddedHistoryTab(rideState: myRideState);
+        // Unlike Today/Upcoming, History is company-wide for a dispatcher: a
+        // dispatcher who doesn't personally drive would otherwise never see
+        // any of the company's completed/cancelled rides here. A driver still
+        // gets their own-rides scoping.
+        final isDispatcher =
+            context.read<AuthBloc>().state.user?.isDispatcher ?? false;
+        return _EmbeddedHistoryTab(
+          rideState: isDispatcher ? rideState : myRideState,
+        );
       case _TodayTab.today:
         return buildBody(context, myRideState);
     }
@@ -488,10 +515,12 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     }
 
     if (rideState.hasError && rideState.rides.isEmpty) {
+      final l10n = AppLocalizations.of(context)!;
       return ErrorDisplayWidget(
-        title: "Failed to load today's rides",
-        message: rideErrorMessageOrFallback(rideState.errorMessage, context),
+        title: l10n.failedToLoadRides,
+        message: friendlyError(rideState.error ?? rideState.errorMessage, l10n),
         onRetry: () => refreshRides(context),
+        retryLabel: l10n.retry,
       );
     }
 
@@ -501,100 +530,38 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
       return buildEmptyState();
     }
 
-    // The "live" ride: in-progress first, then confirmed, then assigned
-    final liveRide = todayRides.firstWhere(
-      (r) => r.status == RideStatus.inProgress,
-      orElse: () => todayRides.firstWhere(
-        (r) => r.status == RideStatus.confirmed,
-        orElse: () => todayRides.firstWhere(
-          (r) => r.status == RideStatus.assigned,
-          orElse: () => todayRides.first,
-        ),
-      ),
-    );
-    final isLiveActive =
-        liveRide.status == RideStatus.inProgress ||
-        liveRide.status == RideStatus.confirmed ||
-        liveRide.status == RideStatus.assigned;
-
-    // Remaining rides (excluding live)
-    final remainingRides = isLiveActive
-        ? todayRides.where((r) => r.id != liveRide.id).toList()
-        : todayRides;
-
-    // "Next" scheduled ride after the live one
-    Ride? nextRide;
-    if (isLiveActive && remainingRides.isNotEmpty) {
-      final candidate = remainingRides.firstWhere(
-        (r) =>
-            r.status == RideStatus.assigned || r.status == RideStatus.confirmed,
-        orElse: () => remainingRides.first,
-      );
-      if (candidate.status == RideStatus.assigned ||
-          candidate.status == RideStatus.confirmed) {
-        nextRide = candidate;
-      }
-    }
-
-    final otherRides = remainingRides
-        .where((r) => r.id != nextRide?.id)
-        .toList();
-
+    // Every ride of the day gets the same detailed card. The card is fully
+    // status-aware (badge, ETA gating, action buttons), so an in-progress ride
+    // and a later assigned ride render with the same level of detail — fare,
+    // payment method, flight info and all. [getTodayRides] already sorts by
+    // pickup time, so the list order is chronological.
     return RefreshIndicator(
       onRefresh: () async => refreshRides(context),
       child: CustomScrollView(
         slivers: [
-          // LIVE RIDE CARD
-          if (isLiveActive)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: _LiveRideCard(
-                  ride: liveRide,
-                  etaMinutes: _etaMinutes[liveRide.id],
-                  approachingDistanceMeters: _approachingDistances[liveRide.id],
-                  onStartRide: () => _handleStartRide(context, liveRide),
-                  onCompleteRide: () => _handleCompleteRide(context, liveRide),
-                  onCallClient: () => _handleCallClient(context, liveRide),
-                  onConfirmRide: () => _handleConfirmRide(context, liveRide),
-                  onRejectRide: () => _handleRejectRide(context, liveRide),
-                ),
-              ),
-            ),
-
-          // NEXT SCHEDULED RIDE CARD
-          if (nextRide != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: _NextRideCard(ride: nextRide),
-              ),
-            ),
-
-          // Remaining ride cards
-          if (otherRides.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final ride = otherRides[index];
-                  return TodayRideCard(
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final ride = todayRides[index];
+                return Padding(
+                  padding: EdgeInsets.only(top: index == 0 ? 0 : 12),
+                  child: DriverRideCard(
                     ride: ride,
-                    isLast: index == otherRides.length - 1,
-                    approachingDistanceMeters: _approachingDistances[ride.id],
                     etaMinutes: _etaMinutes[ride.id],
-                    onCallClient: () => _handleCallClient(context, ride),
+                    approachingDistanceMeters: _approachingDistances[ride.id],
                     onStartRide: () => _handleStartRide(context, ride),
                     onCompleteRide: () => _handleCompleteRide(context, ride),
+                    onCallClient: () => _handleCallClient(context, ride),
                     onConfirmRide: () => _handleConfirmRide(context, ride),
                     onRejectRide: () => _handleRejectRide(context, ride),
-                  );
-                }, childCount: otherRides.length),
-              ),
+                    onRefreshFlight: () => _refreshFlightStatus(context, ride),
+                    isRefreshingFlight: _refreshingFlightIds.contains(ride.id),
+                  ),
+                );
+              }, childCount: todayRides.length),
             ),
-
-          if (otherRides.isEmpty && !isLiveActive)
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ),
         ],
       ),
     );
@@ -655,6 +622,40 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
     );
     _startLocationTracking();
     NavigationHelper.showSnackBar(context, 'Ride started');
+  }
+
+  /// Manual on-demand flight-status refresh for a card in the list (same backend path
+  /// as the 5-minute monitor). Patches ONLY the flight fields onto the ride via copyWith
+  /// — replacing the whole ride would de-enrich the shared RideBloc copy (driverName,
+  /// optimalEntryTime, …) and blank those on the cards. Pushes RideUpdated so the
+  /// BlocBuilder rebuilds the card with the fresh status.
+  Future<void> _refreshFlightStatus(BuildContext context, Ride ride) async {
+    final service = _rideService;
+    if (service == null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final rideBloc = context.read<RideBloc>();
+    setState(() => _refreshingFlightIds.add(ride.id));
+    try {
+      final result = await service.refreshFlightStatus(ride.id);
+      if (!context.mounted) return;
+      final patched = ride.withFlightFrom(result.ride);
+      rideBloc.add(RideUpdated(ride: patched));
+      NavigationHelper.showSnackBar(context, switch (result.outcome) {
+        'updated' => l10n.flightStatusRefreshed,
+        'notFound' => l10n.flightNotFoundYet,
+        _ => l10n.flightStatusUnchanged,
+      });
+    } catch (_) {
+      if (context.mounted) {
+        NavigationHelper.showSnackBar(
+          context,
+          l10n.failedToRefreshFlightStatus,
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _refreshingFlightIds.remove(ride.id));
+    }
   }
 
   void _handleCompleteRide(BuildContext context, Ride ride) {
@@ -730,6 +731,12 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
   bool _isAvailable = false;
   bool _isUpdating = false;
 
+  // Once the driver has changed availability themselves, the in-flight initial
+  // load (or any later reload) must not overwrite that choice with the stale
+  // server value it captured before the toggle. This guard makes the user's
+  // action win the race and prevents the Switch from snapping back.
+  bool _userHasToggled = false;
+
   @override
   void initState() {
     super.initState();
@@ -743,14 +750,21 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
       context.read<AuthBloc>().apiClient,
     );
     final available = await service.isAvailable(user.id.toString());
-    if (mounted) setState(() => _isAvailable = available);
+    // Drop a load that resolved after the user already toggled — its value is
+    // stale and would snap the Switch back to the pre-toggle state.
+    if (mounted && !_userHasToggled) {
+      setState(() => _isAvailable = available);
+    }
   }
 
   Future<void> _toggleAvailability(bool value) async {
     HapticFeedback.selectionClick();
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
-    setState(() => _isUpdating = true);
+    setState(() {
+      _isUpdating = true;
+      _userHasToggled = true;
+    });
     try {
       final service = DriverAvailabilityService(
         context.read<AuthBloc>().apiClient,
@@ -764,7 +778,7 @@ class _AvailabilityPillState extends State<_AvailabilityPill> {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.failedToUpdate(e.toString())),
+            content: Text(l10n.failedToUpdate(friendlyError(e, l10n))),
             backgroundColor: AppColors.error,
           ),
         );
@@ -971,7 +985,14 @@ class _SegmentTab extends StatelessWidget {
 // LIVE RIDE CARD  (in-progress or assigned)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _LiveRideCard extends StatelessWidget {
+/// The driver's detailed ride card, used for **every** ride of the day on the
+/// "Heute" tab. Renders client avatar + fare, payment method, full flight info,
+/// arrival/entry times, the route connector, ETA/approaching chips, and the
+/// status-aware action buttons. It is fully parameterised by [ride.status], so
+/// the same card serves an in-progress ride and a later assigned one alike.
+///
+/// Public (not `_LiveRideCard`) so a widget test can locate it directly.
+class DriverRideCard extends StatelessWidget {
   final Ride ride;
   final int? etaMinutes;
   final int? approachingDistanceMeters;
@@ -980,8 +1001,11 @@ class _LiveRideCard extends StatelessWidget {
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
+  final VoidCallback? onRefreshFlight;
+  final bool isRefreshingFlight;
 
-  const _LiveRideCard({
+  const DriverRideCard({
+    super.key,
     required this.ride,
     this.etaMinutes,
     this.approachingDistanceMeters,
@@ -990,10 +1014,14 @@ class _LiveRideCard extends StatelessWidget {
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
+    this.onRefreshFlight,
+    this.isRefreshingFlight = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final etaMinutes = this.etaMinutes;
+    final approachingDistanceMeters = this.approachingDistanceMeters;
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final statusBg = RideStatusStyles.getStatusBackgroundColor(
@@ -1009,7 +1037,10 @@ class _LiveRideCard extends StatelessWidget {
       brightness: brightness,
     );
     final statusDotColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusLabel = RideStatusStyles.getStatusDisplayName(ride.status);
+    final statusLabel = RideStatusStyles.getStatusDisplayName(
+      ride.status,
+      AppLocalizations.of(context)!,
+    );
 
     return Container(
       decoration: AppStyles.primaryCardDecorationOf(context).copyWith(
@@ -1022,147 +1053,732 @@ class _LiveRideCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status badge + pickup time
-            Row(
-              children: [
-                _StatusBadge(
-                  bg: statusBg,
-                  border: statusBorder,
-                  dot: statusDotColor,
-                  textColor: statusTextColor,
-                  label: statusLabel,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            // Route connector (accent dot → line → primary square)
-            _RouteConnector(ride: ride, isDark: isDark),
-
-            const SizedBox(height: 14),
-
-            // ETA chip + flight badge + approaching chip
-            // ETA is only shown after the driver starts the ride (inProgress)
-            if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
-                ride.flightNumber != null ||
-                approachingDistanceMeters != null)
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
+      // Tapping the card (outside the action buttons) opens the full ride
+      // details — the only place that exposes the "Share" tracking link.
+      child: InkWell(
+        onTap: () => NavigationUtils.navigateToRideDetails(context, ride),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Status badge + pickup time
+              Row(
                 children: [
-                  if (etaMinutes != null &&
-                      ride.status == RideStatus.inProgress)
-                    _EtaChip(etaMinutes: etaMinutes!),
-                  if (ride.flightNumber != null)
-                    _FlightBadge(flightNumber: ride.flightNumber!),
-                  if (approachingDistanceMeters != null)
-                    _ApproachingChip(
-                      distanceMeters: approachingDistanceMeters!,
+                  _StatusBadge(
+                    bg: statusBg,
+                    border: statusBorder,
+                    dot: statusDotColor,
+                    textColor: statusTextColor,
+                    label: statusLabel,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
                     ),
+                  ),
                 ],
               ),
 
-            if ((etaMinutes != null && ride.status == RideStatus.inProgress) ||
-                ride.flightNumber != null ||
-                approachingDistanceMeters != null)
+              const SizedBox(height: 12),
+
+              // Client avatar + name + fare. The driver needs to know who the
+              // ride is for and how much it is at a glance.
+              DriverClientPriceRow(
+                ride: ride,
+                isDark: isDark,
+                apiClient: context.read<AuthBloc>().apiClient,
+              ),
+
+              // Payment method (how the driver will be paid).
+              DriverPaymentRow(ride: ride, isDark: isDark),
+
+              // Full flight info for airport rides (number + gate/terminal + status).
+              DriverFlightInfoRow(
+                ride: ride,
+                isDark: isDark,
+                onRefresh: onRefreshFlight,
+                isRefreshing: isRefreshingFlight,
+              ),
+              // Passenger's self-reported airport progress (landed / baggage / exit).
+              PassengerCheckpointRow(ride: ride, isDark: isDark),
+              // Live flight progress (Geplant → … → Gelandet); hidden for
+              // non-airport rides and unknown status.
+              Builder(
+                builder: (context) {
+                  final bar = FlightProgressBar.forRide(ride);
+                  if (!bar.isVisible) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: bar,
+                  );
+                },
+              ),
+              DriverArrivalTimeRow(ride: ride, isDark: isDark),
+              DriverEntryTimeRow(ride: ride, isDark: isDark),
+
               const SizedBox(height: 14),
 
-            // Action buttons
-            DriverRideActionsRow(
-              ride: ride,
-              isDark: isDark,
-              onNavigate: () => _handleNavigate(context, ride),
-              onCallClient: onCallClient,
-              onConfirmRide: onConfirmRide,
-              onRejectRide: onRejectRide,
-              onStartRide: onStartRide,
-              onCompleteRide: onCompleteRide,
-            ),
-          ],
+              // Route connector (accent dot → line → primary square)
+              _RouteConnector(ride: ride, isDark: isDark),
+
+              const SizedBox(height: 14),
+
+              // ETA chip + approaching chip (flight moved to its own full-info row above).
+              // ETA is only shown after the driver starts the ride (inProgress)
+              if ((etaMinutes != null &&
+                      ride.status == RideStatus.inProgress) ||
+                  approachingDistanceMeters != null)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (etaMinutes != null &&
+                        ride.status == RideStatus.inProgress)
+                      _EtaChip(etaMinutes: etaMinutes),
+                    if (approachingDistanceMeters != null)
+                      _ApproachingChip(
+                        distanceMeters: approachingDistanceMeters,
+                      ),
+                  ],
+                ),
+
+              if ((etaMinutes != null &&
+                      ride.status == RideStatus.inProgress) ||
+                  approachingDistanceMeters != null)
+                const SizedBox(height: 14),
+
+              // Action buttons
+              DriverRideActionsRow(
+                ride: ride,
+                isDark: isDark,
+                onNavigate: () =>
+                    NavigationUtils.showNavigateToDialog(context, ride),
+                onShareRide: () => NavigationUtils.shareRide(context, ride),
+                onDuplicate: () => NavigationUtils.duplicateRide(context, ride),
+                onCallClient: onCallClient,
+                onConfirmRide: onConfirmRide,
+                onRejectRide: onRejectRide,
+                onStartRide: onStartRide,
+                onCompleteRide: onCompleteRide,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  static void _handleNavigate(BuildContext context, Ride ride) async {
+// ─────────────────────────────────────────────────────────────────────────────
+// Client name + fare row (driver needs both at a glance)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DriverClientPriceRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+  final ApiClient apiClient;
+
+  const DriverClientPriceRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+    required this.apiClient,
+  });
+
+  /// Formats the fare amount, dropping a trailing ".0" so a whole-euro fare
+  /// reads "45", not "45.0". The euro symbol is rendered by the adjacent
+  /// [Icons.euro], so it must NOT be prefixed here (that produced "€ €100").
+  String _formatPrice(double price) {
+    return price == price.roundToDouble()
+        ? price.toStringAsFixed(0)
+        : price.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    try {
-      final choice = await showAdaptiveDialog<String>(
-        context: context,
-        builder: (BuildContext ctx) => SimpleDialog(
-          title: Text(l10n.navigateTo),
-          children: [
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(ctx).pop('pickup'),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.location_on,
-                  color: AppColors.success,
-                ),
-                title: Text(ride.from.address),
-                subtitle: Text(l10n.googleMapsPickup),
+    final primary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    // Provisional rides: show the route label + "Add client details" action
+    // instead of the placeholder name that the backend assigned.
+    if (ride.clientProvisional) {
+      return Row(
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 15, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              l10n.fromChatRide,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontStyle: FontStyle.italic,
+                color: secondary,
               ),
             ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(ctx).pop('destination'),
-              child: ListTile(
-                leading: const Icon(Icons.flag, color: AppColors.error),
-                title: Text(ride.to.address),
-                subtitle: Text(l10n.googleMapsDropoff),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _showLinkClientDialog(context, l10n),
+            child: Text(
+              l10n.linkClient,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+          if (ride.price != null) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.euro, size: 15, color: secondary),
+            const SizedBox(width: 2),
+            Text(
+              _formatPrice(ride.price!),
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: primary,
               ),
             ),
           ],
-        ),
+        ],
       );
-
-      if (choice == null || !context.mounted) return;
-
-      final loc = choice == 'pickup' ? ride.from : ride.to;
-      final Uri mapsUrl;
-      if (loc.latitude != null && loc.longitude != null) {
-        mapsUrl = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1'
-          '&destination=${loc.latitude},${loc.longitude}'
-          '&travelmode=driving',
-        );
-      } else {
-        mapsUrl = Uri.parse(
-          'https://www.google.com/maps/dir/?api=1'
-          '&destination=${Uri.encodeComponent(loc.address)}'
-          '&travelmode=driving',
-        );
-      }
-      await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
-
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(context, l10n.openingNavigation);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NavigationHelper.showSnackBar(
-          context,
-          l10n.couldNotOpenNavigation(e.toString()),
-          isError: true,
-        );
-      }
     }
+
+    final name = ride.clientName.trim();
+    // 'Unknown Client' is the model's fallback when the server sent no name;
+    // showing it adds noise, so treat it as absent.
+    final hasName = name.isNotEmpty && name != 'Unknown Client';
+    final price = ride.price;
+    final hasPrice = price != null;
+    if (!hasName && !hasPrice) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        if (hasName) ...[
+          // Client photo (falls back to initials when none is set).
+          AvatarCircle(user: ride.client, apiClient: apiClient, radius: 14),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: primary,
+              ),
+            ),
+          ),
+        ] else
+          const Spacer(),
+        if (price != null) ...[
+          const SizedBox(width: 8),
+          Icon(Icons.euro, size: 15, color: secondary),
+          const SizedBox(width: 2),
+          Text(
+            _formatPrice(price),
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: primary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showLinkClientDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _LinkClientDialog(ride: ride),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Link-client dialog: upgrade a provisional client with real contact details
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _LinkClientDialog extends StatefulWidget {
+  final Ride ride;
+
+  const _LinkClientDialog({required this.ride});
+
+  @override
+  State<_LinkClientDialog> createState() => _LinkClientDialogState();
+}
+
+class _LinkClientDialogState extends State<_LinkClientDialog> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  bool _loading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_nameCtrl.text.trim().isEmpty && _phoneCtrl.text.trim().isEmpty) {
+      setState(() => _errorMessage = l10n.enterClientNameError);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      final authBloc = context.read<AuthBloc>();
+      final service = RideService(apiClient: authBloc.apiClient);
+      await service.upgradeProvisionalClient(
+        widget.ride.clientId,
+        name: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : null,
+        phone: _phoneCtrl.text.trim().isNotEmpty
+            ? _phoneCtrl.text.trim()
+            : null,
+      );
+      service.dispose();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.linkClient),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            decoration: const InputDecoration(labelText: 'Client name'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _phoneCtrl,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(labelText: 'Phone (optional)'),
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.of(context).pop(),
+          child: Text(l10n.closeButton),
+        ),
+        TextButton(
+          onPressed: _loading ? null : _submit,
+          child: _loading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.linkClient),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment method row (how the driver gets paid for this ride)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DriverPaymentRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverPaymentRow({super.key, required this.ride, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = PaymentMethod.labelForWire(
+      ride.paymentMethod,
+      AppLocalizations.of(context)!,
+    );
+    if (label == null) return const SizedBox.shrink();
+
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.payments_outlined, size: 16, color: secondary),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 12.5, color: secondary)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Full flight info row for airport rides (number + gate/terminal + status)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class DriverFlightInfoRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  /// Manual "refresh flight status now" action. When null the button is hidden;
+  /// the owning screen holds the loading state and passes [isRefreshing] back in.
+  final VoidCallback? onRefresh;
+  final bool isRefreshing;
+
+  const DriverFlightInfoRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+    this.onRefresh,
+    this.isRefreshing = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ride.isAirportTransfer || ride.fullFlightInfo.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    final statusText = AppLocalizations.of(
+      context,
+    )!.localizedFlightStatus(ride.flightStatus);
+    final flightLine = statusText.isEmpty
+        ? ride.fullFlightInfo
+        : '${ride.fullFlightInfo} • ${ride.flightStatusIcon} $statusText';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (ride.flightIconData != null) ...[
+            Icon(ride.flightIconData, size: 15, color: secondary),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Padding(
+              // Nudge the text down so its first line is centered against the
+              // 32×32 action buttons, keeping the whole row visually aligned.
+              padding: const EdgeInsets.only(top: 7),
+              child: Text(
+                flightLine,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12.5, color: secondary),
+              ),
+            ),
+          ),
+          // Flightradar + refresh: equal-sized 32×32 buttons grouped together so
+          // they line up with each other and with the first line of the flight text.
+          if (ride.flightNumber != null)
+            FlightRadarButton(
+              flightNumber: ride.flightNumber!,
+              color: secondary,
+            ),
+          if (onRefresh != null && ride.flightNumber != null)
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                onPressed: isRefreshing ? null : onRefresh,
+                tooltip: AppLocalizations.of(context)!.refreshFlightStatus,
+                icon: isRefreshing
+                    ? SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(secondary),
+                        ),
+                      )
+                    : Icon(Icons.refresh, size: 17, color: secondary),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Passenger's self-reported airport progress for an arrival transfer
+/// ("Passenger: Landed / Arrivals Hall / Terminal Exit"). Driven by the
+/// `airportCheckpoint` field on the ride, updated live via the
+/// AirportCheckpointReached WebSocket event. Renders nothing for departures,
+/// non-airport rides, or when the passenger hasn't reported yet.
+class PassengerCheckpointRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const PassengerCheckpointRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  /// Maps the wire checkpoint value to its localized display name.
+  static String? localizedCheckpoint(AppLocalizations l10n, String? wire) {
+    switch (wire) {
+      case 'landed':
+        return l10n.checkpointLanded;
+      case 'arrivals_hall':
+        return l10n.checkpointArrivalsHall;
+      case 'terminal_exit':
+        return l10n.checkpointTerminalExit;
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final name = localizedCheckpoint(l10n, ride.airportCheckpoint);
+    if (!ride.isArrivalAirportTransfer || name == null) {
+      return const SizedBox.shrink();
+    }
+
+    final accent = isDark ? AppColors.successStrong : AppColors.success;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.directions_walk, size: 15, color: accent),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              l10n.passengerCheckpointStatus(name),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small "track live on Flightradar24" action — opens the flight's FR24 page
+/// (real-time map position once airborne) in an external browser. Shared by the
+/// ride cards and the arrivals-board flight detail sheet.
+class FlightRadarButton extends StatelessWidget {
+  final String flightNumber;
+  final Color? color;
+
+  const FlightRadarButton({super.key, required this.flightNumber, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // Same 32×32 footprint as the refresh IconButton next to it, so the two
+    // flight actions line up with each other and with the flight text row.
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: l10n.trackFlightLive,
+        onPressed: () async {
+          final ok = await FlightTracker.open(flightNumber);
+          if (!ok && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.couldNotOpenFlightTracker)),
+            );
+          }
+        },
+        icon: Icon(Icons.radar, size: 16, color: color),
+      ),
+    );
+  }
+}
+
+/// Recommended terminal-entry time ("Einfahrt um HH:mm") for an airport ARRIVAL ride.
+/// Backend-computed (terminal-aware walk buffer), GPS-free, carried on the ride DTO — so it
+/// shows on the static "Today" / "My Rides" cards. Renders nothing for departures or when no
+/// entry time was computed. Shared by the live, next and compact ride cards.
+class DriverEntryTimeRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverEntryTimeRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final optimalEntryTime = ride.optimalEntryTime;
+    if (!ride.isArrivalAirportTransfer || optimalEntryTime == null) {
+      return const SizedBox.shrink();
+    }
+
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.login, size: 15, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              AppLocalizations.of(
+                context,
+              )!.airportEntryAt(DateFormat.Hm().format(optimalEntryTime)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5, color: secondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Flight arrival/landing time ("Landung um HH:mm") for an airport ride, with a red delay
+/// suffix ("+N Min Verspätung") when the flight is late. The live flight time comes from the
+/// airport board (FlightStatusMonitor) on the ride DTO. Renders nothing without a flight time.
+/// Shared by the live, next and compact ride cards.
+class DriverArrivalTimeRow extends StatelessWidget {
+  final Ride ride;
+  final bool isDark;
+
+  const DriverArrivalTimeRow({
+    super.key,
+    required this.ride,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final flightTime = ride.flightTime;
+    if (!ride.isAirportTransfer || flightTime == null) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+    final delay = ride.flightDelayMinutes;
+    final showDelay = ride.isFlightDelayed;
+    final scheduledLine = l10n.airportScheduledLine(ride);
+
+    final baseTextStyle = TextStyle(fontSize: 12.5, color: secondary);
+    final delayTextStyle = TextStyle(
+      color: AppColors.error,
+      fontWeight: FontWeight.w600,
+    );
+
+    // When we know both the scheduled and actual time and they differ, show
+    // "Planmäßig HH:mm → HH:mm" on its own line, with the delay (if any) on a
+    // second line below — the two-line layout the user asked for. Otherwise
+    // fall back to the original single-line "Landung/Gelandet um HH:mm [• delay]"
+    // (covers the common no-scheduled-time / on-time cases unchanged).
+    final Widget textColumn;
+    if (scheduledLine != null) {
+      textColumn = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            scheduledLine,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: baseTextStyle,
+          ),
+          if (delay != null && delay > 0)
+            Text(
+              l10n.airportFlightDelay(delay),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: baseTextStyle.merge(delayTextStyle),
+            ),
+        ],
+      );
+    } else {
+      textColumn = Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: l10n.airportArrivalText(ride)),
+            if (showDelay)
+              TextSpan(
+                text: delay != null && delay > 0
+                    ? '  •  ${l10n.airportFlightDelay(delay)}'
+                    : '  •  ${l10n.flightStatusDelayed}',
+                style: delayTextStyle,
+              ),
+          ],
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: baseTextStyle,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.flight_land, size: 15, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(child: textColumn),
+        ],
+      ),
+    );
   }
 }
 
@@ -1348,39 +1964,6 @@ class _EtaChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Flight badge
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _FlightBadge extends StatelessWidget {
-  final String flightNumber;
-
-  const _FlightBadge({required this.flightNumber});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.accent.withValues(alpha: 0.25),
-          width: 1,
-        ),
-      ),
-      child: Text(
-        '✈ $flightNumber',
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppColors.accent,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Approaching chip
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1429,109 +2012,6 @@ class _ApproachingChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NEXT SCHEDULED RIDE CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _NextRideCard extends StatelessWidget {
-  final Ride ride;
-
-  const _NextRideCard({required this.ride});
-
-  @override
-  Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
-    final textPrimary = isDark
-        ? AppColors.textPrimaryDark
-        : AppColors.textPrimary;
-    final textLight = isDark ? AppColors.textLightDark : AppColors.textLight;
-
-    final statusBg = RideStatusStyles.getStatusBackgroundColor(
-      ride.status,
-      brightness: brightness,
-    );
-    final statusBorder = RideStatusStyles.getStatusBorderColor(
-      ride.status,
-      brightness: brightness,
-    );
-    final statusTextColor = RideStatusStyles.getStatusTextColor(
-      ride.status,
-      brightness: brightness,
-    );
-    final statusDotColor = RideStatusStyles.getStatusColor(ride.status);
-    final statusLabel = RideStatusStyles.getStatusDisplayName(ride.status);
-
-    return Container(
-      decoration: AppStyles.primaryCardDecorationOf(context).copyWith(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowXs,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: badge + pickup time
-            Row(
-              children: [
-                _StatusBadge(
-                  bg: statusBg,
-                  border: statusBorder,
-                  dot: statusDotColor,
-                  textColor: statusTextColor,
-                  label: statusLabel,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Pickup ${DateFormat.Hm().format(ride.pickupDateTime)}',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // Route summary
-            Text(
-              '${ride.from.address} → ${ride.to.address}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: textPrimary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            const SizedBox(height: 6),
-
-            // Client info
-            Text(
-              ride.clientName,
-              style: TextStyle(fontSize: 11.5, color: textLight),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Embedded Upcoming tab (reuses UpcomingRidesScreen.buildBody directly)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1564,8 +2044,9 @@ class _EmbeddedHistoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // [rideState] is already scoped to the current user's own rides by the
-    // parent, so History only shows the user's own completed/cancelled rides.
+    // For a driver, [rideState] is already scoped to their own rides by the
+    // parent. For a dispatcher, the parent passes the full company
+    // [rideState] instead, so History shows every completed/cancelled ride.
     if (rideState.isLoading) {
       return Center(child: CircularProgressIndicator.adaptive());
     }
@@ -1616,7 +2097,7 @@ class _EmbeddedHistoryTab extends StatelessWidget {
   }
 }
 
-/// Action button row shown at the bottom of a live ride card.
+/// Action button row shown at the bottom of a [DriverRideCard].
 ///
 /// Navigate plus the status-specific primary actions (Confirm/Reject, Start,
 /// Complete) each take an equal share of the available width via [Expanded] so
@@ -1627,6 +2108,8 @@ class DriverRideActionsRow extends StatelessWidget {
   final Ride ride;
   final bool isDark;
   final VoidCallback onNavigate;
+  final VoidCallback? onShareRide;
+  final VoidCallback? onDuplicate;
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
@@ -1638,6 +2121,8 @@ class DriverRideActionsRow extends StatelessWidget {
     required this.ride,
     required this.isDark,
     required this.onNavigate,
+    this.onShareRide,
+    this.onDuplicate,
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
@@ -1647,125 +2132,28 @@ class DriverRideActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final l10n = AppLocalizations.of(context)!;
+    final iconColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    // Row 1: Navigate (flexible) + icon-only Call / Share, plus the single
+    // text action for confirmed/inProgress rides. The two-action `assigned`
+    // case gets its own full-width second row below so the German labels
+    // ("Bestätigen", "Ablehnen") never have to share width with Navigate and
+    // therefore never truncate.
+    final firstRow = Row(
       children: [
         Expanded(
           child: SizedBox(
             height: 40,
-            child: FilledButton.icon(
-              onPressed: onNavigate,
-              icon: const Icon(Icons.map_outlined, size: 16),
-              label: Text(
-                AppLocalizations.of(context)!.navigate,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusButton,
-                  ),
-                ),
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: OutlinedButton(
-            onPressed: onCallClient,
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(
-                color: AppColors.borderSecondary,
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
-              ),
-              padding: EdgeInsets.zero,
-            ),
-            child: Icon(
-              Icons.phone_outlined,
-              size: 18,
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondary,
-            ),
-          ),
-        ),
-        if (ride.status == RideStatus.assigned) ...[
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 40,
+            child: Tooltip(
+              message: l10n.navigate,
               child: FilledButton.icon(
-                onPressed: onConfirmRide,
-                icon: const Icon(Icons.check_rounded, size: 16),
-                label: const Text(
-                  'Confirm',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 40,
-              child: OutlinedButton.icon(
-                onPressed: onRejectRide,
-                icon: const Icon(Icons.close_rounded, size: 16),
-                label: const Text(
-                  'Reject',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.errorBorder),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-        if (ride.status == RideStatus.confirmed && onStartRide != null) ...[
-          const SizedBox(width: 8),
-          Expanded(
-            child: SizedBox(
-              height: 40,
-              child: FilledButton.icon(
-                onPressed: onStartRide,
-                icon: const Icon(Icons.play_circle_rounded, size: 16),
+                onPressed: onNavigate,
+                icon: const Icon(Icons.map_outlined, size: 16),
                 label: Text(
-                  AppLocalizations.of(context)!.start,
+                  l10n.navigate,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -1776,10 +2164,124 @@ class DriverRideActionsRow extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.accent,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(
                       AppDimensions.radiusButton,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: l10n.callClient,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: OutlinedButton(
+              onPressed: onCallClient,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(
+                  color: AppColors.borderSecondary,
+                  width: 1,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppDimensions.radiusButton,
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: Icon(Icons.phone_outlined, size: 18, color: iconColor),
+            ),
+          ),
+        ),
+        if (onShareRide != null) ...[
+          const SizedBox(width: 8),
+          Tooltip(
+            message: l10n.shareRideLink,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: OutlinedButton(
+                onPressed: onShareRide,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(
+                    color: AppColors.borderSecondary,
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+                child: Icon(
+                  Icons.ios_share_rounded,
+                  size: 18,
+                  color: iconColor,
+                ),
+              ),
+            ),
+          ),
+        ],
+        if (onDuplicate != null) ...[
+          const SizedBox(width: 8),
+          Tooltip(
+            message: l10n.duplicateRideAction,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: OutlinedButton(
+                onPressed: onDuplicate,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(
+                    color: AppColors.borderSecondary,
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+                child: Icon(Icons.copy_outlined, size: 18, color: iconColor),
+              ),
+            ),
+          ),
+        ],
+        if (ride.status == RideStatus.confirmed && onStartRide != null) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: Tooltip(
+                message: l10n.start,
+                child: FilledButton.icon(
+                  onPressed: onStartRide,
+                  icon: const Icon(Icons.play_circle_rounded, size: 16),
+                  label: Text(
+                    l10n.start,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusButton,
+                      ),
                     ),
                   ),
                 ),
@@ -1792,18 +2294,55 @@ class DriverRideActionsRow extends StatelessWidget {
           Expanded(
             child: SizedBox(
               height: 40,
-              child: FilledButton.icon(
-                onPressed: onCompleteRide,
-                icon: const Icon(Icons.check_rounded, size: 16),
-                label: Text(
-                  AppLocalizations.of(context)!.completeRideButton,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+              child: Tooltip(
+                message: l10n.completeRideButton,
+                child: FilledButton.icon(
+                  onPressed: onCompleteRide,
+                  icon: const Icon(Icons.check_rounded, size: 16),
+                  label: Text(
+                    l10n.completeRideButton,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusButton,
+                      ),
+                    ),
                   ),
                 ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (ride.status != RideStatus.assigned) {
+      return firstRow;
+    }
+
+    // Row 2 (assigned only): Confirm + Reject across the full card width.
+    final confirmReject = Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 40,
+            child: Tooltip(
+              message: l10n.confirm,
+              // No leading icon here: at phone width two full-width buttons
+              // already leave little room, and an icon would push the German
+              // "Bestätigen" back into ellipsis territory.
+              child: FilledButton(
+                onPressed: onConfirmRide,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
@@ -1814,11 +2353,56 @@ class DriverRideActionsRow extends StatelessWidget {
                     ),
                   ),
                 ),
+                child: Text(
+                  l10n.confirm,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ),
-        ],
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SizedBox(
+            height: 40,
+            child: Tooltip(
+              message: l10n.rejectButton,
+              child: OutlinedButton(
+                onPressed: onRejectRide,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.errorBorder),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  l10n.rejectButton,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [firstRow, const SizedBox(height: 8), confirmReject],
     );
   }
 }

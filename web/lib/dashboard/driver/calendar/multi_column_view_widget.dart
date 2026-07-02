@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
+import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/ride_management/services/ride_service.dart';
-import '../../../modules/core/navigation_helper.dart';
-import 'widgets/ride_calendar_card.dart';
+import '../../../modules/schedule_management/models/calendar_share.dart';
+import '../../../modules/schedule_management/models/schedule_day.dart';
+import '../../../modules/schedule_management/services/calendar_share_service.dart';
+import '../../../modules/schedule_management/services/schedule_service.dart';
+import '../../../utils/ride_status_styles.dart';
 
 /// Multi-column calendar board: shows drivers' rides side by side for a given
 /// day. Each column is headed by the driver's name.
@@ -27,7 +33,21 @@ class MultiColumnViewWidget extends StatefulWidget {
   /// shown; when more than 3 are passed a "+N more" indicator is shown.
   final List<Person> drivers;
 
-  /// Called when a ride card is tapped.
+  /// Cross-company calendars shared with the current user (via invite codes).
+  /// Each grant becomes an extra read-only column of PII-free shifts and busy
+  /// slots, appended after the company drivers' columns.
+  final List<CalendarShareGrant> externalShares;
+
+  /// Service used to read the shared calendars; required when
+  /// [externalShares] is non-empty.
+  final CalendarShareService? shareService;
+
+  /// Service used to read the company's work shifts for the day (one call for
+  /// all drivers). Injectable for tests; defaults to one built on the
+  /// authenticated ApiClient.
+  final ScheduleService? scheduleService;
+
+  /// Called when a ride block is tapped.
   final void Function(Ride) onRideSelected;
 
   const MultiColumnViewWidget({
@@ -35,6 +55,9 @@ class MultiColumnViewWidget extends StatefulWidget {
     required this.selectedDay,
     required this.drivers,
     required this.onRideSelected,
+    this.externalShares = const [],
+    this.shareService,
+    this.scheduleService,
   });
 
   @override
@@ -50,22 +73,35 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
   static const double _narrowColumnWidth = 200;
 
   late Future<List<Ride>> _ridesFuture;
+  late Future<Map<String, SharedCalendar?>> _sharesFuture;
+  late Future<Map<String, List<ScheduleDay>>> _shiftsFuture;
   late RideService _rideService;
+  late ScheduleService _scheduleService;
+  late bool _ownsScheduleService;
 
   @override
   void initState() {
     super.initState();
     _rideService = RideService(apiClient: context.read<AuthBloc>().apiClient);
+    _ownsScheduleService = widget.scheduleService == null;
+    _scheduleService =
+        widget.scheduleService ??
+        ScheduleService(apiClient: context.read<AuthBloc>().apiClient);
     _ridesFuture = _fetchRides();
+    _sharesFuture = _fetchShares();
+    _shiftsFuture = _fetchCompanyShifts();
   }
 
   @override
   void didUpdateWidget(MultiColumnViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedDay != widget.selectedDay ||
-        oldWidget.drivers != widget.drivers) {
+        oldWidget.drivers != widget.drivers ||
+        oldWidget.externalShares != widget.externalShares) {
       setState(() {
         _ridesFuture = _fetchRides();
+        _sharesFuture = _fetchShares();
+        _shiftsFuture = _fetchCompanyShifts();
       });
     }
   }
@@ -73,6 +109,7 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
   @override
   void dispose() {
     _rideService.dispose();
+    if (_ownsScheduleService) _scheduleService.dispose();
     super.dispose();
   }
 
@@ -83,25 +120,49 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
     return _rideService.getRidesByDrivers(ids, widget.selectedDay);
   }
 
-  void _handlePriceEdited(Ride ride, double newPrice) {
-    _rideService
-        .setRidePrice(ride.id, newPrice)
-        .then((_) {
-          if (mounted) {
-            setState(() {
-              _ridesFuture = _fetchRides();
-            });
-          }
-        })
-        .catchError((Object e) {
-          if (mounted) {
-            NavigationHelper.showSnackBar(
-              context,
-              'Failed to set price: $e',
-              isError: true,
-            );
-          }
-        });
+  static String _dateStr(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// One call returns every company driver's shifts for the day; grouped by
+  /// driver for the columns. Availability is an overlay — degrade to no bands
+  /// on any failure rather than blocking the board.
+  Future<Map<String, List<ScheduleDay>>> _fetchCompanyShifts() async {
+    try {
+      final days = await _scheduleService.getScheduleForDate(
+        _dateStr(widget.selectedDay),
+      );
+      final byDriver = <String, List<ScheduleDay>>{};
+      for (final day in days) {
+        if (day.status == ScheduleDayStatus.cancelled) continue;
+        byDriver.putIfAbsent(day.driverId, () => []).add(day);
+      }
+      return byDriver;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Loads every shared calendar for the selected day. A failing share maps to
+  /// a null entry so one broken grant only degrades its own column, never the
+  /// whole board.
+  Future<Map<String, SharedCalendar?>> _fetchShares() async {
+    final service = widget.shareService;
+    if (service == null || widget.externalShares.isEmpty) return {};
+    final entries = await Future.wait(
+      widget.externalShares.map((grant) async {
+        try {
+          final calendar = await service.getSharedCalendar(
+            grant.id,
+            from: widget.selectedDay,
+            to: widget.selectedDay,
+          );
+          return MapEntry<String, SharedCalendar?>(grant.id, calendar);
+        } catch (_) {
+          return MapEntry<String, SharedCalendar?>(grant.id, null);
+        }
+      }),
+    );
+    return Map.fromEntries(entries);
   }
 
   @override
@@ -109,12 +170,22 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
     final colorScheme = Theme.of(context).colorScheme;
     final isNarrow =
         MediaQuery.of(context).size.width < AppDimensions.breakpointDesktop;
-    // Narrow screens scroll horizontally and show every driver; wide screens
-    // cap to [_maxColumns] columns that share the full width.
+    // Narrow screens scroll horizontally and show every column; wide screens
+    // cap to [_maxColumns] columns (drivers first, then external shares) that
+    // share the full width.
     final visibleDrivers = isNarrow
         ? widget.drivers
         : widget.drivers.take(_maxColumns).toList();
-    final extraCount = widget.drivers.length - visibleDrivers.length;
+    final externalSlots = isNarrow
+        ? widget.externalShares.length
+        : (_maxColumns - visibleDrivers.length).clamp(
+            0,
+            widget.externalShares.length,
+          );
+    final visibleShares = widget.externalShares.take(externalSlots).toList();
+    final extraCount =
+        (widget.drivers.length + widget.externalShares.length) -
+        (visibleDrivers.length + visibleShares.length);
 
     return Column(
       children: [
@@ -172,38 +243,34 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
                     (a, b) => a.pickupDateTime.compareTo(b.pickupDateTime),
                   );
 
-              _DriverColumn columnFor(Person driver) => _DriverColumn(
-                driver: driver,
-                rides: ridesFor(driver),
-                onRideSelected: widget.onRideSelected,
-                onPriceEdited: _handlePriceEdited,
-              );
+              return FutureBuilder<Map<String, SharedCalendar?>>(
+                future: _sharesFuture,
+                builder: (context, sharesSnapshot) {
+                  final shares =
+                      sharesSnapshot.data ?? const <String, SharedCalendar?>{};
+                  final sharesLoading =
+                      sharesSnapshot.connectionState == ConnectionState.waiting;
 
-              if (isNarrow) {
-                // Fixed-width columns inside a horizontal scroll view so each
-                // column stays wide enough and overflowing drivers are reachable
-                // by scrolling instead of being hidden behind "+N more".
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: visibleDrivers
-                        .map(
-                          (driver) => SizedBox(
-                            width: _narrowColumnWidth,
-                            child: columnFor(driver),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                );
-              }
+                  return FutureBuilder<Map<String, List<ScheduleDay>>>(
+                    future: _shiftsFuture,
+                    builder: (context, shiftsSnapshot) {
+                      final shiftsByDriver =
+                          shiftsSnapshot.data ??
+                          const <String, List<ScheduleDay>>{};
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: visibleDrivers
-                    .map((driver) => Expanded(child: columnFor(driver)))
-                    .toList(),
+                      return _buildColumns(
+                        context,
+                        isNarrow: isNarrow,
+                        visibleDrivers: visibleDrivers,
+                        visibleShares: visibleShares,
+                        ridesFor: ridesFor,
+                        shiftsByDriver: shiftsByDriver,
+                        shares: shares,
+                        sharesLoading: sharesLoading,
+                      );
+                    },
+                  );
+                },
               );
             },
           ),
@@ -211,20 +278,77 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
       ],
     );
   }
+
+  Widget _buildColumns(
+    BuildContext context, {
+    required bool isNarrow,
+    required List<Person> visibleDrivers,
+    required List<CalendarShareGrant> visibleShares,
+    required List<Ride> Function(Person) ridesFor,
+    required Map<String, List<ScheduleDay>> shiftsByDriver,
+    required Map<String, SharedCalendar?> shares,
+    required bool sharesLoading,
+  }) {
+    final columns = <Widget>[
+      ...visibleDrivers.map(
+        (driver) => _DriverColumn(
+          driver: driver,
+          rides: ridesFor(driver),
+          shifts: shiftsByDriver[driver.id] ?? const [],
+          selectedDay: widget.selectedDay,
+          onRideSelected: widget.onRideSelected,
+        ),
+      ),
+      ...visibleShares.map(
+        (grant) => _ExternalShareColumn(
+          grant: grant,
+          calendar: shares[grant.id],
+          loading: sharesLoading,
+          selectedDay: widget.selectedDay,
+        ),
+      ),
+    ];
+
+    if (isNarrow) {
+      // Fixed-width columns inside a horizontal scroll view so each column
+      // stays wide enough and overflowing columns are reachable by scrolling
+      // instead of being hidden behind "+N more".
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: columns
+              .map(
+                (column) => SizedBox(width: _narrowColumnWidth, child: column),
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: columns.map((column) => Expanded(child: column)).toList(),
+    );
+  }
 }
 
-/// A single driver column in the board view.
+/// A single driver column in the board view: the same vertical day timeline as
+/// the external share columns — the driver's work shifts stretch as green
+/// availability regions, the rides lie on top as tappable time blocks.
 class _DriverColumn extends StatelessWidget {
   final Person driver;
   final List<Ride> rides;
+  final List<ScheduleDay> shifts;
+  final DateTime selectedDay;
   final void Function(Ride) onRideSelected;
-  final void Function(Ride, double) onPriceEdited;
 
   const _DriverColumn({
     required this.driver,
     required this.rides,
+    required this.shifts,
+    required this.selectedDay,
     required this.onRideSelected,
-    required this.onPriceEdited,
   });
 
   @override
@@ -268,28 +392,62 @@ class _DriverColumn extends StatelessWidget {
               maxLines: 1,
             ),
           ),
-          // Rides list or empty state
+          // Day timeline (shift regions + ride blocks) or empty state
           Expanded(
-            child: rides.isEmpty
+            child: rides.isEmpty && shifts.isEmpty
                 ? _emptyState(context)
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: rides.length,
-                    itemBuilder: (context, index) {
-                      final ride = rides[index];
-                      // The card spans the full column width — the pickup time
-                      // is already shown inside the card, so the old left time
-                      // rail was redundant (and stealing 36px, which caused the
-                      // card content to overflow on the right).
-                      return RideCalendarCard(
-                        ride: ride,
-                        onTap: () => onRideSelected(ride),
-                        onPriceEdited: (price) => onPriceEdited(ride, price),
-                        showActions: false,
-                        compact: true,
-                      );
-                    },
+                : _DayTimeline(
+                    shiftRegions: shifts
+                        .map(
+                          (shift) => _TimelineShiftRegion(
+                            keyValue: 'driver-shift-region-${shift.id}',
+                            startTime: shift.startTime,
+                            endTime: shift.endTime,
+                          ),
+                        )
+                        .toList(),
+                    blocks: [
+                      for (final ride in rides) _rideBlock(context, ride),
+                    ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A ride as a tappable time block: pickup time + client name, tinted by
+  /// ride status like the week view. Rides carry no duration, so the block
+  /// spans the same nominal 1.5 h the week view uses.
+  _TimelineBlock _rideBlock(BuildContext context, Ride ride) {
+    final color = RideStatusStyles.getStatusColor(ride.status);
+    final startHour =
+        ride.pickupDateTime.hour + ride.pickupDateTime.minute / 60.0;
+
+    return _TimelineBlock(
+      keyValue: 'board-ride-${ride.id}',
+      startHour: startHour,
+      endHour: startHour + 1.5,
+      color: color.withAlpha(204),
+      borderColor: color,
+      onTap: () => onRideSelected(ride),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            DateFormat.Hm().format(ride.pickupDateTime),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            ride.clientName,
+            style: const TextStyle(color: Colors.white, fontSize: 9),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ),
@@ -313,6 +471,415 @@ class _DriverColumn extends StatelessWidget {
             style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A read-only board column for a cross-company shared calendar: the grantor's
+/// shifts and PII-free busy slots for the selected day. Visually marked with a
+/// share icon and the grantor's company so it is never mistaken for a company
+/// driver; nothing in it is tappable (there are no ride details to open).
+class _ExternalShareColumn extends StatelessWidget {
+  final CalendarShareGrant grant;
+  final SharedCalendar? calendar;
+  final bool loading;
+  final DateTime selectedDay;
+
+  const _ExternalShareColumn({
+    required this.grant,
+    required this.calendar,
+    required this.loading,
+    required this.selectedDay,
+  });
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Column header — tinted differently from company drivers.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: colorScheme.tertiaryContainer.withAlpha(80),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.ios_share, size: 14, color: colorScheme.onSurface),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        grant.grantorName,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      Text(
+                        grant.grantorCompanyName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _buildBody(context)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (loading) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+    final data = calendar;
+    if (data == null) {
+      // This share failed to load — degrade only this column.
+      return Center(
+        child: Icon(Icons.cloud_off, size: 32, color: colorScheme.error),
+      );
+    }
+
+    final shifts = data.shifts
+        .where((s) => _sameDay(s.date, selectedDay))
+        .toList();
+    final slots =
+        data.busySlots.where((b) => _sameDay(b.start, selectedDay)).toList()
+          ..sort((a, b) => a.start.compareTo(b.start));
+
+    if (shifts.isEmpty && slots.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_available,
+              size: 40,
+              color: colorScheme.onSurfaceVariant.withAlpha(128),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.sharedCalendarEmptyDay,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final l10nBusy = l10n.sharedCalendarBusy;
+    final localizations = MaterialLocalizations.of(context);
+    String time(DateTime t) =>
+        localizations.formatTimeOfDay(TimeOfDay.fromDateTime(t));
+
+    return _DayTimeline(
+      shiftRegions: shifts
+          .map(
+            (shift) => _TimelineShiftRegion(
+              keyValue: 'share-shift-region-${shift.startTime}',
+              startTime: shift.startTime,
+              endTime: shift.endTime,
+            ),
+          )
+          .toList(),
+      blocks: [
+        for (var i = 0; i < slots.length; i++)
+          _TimelineBlock(
+            keyValue: 'share-busy-block-$i',
+            startHour: slots[i].start.hour + slots[i].start.minute / 60.0,
+            endHour: slots[i].end.hour + slots[i].end.minute / 60.0,
+            color: colorScheme.surfaceContainerHighest,
+            borderColor: colorScheme.outlineVariant,
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  slots[i].kind == 'Unavailability'
+                      ? Icons.do_not_disturb_on_outlined
+                      : Icons.local_taxi,
+                  size: 11,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    '$l10nBusy ${time(slots[i].start)}–${time(slots[i].end)}',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// A shift rendered as a stretched translucent green "available" region on the
+/// day timeline.
+class _TimelineShiftRegion {
+  final String keyValue;
+
+  /// "HH:mm[:ss]" strings in the owner's local convention.
+  final String startTime;
+  final String endTime;
+
+  const _TimelineShiftRegion({
+    required this.keyValue,
+    required this.startTime,
+    required this.endTime,
+  });
+}
+
+/// An occupied interval on the day timeline (a ride or a busy slot), rendered
+/// as a bordered block on top of the availability regions.
+class _TimelineBlock {
+  final String keyValue;
+  final double startHour;
+  final double endHour;
+  final Color color;
+  final Color borderColor;
+  final Widget content;
+  final VoidCallback? onTap;
+
+  const _TimelineBlock({
+    required this.keyValue,
+    required this.startHour,
+    required this.endHour,
+    required this.color,
+    required this.borderColor,
+    required this.content,
+    this.onTap,
+  });
+}
+
+/// Vertical day timeline (06:00–23:00) shared by the driver and external-share
+/// board columns. Shifts stretch as translucent green "available" regions
+/// across the full hour range they cover; occupied blocks (rides / busy slots)
+/// lie on top, so the free gaps inside a shift are visible at a glance. A slim
+/// hour scale sits on the left.
+class _DayTimeline extends StatelessWidget {
+  final List<_TimelineShiftRegion> shiftRegions;
+  final List<_TimelineBlock> blocks;
+
+  const _DayTimeline({required this.shiftRegions, required this.blocks});
+
+  /// Visible day window, matching the week view: 06:00 → 23:00.
+  static const double _startHour = 6;
+  static const double _endHour = 23;
+  static const double _hoursShown = _endHour - _startHour;
+
+  /// Width of the left hour-scale gutter.
+  static const double _gutterWidth = 30;
+
+  static double _parseHhmm(String raw) {
+    final parts = raw.split(':');
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    return hour + minute / 60.0;
+  }
+
+  static String _hhmm(String raw) =>
+      raw.length >= 5 ? raw.substring(0, 5) : raw;
+
+  double _offsetFor(double hourValue, double height) =>
+      ((hourValue - _startHour).clamp(0.0, _hoursShown)) / _hoursShown * height;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = constraints.maxHeight;
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Hour scale gutter: a label every 2 hours.
+              SizedBox(
+                width: _gutterWidth,
+                child: Stack(
+                  children: [
+                    for (
+                      var hour = _startHour.toInt();
+                      hour <= _endHour.toInt();
+                      hour += 2
+                    )
+                      Positioned(
+                        top: _offsetFor(hour.toDouble(), height) - 5,
+                        right: 4,
+                        child: Text(
+                          hour.toString().padLeft(2, '0'),
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    // Hour gridlines every 2 hours.
+                    for (
+                      var hour = _startHour.toInt();
+                      hour <= _endHour.toInt();
+                      hour += 2
+                    )
+                      Positioned(
+                        top: _offsetFor(hour.toDouble(), height),
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 1,
+                          color: colorScheme.surfaceContainerHighest,
+                        ),
+                      ),
+                    // Availability regions: each shift stretches over its full
+                    // time range.
+                    for (final region in shiftRegions)
+                      _buildShiftRegion(context, l10n, region, height),
+                    // Occupied blocks on top of the availability regions.
+                    for (final block in blocks) _buildBlock(block, height),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildShiftRegion(
+    BuildContext context,
+    AppLocalizations l10n,
+    _TimelineShiftRegion region,
+    double height,
+  ) {
+    final top = _offsetFor(_parseHhmm(region.startTime), height);
+    final bottom = _offsetFor(_parseHhmm(region.endTime), height);
+    final regionHeight = bottom - top;
+    if (regionHeight <= 0) return const SizedBox.shrink();
+
+    return Positioned(
+      key: ValueKey(region.keyValue),
+      top: top,
+      left: 0,
+      right: 0,
+      height: regionHeight,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(6),
+          border: Border(left: BorderSide(color: AppColors.success, width: 3)),
+        ),
+        padding: const EdgeInsets.only(left: 6, top: 3),
+        alignment: Alignment.topLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${_hhmm(region.startTime)}–${_hhmm(region.endTime)}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.success,
+              ),
+            ),
+            if (regionHeight > 44)
+              Text(
+                l10n.sharedCalendarAvailable,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: AppColors.success.withValues(alpha: 0.85),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBlock(_TimelineBlock block, double height) {
+    final top = _offsetFor(block.startHour, height);
+    final bottom = _offsetFor(block.endHour, height);
+    // Keep even very short blocks visible.
+    final blockHeight = (bottom - top).clamp(10.0, height);
+
+    return Positioned(
+      key: ValueKey(block.keyValue),
+      top: top,
+      left: 6,
+      right: 2,
+      height: blockHeight,
+      child: GestureDetector(
+        onTap: block.onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: block.color,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: block.borderColor),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          alignment: Alignment.topLeft,
+          child: blockHeight < 16 ? null : block.content,
+        ),
       ),
     );
   }

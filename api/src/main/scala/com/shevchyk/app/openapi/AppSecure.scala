@@ -117,4 +117,5 @@ object AppSecure:
    * every non-`Response` failure (missing query params, JSON parse errors, "not found", RuntimeExceptions, etc.)
    * through `RouteErrorHandler.handleError`, which always produces a 500 with this body. Preserve that behaviour.
    */
-  def internal(t: Throwable): Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
+  def internal(@annotation.unused t: Throwable): Err =
+    (StatusCode.InternalServerError, ApiError("Internal server error"))

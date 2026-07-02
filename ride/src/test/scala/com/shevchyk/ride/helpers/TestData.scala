@@ -42,7 +42,7 @@ object TestData {
       airportCode: String = "MUC",
       flightNumber: String = "LH123"
   ): CreateRideRequest = createRideRequest(
-    specifics = Some(RideSpecifics.AirportTransfer(airportCode, flightNumber))
+    specifics = Some(RideSpecifics.AirportTransfer(airportCode, Some(flightNumber)))
   )
 
   def createRide(
@@ -74,7 +74,7 @@ object TestData {
       airportCode: String = "MUC",
       flightNumber: String = "LH123"
   ): Ride = createRide(
-    specifics = Some(RideSpecifics.AirportTransfer(airportCode, flightNumber))
+    specifics = Some(RideSpecifics.AirportTransfer(airportCode, Some(flightNumber)))
   )
 
   def validCreateRideJson: String = {

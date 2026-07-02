@@ -50,8 +50,10 @@ object ConfirmationReminderSchedulerSpec extends ZIOSpecDefault:
     new RideRepository:
       private def nope(m: String): Nothing = throw new NotImplementedError(s"unexpected RideRepository.$m")
 
-      def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]] = ZIO.succeed(rides)
-      def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]    = ZIO.succeed(Nil)
+      def findRidesNeedingConfirmation(from: Instant, to: Instant): Task[List[Ride]]               = ZIO.succeed(rides)
+      def findAssignedRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                  = ZIO.succeed(Nil)
+      def findActiveRidesInWindow(from: Instant, to: Instant): Task[List[Ride]]                    = ZIO.succeed(Nil)
+      def findByDriverIdInWindow(driverId: PersonId, from: Instant, to: Instant): Task[List[Ride]] = ZIO.succeed(Nil)
 
       def create(r: Ride): Task[Ride]                                                                             = nope("create")
       def findById(id: RideId): Task[Option[Ride]]                                                                = nope("findById")
@@ -101,6 +103,21 @@ object ConfirmationReminderSchedulerSpec extends ZIOSpecDefault:
       def updateCheckpoint(rideId: RideId, cp: com.shevchyk.ride.domain.AirportCheckpoint): Task[Boolean]         = nope(
         "updateCheckpoint"
       )
+      def updateFlightStatus(
+          rideId: RideId,
+          gate: Option[String],
+          terminal: Option[String],
+          flightStatus: Option[String],
+          flightTime: Option[java.time.Instant],
+          scheduledTime: Option[java.time.Instant],
+          departureTime: Option[java.time.Instant]
+      ): Task[Boolean] = nope("updateFlightStatus")
+      def findFlightStatus(rideId: RideId): Task[Option[com.shevchyk.ride.domain.FlightStatusRow]]                = nope(
+        "findFlightStatus"
+      )
+      def findFlightStatusFor(
+          rideIds: List[RideId]
+      ): Task[Map[RideId, com.shevchyk.ride.domain.FlightStatusRow]] = nope("findFlightStatusFor")
       def markPaidIfCompleted(rideId: RideId, paymentMethod: Option[PaymentMethod]): Task[Boolean]                = ZIO.succeed(false)
 
   // FcmService stub that records (personId, push type) pairs sent.

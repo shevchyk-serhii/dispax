@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../constants/app_dimensions.dart';
 
 /// Form text field with a small quick-clear button (×) in the suffix.
@@ -17,6 +18,7 @@ class ClearableTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final int maxLines;
   final int minLines;
+  final List<TextInputFormatter>? inputFormatters;
 
   const ClearableTextField({
     super.key,
@@ -30,6 +32,7 @@ class ClearableTextField extends StatefulWidget {
     this.keyboardType,
     this.maxLines = 1,
     this.minLines = 1,
+    this.inputFormatters,
   });
 
   @override
@@ -84,6 +87,7 @@ class _ClearableTextFieldState extends State<ClearableTextField> {
       keyboardType: widget.keyboardType,
       maxLines: widget.maxLines,
       minLines: widget.minLines,
+      inputFormatters: widget.inputFormatters,
       decoration: InputDecoration(
         labelText: widget.labelText,
         hintText: widget.hintText,

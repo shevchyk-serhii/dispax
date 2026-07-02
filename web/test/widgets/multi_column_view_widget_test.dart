@@ -18,6 +18,8 @@ import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/schedule_management/models/calendar_share.dart';
+import 'package:dispax/modules/schedule_management/services/calendar_share_service.dart';
 import 'package:dispax/dashboard/driver/calendar/multi_column_view_widget.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -26,6 +28,8 @@ class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
     implements AuthBloc {}
 
 class _MockApiClient extends Mock implements ApiClient {}
+
+class _MockCalendarShareService extends Mock implements CalendarShareService {}
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +73,8 @@ Widget _buildTestWidget({
   required List<Person> drivers,
   DateTime? selectedDay,
   void Function(dynamic)? onRideSelected,
+  List<CalendarShareGrant> externalShares = const [],
+  CalendarShareService? shareService,
 }) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -80,10 +86,27 @@ Widget _buildTestWidget({
         body: MultiColumnViewWidget(
           selectedDay: selectedDay ?? DateTime(2026, 6, 22),
           drivers: drivers,
+          externalShares: externalShares,
+          shareService: shareService,
           onRideSelected: onRideSelected ?? (_) {},
         ),
       ),
     ),
+  );
+}
+
+CalendarShareGrant _externalGrant({
+  String id = 'grant-1',
+  String grantorName = 'Anna External',
+  String grantorCompanyName = 'External GmbH',
+}) {
+  return CalendarShareGrant(
+    id: id,
+    grantorName: grantorName,
+    grantorCompanyName: grantorCompanyName,
+    granteeName: 'Me',
+    granteeCompanyName: 'My GmbH',
+    createdAt: DateTime.utc(2026, 6, 1),
   );
 }
 
@@ -249,9 +272,11 @@ void main() {
   testWidgets('passes correct driverIds and date to getRidesByDrivers', (
     tester,
   ) async {
-    String? capturedPath;
+    // The board issues several GETs (rides + company shifts) — collect them
+    // all and assert on the rides one.
+    final capturedPaths = <String>[];
     when(() => apiClient.get(any())).thenAnswer((invocation) async {
-      capturedPath = invocation.positionalArguments[0] as String;
+      capturedPaths.add(invocation.positionalArguments[0] as String);
       return http.Response('[]', 200);
     });
 
@@ -268,9 +293,17 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(capturedPath, isNotNull);
-    expect(capturedPath, contains('driverIds=abc,xyz'));
-    expect(capturedPath, contains('from=2026-06-22'));
+    final ridesPath = capturedPaths.firstWhere(
+      (p) => p.contains('driverIds='),
+      orElse: () => '',
+    );
+    expect(ridesPath, contains('driverIds=abc,xyz'));
+    expect(ridesPath, contains('from=2026-06-22'));
+    // The company shifts for the day are fetched in the same pass.
+    expect(
+      capturedPaths.any((p) => p.contains('/schedules/day/2026-06-22')),
+      isTrue,
+    );
   });
 
   // ── Tenant isolation: API returns [] for foreign driver ────────────────────
@@ -296,6 +329,350 @@ void main() {
       expect(find.text('No rides'), findsOneWidget);
     },
   );
+
+  // ── Driver-column day timeline (shift regions + ride blocks) ───────────────
+
+  group('driver column timeline', () {
+    Map<String, dynamic> shiftJson({
+      String id = 'shift-1',
+      String driverId = 'driver-1',
+      String date = '2026-06-22',
+      String start = '14:00',
+      String end = '22:00',
+    }) {
+      return {
+        'id': id,
+        'driverId': driverId,
+        'companyId': 'company-1',
+        'date': date,
+        'startTime': start,
+        'endTime': end,
+        'status': 'Scheduled',
+        'createdAt': '2026-06-01T00:00:00.000Z',
+        'updatedAt': '2026-06-01T00:00:00.000Z',
+      };
+    }
+
+    void stubPaths({
+      List<Map<String, dynamic>> shifts = const [],
+      List<Map<String, dynamic>> rides = const [],
+    }) {
+      when(() => apiClient.get(any())).thenAnswer((invocation) async {
+        final path = invocation.positionalArguments[0] as String;
+        if (path.contains('/schedules/day/')) {
+          return http.Response(jsonEncode(shifts), 200);
+        }
+        return http.Response(jsonEncode(rides), 200);
+      });
+    }
+
+    testWidgets(
+      'a company driver with a shift gets a stretched availability region',
+      (tester) async {
+        tester.view.physicalSize = const Size(1800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        stubPaths(shifts: [shiftJson()]);
+
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(name: 'Hans Müller')],
+            selectedDay: DateTime(2026, 6, 22),
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final region = find.byKey(
+          const ValueKey('driver-shift-region-shift-1'),
+        );
+        expect(region, findsOneWidget);
+        expect(find.text('14:00–22:00'), findsOneWidget);
+        expect(find.text('Available'), findsOneWidget);
+        // 8h of the 17h window: a stretched region, not a chip.
+        expect(tester.getSize(region).height, greaterThan(100));
+      },
+    );
+
+    testWidgets('rides render as tappable time blocks on the timeline', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      stubPaths(
+        shifts: [shiftJson()],
+        rides: [
+          {
+            ..._rideJson(id: 'r1', driverId: 'driver-1'),
+            'pickupDateTime': '2026-06-22T15:00:00.000',
+          },
+        ],
+      );
+
+      dynamic tapped;
+      await tester.pumpWidget(
+        _buildTestWidget(
+          authBloc: authBloc,
+          drivers: [_driver(name: 'Hans Müller')],
+          selectedDay: DateTime(2026, 6, 22),
+          onRideSelected: (ride) => tapped = ride,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final block = find.byKey(const ValueKey('board-ride-r1'));
+      expect(block, findsOneWidget);
+      expect(find.text('15:00'), findsOneWidget);
+
+      await tester.tap(block);
+      expect(tapped, isNotNull);
+    });
+
+    testWidgets(
+      'shift fetch failure degrades to no availability regions, rides intact',
+      (tester) async {
+        tester.view.physicalSize = const Size(1800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(() => apiClient.get(any())).thenAnswer((invocation) async {
+          final path = invocation.positionalArguments[0] as String;
+          if (path.contains('/schedules/day/')) {
+            return http.Response('boom', 500);
+          }
+          return http.Response(
+            jsonEncode([
+              {
+                ..._rideJson(id: 'r1', driverId: 'driver-1'),
+                'pickupDateTime': '2026-06-22T15:00:00.000',
+              },
+            ]),
+            200,
+          );
+        });
+
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(name: 'Hans Müller')],
+            selectedDay: DateTime(2026, 6, 22),
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('board-ride-r1')), findsOneWidget);
+        expect(find.text('Available'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  // ── External shared-calendar columns ────────────────────────────────────────
+
+  group('external shared-calendar columns', () {
+    late _MockCalendarShareService shareService;
+
+    setUp(() {
+      shareService = _MockCalendarShareService();
+      when(
+        () => apiClient.get(any()),
+      ).thenAnswer((_) async => http.Response('[]', 200));
+    });
+
+    testWidgets(
+      'renders an extra column with the grantor name, company, shift and busy slot',
+      (tester) async {
+        tester.view.physicalSize = const Size(1800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final day = DateTime(2026, 6, 22);
+        when(
+          () => shareService.getSharedCalendar(
+            'grant-1',
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer(
+          (_) async => SharedCalendar(
+            grantId: 'grant-1',
+            grantorName: 'Anna External',
+            shifts: [
+              SharedShift(
+                date: day,
+                startTime: '08:00',
+                endTime: '16:00',
+                status: 'Scheduled',
+              ),
+            ],
+            busySlots: [
+              SharedBusySlot(
+                start: day.add(const Duration(hours: 9)),
+                end: day.add(const Duration(hours: 10)),
+                kind: 'Ride',
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(name: 'Hans Müller')],
+            selectedDay: day,
+            externalShares: [_externalGrant()],
+            shareService: shareService,
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        expect(find.text('Hans Müller'), findsOneWidget);
+        expect(find.text('Anna External'), findsOneWidget);
+        expect(find.text('External GmbH'), findsOneWidget);
+        // The shift stretches as an availability region on the day timeline…
+        expect(
+          find.byKey(const ValueKey('share-shift-region-08:00')),
+          findsOneWidget,
+        );
+        expect(find.text('08:00–16:00'), findsOneWidget);
+        expect(find.text('Available'), findsOneWidget);
+        // …with the busy slot lying on top of it as a block.
+        expect(
+          find.byKey(const ValueKey('share-busy-block-0')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Busy'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the availability region is time-proportional: an 8h shift spans ~8/17 of the timeline',
+      (tester) async {
+        tester.view.physicalSize = const Size(1800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final day = DateTime(2026, 6, 22);
+        when(
+          () => shareService.getSharedCalendar(
+            'grant-1',
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer(
+          (_) async => SharedCalendar(
+            grantId: 'grant-1',
+            grantorName: 'Anna External',
+            shifts: [
+              SharedShift(
+                date: day,
+                startTime: '14:00',
+                endTime: '22:00',
+                status: 'Scheduled',
+              ),
+            ],
+            busySlots: const [],
+          ),
+        );
+
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(name: 'Hans Müller')],
+            selectedDay: day,
+            externalShares: [_externalGrant()],
+            shareService: shareService,
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final region = tester.getSize(
+          find.byKey(const ValueKey('share-shift-region-14:00')),
+        );
+        // 8 hours of a 17-hour window (06:00–23:00): the band must be a large
+        // stretched region (hundreds of px on this viewport), not a one-line
+        // chip like before.
+        expect(region.height, greaterThan(100));
+      },
+    );
+
+    testWidgets('a failing share degrades only its own column', (tester) async {
+      tester.view.physicalSize = const Size(1800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(
+        () => shareService.getSharedCalendar(
+          'grant-1',
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenThrow(ApiException('boom'));
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          authBloc: authBloc,
+          drivers: [_driver(name: 'Hans Müller')],
+          externalShares: [_externalGrant()],
+          shareService: shareService,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Driver column intact, external column shows its own error marker.
+      expect(find.text('Hans Müller'), findsOneWidget);
+      expect(find.text('No rides'), findsOneWidget);
+      expect(find.text('Anna External'), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+    });
+
+    testWidgets('external shares count toward the wide-screen column cap', (
+      tester,
+    ) async {
+      final drivers = List.generate(
+        3,
+        (i) => _driver(id: 'driver-$i', name: 'Driver $i'),
+      );
+      when(
+        () => shareService.getSharedCalendar(
+          any(),
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer(
+        (_) async => const SharedCalendar(
+          grantId: 'grant-1',
+          grantorName: 'Anna External',
+          shifts: [],
+          busySlots: [],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          authBloc: authBloc,
+          drivers: drivers,
+          externalShares: [_externalGrant()],
+          shareService: shareService,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 3 drivers fill the cap → the external column overflows into "+1 more".
+      expect(find.text('Anna External'), findsNothing);
+      expect(find.textContaining('+1 more'), findsOneWidget);
+    });
+  });
 
   // ── Compact board layout ───────────────────────────────────────────────────
 

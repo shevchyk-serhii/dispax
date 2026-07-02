@@ -6,6 +6,7 @@ import '../../../blocs/blocs.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/error_messages.dart';
 
 class DriverRatingsPanel extends StatefulWidget {
   const DriverRatingsPanel({super.key});
@@ -17,7 +18,7 @@ class DriverRatingsPanel extends StatefulWidget {
 class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
   List<Map<String, dynamic>>? _data;
   bool _isLoading = true;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -41,20 +42,22 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = e.toString();
+        _error = e;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final error = _error == null ? null : friendlyError(_error, l10n);
     return Column(
       children: [
         _buildHeader(),
         Expanded(
           child: _isLoading
               ? Center(child: CircularProgressIndicator.adaptive())
-              : _error != null
+              : error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -65,11 +68,10 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
                         color: AppColors.error,
                       ),
                       const SizedBox(height: 12),
-                      Text(_error!),
+                      Text(error),
                       const SizedBox(height: 12),
                       Builder(
                         builder: (context) {
-                          final l10n = AppLocalizations.of(context)!;
                           return ElevatedButton(
                             onPressed: _loadData,
                             child: Text(l10n.retry),
@@ -124,7 +126,8 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
   Widget _buildContent() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (_data == null || _data!.isEmpty) {
+    final data = _data;
+    if (data == null || data.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -148,7 +151,7 @@ class _DriverRatingsPanelState extends State<DriverRatingsPanel> {
       padding: const EdgeInsets.all(16),
       children: [
         // Driver cards with ratings
-        ..._data!.map((driver) {
+        ...data.map((driver) {
           final name = driver['driverName'] as String? ?? 'Unknown';
           final avgRating = (driver['avgRating'] as num?)?.toDouble() ?? 0;
           final reviewCount = (driver['reviewCount'] as num?) ?? 0;

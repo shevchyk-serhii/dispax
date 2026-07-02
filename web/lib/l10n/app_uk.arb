@@ -35,10 +35,17 @@
   "rideAlreadyAssignedInfo": "Цю поїздку вже призначено. Список оновлено.",
   "allRidesAssigned": "Всі поїздки призначено",
   "selectDriver": "Обрати водія",
+  "reassignDriver": "Перепризначити водія",
+  "noDriversFound": "Водіїв не знайдено",
   "reassignRide": "Перепризначити поїздку",
   "confirmReassignment": "Підтвердити перепризначення",
   "reassign": "Перепризначити",
   "assign": "Призначити",
+  "driverDashboardTitle": "Панель водія",
+  "secretaryDashboardTitle": "Панель секретаря",
+  "dispatcherDashboardTitle": "Панель диспетчера",
+  "adminDashboardTitle": "Панель адміністратора",
+  "platformAdminTitle": "Адміністратор платформи",
   "cancel": "Скасувати",
   "confirm": "Підтвердити",
   "retry": "Повторити",
@@ -103,6 +110,16 @@
   "passwordChanged": "Пароль успішно змінено",
   "passwordsDoNotMatch": "Паролі не збігаються",
   "passwordTooShort": "Пароль повинен містити щонайменше 6 символів",
+  "forcePasswordChangeTitle": "Встановіть новий пароль",
+  "updateRequired": "Потрібне оновлення",
+  "updateRequiredMessage": "Ця версія застосунку більше не підтримується. Будь ласка, оновіть до останньої версії, щоб продовжити.",
+  "updateNow": "Оновити зараз",
+  "forcePasswordChangeMessage": "Ваш обліковий запис використовує тимчасовий пароль. Будь ласка, встановіть новий пароль, щоб продовжити.",
+  "temporaryPassword": "Тимчасовий пароль",
+  "temporaryPasswordHint": "Користувача попросять змінити його під час першого входу.",
+  "tempPasswordRules": "Щонайменше 8 символів із великою літерою, малою літерою та цифрою",
+  "setNewPassword": "Встановити новий пароль",
+  "userCreatedSharePassword": "Користувача створено. Повідомте йому тимчасовий пароль.",
 
   "notifications": "Сповіщення",
   "pushNotifications": "Push-сповіщення",
@@ -135,6 +152,8 @@
 
   "about": "Про додаток",
   "version": "Версія",
+  "appVersion": "Версія додатка",
+  "backendVersion": "Версія бекенду",
   "privacyPolicy": "Політика конфіденційності",
   "termsOfService": "Умови використання",
 
@@ -161,8 +180,59 @@
   "checkpointLanded": "Приземлився",
   "checkpointArrivalsHall": "Зал прильотів",
   "checkpointTerminalExit": "Вихід з терміналу",
+  "passengerCheckpointStatus": "Пасажир: {checkpoint}",
   "markCheckpointButton": "Я тут",
   "airportCheckpointPanelTitle": "Моє місце в терміналі",
+  "airportEntryTitle": "Час в'їзду в термінал",
+  "airportDepartIn": "Виїзд через:",
+  "airportEntryLabel": "В'їзд у термінал:",
+  "airportEntryAt": "В'їзд о {time}",
+  "@airportEntryAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandingAt": "Приліт о {time}",
+  "@airportLandingAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportLandedAt": "Приземлився о {time}",
+  "@airportLandedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "airportFlightDelay": "+{minutes} хв затримки",
+  "@airportFlightDelay": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "airportScheduledVsActual": "За розкладом {scheduled} → {actual}",
+  "@airportScheduledVsActual": {
+    "placeholders": {
+      "scheduled": {"type": "String"},
+      "actual": {"type": "String"}
+    }
+  },
+  "airportTravelTime": "Час у дорозі:",
+  "airportParkingSavings": "Економія на паркуванні: {amount}",
+  "@airportParkingSavings": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "airportDepartNow": "Виїжджайте зараз!",
+  "airportFlightDelayed": "Рейс затримано. Час в'їзду перераховано.",
+  "airportTimingError": "Помилка завантаження даних: {error}",
+  "@airportTimingError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "airportLoadingTiming": "Завантаження часу в'їзду...",
   "checkpointNotifTitle": "Клієнт досяг {checkpoint}",
   "@checkpointNotifTitle": {
     "placeholders": {
@@ -212,6 +282,20 @@
     }
   },
   "pickupTimeComputedAuto": "Розраховано автоматично на основі часу відправлення рейсу",
+  "addressNotFound": "Не вдалося знайти адресу — перевірте правильність написання.",
+  "addressOutOfServiceArea": "Адреса поза зоною обслуговування (близько {distanceKm} км від Мюнхена, макс. {radiusKm} км).",
+  "@addressOutOfServiceArea": {
+    "placeholders": {
+      "distanceKm": {"type": "int"},
+      "radiusKm": {"type": "int"}
+    }
+  },
+  "addressOutOfServiceAreaShort": "Адреса поза зоною обслуговування (макс. {radiusKm} км від Мюнхена).",
+  "@addressOutOfServiceAreaShort": {
+    "placeholders": {
+      "radiusKm": {"type": "int"}
+    }
+  },
   "markUnavailable": "Позначити як недоступний",
   "driverUnavailable": "Водій недоступний",
   "unavailabilityReason": "Причина",
@@ -362,6 +446,13 @@
   "clientsRailLabel": "Клієнти",
   "datevRailLabel": "DATEV",
   "genericError": "Помилка: {error}",
+  "errorNetwork": "Не вдалося з'єднатися із сервером. Перевірте підключення до інтернету та повторіть спробу.",
+  "errorTimeout": "Сервер відповідав надто довго. Будь ласка, повторіть спробу.",
+  "errorServer": "Сталася помилка на нашому боці. Спробуйте ще раз за мить.",
+  "errorNotFound": "Не вдалося знайти те, що ви шукали.",
+  "errorLoadingData": "Не вдалося завантажити дані",
+  "errorGeneric": "Щось пішло не так. Будь ласка, повторіть спробу.",
+  "errorSessionExpired": "Ваша сесія завершилася. Будь ласка, увійдіть знову.",
   "@genericError": {
     "placeholders": {
       "error": {"type": "String"}
@@ -506,6 +597,11 @@
   },
   "noCompletedRides": "Ще немає завершених поїздок",
   "refresh": "Оновити",
+  "refreshFlightStatus": "Оновити статус рейсу",
+  "flightStatusRefreshed": "Статус рейсу оновлено",
+  "flightStatusUnchanged": "Вже актуально",
+  "flightNotFoundYet": "Рейсу ще немає в системі",
+  "failedToRefreshFlightStatus": "Не вдалося оновити статус рейсу",
   "youreOnline": "Ви онлайн",
   "youreOffline": "Ви офлайн",
   "discardChangesTitle": "Відхилити зміни?",
@@ -712,6 +808,7 @@
   "invalidEmail": "Невірний email",
   "addButton": "Додати",
   "editAction": "Редагувати",
+  "duplicateRideAction": "Дублювати",
   "deactivateAction": "Деактивувати",
   "editClientTitle": "Редагувати клієнта",
   "clientUpdatedSuccess": "Клієнта успішно оновлено",
@@ -850,9 +947,11 @@
   "airportArrivalHint": "З аеропорту",
   "flightNumberLabel": "Номер рейсу",
   "flightNumberHint": "напр. LH123, BA456",
-  "flightNumberRequired": "Номер рейсу обов'язковий для трансферів до аеропорту",
+  "flightNumberRequired": "Номер рейсу обов'язковий",
+  "flightNumberInvalidFormat": "Введіть дійсний номер рейсу, напр. LH429",
   "gateLabel": "Гейт",
   "terminalLabel": "Термінал",
+  "gateRemote": "Автобусний гейт (віддалена стоянка)",
 
   "creatingRideLabel": "Створення поїздки...",
   "createRideButton": "Створити поїздку",
@@ -889,10 +988,9 @@
   "enterClientNameError": "Будь ласка, введіть ім'я клієнта",
 
   "editRideDialogTitle": "Редагувати поїздку",
-  "pickupDateTimeLabel": "Дата/час подачі (yyyy-MM-ddTHH:mm)",
+  "pickupDateTimeLabel": "Дата/час подачі",
   "flightNumberOptionalLabel": "Номер рейсу (необов'язково)",
   "notesOptionalLabel": "Примітки (необов'язково)",
-  "invalidDateFormatError": "Неправильний формат дати. Використовуйте: yyyy-MM-ddTHH:mm",
   "serverErrorMessage": "Помилка сервера: {statusCode}",
   "@serverErrorMessage": {
     "placeholders": {
@@ -1414,8 +1512,10 @@
   "allRidesPaidLabel": "Усі поїздки оплачені",
   "markAsPaidDialogTitle": "Позначити як оплачено",
   "paymentMethodLabel": "Спосіб оплати:",
+  "paymentMethodSelectLabel": "Спосіб оплати",
+  "paymentMethodPayment": "Оплата",
   "paymentMethodCash": "Готівка",
-  "paymentMethodCard": "Картка",
+  "paymentMethodCard": "Кредитна картка",
   "paymentMethodInvoice": "Рахунок",
   "amountLabel": "Сума: {amount} EUR",
   "@amountLabel": {
@@ -1503,6 +1603,14 @@
     }
   },
   "conflictDialogContentDefault": "У вас вже є поїздка в цей час. Поїздку створено та додано до пулу. Все одно призначити собі?",
+  "conflictDialogContentRich": "Водій уже зайнятий: {from} → {to} о {time}.\n\nПоїздку створено та додано до пулу диспетчера. Все одно призначити?",
+  "@conflictDialogContentRich": {
+    "placeholders": {
+      "from": {"type": "String"},
+      "to": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "keepInPoolButton": "Залишити в пулі",
   "assignAnywayButton": "Призначити все одно",
 
@@ -1524,8 +1632,13 @@
   "flightsMunichAirportTitle": "Рейси · Аеропорт Мюнхен",
   "autoSyncedLabel": "авто-синхронізація",
   "arrivalsTabLabel": "Прильоти",
+  "arrivalsBoardTitle": "Прильоти · Аеропорт Мюнхен",
   "departuresTabLabel": "Відльоти",
   "noArrivalsFound": "Прильотів не знайдено",
+  "flightDetailsTitle": "Деталі рейсу",
+  "gateNotPublished": "Гейт ще не оголошено",
+  "trackFlightLive": "Стежити наживо на Flightradar24",
+  "couldNotOpenFlightTracker": "Не вдалося відкрити трекер рейсу",
   "noDeparturesFound": "Відльотів не знайдено",
   "errorLoadingFlights": "Помилка завантаження рейсів: {error}",
   "@errorLoadingFlights": {
@@ -1543,6 +1656,15 @@
   "flightStatusBoarding": "Посадка",
   "flightStatusCancelled": "Скасовано",
   "flightStatusUnknown": "Невідомо",
+  "flightStatusScheduled": "За розкладом",
+  "flightStatusDeparted": "Вилетів",
+  "flightStatusEnRoute": "У польоті",
+  "flightStatusLanded": "Приземлився",
+  "flightStatusDiverted": "Перенаправлено",
+  "flightInformation": "Інформація про рейс",
+  "flightNumber": "Номер рейсу",
+  "arrivalTime": "Час прибуття",
+  "departureTime": "Час відправлення",
   "flightNotLinked": "— не пов'язано",
 
   "whoCanSeeWhomTitle": "Хто може бачити кого",
@@ -1586,5 +1708,67 @@
   "clientPaymentTitle": "Оплата",
   "paymentMethodsSectionLabel": "СПОСОБИ ОПЛАТИ",
   "corporateInvoiceLabel": "Корпоративний рахунок",
-  "addPaymentMethodButton": "Додати спосіб оплати"
+  "addPaymentMethodButton": "Додати спосіб оплати",
+
+  "shareRideLink": "Поділитися посиланням",
+  "trackingLinkCopied": "Посилання скопійовано в буфер обміну",
+
+  "bookWithoutClient": "Без клієнта (з чату)",
+  "fromChatRide": "З чату",
+  "linkClient": "Додати клієнта",
+"calendarSharingTitle": "Спільний доступ до календаря",
+  "calendarSharingMenuItem": "Доступ до календаря",
+  "shareInvitesSection": "Мої коди запрошень",
+  "shareCreateInvite": "Створити код запрошення",
+  "shareInviteExpiry1Day": "1 день",
+  "shareInviteExpiry7Days": "7 днів",
+  "shareInviteExpiry30Days": "30 днів",
+  "shareInviteCreatedTitle": "Код запрошення створено",
+  "shareInviteCreatedHint": "Надішліть цей код водієві або диспетчеру іншої компанії. Він вводить його у своєму застосунку в розділі «Доступ до календаря».",
+  "shareCopyCode": "Скопіювати код",
+  "shareCodeCopied": "Код скопійовано в буфер обміну",
+  "shareRevoke": "Відкликати",
+  "shareGrantedSection": "Хто бачить мій календар",
+  "shareSharedWithMeSection": "Поділилися зі мною",
+  "shareEnterCode": "Ввести код",
+  "shareRedeemTitle": "Підключити спільний календар",
+  "shareRedeemHint": "Вставте код запрошення або посилання",
+  "shareRedeemConnect": "Підключити",
+  "shareRedeemSuccess": "Підключено до {name}",
+  "@shareRedeemSuccess": {"placeholders": {"name": {"type": "String"}}},
+  "shareUnlink": "Відʼєднати",
+  "shareNoInvites": "Немає активних кодів запрошень",
+  "shareNoGrants": "Ви ні з ким не поділилися своїм календарем",
+  "shareNoSharedWithMe": "З вами не поділилися жодним календарем",
+  "shareValidUntil": "Дійсний до {date}",
+  "@shareValidUntil": {"placeholders": {"date": {"type": "String"}}},
+  "shareSince": "З {date}",
+  "@shareSince": {"placeholders": {"date": {"type": "String"}}},
+  "shareActionFailed": "Не вдалося виконати дію: {error}",
+  "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
+  "sharedCalendarAvailable": "Доступний",
+  "sharedCalendarBusy": "Зайнято",
+  "sharedCalendarShift": "Зміна",
+  "sharedCalendarEmptyDay": "Немає змін чи зайнятих слотів",
+  "sharedCalendarEmptyWeek": "Цього тижня немає змін чи зайнятих слотів",
+  "sharedCalendarTimesHint": "Час змін — як надано компанією {company}",
+  "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
+  "sharedWithMeGroupLabel": "Поділилися зі мною",
+  "myCompanyGroupLabel": "Моя компанія",
+"addShiftTooltip": "Додати зміну",
+  "addShiftTitle": "Нова зміна",
+  "shiftDateLabel": "Дата",
+  "shiftStartLabel": "Початок",
+  "shiftEndLabel": "Кінець",
+  "shiftRepeatUntilLabel": "Повторювати щодня до (необовʼязково)",
+  "shiftNoteLabel": "Нотатка (необовʼязково)",
+  "shiftCreateButton": "Створити",
+  "shiftsCreatedSnack": "Створено змін: {count}",
+  "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftTimeOrderError": "Початок має бути раніше за кінець",
+  "shiftCancelTitle": "Скасувати цю зміну?",
+  "shiftCancelButton": "Скасувати зміну",
+  "shiftCancelledSnack": "Зміну скасовано",
+  "shiftsStripLabel": "Зміни",
+  "noShiftsForDay": "Немає змін"
 }

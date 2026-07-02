@@ -24,9 +24,16 @@ import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import java.time.{Duration, Instant, LocalDate, ZoneOffset}
 import monocle.syntax.all.*
+import scala.annotation.nowarn
 
 trait RideService:
   def getRideById(rideId: RideId): IO[RideError, Ride]
+
+  /**
+   * Live flight status (gate/terminal/status/time) for a ride, kept fresh by the flight-status monitor. The terminal
+   * code drives the airport walk-out buffer. Returns [[None]] when no flight data has been recorded yet.
+   */
+  def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]]
   def createRide(request: CreateRideRequest): IO[RideError, Ride]
   def getRidesForUser(userId: PersonId): IO[RideError, List[Ride]]
   def startRide(rideId: RideId, driverId: PersonId): IO[RideError, Ride]
@@ -175,6 +182,9 @@ class RideServiceImpl(
       case None       => ZIO.fail(RideError.RideNotFound(rideId))
     }
 
+  def getFlightStatus(rideId: RideId): IO[RideError, Option[FlightStatusRow]] =
+    rideRepository.findFlightStatus(rideId).mapDatabaseError
+
   def createRide(request: CreateRideRequest): IO[RideError, Ride] =
     for {
       // Validate pickup is in the future (allow clock-skew tolerance, RidePolicy)
@@ -269,7 +279,8 @@ class RideServiceImpl(
             WebSocketEvent.RideCreated(
               rideId = persistedRide.id.value,
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
             )
           )
           .ignore
@@ -829,9 +840,12 @@ class RideServiceImpl(
                       .focus(_.notes)
                       .replace(request.notes.orElse(ride.notes))
                       .focus(_.specifics)
-                      .replace(request.specifics.orElse(ride.specifics))
+                      .replace(mergeSpecifics(request.specifics, ride.specifics))
                       .focus(_.specialRequirements)
                       .replace(request.specialRequirements.orElse(ride.specialRequirements))
+                      // None leaves tags unchanged; Some(list) replaces (already normalized in the DTO layer).
+                      .focus(_.tags)
+                      .replace(request.tags.getOrElse(ride.tags))
 
       persistedRide    <- rideRepository.update(updatedRide).mapDatabaseError
       pickupTimeChanged = request.pickupDateTime.exists(_ != ride.pickupDateTime)
@@ -848,6 +862,28 @@ class RideServiceImpl(
           )
           .ignore
     } yield persistedRide
+
+  /**
+   * Merge a three-valued specifics update into the ride's existing specifics.
+   *
+   *   - Unchanged → keep the ride's current specifics (the partial update did not touch airportness).
+   *   - Clear → drop the specifics (the ride is no longer an airport transfer).
+   *   - Set → the DTO builds a placeholder `AirportTransfer("UNKNOWN", flight, isArrival = false)` carrying the
+   *     optional flight number. When the ride is already an airport transfer we keep its `airportCode` and `isArrival`,
+   *     replacing only the (optional) flight number — editing it must never flip the direction or wipe the airport
+   *     code. A None flight is valid: an airport transfer whose flight is not yet known.
+   */
+  private def mergeSpecifics(
+      incoming: FieldUpdate[RideSpecifics],
+      existing: Option[RideSpecifics]
+  ): Option[RideSpecifics] =
+    incoming match
+      case FieldUpdate.Unchanged                                        => existing
+      case FieldUpdate.Clear                                            => None
+      case FieldUpdate.Set(RideSpecifics.AirportTransfer(_, flight, _)) =>
+        existing match
+          case Some(prev: RideSpecifics.AirportTransfer) => Some(prev.copy(flightNumber = flight))
+          case _                                         => Some(RideSpecifics.AirportTransfer("UNKNOWN", flight))
 
   def assignDriver(
       rideId: RideId,
@@ -927,7 +963,8 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               driverId = driverId.value,
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
             )
           )
           .ignore
@@ -1025,7 +1062,8 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               driverId = newDriverId.value,
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
             )
           )
           .ignore
@@ -1253,6 +1291,9 @@ class RideServiceImpl(
 
   // -- Cancel permission --------------------------------------------------
 
+  // The defensive `case _` below is currently unreachable (the match is exhaustive over PersonRole),
+  // but it is kept on purpose so a newly added role fails closed instead of throwing MatchError.
+  @nowarn("msg=Unreachable case")
   private def validateCancelPermission(ride: Ride, userId: PersonId, userRole: PersonRole): IO[RideError, Unit] =
     userRole match
       case PersonRole.Dispatcher | PersonRole.Secretary | PersonRole.Admin | PersonRole.ClientSecretary |
@@ -1322,7 +1363,12 @@ class RideServiceImpl(
    * CompanyId is taken from the candidate ride — never caller-supplied — to preserve tenant isolation.
    */
   private def checkScheduleConflict(driverId: PersonId, candidateRide: Ride): IO[RideError, Unit] =
-    val candidateTime = candidateRide.scheduledTime.getOrElse(candidateRide.requestTime)
+    // The real "when the driver is occupied" time is the pickup time, which is
+    // always present in pickupDateTime. scheduledTime is only set for airport
+    // departures (the flight time) and is None for ordinary rides — falling back
+    // to requestTime there compared *request creation* times, so two rides
+    // created at about the same moment but on different days collided falsely.
+    val candidateTime = candidateRide.pickupDateTime
     val windowSeconds = (DefaultRideDurationMinutes + MinBufferMinutes) * 60
     val windowFrom    = candidateTime.minusSeconds(MinBufferMinutes * 60)
     val windowTo      = candidateTime.plusSeconds(windowSeconds)
@@ -1333,19 +1379,30 @@ class RideServiceImpl(
                               r.status == RideStatus.InProgress) &&
                               r.id != candidateRide.id // exclude self (relevant for reassign)
                           )
-      conflict          = activeRides.find { existing =>
-                            val existingTime = existing.scheduledTime.getOrElse(existing.requestTime)
-                            ridesOverlap(candidateTime, existingTime)
-                          }
+      conflict          = activeRides.find(existing => ridesOverlap(candidateTime, existing.pickupDateTime))
       _                <-
         conflict match
           case Some(conflicting) =>
-            val conflictTime = conflicting.scheduledTime.getOrElse(conflicting.requestTime)
-            val msg          =
-              s"Driver already has ride ${conflicting.id.value} " +
-                s"at ${conflictTime} — time windows overlap (buffer ${MinBufferMinutes} min)"
-            ZIO.logWarning(s"assignDriver rejected: rule=schedule_conflict msg=$msg") *>
-              ZIO.fail(RideError.ScheduleConflict(msg))
+            // Human-readable fallback message (route + pickup time). The
+            // structured fields let the client render a localized dialog with
+            // the client name and the dispatcher's local time.
+            val msg =
+              s"Driver already has a ride from ${conflicting.pickupLocation.address} " +
+                s"to ${conflicting.dropoffLocation.address} at ${conflicting.pickupDateTime} " +
+                s"— time windows overlap (buffer ${MinBufferMinutes} min)"
+            ZIO.logWarning(
+              s"assignDriver rejected: rule=schedule_conflict rideId=${conflicting.id.value} msg=$msg"
+            ) *>
+              ZIO.fail(
+                RideError.ScheduleConflict(
+                  message = msg,
+                  conflictingRideId = Some(conflicting.id),
+                  conflictingClientId = Some(conflicting.clientId),
+                  conflictingFrom = Some(conflicting.pickupLocation.address),
+                  conflictingTo = Some(conflicting.dropoffLocation.address),
+                  conflictingPickupAt = Some(conflicting.pickupDateTime)
+                )
+              )
           case None              => ZIO.unit
       // Check manual unavailability windows (uses the candidateRide's companyId for tenant safety).
       unavailableSlots <- availabilityChecker

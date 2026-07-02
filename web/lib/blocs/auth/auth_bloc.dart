@@ -12,6 +12,7 @@ import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/push_notification_service.dart';
 import '../../modules/auth/services/biometric_service.dart';
 import '../../modules/flight_management/services/airport_timing_service.dart';
+import '../../modules/flight_management/services/arrivals_board_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -41,11 +42,12 @@ class _TokenStorage implements TokenStorage {
   @override
   Future<String?> read(String key) async {
     try {
-      if (_useFallback) {
+      final secure = _secure;
+      if (_useFallback || secure == null) {
         final prefs = await SharedPreferences.getInstance();
         return prefs.getString(key);
       }
-      return await _secure!.read(key: key);
+      return await secure.read(key: key);
     } catch (_) {
       return null;
     }
@@ -54,12 +56,13 @@ class _TokenStorage implements TokenStorage {
   @override
   Future<void> write(String key, String value) async {
     try {
-      if (_useFallback) {
+      final secure = _secure;
+      if (_useFallback || secure == null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(key, value);
         return;
       }
-      await _secure!.write(key: key, value: value);
+      await secure.write(key: key, value: value);
     } catch (_) {
       // Storage write failed — token won't persist across restarts
     }
@@ -68,12 +71,13 @@ class _TokenStorage implements TokenStorage {
   @override
   Future<void> delete(String key) async {
     try {
-      if (_useFallback) {
+      final secure = _secure;
+      if (_useFallback || secure == null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(key);
         return;
       }
-      await _secure!.delete(key: key);
+      await secure.delete(key: key);
     } catch (_) {
       // Ignore delete failures
     }
@@ -103,6 +107,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     on<AuthInitializeRequested>(_onInitializeRequested);
     on<AuthLoginRequested>(_onLoginRequested);
+    on<AuthPasswordChangeRequested>(_onPasswordChangeRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthSessionExpired>(_onSessionExpired);
     on<AuthErrorCleared>(_onErrorCleared);
@@ -150,17 +155,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         privateApiClient.setAuthToken(token);
 
         // Apply the user's preferred language — backend is the source of truth.
-        if (user.preferredLanguage != null) {
-          final locale = localeFromString(user.preferredLanguage);
+        final preferredLanguage = user.preferredLanguage;
+        if (preferredLanguage != null) {
+          final locale = localeFromString(preferredLanguage);
           if (locale != null) {
             localeNotifier.value = locale;
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('language', user.preferredLanguage!);
+            await prefs.setString('language', preferredLanguage);
           }
         }
 
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
+        ArrivalsBoardService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
         PushNotificationService.instance.registerTokenWithClient(
           privateApiClient,
@@ -169,13 +176,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         /// Connect WebSocket for real-time updates
         _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
 
+        // Restore into the forced-change gate too, so a session restored while a
+        // temporary password is still pending cannot bypass the change screen.
         emit(
-          AuthState.authenticated(
-            user,
-            biometricEnabled: biometricEnabled,
-            biometricAvailable: biometricAvailable,
-          ),
+          user.mustChangePassword
+              ? AuthState.mustChangePassword(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                )
+              : AuthState.authenticated(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                ),
         );
+
+        // The stored user is a snapshot from the last login and can be stale
+        // (e.g. a profile photo uploaded later, or any field added to the DTO
+        // after that login — hasAvatar). Re-fetch /users/profile in the
+        // background so the restored session reflects the current backend state
+        // without requiring an explicit logout→login. Non-fatal: if the refresh
+        // fails (offline), the restored stored user stays in place.
+        if (!user.mustChangePassword) {
+          add(const AuthProfileRefreshRequested());
+        }
       } else {
         emit(
           AuthState.unauthenticated(
@@ -185,7 +210,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       }
     } catch (e) {
-      emit(AuthState.error('Initialization error: $e'));
+      emit(AuthState.error('Initialization error: $e', cause: e));
     }
   }
 
@@ -212,6 +237,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         /// Configure services with authenticated API client
         AirportTimingService.configure(privateApiClient);
+        ArrivalsBoardService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
         PushNotificationService.instance.registerTokenWithClient(
           privateApiClient,
@@ -226,22 +252,92 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = Person.fromJson(loginResponse['person']);
 
         // Apply the user's preferred language — backend is the source of truth.
-        if (user.preferredLanguage != null) {
-          final locale = localeFromString(user.preferredLanguage);
+        final preferredLanguage = user.preferredLanguage;
+        if (preferredLanguage != null) {
+          final locale = localeFromString(preferredLanguage);
           if (locale != null) {
             localeNotifier.value = locale;
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('language', user.preferredLanguage!);
+            await prefs.setString('language', preferredLanguage);
           }
         }
 
-        emit(AuthState.authenticated(user));
+        // Carry the biometric flags into the authenticated state so the Face ID
+        // login button (gated on biometricAvailable && biometricEnabled) shows
+        // immediately after a password login when biometrics are already set up,
+        // and so the Settings toggle reflects availability. Mirrors
+        // _onInitializeRequested; without this they defaulted to false and the
+        // button stayed hidden until the next app launch / session restore.
+        bool biometricAvailable = false;
+        bool biometricEnabled = false;
+        try {
+          biometricAvailable = await privateBiometricService.isAvailable;
+          biometricEnabled = await privateBiometricService.isBiometricEnabled;
+        } catch (_) {
+          // Biometric not available on this platform
+        }
+
+        // A user created with a temporary password must change it before using
+        // the app — gate behind the forced password-change screen.
+        emit(
+          user.mustChangePassword
+              ? AuthState.mustChangePassword(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                )
+              : AuthState.authenticated(
+                  user,
+                  biometricEnabled: biometricEnabled,
+                  biometricAvailable: biometricAvailable,
+                ),
+        );
       } else {
         emit(AuthState.error('Invalid email or password'));
       }
     } catch (e) {
-      emit(AuthState.error('Login error: $e'));
+      emit(AuthState.error('Login error: $e', cause: e));
     }
+  }
+
+  /// Forced password change for a temporary-password user. Changes the password
+  /// via the API, then re-logs in with the new password so the session carries a
+  /// fresh token (the backend invalidates the old token on change) and the
+  /// updated user (mustChangePassword now false) — landing the user in the app.
+  Future<void> _onPasswordChangeRequested(
+    AuthPasswordChangeRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final email = state.user?.email;
+    if (email == null) {
+      emit(AuthState.error('No user to change password for'));
+      return;
+    }
+    emit(AuthState.loading());
+    try {
+      await privateApiClient.put('/users/change-password', {
+        'currentPassword': event.currentPassword,
+        'newPassword': event.newPassword,
+      });
+    } catch (e) {
+      // Surface the failure but keep the user on the forced-change gate so they
+      // can retry (e.g. wrong temporary password, weak new password).
+      emit(
+        AuthState(
+          status: AuthStatus.mustChangePassword,
+          user: state.user,
+          errorMessage: 'Failed to change password: $e',
+          error: e,
+        ),
+      );
+      return;
+    }
+    // Re-authenticate with the new password; reuses the full login path
+    // (token persist, WS connect, biometric flags, mustChangePassword re-check).
+    await _onLoginRequested(
+      AuthLoginRequested(email: email, password: event.newPassword),
+      emit,
+    );
   }
 
   Future<void> _onLogoutRequested(
@@ -254,7 +350,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _clearSession();
       emit(AuthState.unauthenticated());
     } catch (e) {
-      emit(AuthState.error('Logout error: $e'));
+      emit(AuthState.error('Logout error: $e', cause: e));
     }
   }
 
@@ -370,6 +466,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           status: AuthStatus.error,
           errorMessage: 'Biometric authentication error: $e',
+          error: e,
         ),
       );
     }
@@ -393,8 +490,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       if (event.enabled) {
+        // requireEnabled:false — this IS the enable step, so the persisted
+        // flag is still false here; gating on it would make setup impossible.
         final result = await privateBiometricService.authenticate(
           reason: 'Confirm biometric login setup',
+          requireEnabled: false,
         );
 
         if (result.isSuccess) {
@@ -420,6 +520,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           status: AuthStatus.error,
           errorMessage: 'Biometric setup error: $e',
+          error: e,
         ),
       );
     }

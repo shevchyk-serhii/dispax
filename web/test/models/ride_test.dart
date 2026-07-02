@@ -30,6 +30,19 @@ void main() {
       expect(json['to'], isA<Map>());
     });
 
+    test('fromJson reads the paymentMethod wire value', () {
+      final json = TestFixtures.rideJson()..['paymentMethod'] = 'Card';
+      final ride = Ride.fromJson(json);
+
+      expect(ride.paymentMethod, 'Card');
+    });
+
+    test('fromJson leaves paymentMethod null when absent', () {
+      final ride = Ride.fromJson(TestFixtures.rideJson());
+
+      expect(ride.paymentMethod, isNull);
+    });
+
     test('toJson serializes local DateTime as UTC (ends with Z)', () {
       final localTime = DateTime(2026, 3, 15, 10, 0); // local, not UTC
       final ride = TestFixtures.ride(pickupDateTime: localTime);
@@ -208,6 +221,46 @@ void main() {
       expect(ride.toJson()['paidAt'], '2026-01-01T23:30:00.000Z');
       expect(ride.toJson()['confirmedAt'], '2026-03-14T08:00:00.000Z');
     });
+
+    test(
+      'isRemoteGate detects the MUC remote-stand sentinel (case-insensitive)',
+      () {
+        expect(
+          TestFixtures.ride(
+            isAirportTransfer: true,
+            gate: 'REMOTE',
+          ).isRemoteGate,
+          isTrue,
+        );
+        expect(
+          TestFixtures.ride(
+            isAirportTransfer: true,
+            gate: 'remote',
+          ).isRemoteGate,
+          isTrue,
+        );
+        expect(
+          TestFixtures.ride(isAirportTransfer: true, gate: 'G18').isRemoteGate,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'fullFlightInfo renders a remote stand as "Bus gate", not "Gate REMOTE"',
+      () {
+        final ride = TestFixtures.ride(
+          isAirportTransfer: true,
+          flightNumber: 'LH429',
+          gate: 'REMOTE',
+          terminal: 'T2',
+        );
+
+        expect(ride.fullFlightInfo, contains('Bus gate'));
+        expect(ride.fullFlightInfo, isNot(contains('Gate REMOTE')));
+        expect(ride.fullFlightInfo, contains('Terminal T2'));
+      },
+    );
   });
 
   group('RideStatus.fromString', () {
@@ -390,8 +443,13 @@ void main() {
         '❌',
       );
       expect(
-        TestFixtures.airportRide(flightStatus: 'Other').flightStatusIcon,
-        '❓',
+        TestFixtures.airportRide(flightStatus: 'landed').flightStatusIcon,
+        '🛬',
+      );
+      // Unknown/unmapped → neutral info icon, NOT the alarming "❓".
+      expect(
+        TestFixtures.airportRide(flightStatus: 'unknown').flightStatusIcon,
+        'ℹ️',
       );
     });
 
@@ -400,21 +458,25 @@ void main() {
       expect(ride.flightStatusIcon, '');
     });
 
-    test('fullFlightInfo includes flight number, gate, terminal, status', () {
-      final ride = TestFixtures.airportRide(
-        flightNumber: 'LH1234',
-        gate: 'G12',
-        terminal: 'T2',
-        flightStatus: 'On Time',
-        isArrival: true,
-      );
+    test(
+      'fullFlightInfo includes flight number, gate, terminal — but NOT the raw status',
+      () {
+        final ride = TestFixtures.airportRide(
+          flightNumber: 'LH1234',
+          gate: 'G12',
+          terminal: 'T2',
+          flightStatus: 'On Time',
+          isArrival: true,
+        );
 
-      final info = ride.fullFlightInfo;
-      expect(info, contains('LH1234'));
-      expect(info, contains('Gate G12'));
-      expect(info, contains('Terminal T2'));
-      expect(info, contains('On Time'));
-    });
+        final info = ride.fullFlightInfo;
+        expect(info, contains('LH1234'));
+        expect(info, contains('Gate G12'));
+        expect(info, contains('Terminal T2'));
+        // The status is localized at the call site, so it is no longer baked into fullFlightInfo.
+        expect(info, isNot(contains('On Time')));
+      },
+    );
 
     test('fullFlightInfo shows only gate when no terminal', () {
       final ride = TestFixtures.airportRide(gate: 'G5', terminal: null);
@@ -615,6 +677,15 @@ void main() {
       final a = TestFixtures.ride();
       final b = TestFixtures.ride();
       expect(a.hashCode, b.hashCode);
+    });
+
+    // A live WS checkpoint update only re-renders if the new Ride is != the old
+    // one — so airportCheckpoint must participate in equality and hashCode.
+    test('a different airportCheckpoint means not equal', () {
+      final a = TestFixtures.ride(airportCheckpoint: 'landed');
+      final b = a.copyWith(airportCheckpoint: 'terminal_exit');
+      expect(a, isNot(b));
+      expect(a.hashCode, isNot(b.hashCode));
     });
   });
 }

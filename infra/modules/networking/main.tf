@@ -23,11 +23,6 @@ variable "psa_cidr" {
   default = "10.1.0.0/16" # Діапазон IP зарезервований для сервісів GCP (Cloud SQL)
 }
 
-variable "connector_cidr" {
-  type    = string
-  default = "10.8.0.0/28" # Маленький діапазон для VPC Connector (16 адрес, мінімум)
-}
-
 # ── РЕСУРСИ ───────────────────────────────────────────────────────────────────
 
 # Головна приватна мережа проекту.
@@ -68,21 +63,9 @@ resource "google_service_networking_connection" "psa" {
   reserved_peering_ranges = [google_compute_global_address.psa_range.name]
 }
 
-# VPC Access Connector — міст між Cloud Run і приватним VPC.
-# Cloud Run за замовчуванням ізольований від приватних мереж.
-# Через цей конектор Cloud Run може звертатись до Cloud SQL по приватному IP.
-# machine_type = "e2-micro": найдешевший тип ноди для конектора
-# min/max_instances: кількість нод конектора (2-3 для MVP)
-resource "google_vpc_access_connector" "connector" {
-  project       = var.project_id
-  name          = "dispax-connector"
-  region        = var.region
-  network       = google_compute_network.vpc.name
-  ip_cidr_range = var.connector_cidr # 10.8.0.0/28 — окремий діапазон для конектора
-  machine_type  = "e2-micro"
-  min_instances = 2
-  max_instances = 3
-}
+# NOTE: The Serverless VPC Access connector was removed for cost optimization.
+# Cloud Run now reaches Cloud SQL via Direct VPC egress (network_interfaces in the
+# cloud_run module) bound to the subnet below — no always-on connector machines.
 
 # ── ВИХОДИ (outputs) ──────────────────────────────────────────────────────────
 # Передаємо значення в інші модулі які їх потребують
@@ -99,6 +82,6 @@ output "subnet_id" {
   value = google_compute_subnetwork.subnet.id
 }
 
-output "connector_id" {
-  value = google_vpc_access_connector.connector.id # Потрібен модулю cloud_run
+output "subnet_name" {
+  value = google_compute_subnetwork.subnet.name # For Cloud Run Direct VPC egress
 }

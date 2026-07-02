@@ -52,7 +52,7 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     pickupLocation = Location("MUC Airport"),
     dropoffLocation = Location("Munich City"),
     pickupDateTime = Instant.now().plusSeconds(3600),
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true)),
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true)),
     airportCheckpoint = checkpoint
   )
 
@@ -284,6 +284,43 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
             // Ride B remains untouched
             foundB.exists(_.airportCheckpoint.isEmpty)
           )
+        },
+        // The SQL forward-only guard's boolean return is what the guest endpoint relies on for its
+        // idempotent 204 (a non-advancing mark returns false → InvalidOperation → swallowed). These
+        // two assert that guard against the REAL Postgres CASE-expression, not just the in-memory mirror.
+        test("[CRITICAL] updateCheckpoint returns false and does NOT move backwards (ArrivalsHall → Landed)") {
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            id     = RideId(UUID.randomUUID())
+            _     <- repo.create(makePgArrivalRide(id))
+            _     <- repo.updateCheckpoint(id, AirportCheckpoint.ArrivalsHall)
+            // A backward mark must be rejected by the SQL ordinal guard.
+            moved <- repo.updateCheckpoint(id, AirportCheckpoint.Landed)
+            found <- repo.findById(id)
+          } yield assertTrue(
+            !moved,
+            found.exists(_.airportCheckpoint.contains(AirportCheckpoint.ArrivalsHall))
+          )
+        },
+        test("[CRITICAL] updateCheckpoint returns false on a repeat of the same checkpoint (idempotent)") {
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            id     = RideId(UUID.randomUUID())
+            _     <- repo.create(makePgArrivalRide(id))
+            first <- repo.updateCheckpoint(id, AirportCheckpoint.Landed)
+            again <- repo.updateCheckpoint(id, AirportCheckpoint.Landed)
+            found <- repo.findById(id)
+          } yield assertTrue(
+            first,
+            !again,
+            found.exists(_.airportCheckpoint.contains(AirportCheckpoint.Landed))
+          )
         }
       ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential
     ) @@ TestAspect.sequential @@ TestAspect.tag("integration")
@@ -326,6 +363,6 @@ object AirportCheckpointIntegrationSpec extends ZIOSpecDefault {
     pickupDateTime = Instant.now().plusSeconds(3600),
     // isArrival encoded in AirportTransfer.isArrival — persisted via the specifics JSONB column.
     // After round-trip through create()/findById(), isArrivalAirportTransfer must be true.
-    specifics = Some(RideSpecifics.AirportTransfer("MUC", "LH123", isArrival = true))
+    specifics = Some(RideSpecifics.AirportTransfer("MUC", Some("LH123"), isArrival = true))
   )
 }
