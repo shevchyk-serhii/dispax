@@ -455,19 +455,24 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
                       // A handed-off ride is read-only here: it has left to an
                       // external partner, so there is no driver to reassign.
                       // Render it with the HandedOff badge and no action button.
-                      final isHandedOff = ride.status == RideStatus.handedOff;
+                      // A ride whose pickup time has already passed can no
+                      // longer be reassigned either (backend past_ride guard),
+                      // so its Reassign button is hidden the same way.
+                      final canReassign =
+                          ride.status != RideStatus.handedOff &&
+                          !ride.isPastPickup;
                       return _RideRow(
                         key: ValueKey(ride.id),
                         ride: ride,
                         isAtRisk: isAtRisk,
-                        onAction: isHandedOff
-                            ? null
-                            : () => _showDriverSelectionSheet(
+                        onAction: canReassign
+                            ? () => _showDriverSelectionSheet(
                                 context,
                                 ride,
                                 isReassign: true,
-                              ),
-                        isReassign: !isHandedOff,
+                              )
+                            : null,
+                        isReassign: canReassign,
                         onViewDetails: () => _openRideDetails(context, ride),
                         onDuplicate: () =>
                             NavigationUtils.duplicateRide(context, ride),
