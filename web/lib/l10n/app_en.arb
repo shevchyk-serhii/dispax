@@ -135,6 +135,7 @@
   "updateNow": "Update now",
   "temporaryPassword": "Temporary password",
   "temporaryPasswordHint": "The user will be asked to change it on first login.",
+  "tempPasswordRules": "At least 8 characters with an uppercase letter, a lowercase letter, and a digit",
   "setNewPassword": "Set new password",
   "userCreatedSharePassword": "User created. Share the temporary password with them.",
 

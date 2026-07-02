@@ -742,6 +742,12 @@ abstract class AppLocalizations {
   /// **'The user will be asked to change it on first login.'**
   String get temporaryPasswordHint;
 
+  /// No description provided for @tempPasswordRules.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters with an uppercase letter, a lowercase letter, and a digit'**
+  String get tempPasswordRules;
+
   /// No description provided for @setNewPassword.
   ///
   /// In en, this message translates to:

@@ -342,6 +342,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The user will be asked to change it on first login.';
 
   @override
+  String get tempPasswordRules =>
+      'At least 8 characters with an uppercase letter, a lowercase letter, and a digit';
+
+  @override
   String get setNewPassword => 'Set new password';
 
   @override

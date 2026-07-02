@@ -117,6 +117,7 @@
   "updateNow": "Jetzt aktualisieren",
   "temporaryPassword": "Temporäres Passwort",
   "temporaryPasswordHint": "Der Benutzer wird beim ersten Anmelden aufgefordert, es zu ändern.",
+  "tempPasswordRules": "Mindestens 8 Zeichen mit Großbuchstabe, Kleinbuchstabe und Ziffer",
   "setNewPassword": "Neues Passwort festlegen",
   "userCreatedSharePassword": "Benutzer erstellt. Teilen Sie ihm das temporäre Passwort mit.",
 

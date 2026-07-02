@@ -343,6 +343,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Benutzer wird beim ersten Anmelden aufgefordert, es zu ändern.';
 
   @override
+  String get tempPasswordRules =>
+      'Mindestens 8 Zeichen mit Großbuchstabe, Kleinbuchstabe und Ziffer';
+
+  @override
   String get setNewPassword => 'Neues Passwort festlegen';
 
   @override

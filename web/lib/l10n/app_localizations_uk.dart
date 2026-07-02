@@ -341,6 +341,10 @@ class AppLocalizationsUk extends AppLocalizations {
       'Користувача попросять змінити його під час першого входу.';
 
   @override
+  String get tempPasswordRules =>
+      'Щонайменше 8 символів із великою літерою, малою літерою та цифрою';
+
+  @override
   String get setNewPassword => 'Встановити новий пароль';
 
   @override

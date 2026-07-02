@@ -1,6 +1,10 @@
 class CreateUserRequest {
   final String name;
   final String email;
+  // Required by the backend contract: POST /api/users rejects a body without
+  // a password (temporary, forced change on first login), so a call site
+  // that forgets it must not compile.
+  final String password;
   final String? phone;
   final String role;
   final String? companyId;
@@ -8,6 +12,7 @@ class CreateUserRequest {
   const CreateUserRequest({
     required this.name,
     required this.email,
+    required this.password,
     this.phone,
     this.role = 'CLIENT',
     this.companyId,
@@ -17,6 +22,7 @@ class CreateUserRequest {
     return {
       'name': name,
       'email': email,
+      'password': password,
       if (phone != null) 'phone': phone,
       'role': role,
       if (companyId != null) 'companyId': companyId,
