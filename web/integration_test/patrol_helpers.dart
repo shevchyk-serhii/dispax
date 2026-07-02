@@ -70,6 +70,43 @@ Future<void> _pumpUntilLoggedIn(
   }
 }
 
+/// Pumps in fixed steps (no settle) until [finder] matches at least one widget
+/// or the timeout elapses; returns whether it became visible.
+///
+/// The dispatcher dashboard runs perpetual animations (live Mapbox map, pulsing
+/// markers), so `pumpAndSettle` never returns after a driver sheet / dialog
+/// opens. Poll for the target widget in bounded steps instead. Mirrors the
+/// rationale of [_pumpUntilLoggedIn].
+Future<bool> pumpUntilVisible(
+  PatrolIntegrationTester $,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 20),
+}) async {
+  const step = Duration(milliseconds: 300);
+  var elapsed = Duration.zero;
+  while (elapsed < timeout) {
+    await $.pump(step);
+    elapsed += step;
+    if (finder.evaluate().isNotEmpty) return true;
+  }
+  return false;
+}
+
+/// Pumps for a fixed wall-clock [duration] in bounded steps without settling.
+/// Use instead of `pumpAndSettle()` on the animated dashboards to let a tap's
+/// effects (sheet open, dialog dismiss, SnackBar) land.
+Future<void> pumpFor(
+  PatrolIntegrationTester $, [
+  Duration duration = const Duration(seconds: 2),
+]) async {
+  const step = Duration(milliseconds: 300);
+  var elapsed = Duration.zero;
+  while (elapsed < duration) {
+    await $.pump(step);
+    elapsed += step;
+  }
+}
+
 /// Returns true (and marks the test skipped) when the app is still on the login
 /// screen after a login attempt — i.e. the backend is unreachable or rejected
 /// the credentials. Call right after [loginViaUi] and `return` if true.
