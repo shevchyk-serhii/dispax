@@ -54,6 +54,31 @@ object UpdateRideDetailsApiRequestSpec extends ZIOSpecDefault {
         val request = UpdateRideDetailsApiRequest(notes = Some("just a note"))
         val domain  = UpdateRideDetailsApiRequest.toDomain(request)
         assertTrue(domain.specifics == FieldUpdate.Unchanged)
+      },
+      // ── clientId (ride reassignment) ───────────────────────────────────────────────────────────
+      test("a valid clientId maps to Some(PersonId)") {
+        val uuid    = java.util.UUID.fromString("00000064-0000-0000-0000-000000000100")
+        val request = UpdateRideDetailsApiRequest(clientId = Some(uuid.toString))
+        val domain  = UpdateRideDetailsApiRequest.toDomain(request)
+        assertTrue(domain.clientId.contains(com.shevchyk.core.domain.PersonId(uuid)))
+      },
+      test("an absent clientId maps to None (keep the ride's client)") {
+        val request = UpdateRideDetailsApiRequest(notes = Some("just a note"))
+        val domain  = UpdateRideDetailsApiRequest.toDomain(request)
+        assertTrue(domain.clientId.isEmpty)
+      },
+      test("a clientId with surrounding whitespace is trimmed and parsed") {
+        val uuid    = java.util.UUID.fromString("00000064-0000-0000-0000-000000000100")
+        val request = UpdateRideDetailsApiRequest(clientId = Some(s"  ${uuid.toString}  "))
+        val domain  = UpdateRideDetailsApiRequest.toDomain(request)
+        assertTrue(domain.clientId.contains(com.shevchyk.core.domain.PersonId(uuid)))
+      },
+      // The validator rejects malformed ids before toDomain runs; this locks the documented
+      // fallback — toDomain must never throw, it silently drops garbage.
+      test("a malformed clientId maps to None instead of throwing") {
+        val request = UpdateRideDetailsApiRequest(clientId = Some("garbage"))
+        val domain  = UpdateRideDetailsApiRequest.toDomain(request)
+        assertTrue(domain.clientId.isEmpty)
       }
     )
 }

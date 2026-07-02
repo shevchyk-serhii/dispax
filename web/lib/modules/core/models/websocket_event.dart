@@ -77,6 +77,10 @@ class WebSocketEvent {
   // RideRejected event accessors
   String? get rejectionReason => data['reason'] as String?;
 
+  // RideDetailsUpdated: set when the update reassigned the ride to a different
+  // client — carries the client the ride was taken away from.
+  String? get previousClientId => data['previousClientId'] as String?;
+
   // EtaAtRisk event accessors
   String? get etaRiskDriverId => data['driverId'] as String?;
   int? get etaMinutes => (data['etaMinutes'] as num?)?.toInt();

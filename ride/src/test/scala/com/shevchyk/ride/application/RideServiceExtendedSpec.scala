@@ -78,6 +78,16 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
     preferredDriverId = Some(testDriverId)
   )
 
+  val otherCompanyClientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000300"))
+
+  val otherCompanyClient = Person(
+    id = otherCompanyClientId,
+    name = "Other Company Client",
+    email = "other-client@example.com",
+    role = PersonRole.Client,
+    companyId = Some(otherCompanyId)
+  )
+
   /**
    * MockPersonRepository that returns specific persons by ID
    */
@@ -130,7 +140,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       testDriver2.id        -> testDriver2,
       wrongCompanyDriver.id -> wrongCompanyDriver,
       clientPerson.id       -> clientPerson,
-      vipClient.id          -> vipClient
+      vipClient.id          -> vipClient,
+      otherCompanyClient.id -> otherCompanyClient
     )
   )
 
@@ -636,6 +647,101 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               cleared.notes.forall(_.isEmpty)
           )
         }.provide(standardLayers),
+        test("dispatcher reassigns the ride to another client and the change is persisted") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(mkRide())
+            updated   <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+            retrieved <- service.getRideById(ride.id)
+          } yield assertTrue(
+            updated.clientId == vipClientId &&
+              retrieved.clientId == vipClientId
+          )
+        }.provide(standardLayers),
+        test("sending the ride's current clientId is a no-op that still succeeds") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(clientId = Some(testClientId)),
+                         dispatcherId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(updated.clientId == testClientId)
+        }.provide(standardLayers),
+        test("reassigning to an unknown client fails with PersonNotFound") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            result  <-
+              service
+                .updateRideDetails(
+                  ride.id,
+                  UpdateRideDetailsRequest(clientId =
+                    Some(PersonId(UUID.fromString("00000064-0000-0000-0000-0000000009ff")))
+                  ),
+                  dispatcherId,
+                  PersonRole.Dispatcher,
+                  Some(testCompanyId)
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.PersonNotFound])
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("reassigning to a client of another company fails with a company_isolation violation") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            result  <-
+              service
+                .updateRideDetails(
+                  ride.id,
+                  UpdateRideDetailsRequest(clientId = Some(otherCompanyClientId)),
+                  dispatcherId,
+                  PersonRole.Dispatcher,
+                  Some(testCompanyId)
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation(rule, _) => rule == "company_isolation"
+                case _                                        => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("a non-dispatcher creator cannot reassign the ride to another client") {
+          for {
+            service <- ZIO.service[RideService]
+            // The client-creator owns the ride (createRide sets creatorId = clientId), so plain
+            // edits are allowed — but not reassignment.
+            ride    <- service.createRide(mkRide(clientId = testClientId))
+            result  <-
+              service
+                .updateRideDetails(
+                  ride.id,
+                  UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                  testClientId,
+                  PersonRole.Client,
+                  Some(testCompanyId)
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.UnauthorizedAccess])
+            case _                   => false
+          })
+        }.provide(standardLayers),
         test("rejects update from a different company") {
           for {
             service <- ZIO.service[RideService]
@@ -1012,6 +1118,81 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                   updated.companyId == testCompanyId.value
               )
             }
+          }
+        }.provide(standardLayers),
+        test("reassigning the client publishes RideDetailsUpdated with previousClientId set") {
+          ZIO.scoped {
+            for {
+              hub     <- ZIO.service[EventHub]
+              dequeue <- hub.subscribe
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _       <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+              _       <- dequeue.take // RideCreated
+              event   <- dequeue.take // RideDetailsUpdated
+            } yield {
+              val updated = event.asInstanceOf[WebSocketEvent.RideDetailsUpdated]
+              assertTrue(
+                updated.clientId == vipClientId.value &&
+                  updated.previousClientId.contains(testClientId.value)
+              )
+            }
+          }
+        }.provide(standardLayers),
+        // Mutation probe for the `filter(_ != ride.clientId)` no-op guard: without it, sending the
+        // current client would count as a reassignment and set previousClientId.
+        test("an update that keeps the same client publishes previousClientId = None") {
+          ZIO.scoped {
+            for {
+              hub     <- ZIO.service[EventHub]
+              dequeue <- hub.subscribe
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _       <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(clientId = Some(testClientId), notes = Some("same client")),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+              _       <- dequeue.take // RideCreated
+              event   <- dequeue.take // RideDetailsUpdated
+            } yield {
+              val updated = event.asInstanceOf[WebSocketEvent.RideDetailsUpdated]
+              assertTrue(
+                updated.clientId == testClientId.value &&
+                  updated.previousClientId.isEmpty
+              )
+            }
+          }
+        }.provide(standardLayers),
+        test("a failed reassignment (cross-company client) publishes no RideDetailsUpdated") {
+          ZIO.scoped {
+            for {
+              hub     <- ZIO.service[EventHub]
+              dequeue <- hub.subscribe
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _       <-
+                service
+                  .updateRideDetails(
+                    ride.id,
+                    UpdateRideDetailsRequest(clientId = Some(otherCompanyClientId)),
+                    dispatcherId,
+                    PersonRole.Dispatcher,
+                    Some(testCompanyId)
+                  )
+                  .ignore // expected to fail
+              events  <- dequeue.takeAll
+            } yield assertTrue(
+              !events.exists(_.isInstanceOf[WebSocketEvent.RideDetailsUpdated])
+            )
           }
         }.provide(standardLayers),
         // Mutation probe: if updateRideDetails does NOT publish an event the dequeue.take above

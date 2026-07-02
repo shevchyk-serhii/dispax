@@ -375,7 +375,10 @@ final case class UpdateRideDetailsRequest(
     specifics: FieldUpdate[RideSpecifics] = FieldUpdate.Unchanged,
     specialRequirements: Option[String] = None,
     // None = leave the ride's tags unchanged; Some(list) = replace with this (already normalized).
-    tags: Option[List[String]] = None
+    tags: Option[List[String]] = None,
+    // None = keep the ride's client; Some(id) = reassign the ride to that client. A ride always has
+    // a client, so there is no Clear case. The service verifies company isolation for the new client.
+    clientId: Option[PersonId] = None
 )
 
 enum RideError extends Throwable:

@@ -190,6 +190,30 @@ object RideValidatorsSpec extends ZIOSpecDefault {
         summon[Validator[UpdateRideDetailsApiRequest]].validate(req).flip.map { err =>
           assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Tags cannot be blank"))
         }
+      },
+      test("accepts an absent clientId (no reassignment)") {
+        val req = UpdateRideDetailsApiRequest(notes = Some("just a note"))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("accepts a valid client UUID") {
+        val req = UpdateRideDetailsApiRequest(clientId = Some("00000064-0000-0000-0000-000000000100"))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("accepts a client UUID with surrounding whitespace (trimmed)") {
+        val req = UpdateRideDetailsApiRequest(clientId = Some("  00000064-0000-0000-0000-000000000100  "))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).map(r => assertTrue(r == req))
+      },
+      test("rejects a malformed client UUID") {
+        val req = UpdateRideDetailsApiRequest(clientId = Some("not-a-uuid"))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.asInstanceOf[RideError.ValidationError].message.contains("Invalid client ID"))
+        }
+      },
+      test("rejects an empty clientId string") {
+        val req = UpdateRideDetailsApiRequest(clientId = Some(""))
+        summon[Validator[UpdateRideDetailsApiRequest]].validate(req).flip.map { err =>
+          assertTrue(err.isInstanceOf[RideError.ValidationError])
+        }
       }
     )
 

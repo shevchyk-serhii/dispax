@@ -13,7 +13,9 @@ import '../ride_management/models/ride.dart';
 import '../ride_management/services/ride_service.dart';
 import '../ride_management/helpers/flight_number_input.dart';
 import '../ride_management/helpers/tag_helpers.dart';
+import '../ride_management/widgets/client_autocomplete_field.dart';
 import '../ride_management/widgets/tag_input_field.dart';
+import 'services/user_service.dart';
 import '../../blocs/blocs.dart';
 import '../../constants/app_colors.dart';
 import '../../screens/ride_details_screen.dart';
@@ -295,6 +297,11 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   late List<String> _tags;
   bool _saving = false;
   Object? _error;
+  // Client reassignment (dispatcher-only). Starts as the ride's current client;
+  // changed via the autocomplete. Cleared (null) degrades to "keep the client".
+  String? _selectedClientId;
+  String? _selectedClientName;
+  UserService? _userService;
 
   @override
   void initState() {
@@ -307,6 +314,8 @@ class _EditRideDialogState extends State<_EditRideDialog> {
     _flightCtrl = TextEditingController(text: widget.ride.flightNumber ?? '');
     _isAirportTransfer = widget.ride.isAirportTransfer;
     _tags = List<String>.from(widget.ride.tags);
+    _selectedClientId = widget.ride.clientId;
+    _selectedClientName = widget.ride.clientName;
   }
 
   /// Opens a Material date picker followed by a time picker and stores the
@@ -403,6 +412,13 @@ class _EditRideDialogState extends State<_EditRideDialog> {
       // backend treats an absent field as "leave unchanged".
       'tags': _tags,
     };
+    // Reassignment is opt-in: send clientId ONLY when the dispatcher actually picked a
+    // different client. Absent = "keep" per the backend contract; always re-sending the
+    // dialog's snapshot could clobber a concurrent reassignment by another dispatcher.
+    if (_selectedClientId != null &&
+        _selectedClientId != widget.ride.clientId) {
+      body['clientId'] = _selectedClientId;
+    }
 
     try {
       final response = await apiClient.put('/rides/${widget.ride.id}', body);
@@ -430,6 +446,11 @@ class _EditRideDialogState extends State<_EditRideDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final error = _error == null ? null : friendlyError(_error, l10n);
+    // Only a dispatcher may reassign the ride to another client (the backend enforces the
+    // same rule); a client/driver creator editing their ride never sees the picker — they
+    // also lack access to the clients endpoint.
+    final isDispatcher =
+        context.read<AuthBloc>().state.user?.role == PersonRole.dispatcher;
     return AlertDialog(
       title: Text(l10n.editRideDialogTitle),
       content: SizedBox(
@@ -438,6 +459,25 @@ class _EditRideDialogState extends State<_EditRideDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (isDispatcher) ...[
+                ClientAutocompleteField(
+                  userService: _userService ??= UserService(
+                    apiClient: context.read<AuthBloc>().apiClient,
+                  ),
+                  selectedClientId: _selectedClientId,
+                  initialClientName: _selectedClientName,
+                  requireSelection: false,
+                  onSelected: (client) => setState(() {
+                    _selectedClientId = client.id;
+                    _selectedClientName = client.name;
+                  }),
+                  onCleared: () => setState(() {
+                    _selectedClientId = null;
+                    _selectedClientName = null;
+                  }),
+                ),
+                const SizedBox(height: 12),
+              ],
               TextField(
                 controller: _fromCtrl,
                 decoration: InputDecoration(

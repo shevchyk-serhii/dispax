@@ -250,7 +250,7 @@ object PushNotificationListener:
               ) *> notifyDispatchers
           case None                             => ZIO.unit
 
-      case WebSocketEvent.RideDetailsUpdated(rideId, driverIdOpt, clientId, companyId) =>
+      case WebSocketEvent.RideDetailsUpdated(rideId, driverIdOpt, clientId, companyId, _) =>
         val updatedNotif      = PushNotification(
           title = "Ride Updated",
           body = "Ride details have been updated.",

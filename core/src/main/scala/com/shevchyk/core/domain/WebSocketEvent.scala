@@ -21,7 +21,10 @@ object WebSocketEvent:
       rideId: UUID,
       driverId: Option[UUID],
       clientId: UUID,
-      companyId: UUID
+      companyId: UUID,
+      // Set when this update reassigned the ride to a different client; carries the client
+      // the ride was taken away from so consumers can notify/refresh that person.
+      previousClientId: Option[UUID] = None
   ) extends WebSocketEvent
 
   final case class RideAssigned(

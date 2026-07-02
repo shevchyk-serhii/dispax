@@ -327,8 +327,16 @@ given markCheckpointRequestValidator: Validator[MarkCheckpointRequest] with
 given updateRideDetailsApiRequestValidator: Validator[UpdateRideDetailsApiRequest] with
   type Error = RideError
 
-  // Only the tags need bounding today; other detail fields are free text or already coerced by
-  // toDomain. Keep this as the single entry point so future update-field checks have a home.
-  def validate(request: UpdateRideDetailsApiRequest): IO[RideError, UpdateRideDetailsApiRequest] = validateTags(
-    request.tags
-  ).as(request)
+  // Tags need bounding and a client reassignment must carry a well-formed UUID (toDomain parses it
+  // with a silent-drop fallback, so a malformed id must be rejected here, not ignored there).
+  def validate(request: UpdateRideDetailsApiRequest): IO[RideError, UpdateRideDetailsApiRequest] =
+    for {
+      _ <- validateTags(request.tags)
+      _ <- request.clientId.map(validateClientIdFormat).getOrElse(ZIO.unit)
+    } yield request
+
+  private def validateClientIdFormat(clientId: String): IO[RideError, Unit] =
+    ZIO
+      .attempt(UUID.fromString(clientId.trim))
+      .orElseFail(RideError.ValidationError(s"Invalid client ID format: $clientId"))
+      .unit
