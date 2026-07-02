@@ -12,11 +12,15 @@ object FlightStatusSpec extends ZIOSpecDefault:
       test("fromMuc maps the German board labels") {
         val cases = List(
           "planmäßig"  -> FlightStatus.Scheduled,
-          // Regression: the board shows a not-yet-departed flight as "geplant" (prod: OS187), which used to fall
-          // through to Unknown — the card then showed "unknown" for every scheduled flight.
+          // Regression: the list view labels an on-time flight "geplant" (not "planmäßig") and an open check-in
+          // desk "Check-In" — both used to fall through to Unknown (169 + 28 flights on a single day's board).
           "geplant"    -> FlightStatus.Scheduled,
+          "Check-In"   -> FlightStatus.Scheduled,
           "Boarding"   -> FlightStatus.Boarding,
           "gestartet"  -> FlightStatus.Departed,
+          // Regression: an arrival on approach shows "im Anflug" (aircraft still in the air), which used to fall
+          // through to Unknown — the dispatcher card showed "unknown" for a flight about to land (prod: OS187).
+          "im Anflug"  -> FlightStatus.EnRoute,
           "gelandet"   -> FlightStatus.Landed,
           // Regression: a completed arrival shows as "beendet" on the MUC board (e.g. "LH 1751 … beendet"),
           // which used to fall through to Unknown — the card then showed "unknown" for a landed flight.
