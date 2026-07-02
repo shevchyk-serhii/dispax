@@ -23,7 +23,12 @@ object FlightStatus:
   def fromMuc(label: String): FlightStatus =
     label.trim.toLowerCase match
       case ""                                                                                                         => Unknown
-      case s if s.contains("planmäßig") || s.contains("planmaessig") || s.contains("planmassig")                      => Scheduled
+      // The board shows a not-yet-departed flight as "geplant" (prod: OS187), which used to fall
+      // through to Unknown — every scheduled flight then showed an "unknown" status on the card.
+      case s
+          if s.contains("planmäßig") || s.contains("planmaessig") || s.contains("planmassig") ||
+            s.contains("geplant") =>
+        Scheduled
       case s if s.contains("boarding") || s.contains("einstieg")                                                      => Boarding
       case s if s.contains("gestartet") || s.contains("abgeflogen")                                                   => Departed
       case s if s.contains("unterwegs") || s.contains("en route")                                                     => EnRoute
