@@ -1247,6 +1247,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get navigate => 'Навігація';
 
   @override
+  String get viewRideOnMap => 'Показати на мапі';
+
+  @override
   String get navigateTo => 'Маршрут до';
 
   @override

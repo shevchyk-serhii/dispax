@@ -16,6 +16,7 @@ import '../widgets/common/cancel_ride_dialog.dart';
 import '../widgets/common/rate_ride_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'chat_screen.dart';
+import 'ride_map_screen.dart';
 import '../l10n/app_localizations.dart';
 
 class RideDetailsScreen extends StatefulWidget {
@@ -694,7 +695,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _viewOnMap(BuildContext context) async {
-    NavigationUtils.navigateToMap(context, _currentRide);
+    // In-app ride-bound map (route + live driver position). External Google
+    // Maps navigation stays available via the "Navigate" actions.
+    await Navigator.of(
+      context,
+    ).push(RideMapScreen.route(context, ride: _currentRide));
   }
 
   Future<void> _shareRide(BuildContext context) async {

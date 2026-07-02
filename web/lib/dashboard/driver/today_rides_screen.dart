@@ -20,6 +20,7 @@ import '../../modules/core/navigation_helper.dart';
 import '../../modules/core/navigation_utils.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
+import '../../screens/ride_map_screen.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -1161,6 +1162,9 @@ class DriverRideCard extends StatelessWidget {
                 isDark: isDark,
                 onNavigate: () =>
                     NavigationUtils.showNavigateToDialog(context, ride),
+                onViewMap: () => Navigator.of(
+                  context,
+                ).push(RideMapScreen.route(context, ride: ride)),
                 onShareRide: () => NavigationUtils.shareRide(context, ride),
                 onDuplicate: () => NavigationUtils.duplicateRide(context, ride),
                 onCallClient: onCallClient,
@@ -2108,6 +2112,7 @@ class DriverRideActionsRow extends StatelessWidget {
   final Ride ride;
   final bool isDark;
   final VoidCallback onNavigate;
+  final VoidCallback? onViewMap;
   final VoidCallback? onShareRide;
   final VoidCallback? onDuplicate;
   final VoidCallback? onCallClient;
@@ -2121,6 +2126,7 @@ class DriverRideActionsRow extends StatelessWidget {
     required this.ride,
     required this.isDark,
     required this.onNavigate,
+    this.onViewMap,
     this.onShareRide,
     this.onDuplicate,
     this.onCallClient,
@@ -2175,6 +2181,36 @@ class DriverRideActionsRow extends StatelessWidget {
             ),
           ),
         ),
+        if (onViewMap != null) ...[
+          const SizedBox(width: 8),
+          Tooltip(
+            message: l10n.viewRideOnMap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: OutlinedButton(
+                onPressed: onViewMap,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(
+                    color: AppColors.borderSecondary,
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusButton,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+                child: Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: iconColor,
+                ),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(width: 8),
         Tooltip(
           message: l10n.callClient,

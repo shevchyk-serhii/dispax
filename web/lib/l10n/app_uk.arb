@@ -585,6 +585,7 @@
   "sms": "SMS",
   "completeRideTitle": "Завершити поїздку",
   "navigate": "Навігація",
+  "viewRideOnMap": "Показати на мапі",
   "navigateTo": "Маршрут до",
   "googleMapsPickup": "Google Maps — Посадка",
   "googleMapsDropoff": "Google Maps — Висадка",

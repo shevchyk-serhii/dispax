@@ -2386,6 +2386,12 @@ abstract class AppLocalizations {
   /// **'Navigate'**
   String get navigate;
 
+  /// Tooltip/label for the action that opens the in-app map bound to this ride
+  ///
+  /// In en, this message translates to:
+  /// **'View on map'**
+  String get viewRideOnMap;
+
   /// No description provided for @navigateTo.
   ///
   /// In en, this message translates to:
