@@ -1255,6 +1255,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navigate => 'Navigieren';
 
   @override
+  String get viewRideOnMap => 'Auf Karte anzeigen';
+
+  @override
   String get navigateTo => 'Navigieren zu';
 
   @override

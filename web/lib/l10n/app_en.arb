@@ -612,6 +612,10 @@
   "sms": "SMS",
   "completeRideTitle": "Complete Ride",
   "navigate": "Navigate",
+  "viewRideOnMap": "View on map",
+  "@viewRideOnMap": {
+    "description": "Tooltip/label for the action that opens the in-app map bound to this ride"
+  },
   "navigateTo": "Navigate to",
   "googleMapsPickup": "Google Maps — Pickup",
   "googleMapsDropoff": "Google Maps — Drop-off",

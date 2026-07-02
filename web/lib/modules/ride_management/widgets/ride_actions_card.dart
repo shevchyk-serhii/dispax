@@ -136,7 +136,7 @@ class RideActionsCard extends StatelessWidget {
         _buildSecondaryButton(
           context,
           icon: Icons.map_outlined,
-          label: 'View on Map',
+          label: AppLocalizations.of(context)!.viewRideOnMap,
           onPressed: onViewOnMap,
         ),
       );
