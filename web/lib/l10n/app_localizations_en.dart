@@ -1510,8 +1510,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverMapMenuItem => 'Driver Map';
 
   @override
-  String assignRideDialogTitle(String rideId) {
-    return 'Assign Ride #$rideId';
+  String assignRideDialogTitle(String client) {
+    return 'Assign Ride · $client';
   }
 
   @override
@@ -1547,8 +1547,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assignDriverButton => 'Assign driver';
 
   @override
-  String reassignRideDialogTitle(String rideId) {
-    return 'Reassign ride #$rideId';
+  String reassignRideDialogTitle(String client) {
+    return 'Reassign ride · $client';
   }
 
   @override
@@ -3559,8 +3559,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noAuditEntriesFound => 'No audit entries found';
 
   @override
-  String onlineOnRideLabel(String id) {
-    return 'Online · on ride #$id';
+  String onlineOnRideLabel(String dateTime) {
+    return 'Online · ride at $dateTime';
   }
 
   @override

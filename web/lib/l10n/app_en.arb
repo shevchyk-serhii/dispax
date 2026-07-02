@@ -735,10 +735,10 @@
   "driverBoardMenuItem": "Driver Board",
   "driverMapMenuItem": "Driver Map",
 
-  "assignRideDialogTitle": "Assign Ride #{rideId}",
+  "assignRideDialogTitle": "Assign Ride · {client}",
   "@assignRideDialogTitle": {
     "placeholders": {
-      "rideId": {"type": "String"}
+      "client": {"type": "String"}
     }
   },
   "rideDetailsLabel": "Ride details",
@@ -757,10 +757,10 @@
   },
   "assignDriverButton": "Assign driver",
 
-  "reassignRideDialogTitle": "Reassign ride #{rideId}",
+  "reassignRideDialogTitle": "Reassign ride · {client}",
   "@reassignRideDialogTitle": {
     "placeholders": {
-      "rideId": {"type": "String"}
+      "client": {"type": "String"}
     }
   },
   "nearestAvailableDriversLabel": "NEAREST AVAILABLE DRIVERS · RANKED BY ETA",
@@ -1794,10 +1794,10 @@
   "searchByEntityIdHint": "Search by entity ID...",
   "noAuditEntriesFound": "No audit entries found",
 
-  "onlineOnRideLabel": "Online · on ride #{id}",
+  "onlineOnRideLabel": "Online · ride at {dateTime}",
   "@onlineOnRideLabel": {
     "placeholders": {
-      "id": {"type": "String"}
+      "dateTime": {"type": "String"}
     }
   },
   "startConversationSubtitle": "Start the conversation with the driver",

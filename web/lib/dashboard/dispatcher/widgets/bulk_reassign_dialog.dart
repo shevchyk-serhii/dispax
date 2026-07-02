@@ -155,11 +155,8 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final rideId = widget.rides.isNotEmpty
-        ? widget.rides.first.id.substring(
-            0,
-            widget.rides.first.id.length.clamp(0, 8),
-          )
+    final clientLabel = widget.rides.isNotEmpty
+        ? widget.rides.first.clientName
         : '?';
 
     return Dialog(
@@ -191,7 +188,7 @@ class _BulkReassignDialogState extends State<BulkReassignDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      l10n.reassignRideDialogTitle(rideId),
+                      l10n.reassignRideDialogTitle(clientLabel),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,

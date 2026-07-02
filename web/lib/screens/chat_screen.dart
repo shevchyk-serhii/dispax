@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
@@ -115,9 +116,9 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.ride.status == RideStatus.assigned ||
         widget.ride.status == RideStatus.inProgress;
 
-    final rideShortId = widget.ride.id.length > 8
-        ? widget.ride.id.substring(0, 8)
-        : widget.ride.id;
+    final ridePickupLabel = DateFormat(
+      'dd.MM HH:mm',
+    ).format(widget.ride.pickupDateTime);
 
     return Scaffold(
       backgroundColor: isDark
@@ -173,7 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        l10n.onlineOnRideLabel(rideShortId),
+                        l10n.onlineOnRideLabel(ridePickupLabel),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 11,

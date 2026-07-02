@@ -698,7 +698,7 @@
   "driverBoardMenuItem": "Fahrerbrett",
   "driverMapMenuItem": "Fahrerkarte",
 
-  "assignRideDialogTitle": "Fahrt #{rideId} zuweisen",
+  "assignRideDialogTitle": "Fahrt zuweisen · {client}",
   "rideDetailsLabel": "Fahrtdetails",
   "clientLabel": "Kunde",
   "timeLabel": "Uhrzeit",
@@ -710,7 +710,7 @@
   "scheduleConflictsCount": "Terminüberschneidungen ({count})",
   "assignDriverButton": "Fahrer zuweisen",
 
-  "reassignRideDialogTitle": "Fahrt #{rideId} neu zuweisen",
+  "reassignRideDialogTitle": "Fahrt neu zuweisen · {client}",
   "nearestAvailableDriversLabel": "NÄCHSTE VERFÜGBARE FAHRER · NACH ETA SORTIERT",
   "noDriversAvailableForReassignment": "Keine anderen Fahrer für die Neuzuweisung verfügbar.",
   "reassignNRides": "{count} Fahrt(en) neu zuweisen",
@@ -1682,10 +1682,10 @@
   "searchByEntityIdHint": "Nach Entitäts-ID suchen...",
   "noAuditEntriesFound": "Keine Audit-Einträge gefunden",
 
-  "onlineOnRideLabel": "Online · Fahrt #{id}",
+  "onlineOnRideLabel": "Online · Fahrt um {dateTime}",
   "@onlineOnRideLabel": {
     "placeholders": {
-      "id": {"type": "String"}
+      "dateTime": {"type": "String"}
     }
   },
   "startConversationSubtitle": "Beginnen Sie die Unterhaltung mit dem Fahrer",

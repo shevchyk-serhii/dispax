@@ -698,7 +698,7 @@
   "driverBoardMenuItem": "Дошка водіїв",
   "driverMapMenuItem": "Карта водія",
 
-  "assignRideDialogTitle": "Призначити поїздку #{rideId}",
+  "assignRideDialogTitle": "Призначити поїздку · {client}",
   "rideDetailsLabel": "Деталі поїздки",
   "clientLabel": "Клієнт",
   "timeLabel": "Час",
@@ -710,7 +710,7 @@
   "scheduleConflictsCount": "Конфлікти розкладу ({count})",
   "assignDriverButton": "Призначити водія",
 
-  "reassignRideDialogTitle": "Перепризначити поїздку #{rideId}",
+  "reassignRideDialogTitle": "Перепризначити поїздку · {client}",
   "nearestAvailableDriversLabel": "НАЙБЛИЖЧІ ДОСТУПНІ ВОДІЇ · СОРТУВАННЯ ЗА ETA",
   "noDriversAvailableForReassignment": "Немає інших водіїв для перепризначення.",
   "reassignNRides": "Перепризначити {count} поїздку(-ок)",
@@ -1682,10 +1682,10 @@
   "searchByEntityIdHint": "Пошук за ID сутності...",
   "noAuditEntriesFound": "Записів аудиту не знайдено",
 
-  "onlineOnRideLabel": "Онлайн · поїздка #{id}",
+  "onlineOnRideLabel": "Онлайн · поїздка о {dateTime}",
   "@onlineOnRideLabel": {
     "placeholders": {
-      "id": {"type": "String"}
+      "dateTime": {"type": "String"}
     }
   },
   "startConversationSubtitle": "Почніть розмову з водієм",
