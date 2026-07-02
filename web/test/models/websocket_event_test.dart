@@ -25,6 +25,39 @@ void main() {
       expect(event.companyId, 'company-1');
     });
 
+    // A ride reassigned to another client carries the old client so consumers
+    // can tell a reassignment apart from an ordinary details edit.
+    test('RideDetailsUpdated exposes previousClientId when present', () {
+      final json = {
+        'RideDetailsUpdated': {
+          'rideId': 'ride-1',
+          'clientId': 'client-2',
+          'companyId': 'company-1',
+          'previousClientId': 'client-1',
+        },
+      };
+
+      final event = WebSocketEvent.fromJson(json);
+
+      expect(event.isRideDetailsUpdated, isTrue);
+      expect(event.clientId, 'client-2');
+      expect(event.previousClientId, 'client-1');
+    });
+
+    test('previousClientId is null when the update did not reassign', () {
+      final json = {
+        'RideDetailsUpdated': {
+          'rideId': 'ride-1',
+          'clientId': 'client-1',
+          'companyId': 'company-1',
+        },
+      };
+
+      final event = WebSocketEvent.fromJson(json);
+
+      expect(event.previousClientId, isNull);
+    });
+
     test('fromJson parses LocationUpdated with userId as driverId', () {
       final json = {
         'LocationUpdated': {

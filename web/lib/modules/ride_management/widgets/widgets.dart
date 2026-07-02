@@ -10,6 +10,7 @@ export 'location_field.dart';
 export 'ride_map_widget.dart';
 
 export 'basic_info_card.dart';
+export 'client_autocomplete_field.dart';
 export 'client_search_field.dart';
 export 'location_card.dart';
 export 'schedule_card.dart';

@@ -28,6 +28,7 @@ void main() {
     'lib/modules/flight_management/widgets/airport_entry_timer.dart',
     'lib/modules/ride_management/widgets/address_autocomplete_field.dart',
     'lib/modules/ride_management/widgets/basic_info_card.dart',
+    'lib/modules/ride_management/widgets/client_autocomplete_field.dart',
     'lib/modules/ride_management/widgets/client_search_field.dart',
     'lib/modules/ride_management/widgets/location_card.dart',
     'lib/modules/ride_management/widgets/schedule_card.dart',
