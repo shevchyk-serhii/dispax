@@ -1,7 +1,7 @@
 package com.shevchyk.ride.infrastructure.http.dto
 
 import com.shevchyk.auth.middleware.UuidParser
-import com.shevchyk.core.domain.{Location, CompanyId}
+import com.shevchyk.core.domain.{Location, CompanyId, PersonId}
 import com.shevchyk.ride.domain.{
   AirportCheckpoint,
   Ride,
@@ -195,7 +195,10 @@ case class UpdateRideDetailsApiRequest(
     isAirportTransfer: Option[Boolean] = None,
     specialRequirements: Option[String] = None,
     // None = leave tags unchanged; Some(list) = replace. Normalized server-side in toDomain.
-    tags: Option[List[String]] = None
+    tags: Option[List[String]] = None,
+    // None = keep the ride's client; Some(uuid) = reassign the ride to that client. The service
+    // enforces that the new client belongs to the ride's company (same rule as createRide).
+    clientId: Option[String] = None
 ) derives JsonCodec
 
 object UpdateRideDetailsApiRequest:
@@ -237,7 +240,11 @@ object UpdateRideDetailsApiRequest:
       specifics = specifics,
       specialRequirements = request.specialRequirements,
       // Preserve None (= unchanged); normalize when present so the tag filter never splits casing.
-      tags = request.tags.map(TagNormalizer.normalize)
+      tags = request.tags.map(TagNormalizer.normalize),
+      // The validator has already rejected malformed UUIDs, so the parse cannot silently drop a value.
+      clientId = request.clientId
+        .flatMap(s => scala.util.Try(java.util.UUID.fromString(s.trim)).toOption)
+        .map(PersonId.apply)
     )
 
 case class UpdateClientLocationRequest(

@@ -805,9 +805,9 @@ class RideServiceImpl(
       companyId: Option[CompanyId]
   ): IO[RideError, Ride] =
     for {
-      ride <- getRideById(rideId)
-      _    <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, ride.status)).when(!ride.canBeEdited).unit
-      _    <-
+      ride        <- getRideById(rideId)
+      _           <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, ride.status)).when(!ride.canBeEdited).unit
+      _           <-
         ZIO
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(ride.creatorId != userId && userRole != PersonRole.Dispatcher)
@@ -815,10 +815,34 @@ class RideServiceImpl(
       // Company isolation: the ride must belong to the caller's company. A missing
       // companyId is treated as a failure (not a bypass) so a caller can never skip the
       // check by omitting it — the HTTP layer always supplies it via requireCompanyId.
-      _    <-
+      _           <-
         companyId match
           case Some(cid) => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != cid).unit
           case None      => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId))
+
+      // Reassigning the ride to another client is dispatcher-only (a client-creator must not
+      // move their ride onto someone else) and follows the same company-isolation rule as
+      // createRide: the new client must exist and belong to the ride's company.
+      newClientId <-
+        request.clientId.filter(_ != ride.clientId) match
+          case None              => ZIO.none
+          case Some(newClientId) =>
+            for {
+              _         <-
+                ZIO
+                  .fail(RideError.UnauthorizedAccess(userId, rideId))
+                  .when(userRole != PersonRole.Dispatcher)
+                  .unit
+              clientOpt <- personRepository.findById(newClientId).mapDatabaseError
+              client    <- ZIO.fromOption(clientOpt).orElseFail(RideError.PersonNotFound(newClientId))
+              _         <-
+                ZIO
+                  .fail(
+                    RideError.BusinessRuleViolation("company_isolation", "Client belongs to a different company")
+                  )
+                  .when(!client.companyId.contains(ride.companyId))
+                  .unit
+            } yield Some(newClientId)
 
       newPickup  <-
         ZIO.foreach(request.pickupLocation)(loc =>
@@ -829,6 +853,8 @@ class RideServiceImpl(
           geocodingService.enrichLocation(loc).orElse(ZIO.succeed[Location](loc))
         )
       updatedRide = ride
+                      .focus(_.clientId)
+                      .replace(newClientId.getOrElse(ride.clientId))
                       .focus(_.pickupLocation)
                       .replace(newPickup.getOrElse(ride.pickupLocation))
                       .focus(_.dropoffLocation)
@@ -857,7 +883,10 @@ class RideServiceImpl(
               rideId = persistedRide.id.value,
               driverId = persistedRide.driverId.map(_.value),
               clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
+              companyId = persistedRide.companyId.value,
+              // Only set when this update actually moved the ride to another client, so
+              // consumers can tell a reassignment apart from an ordinary details edit.
+              previousClientId = newClientId.map(_ => ride.clientId.value)
             )
           )
           .ignore
