@@ -63,7 +63,9 @@ class _ClientListPanelState extends State<ClientListPanel> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.secretaryColor,
+        // No backgroundColor override: the hardcoded graphite secretaryColor
+        // was invisible on the dark background. The theme's FAB colors
+        // (colorScheme.primary/onPrimary) stay legible in both modes.
         onPressed: () => _showCreateClientDialog(context),
         child: const Icon(Icons.person_add),
       ),
