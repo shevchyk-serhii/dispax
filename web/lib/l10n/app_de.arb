@@ -1527,16 +1527,16 @@
   "paymentRecordedSuccess": "Zahlung erfasst",
   "failedToLoadUnpaidRides": "Fehler beim Laden unbezahlter Fahrten",
 
-  "myRideTitle": "Meine Fahrt #{id}",
+  "myRideTitle": "Meine Fahrt · {dateTime}",
   "@myRideTitle": {
     "placeholders": {
-      "id": {"type": "String"}
+      "dateTime": {"type": "String"}
     }
   },
-  "rideTitle": "Fahrt #{id}",
+  "rideTitle": "Fahrt · {client}",
   "@rideTitle": {
     "placeholders": {
-      "id": {"type": "String"}
+      "client": {"type": "String"}
     }
   },
   "confirmationSentLabel": "Bestätigung gesendet",

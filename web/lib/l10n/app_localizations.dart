@@ -6205,14 +6205,14 @@ abstract class AppLocalizations {
   /// No description provided for @myRideTitle.
   ///
   /// In en, this message translates to:
-  /// **'My Ride #{id}'**
-  String myRideTitle(String id);
+  /// **'My Ride · {dateTime}'**
+  String myRideTitle(String dateTime);
 
   /// No description provided for @rideTitle.
   ///
   /// In en, this message translates to:
-  /// **'Ride #{id}'**
-  String rideTitle(String id);
+  /// **'Ride · {client}'**
+  String rideTitle(String client);
 
   /// No description provided for @confirmationSentLabel.
   ///

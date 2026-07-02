@@ -336,16 +336,16 @@ void main() {
       expect(result, contains('7'));
     });
 
-    test('myRideTitle formats id', () async {
+    test('myRideTitle formats pickup date/time', () async {
       final en = await _l10n('en');
-      final result = en.myRideTitle('a1b2');
-      expect(result, contains('a1b2'));
+      final result = en.myRideTitle('15.03 10:30');
+      expect(result, contains('15.03 10:30'));
     });
 
-    test('rideTitle formats id', () async {
+    test('rideTitle formats client name', () async {
       final en = await _l10n('en');
-      final result = en.rideTitle('x9y8');
-      expect(result, contains('x9y8'));
+      final result = en.rideTitle('Max Mustermann');
+      expect(result, contains('Max Mustermann'));
     });
 
     test('cancellationReasonDetail formats reason', () async {

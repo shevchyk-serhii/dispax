@@ -1527,16 +1527,16 @@
   "paymentRecordedSuccess": "Платіж зафіксовано",
   "failedToLoadUnpaidRides": "Помилка завантаження неоплачених поїздок",
 
-  "myRideTitle": "Моя поїздка #{id}",
+  "myRideTitle": "Моя поїздка · {dateTime}",
   "@myRideTitle": {
     "placeholders": {
-      "id": {"type": "String"}
+      "dateTime": {"type": "String"}
     }
   },
-  "rideTitle": "Поїздка #{id}",
+  "rideTitle": "Поїздка · {client}",
   "@rideTitle": {
     "placeholders": {
-      "id": {"type": "String"}
+      "client": {"type": "String"}
     }
   },
   "confirmationSentLabel": "Підтвердження надіслано",

@@ -3331,13 +3331,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get failedToLoadUnpaidRides => 'Fehler beim Laden unbezahlter Fahrten';
 
   @override
-  String myRideTitle(String id) {
-    return 'Meine Fahrt #$id';
+  String myRideTitle(String dateTime) {
+    return 'Meine Fahrt · $dateTime';
   }
 
   @override
-  String rideTitle(String id) {
-    return 'Fahrt #$id';
+  String rideTitle(String client) {
+    return 'Fahrt · $client';
   }
 
   @override

@@ -1627,16 +1627,16 @@
   "paymentRecordedSuccess": "Payment recorded",
   "failedToLoadUnpaidRides": "Failed to load unpaid rides",
 
-  "myRideTitle": "My Ride #{id}",
+  "myRideTitle": "My Ride · {dateTime}",
   "@myRideTitle": {
     "placeholders": {
-      "id": {"type": "String"}
+      "dateTime": {"type": "String"}
     }
   },
-  "rideTitle": "Ride #{id}",
+  "rideTitle": "Ride · {client}",
   "@rideTitle": {
     "placeholders": {
-      "id": {"type": "String"}
+      "client": {"type": "String"}
     }
   },
   "confirmationSentLabel": "Confirmation sent",

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../modules/core/services/error_messages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
 import '../modules/core/models/person.dart';
 import '../../modules/ride_management/models/ride.dart';
@@ -69,8 +70,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       appBar: AppBar(
         title: Text(
           widget.isClientView
-              ? l10n.myRideTitle(_currentRide.id)
-              : l10n.rideTitle(_currentRide.id),
+              ? l10n.myRideTitle(
+                  DateFormat('dd.MM HH:mm').format(_currentRide.pickupDateTime),
+                )
+              : l10n.rideTitle(_currentRide.clientName),
         ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

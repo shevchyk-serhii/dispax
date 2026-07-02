@@ -3322,13 +3322,13 @@ class AppLocalizationsUk extends AppLocalizations {
       'Помилка завантаження неоплачених поїздок';
 
   @override
-  String myRideTitle(String id) {
-    return 'Моя поїздка #$id';
+  String myRideTitle(String dateTime) {
+    return 'Моя поїздка · $dateTime';
   }
 
   @override
-  String rideTitle(String id) {
-    return 'Поїздка #$id';
+  String rideTitle(String client) {
+    return 'Поїздка · $client';
   }
 
   @override
