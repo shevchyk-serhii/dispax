@@ -3,11 +3,14 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.AuditService
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.repository.BlacklistRepository
+import com.shevchyk.core.repository.{BlacklistRepository, PersonRepository}
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
+import zio.json.*
+
+import java.time.Instant
 
 /**
  * Tapir descriptions and server logic for the blacklist endpoints. Replaces the hand-written zio-http handlers in
@@ -21,13 +24,45 @@ object BlacklistApi:
 
   private val blacklistTag = "Blacklist"
 
-  type BlacklistEnv = JwtService & BlacklistRepository & AuditService
+  /**
+   * `BlacklistEntry` enriched with the client/driver display names so the UI never has to show a bare UUID. Names are
+   * resolved at read time; a name is `None` when the person no longer exists.
+   */
+  final case class BlacklistEntryDto(
+      id: BlacklistEntryId,
+      companyId: CompanyId,
+      clientId: PersonId,
+      driverId: PersonId,
+      reason: Option[String],
+      createdBy: PersonId,
+      createdAt: Instant,
+      isActive: Boolean,
+      clientName: Option[String],
+      driverName: Option[String]
+  ) derives JsonCodec
+
+  object BlacklistEntryDto:
+
+    def fromDomain(e: BlacklistEntry, names: Map[PersonId, String]): BlacklistEntryDto = BlacklistEntryDto(
+      id = e.id,
+      companyId = e.companyId,
+      clientId = e.clientId,
+      driverId = e.driverId,
+      reason = e.reason,
+      createdBy = e.createdBy,
+      createdAt = e.createdAt,
+      isActive = e.isActive,
+      clientName = names.get(e.clientId),
+      driverName = names.get(e.driverId)
+    )
+
+  type BlacklistEnv = JwtService & BlacklistRepository & AuditService & PersonRepository
 
   // -- Endpoint descriptions ------------------------------------------------
 
   val listEndpoint = secureEndpoint.get
     .in("api" / "blacklist")
-    .out(jsonBody[List[BlacklistEntry]])
+    .out(jsonBody[List[BlacklistEntryDto]])
     .tag(blacklistTag)
     .summary("List blacklist entries for the company (dispatcher, admin)")
 
@@ -62,7 +97,10 @@ object BlacklistApi:
       repo      <- ZIO.service[BlacklistRepository]
       companyId <- requireCompanyId(user.companyId)
       entries   <- repo.findByCompanyId(companyId).mapError(internal)
-    } yield entries
+      names     <- PersonNameLookup
+                     .names(entries.flatMap(e => List(e.clientId, e.driverId)))
+                     .mapError(internal)
+    } yield entries.map(BlacklistEntryDto.fromDomain(_, names))
   }
 
   private val createServer: ZServerEndpoint[BlacklistEnv, Any] = createEndpoint.serverLogic[BlacklistEnv] {

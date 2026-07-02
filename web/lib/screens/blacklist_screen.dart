@@ -6,6 +6,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/services/error_messages.dart';
+import '../modules/core/json_parse.dart';
 import '../modules/core/services/api_client.dart';
 
 class BlacklistScreen extends StatefulWidget {
@@ -289,11 +290,15 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
   }
 
   Widget _buildEntryCard(Map<String, dynamic> entry) {
-    final clientId = entry['clientId']?['value'] ?? entry['clientId'] ?? '';
-    final driverId = entry['driverId']?['value'] ?? entry['driverId'] ?? '';
+    final clientId = JsonParse.optionalId(entry, 'clientId') ?? '';
+    final driverId = JsonParse.optionalId(entry, 'driverId') ?? '';
+    final clientLabel =
+        entry['clientName'] as String? ?? _shortId(clientId.toString());
+    final driverLabel =
+        entry['driverName'] as String? ?? _shortId(driverId.toString());
     final reason = entry['reason'] as String?;
     final createdAt = entry['createdAt'] as String? ?? '';
-    final id = entry['id']?['value'] ?? entry['id'] ?? '';
+    final id = JsonParse.optionalId(entry, 'id') ?? '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -303,16 +308,13 @@ class _BlacklistScreenState extends State<BlacklistScreen> {
           child: const Icon(Icons.block, color: AppColors.error),
         ),
         title: Text(
-          'Client: ${_shortId(clientId.toString())}',
+          'Client: $clientLabel',
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Driver: ${_shortId(driverId.toString())}',
-              style: const TextStyle(fontSize: 12),
-            ),
+            Text('Driver: $driverLabel', style: const TextStyle(fontSize: 12)),
             if (reason != null && reason.isNotEmpty)
               Text(
                 reason,

@@ -81,7 +81,10 @@ String _statusLabel(_FlightStatus s, String? raw, AppLocalizations l10n) {
 // ─── FlightScreen ─────────────────────────────────────────────────────────────
 
 class FlightScreen extends StatefulWidget {
-  const FlightScreen({super.key});
+  /// Injectable for tests; defaults to a real service.
+  final FlightService? flightService;
+
+  const FlightScreen({super.key, this.flightService});
 
   @override
   State<FlightScreen> createState() => _FlightScreenState();
@@ -89,7 +92,8 @@ class FlightScreen extends StatefulWidget {
 
 class _FlightScreenState extends State<FlightScreen>
     with SingleTickerProviderStateMixin {
-  final FlightService _flightService = FlightService();
+  late final FlightService _flightService =
+      widget.flightService ?? FlightService();
   late TabController _tabController;
   List<FlightData> _arrivals = [];
   List<FlightData> _departures = [];
@@ -479,7 +483,7 @@ class _FlightScreenState extends State<FlightScreen>
                             // Navigate to ride detail if needed
                           },
                           child: Text(
-                            '#${linkedRide.id.substring(0, linkedRide.id.length.clamp(0, 8))} · ${linkedRide.clientName}',
+                            linkedRide.clientName,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,

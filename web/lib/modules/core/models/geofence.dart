@@ -97,6 +97,10 @@ class GeofenceAlert {
   final String id;
   final String geofenceId;
   final String driverId;
+
+  /// Resolved display name of the driver; null when the backend could not
+  /// resolve it (person deleted). Fall back to a shortened [driverId] then.
+  final String? driverName;
   final String companyId;
   final String alertType;
   final String geofenceName;
@@ -108,6 +112,7 @@ class GeofenceAlert {
     required this.id,
     required this.geofenceId,
     required this.driverId,
+    this.driverName,
     required this.companyId,
     required this.alertType,
     required this.geofenceName,
@@ -121,6 +126,7 @@ class GeofenceAlert {
       id: json['id'] ?? '',
       geofenceId: json['geofenceId'] ?? '',
       driverId: json['driverId'] ?? '',
+      driverName: json['driverName'] as String?,
       companyId: json['companyId'] ?? '',
       alertType: json['alertType'] ?? 'entry',
       geofenceName: json['geofenceName'] ?? '',

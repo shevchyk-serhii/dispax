@@ -1521,8 +1521,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get driverMapMenuItem => 'Fahrerkarte';
 
   @override
-  String assignRideDialogTitle(String rideId) {
-    return 'Fahrt #$rideId zuweisen';
+  String assignRideDialogTitle(String client) {
+    return 'Fahrt zuweisen · $client';
   }
 
   @override
@@ -1558,8 +1558,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get assignDriverButton => 'Fahrer zuweisen';
 
   @override
-  String reassignRideDialogTitle(String rideId) {
-    return 'Fahrt #$rideId neu zuweisen';
+  String reassignRideDialogTitle(String client) {
+    return 'Fahrt neu zuweisen · $client';
   }
 
   @override
@@ -3590,8 +3590,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noAuditEntriesFound => 'Keine Audit-Einträge gefunden';
 
   @override
-  String onlineOnRideLabel(String id) {
-    return 'Online · Fahrt #$id';
+  String onlineOnRideLabel(String dateTime) {
+    return 'Online · Fahrt um $dateTime';
   }
 
   @override

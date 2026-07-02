@@ -2893,8 +2893,8 @@ abstract class AppLocalizations {
   /// No description provided for @assignRideDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Assign Ride #{rideId}'**
-  String assignRideDialogTitle(String rideId);
+  /// **'Assign Ride · {client}'**
+  String assignRideDialogTitle(String client);
 
   /// No description provided for @rideDetailsLabel.
   ///
@@ -2959,8 +2959,8 @@ abstract class AppLocalizations {
   /// No description provided for @reassignRideDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Reassign ride #{rideId}'**
-  String reassignRideDialogTitle(String rideId);
+  /// **'Reassign ride · {client}'**
+  String reassignRideDialogTitle(String client);
 
   /// No description provided for @nearestAvailableDriversLabel.
   ///
@@ -6667,8 +6667,8 @@ abstract class AppLocalizations {
   /// No description provided for @onlineOnRideLabel.
   ///
   /// In en, this message translates to:
-  /// **'Online · on ride #{id}'**
-  String onlineOnRideLabel(String id);
+  /// **'Online · ride at {dateTime}'**
+  String onlineOnRideLabel(String dateTime);
 
   /// No description provided for @startConversationSubtitle.
   ///

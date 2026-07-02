@@ -366,10 +366,10 @@ void main() {
       expect(result, contains('overlap at 09:00'));
     });
 
-    test('onlineOnRideLabel formats rideId', () async {
+    test('onlineOnRideLabel formats pickup date/time', () async {
       final en = await _l10n('en');
-      final result = en.onlineOnRideLabel('ride42');
-      expect(result, contains('ride42'));
+      final result = en.onlineOnRideLabel('15.03 10:30');
+      expect(result, contains('15.03 10:30'));
     });
 
     test('amountLabel formats amount', () async {

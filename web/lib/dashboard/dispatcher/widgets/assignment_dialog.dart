@@ -30,7 +30,6 @@ class AssignmentDialog extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasConflicts = conflicts.isNotEmpty;
-    final shortId = ride.id.length > 8 ? ride.id.substring(0, 8) : ride.id;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
@@ -65,7 +64,7 @@ class AssignmentDialog extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      l10n.assignRideDialogTitle(shortId),
+                      l10n.assignRideDialogTitle(ride.clientName),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 17,

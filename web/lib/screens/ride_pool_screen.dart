@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../modules/core/services/error_messages.dart';
+import '../modules/core/json_parse.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -172,7 +173,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
 
   Future<void> _showPoolDetails(Map<String, dynamic> pool) async {
     final l10n = AppLocalizations.of(context)!;
-    final poolId = pool['id']?['value'] ?? pool['id'] ?? '';
+    final poolId = JsonParse.optionalId(pool, 'id') ?? '';
 
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -217,10 +218,8 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                 if (pool['driverId'] != null)
                   _detailRow(
                     l10n.poolDetailDriverLabel,
-                    _shortId(
-                      (pool['driverId']?['value'] ?? pool['driverId'])
-                          .toString(),
-                    ),
+                    pool['driverName'] as String? ??
+                        _shortId(JsonParse.optionalId(pool, 'driverId') ?? ''),
                   ),
                 const Divider(),
                 Text(
@@ -255,7 +254,8 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                         ),
                       ),
                       title: Text(
-                        'Ride: ${_shortId((m['rideId']?['value'] ?? m['rideId'] ?? '').toString())}',
+                        m['clientName'] as String? ??
+                            'Ride: ${_shortId(JsonParse.optionalId(m, 'rideId') ?? '')}',
                         style: const TextStyle(fontSize: 12),
                       ),
                       subtitle: Text(
@@ -441,8 +441,9 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
     final current = pool['currentPassengers'] as int? ?? 0;
     final max = pool['maxPassengers'] as int? ?? 4;
     final direction = pool['routeDirection'] as String?;
-    final poolId = pool['id']?['value'] ?? pool['id'] ?? '';
-    final driverId = pool['driverId']?['value'] ?? pool['driverId'];
+    final poolId = JsonParse.optionalId(pool, 'id') ?? '';
+    final driverId = JsonParse.optionalId(pool, 'driverId');
+    final driverLabel = pool['driverName'] as String?;
     final createdAt = pool['createdAt'] as String? ?? '';
 
     return Card(
@@ -560,7 +561,7 @@ class _RidePoolScreenState extends State<RidePoolScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Driver: ${_shortId(driverId.toString())}',
+                        'Driver: ${driverLabel ?? _shortId(driverId.toString())}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,

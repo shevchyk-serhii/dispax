@@ -74,6 +74,17 @@ class JsonParse {
     int fallback = 0,
   }) => _tryInt(json[key]) ?? fallback;
 
+  /// Reads an entity id that may arrive either as a flat string ("uuid") or as
+  /// a wrapped object ({"value": "uuid"}). Returns null when absent. Indexing a
+  /// raw `json[key]?['value']` throws a TypeError on the flat-string form, so
+  /// always go through this helper.
+  static String? optionalId(Map<String, dynamic> json, String key) {
+    final raw = json[key];
+    if (raw == null) return null;
+    if (raw is Map) return raw['value']?.toString();
+    return raw.toString();
+  }
+
   /// Reads a required string. Throws [FormatException] naming [key] when missing
   /// or not a string.
   static String requiredString(Map<String, dynamic> json, String key) {

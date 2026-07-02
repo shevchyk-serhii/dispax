@@ -495,24 +495,30 @@ void main() {
       },
     );
 
-    test('assignRideDialogTitle interpolates rideId (String)', () async {
+    test('assignRideDialogTitle interpolates client name (String)', () async {
       final en = await _l10n('en');
       final de = await _l10n('de');
       final uk = await _l10n('uk');
 
-      expect(en.assignRideDialogTitle('A1B2'), equals('Assign Ride #A1B2'));
-      expect(de.assignRideDialogTitle('A1B2'), equals('Fahrt #A1B2 zuweisen'));
       expect(
-        uk.assignRideDialogTitle('A1B2'),
-        equals('Призначити поїздку #A1B2'),
+        en.assignRideDialogTitle('Max Mustermann'),
+        equals('Assign Ride · Max Mustermann'),
+      );
+      expect(
+        de.assignRideDialogTitle('Max Mustermann'),
+        equals('Fahrt zuweisen · Max Mustermann'),
+      );
+      expect(
+        uk.assignRideDialogTitle('Max Mustermann'),
+        equals('Призначити поїздку · Max Mustermann'),
       );
     });
 
-    test('assignRideDialogTitle rideId is actually interpolated', () async {
+    test('assignRideDialogTitle client is actually interpolated', () async {
       final en = await _l10n('en');
       expect(
-        en.assignRideDialogTitle('id-1'),
-        isNot(equals(en.assignRideDialogTitle('id-2'))),
+        en.assignRideDialogTitle('client-1'),
+        isNot(equals(en.assignRideDialogTitle('client-2'))),
       );
     });
 
@@ -535,19 +541,22 @@ void main() {
       );
     });
 
-    test('reassignRideDialogTitle interpolates rideId (String)', () async {
+    test('reassignRideDialogTitle interpolates client name (String)', () async {
       final en = await _l10n('en');
       final de = await _l10n('de');
       final uk = await _l10n('uk');
 
-      expect(en.reassignRideDialogTitle('XY99'), equals('Reassign ride #XY99'));
       expect(
-        de.reassignRideDialogTitle('XY99'),
-        equals('Fahrt #XY99 neu zuweisen'),
+        en.reassignRideDialogTitle('Max Mustermann'),
+        equals('Reassign ride · Max Mustermann'),
       );
       expect(
-        uk.reassignRideDialogTitle('XY99'),
-        equals('Перепризначити поїздку #XY99'),
+        de.reassignRideDialogTitle('Max Mustermann'),
+        equals('Fahrt neu zuweisen · Max Mustermann'),
+      );
+      expect(
+        uk.reassignRideDialogTitle('Max Mustermann'),
+        equals('Перепризначити поїздку · Max Mustermann'),
       );
     });
 

@@ -3,11 +3,15 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeofenceService
 import com.shevchyk.core.domain.*
-import com.shevchyk.core.repository.GeofenceRepository
+import com.shevchyk.core.repository.{GeofenceRepository, PersonRepository}
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
 import zio.ZIO
+import zio.json.*
+
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Tapir descriptions and server logic for the geofence endpoints. Replaces the hand-written zio-http handlers in
@@ -22,7 +26,39 @@ object GeofenceApi:
 
   private val geofenceTag = "Geofence"
 
-  type GeofenceEnv = JwtService & GeofenceRepository & GeofenceService
+  /**
+   * `GeofenceAlert` enriched with the driver's display name so the UI never has to show a bare UUID. The name is
+   * resolved at read time; `None` when the person no longer exists.
+   */
+  final case class GeofenceAlertDto(
+      id: UUID,
+      geofenceId: GeofenceId,
+      driverId: PersonId,
+      companyId: CompanyId,
+      alertType: String,
+      geofenceName: String,
+      latitude: Double,
+      longitude: Double,
+      timestamp: Instant,
+      driverName: Option[String]
+  ) derives JsonCodec
+
+  object GeofenceAlertDto:
+
+    def fromDomain(a: GeofenceAlert, names: Map[PersonId, String]): GeofenceAlertDto = GeofenceAlertDto(
+      id = a.id,
+      geofenceId = a.geofenceId,
+      driverId = a.driverId,
+      companyId = a.companyId,
+      alertType = a.alertType,
+      geofenceName = a.geofenceName,
+      latitude = a.latitude,
+      longitude = a.longitude,
+      timestamp = a.timestamp,
+      driverName = names.get(a.driverId)
+    )
+
+  type GeofenceEnv = JwtService & GeofenceRepository & GeofenceService & PersonRepository
 
   // -- Endpoint descriptions ------------------------------------------------
 
@@ -36,14 +72,14 @@ object GeofenceApi:
   val alertsEndpoint = secureEndpoint.get
     .in("api" / "geofences" / "alerts")
     .in(query[Option[Int]]("limit"))
-    .out(jsonBody[List[GeofenceAlert]])
+    .out(jsonBody[List[GeofenceAlertDto]])
     .tag(geofenceTag)
     .summary("Recent geofence alerts for the company (dispatcher, admin)")
 
   val alertsByDriverEndpoint = secureEndpoint.get
     .in("api" / "geofences" / "alerts" / "driver" / path[String]("driverId"))
     .in(query[Option[Int]]("limit"))
-    .out(jsonBody[List[GeofenceAlert]])
+    .out(jsonBody[List[GeofenceAlertDto]])
     .tag(geofenceTag)
     .summary("Geofence alerts for a specific driver (dispatcher, admin)")
 
@@ -161,7 +197,8 @@ object GeofenceApi:
         limit      = limitOpt.getOrElse(50).min(100).max(1)
         repo      <- ZIO.service[GeofenceRepository]
         alerts    <- repo.findAlertsByCompany(companyId, limit).mapError(internal)
-      } yield alerts
+        names     <- PersonNameLookup.names(alerts.map(_.driverId)).mapError(internal)
+      } yield alerts.map(GeofenceAlertDto.fromDomain(_, names))
   }
 
   private val alertsByDriverServer: ZServerEndpoint[GeofenceEnv, Any] = alertsByDriverEndpoint
@@ -176,7 +213,8 @@ object GeofenceApi:
           // Enforce tenant isolation: findAlertsByDriver is not company-scoped, so
           // a dispatcher must not see alerts of a driver from another company.
           alerts    <- repo.findAlertsByDriver(dPid, limit).map(_.filter(_.companyId == companyId)).mapError(internal)
-        } yield alerts
+          names     <- PersonNameLookup.names(alerts.map(_.driverId)).mapError(internal)
+        } yield alerts.map(GeofenceAlertDto.fromDomain(_, names))
       }
     }
 

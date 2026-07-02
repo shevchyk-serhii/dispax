@@ -1512,8 +1512,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get driverMapMenuItem => 'Карта водія';
 
   @override
-  String assignRideDialogTitle(String rideId) {
-    return 'Призначити поїздку #$rideId';
+  String assignRideDialogTitle(String client) {
+    return 'Призначити поїздку · $client';
   }
 
   @override
@@ -1549,8 +1549,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get assignDriverButton => 'Призначити водія';
 
   @override
-  String reassignRideDialogTitle(String rideId) {
-    return 'Перепризначити поїздку #$rideId';
+  String reassignRideDialogTitle(String client) {
+    return 'Перепризначити поїздку · $client';
   }
 
   @override
@@ -3578,8 +3578,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get noAuditEntriesFound => 'Записів аудиту не знайдено';
 
   @override
-  String onlineOnRideLabel(String id) {
-    return 'Онлайн · поїздка #$id';
+  String onlineOnRideLabel(String dateTime) {
+    return 'Онлайн · поїздка о $dateTime';
   }
 
   @override

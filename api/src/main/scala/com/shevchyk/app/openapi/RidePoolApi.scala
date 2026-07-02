@@ -4,7 +4,7 @@ import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.{AuditService, EventHub}
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.openapi.ApiError
-import com.shevchyk.core.repository.RidePoolRepository
+import com.shevchyk.core.repository.{PersonRepository, RidePoolRepository}
 import com.shevchyk.ride.application.service.RideService
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
@@ -31,11 +31,74 @@ object RidePoolApi:
   private val ridePoolTag = "RidePool"
 
   /**
+   * `RidePool` enriched with the assigned driver's display name so the UI never has to show a bare UUID. The name is
+   * resolved at read time; `None` when no driver is assigned or the person no longer exists.
+   */
+  final case class RidePoolDto(
+      id: RidePoolId,
+      companyId: CompanyId,
+      name: Option[String],
+      status: PoolStatus,
+      driverId: Option[PersonId],
+      maxPassengers: Int,
+      currentPassengers: Int,
+      routeDirection: Option[String],
+      scheduledTime: Option[Instant],
+      createdAt: Instant,
+      createdBy: PersonId,
+      driverName: Option[String]
+  ) derives JsonCodec
+
+  object RidePoolDto:
+
+    def fromDomain(p: RidePool, names: Map[PersonId, String]): RidePoolDto = RidePoolDto(
+      id = p.id,
+      companyId = p.companyId,
+      name = p.name,
+      status = p.status,
+      driverId = p.driverId,
+      maxPassengers = p.maxPassengers,
+      currentPassengers = p.currentPassengers,
+      routeDirection = p.routeDirection,
+      scheduledTime = p.scheduledTime,
+      createdAt = p.createdAt,
+      createdBy = p.createdBy,
+      driverName = p.driverId.flatMap(names.get)
+    )
+
+  /**
+   * `RidePoolMember` enriched with the client's display name (see [[RidePoolDto]]).
+   */
+  final case class RidePoolMemberDto(
+      id: RidePoolMemberId,
+      poolId: RidePoolId,
+      rideId: RideId,
+      clientId: PersonId,
+      pickupOrder: Int,
+      status: PoolMemberStatus,
+      addedAt: Instant,
+      clientName: Option[String]
+  ) derives JsonCodec
+
+  object RidePoolMemberDto:
+
+    def fromDomain(m: RidePoolMember, names: Map[PersonId, String]): RidePoolMemberDto = RidePoolMemberDto(
+      id = m.id,
+      poolId = m.poolId,
+      rideId = m.rideId,
+      clientId = m.clientId,
+      pickupOrder = m.pickupOrder,
+      status = m.status,
+      addedAt = m.addedAt,
+      clientName = names.get(m.clientId)
+    )
+
+  /**
    * Mirrors the inline `{"pool":..,"members":..}` JSON body produced by the original GET /api/pools/{id}.
    */
-  final case class PoolDetailResponse(pool: RidePool, members: List[RidePoolMember]) derives JsonCodec
+  final case class PoolDetailResponse(pool: RidePoolDto, members: List[RidePoolMemberDto]) derives JsonCodec
 
-  type RidePoolEnv = JwtService & RidePoolRepository & RideService & AuditService & EventHub
+  type RidePoolEnv = JwtService & RidePoolRepository & RideService & AuditService & EventHub & PersonRepository
 
   // -- Endpoint descriptions ------------------------------------------------
 
@@ -48,7 +111,7 @@ object RidePoolApi:
 
   val listEndpoint = secureEndpoint.get
     .in("api" / "pools")
-    .out(jsonBody[List[RidePool]])
+    .out(jsonBody[List[RidePoolDto]])
     .tag(ridePoolTag)
     .summary("List ride pools for the company (dispatcher)")
 
@@ -168,7 +231,8 @@ object RidePoolApi:
       repo      <- ZIO.service[RidePoolRepository]
       companyId <- requireCompanyId(user.companyId)
       pools     <- repo.findByCompanyId(companyId).mapError(internal)
-    } yield pools
+      names     <- PersonNameLookup.names(pools.flatMap(_.driverId)).mapError(internal)
+    } yield pools.map(RidePoolDto.fromDomain(_, names))
   }
 
   private val listOpenServer: ZServerEndpoint[RidePoolEnv, Any] = listOpenEndpoint.serverLogic[RidePoolEnv] {
@@ -194,7 +258,13 @@ object RidePoolApi:
                      .fromOption(poolOpt.filter(_.companyId == companyId))
                      .orElseFail((StatusCode.NotFound, ApiError("Pool not found")): Err)
       members   <- repo.findMembersByPoolId(pool.id).mapError(internal)
-    } yield PoolDetailResponse(pool, members)
+      names     <- PersonNameLookup
+                     .names(pool.driverId.toList ++ members.map(_.clientId))
+                     .mapError(internal)
+    } yield PoolDetailResponse(
+      RidePoolDto.fromDomain(pool, names),
+      members.map(RidePoolMemberDto.fromDomain(_, names))
+    )
   }
 
   private val addRideServer: ZServerEndpoint[RidePoolEnv, Any] = addRideEndpoint.serverLogic[RidePoolEnv] { user =>
