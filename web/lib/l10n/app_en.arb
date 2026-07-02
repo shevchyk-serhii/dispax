@@ -1859,6 +1859,7 @@
   "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
   "sharedCalendarBusy": "Busy",
   "sharedCalendarShift": "Shift",
+  "sharedCalendarEmptyDay": "No shifts or busy slots",
   "sharedCalendarEmptyWeek": "No shifts or busy slots this week",
   "sharedCalendarTimesHint": "Shift times as provided by {company}",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},

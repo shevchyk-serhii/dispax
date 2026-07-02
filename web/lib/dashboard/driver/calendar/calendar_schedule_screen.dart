@@ -532,6 +532,10 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
         return MultiColumnViewWidget(
           selectedDay: selectedDay,
           drivers: allDrivers,
+          // Cross-company calendars shared with me appear as extra read-only
+          // columns after the company drivers.
+          externalShares: _sharedWithMe,
+          shareService: _shareService,
           onRideSelected: _openRideDetails,
         );
     }

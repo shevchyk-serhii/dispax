@@ -1747,6 +1747,7 @@
   "@shareActionFailed": {"placeholders": {"error": {"type": "String"}}},
   "sharedCalendarBusy": "Belegt",
   "sharedCalendarShift": "Schicht",
+  "sharedCalendarEmptyDay": "Keine Schichten oder belegten Zeiten",
   "sharedCalendarEmptyWeek": "Keine Schichten oder belegten Zeiten in dieser Woche",
   "sharedCalendarTimesHint": "Schichtzeiten wie von {company} angegeben",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},

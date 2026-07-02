@@ -3722,6 +3722,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get sharedCalendarShift => 'Зміна';
 
   @override
+  String get sharedCalendarEmptyDay => 'Немає змін чи зайнятих слотів';
+
+  @override
   String get sharedCalendarEmptyWeek =>
       'Цього тижня немає змін чи зайнятих слотів';
 
