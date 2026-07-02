@@ -6916,6 +6916,12 @@ abstract class AppLocalizations {
   /// **'Action failed: {error}'**
   String shareActionFailed(String error);
 
+  /// No description provided for @sharedCalendarAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get sharedCalendarAvailable;
+
   /// No description provided for @sharedCalendarBusy.
   ///
   /// In en, this message translates to:

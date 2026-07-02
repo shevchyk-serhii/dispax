@@ -3730,6 +3730,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get sharedCalendarAvailable => 'Verfügbar';
+
+  @override
   String get sharedCalendarBusy => 'Belegt';
 
   @override

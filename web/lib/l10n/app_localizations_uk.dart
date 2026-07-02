@@ -3716,6 +3716,9 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get sharedCalendarAvailable => 'Доступний';
+
+  @override
   String get sharedCalendarBusy => 'Зайнято';
 
   @override

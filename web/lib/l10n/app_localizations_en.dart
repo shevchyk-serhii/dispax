@@ -3707,6 +3707,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get sharedCalendarAvailable => 'Available';
+
+  @override
   String get sharedCalendarBusy => 'Busy';
 
   @override

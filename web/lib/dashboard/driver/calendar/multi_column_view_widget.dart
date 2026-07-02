@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/blocs.dart';
+import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/models/person.dart';
@@ -412,11 +413,6 @@ class _ExternalShareColumn extends StatelessWidget {
   bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  /// Shift times come as "HH:mm[:ss]" strings in the grantor company's local
-  /// convention — render the first 5 chars, never convert timezones.
-  static String _hhmm(String raw) =>
-      raw.length >= 5 ? raw.substring(0, 5) : raw;
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -532,67 +528,224 @@ class _ExternalShareColumn extends StatelessWidget {
       );
     }
 
+    return _ShareTimeline(shifts: shifts, slots: slots);
+  }
+}
+
+/// Vertical day timeline (06:00–23:00) for an external share column. Shifts
+/// stretch as translucent green "available" regions across the full hour
+/// range they cover; busy slots lie on top as darker blocks, so the free gaps
+/// inside a shift are visible at a glance. A slim hour scale sits on the left.
+class _ShareTimeline extends StatelessWidget {
+  final List<SharedShift> shifts;
+  final List<SharedBusySlot> slots;
+
+  const _ShareTimeline({required this.shifts, required this.slots});
+
+  /// Visible day window, matching the week view: 06:00 → 23:00.
+  static const double _startHour = 6;
+  static const double _endHour = 23;
+  static const double _hoursShown = _endHour - _startHour;
+
+  /// Width of the left hour-scale gutter.
+  static const double _gutterWidth = 30;
+
+  static double _parseHhmm(String raw) {
+    final parts = raw.split(':');
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    return hour + minute / 60.0;
+  }
+
+  static String _hhmm(String raw) =>
+      raw.length >= 5 ? raw.substring(0, 5) : raw;
+
+  double _offsetFor(double hourValue, double height) =>
+      ((hourValue - _startHour).clamp(0.0, _hoursShown)) / _hoursShown * height;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
     final localizations = MaterialLocalizations.of(context);
     String time(DateTime t) =>
         localizations.formatTimeOfDay(TimeOfDay.fromDateTime(t));
 
-    return ListView(
-      padding: const EdgeInsets.all(8),
-      children: [
-        for (final shift in shifts)
-          Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.tertiaryContainer.withAlpha(90),
-              borderRadius: BorderRadius.circular(8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = constraints.maxHeight;
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Hour scale gutter: a label every 2 hours.
+              SizedBox(
+                width: _gutterWidth,
+                child: Stack(
+                  children: [
+                    for (
+                      var hour = _startHour.toInt();
+                      hour <= _endHour.toInt();
+                      hour += 2
+                    )
+                      Positioned(
+                        top: _offsetFor(hour.toDouble(), height) - 5,
+                        right: 4,
+                        child: Text(
+                          hour.toString().padLeft(2, '0'),
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    // Hour gridlines every 2 hours.
+                    for (
+                      var hour = _startHour.toInt();
+                      hour <= _endHour.toInt();
+                      hour += 2
+                    )
+                      Positioned(
+                        top: _offsetFor(hour.toDouble(), height),
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 1,
+                          color: colorScheme.surfaceContainerHighest,
+                        ),
+                      ),
+                    // Availability regions: the shift stretches over its full
+                    // time range.
+                    for (final shift in shifts)
+                      _buildShiftRegion(context, l10n, shift, height),
+                    // Busy blocks on top of the availability region.
+                    for (var i = 0; i < slots.length; i++)
+                      _buildBusyBlock(context, l10n, slots[i], i, height, time),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildShiftRegion(
+    BuildContext context,
+    AppLocalizations l10n,
+    SharedShift shift,
+    double height,
+  ) {
+    final top = _offsetFor(_parseHhmm(shift.startTime), height);
+    final bottom = _offsetFor(_parseHhmm(shift.endTime), height);
+    final regionHeight = bottom - top;
+    if (regionHeight <= 0) return const SizedBox.shrink();
+
+    return Positioned(
+      key: ValueKey('share-shift-region-${shift.startTime}'),
+      top: top,
+      left: 0,
+      right: 0,
+      height: regionHeight,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(6),
+          border: Border(left: BorderSide(color: AppColors.success, width: 3)),
+        ),
+        padding: const EdgeInsets.only(left: 6, top: 3),
+        alignment: Alignment.topLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${_hhmm(shift.startTime)}–${_hhmm(shift.endTime)}',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.success,
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.schedule, size: 14, color: colorScheme.onSurface),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '${l10n.sharedCalendarShift} ${_hhmm(shift.startTime)}–${_hhmm(shift.endTime)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+            if (regionHeight > 44)
+              Text(
+                l10n.sharedCalendarAvailable,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: AppColors.success.withValues(alpha: 0.85),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBusyBlock(
+    BuildContext context,
+    AppLocalizations l10n,
+    SharedBusySlot slot,
+    int index,
+    double height,
+    String Function(DateTime) time,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final startHour = slot.start.hour + slot.start.minute / 60.0;
+    final endHour = slot.end.hour + slot.end.minute / 60.0;
+    final top = _offsetFor(startHour, height);
+    final bottom = _offsetFor(endHour, height);
+    // Keep even very short slots visible.
+    final blockHeight = (bottom - top).clamp(10.0, height);
+
+    return Positioned(
+      key: ValueKey('share-busy-block-$index'),
+      top: top,
+      left: 6,
+      right: 2,
+      height: blockHeight,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        alignment: Alignment.topLeft,
+        child: blockHeight < 16
+            ? null
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    slot.kind == 'Unavailability'
+                        ? Icons.do_not_disturb_on_outlined
+                        : Icons.local_taxi,
+                    size: 11,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(
+                      '${l10n.sharedCalendarBusy} ${time(slot.start)}–${time(slot.end)}',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-          ),
-        for (final slot in slots)
-          Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  slot.kind == 'Unavailability'
-                      ? Icons.do_not_disturb_on_outlined
-                      : Icons.local_taxi,
-                  size: 14,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '${l10n.sharedCalendarBusy} ${time(slot.start)}–${time(slot.end)}',
-                    style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
+                ],
+              ),
+      ),
     );
   }
 }
