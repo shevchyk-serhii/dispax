@@ -23,10 +23,16 @@ object FlightStatus:
   def fromMuc(label: String): FlightStatus =
     label.trim.toLowerCase match
       case ""                                                                                                         => Unknown
-      case s if s.contains("planmäßig") || s.contains("planmaessig") || s.contains("planmassig")                      => Scheduled
+      // The list view labels an on-time flight "geplant" (not "planmäßig"); a departure with an open check-in
+      // desk shows "Check-In". Both mean the flight is still on schedule.
+      case s
+          if s.contains("planmäßig") || s.contains("planmaessig") || s.contains("planmassig") ||
+            s.contains("geplant") || s.contains("check-in") || s.contains("check in") =>
+        Scheduled
       case s if s.contains("boarding") || s.contains("einstieg")                                                      => Boarding
       case s if s.contains("gestartet") || s.contains("abgeflogen")                                                   => Departed
-      case s if s.contains("unterwegs") || s.contains("en route")                                                     => EnRoute
+      // An arrival close to landing shows "im Anflug" (on approach) — the aircraft is still in the air.
+      case s if s.contains("unterwegs") || s.contains("en route") || s.contains("anflug")                             => EnRoute
       // A completed arrival shows on the MUC board as "beendet" (finished/processed) or "Gepäck" (baggage on the
       // belt). Both mean the plane is down — without "gepäck" the status flickered Unknown between board updates.
       case s
