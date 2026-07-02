@@ -3,7 +3,7 @@ package com.shevchyk.auth.application
 import com.shevchyk.auth.domain.*
 import com.shevchyk.auth.repository.*
 import com.shevchyk.auth.service.JwtService
-import com.shevchyk.core.repository.{PersonRepository, SessionRepository}
+import com.shevchyk.core.repository.{ClientCompanyRepository, PersonRepository, SessionRepository}
 import com.shevchyk.core.domain.{
   ClientCompanyId,
   CompanyId,
@@ -87,6 +87,7 @@ class AuthServiceImpl(
     personRepository: PersonRepository,
     tokenRepository: TokenRepository,
     sessionRepository: SessionRepository,
+    clientCompanyRepository: ClientCompanyRepository,
     jwtService: JwtService
 ) extends AuthService:
 
@@ -110,6 +111,32 @@ class AuthServiceImpl(
   private def parseRole(s: String): Either[Throwable, PersonRole] =
     val normalized = s.trim.toLowerCase.capitalize
     scala.util.Try(PersonRole.valueOf(normalized)).toEither
+
+  /**
+   * Resolves the requested client-company patch value to the final link to store. `None` keeps the current link, an
+   * empty string clears it, and a UUID string sets it after verifying the client company exists and belongs to the
+   * caller's taxi company (tenant isolation — foreign ids fail as "not found" so existence is not leaked).
+   */
+  private def resolveClientCompanyId(
+      requested: Option[String],
+      current: Option[ClientCompanyId],
+      companyId: CompanyId
+  ): ZIO[Any, AuthError, Option[ClientCompanyId]] =
+    requested match
+      case None                     => ZIO.succeed(current)
+      case Some(raw) if raw.isEmpty => ZIO.none
+      case Some(raw)                =>
+        for
+          id         <- ZIO
+                          .attempt(ClientCompanyId(UUID.fromString(raw)))
+                          .orElseFail(ValidationError("clientCompanyId", "Invalid clientCompanyId format"))
+          companyOpt <- clientCompanyRepository
+                          .findById(id)
+                          .orElseFail(ValidationError("clientCompanyId", "Failed to load client company"))
+          company    <- ZIO
+                          .fromOption(companyOpt.filter(_.taxiCompanyId == companyId))
+                          .orElseFail(ValidationError("clientCompanyId", "Client company not found"))
+        yield Some(company.id)
 
   private def validatePassword(password: String): Boolean =
     password.length >= 8 &&
@@ -224,38 +251,42 @@ class AuthServiceImpl(
 
   override def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
     for
-      existingOpt <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
-      existing    <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
-      _           <-
+      existingOpt     <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
+      existing        <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
+      _               <-
         request.email.fold(ZIO.unit)(email =>
           ZIO.when(!validateEmail(email))(ZIO.fail(ValidationError("email", "Invalid email format")))
         )
-      role        <-
+      role            <-
         request.role.fold(ZIO.succeed(existing.role))(r =>
           ZIO.fromEither(parseRole(r)).orElseFail(ValidationError("role", "Invalid role"))
         )
-      status      <-
+      status          <-
         request.status.fold(ZIO.succeed(existing.status))(s =>
           ZIO.attempt(UserStatus.valueOf(s)).orElseFail(ValidationError("status", "Invalid status"))
         )
       // Resolve the new roles set: if provided, validate and use it; otherwise preserve existing
-      rolesSet    <-
+      rolesSet        <-
         request.roles match
           case None       => ZIO.succeed(existing.effectiveRoles)
           case Some(raws) =>
             ZIO.fromEither(parseRoles(raws)).orElseFail(ValidationError("roles", "One or more invalid roles"))
       // Enforce invariant: primary role must be in the roles set
-      _           <-
+      _               <-
         ZIO
           .when(!rolesSet.contains(role))(
             ZIO.fail(ValidationError("roles", "Primary role must be included in roles"))
           )
-      _           <- ZIO.when(rolesSet.isEmpty)(ZIO.fail(ValidationError("roles", "Roles must not be empty")))
-      updated      = request.applyTo(existing, role, status, rolesSet)
-      saved       <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update user"))
+      _               <- ZIO.when(rolesSet.isEmpty)(ZIO.fail(ValidationError("roles", "Roles must not be empty")))
+      // Resolve the client-company link (tri-state): absent = keep, "" = clear, UUID = set.
+      // A set value must reference an existing client company owned by the caller's taxi
+      // company — a foreign or unknown id is rejected as "not found" (no existence leak).
+      clientCompanyId <- resolveClientCompanyId(request.clientCompanyId, existing.clientCompanyId, companyId)
+      updated          = request.applyTo(existing, role, status, rolesSet, clientCompanyId)
+      saved           <- personRepository.update(updated).orElseFail(ValidationError("user", "Failed to update user"))
       // If Driver role was added (wasn't present before), ensure a drivers row exists
-      driverAdded  = saved.canDrive && !existing.canDrive
-      _           <-
+      driverAdded      = saved.canDrive && !existing.canDrive
+      _               <-
         ZIO
           .when(driverAdded)(
             personRepository
@@ -273,12 +304,7 @@ class AuthServiceImpl(
       existingOpt     <- personRepository.findByIdAndCompany(PersonId(id), companyId).orElseFail(UserNotFound(s"ID: $id"))
       existing        <- ZIO.fromOption(existingOpt).orElseFail(UserNotFound(s"ID: $id"))
       _               <- ZIO.when(!existing.provisional)(ZIO.fail(ValidationError("provisional", "Client is not provisional")))
-      clientCompanyId <-
-        request.clientCompanyId.fold(ZIO.succeed(existing.clientCompanyId))(raw =>
-          ZIO
-            .attempt(ClientCompanyId(UUID.fromString(raw)))
-            .mapBoth(_ => ValidationError("clientCompanyId", "Invalid clientCompanyId format"), Some(_))
-        )
+      clientCompanyId <- resolveClientCompanyId(request.clientCompanyId, existing.clientCompanyId, companyId)
       // Upgrade in place: keep id/email so the ride's clientId and history stay intact; clear the provisional flag.
       updated          = existing.copy(
                            name = request.name.map(_.trim).filter(_.nonEmpty).getOrElse(existing.name),
@@ -352,5 +378,9 @@ class AuthServiceImpl(
 
 object AuthService:
 
-  val live: ZLayer[PersonRepository & TokenRepository & SessionRepository & JwtService, Nothing, AuthService] = ZLayer
+  val live: ZLayer[
+    PersonRepository & TokenRepository & SessionRepository & ClientCompanyRepository & JwtService,
+    Nothing,
+    AuthService
+  ] = ZLayer
     .fromFunction(AuthServiceImpl.apply)

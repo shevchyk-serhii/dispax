@@ -826,6 +826,8 @@
   "ridesCountLabel": "Fahrten",
   "preferredDriverAssigned": "Bevorzugter Fahrer zugewiesen",
   "noRidesYet": "Noch keine Fahrten",
+  "clientCompanyFieldLabel": "Firma",
+  "clientCompanyNone": "Keine Firma",
   "vipClientLabel": "VIP-Kunde",
   "vipClientHelpText": "Prioritätsservice und bevorzugter Fahrer",
   "driverLabel": "Fahrer: {name}",

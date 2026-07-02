@@ -2,8 +2,14 @@ package com.shevchyk.auth.application
 
 import com.shevchyk.auth.config.JwtConfig
 import com.shevchyk.auth.domain.*
-import com.shevchyk.core.domain.{CompanyId, Person, PersonId, PersonRole, UserStatus}
-import com.shevchyk.core.repository.{InMemorySessionRepository, PersonRepository, SessionRepository}
+import com.shevchyk.core.domain.{ClientCompany, ClientCompanyId, CompanyId, Person, PersonId, PersonRole, UserStatus}
+import com.shevchyk.core.repository.{
+  ClientCompanyRepository,
+  InMemoryClientCompanyRepository,
+  InMemorySessionRepository,
+  PersonRepository,
+  SessionRepository
+}
 import com.shevchyk.auth.repository.{InMemoryPersonRepositoryWithUsers, InMemoryTokenRepository}
 import com.shevchyk.auth.service.JwtService
 import zio.*
@@ -23,6 +29,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
     (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
       ZLayer.succeed(InMemoryTokenRepository()) ++
       ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
+      ZLayer.succeed[ClientCompanyRepository](new InMemoryClientCompanyRepository) ++
       (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
 
   // Like `layers`, but also exposes the underlying PersonRepository so a test can seed/inspect
@@ -32,8 +39,21 @@ object AuthServiceSpec extends ZIOSpecDefault {
     val auth =
       (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
         ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++
+        ZLayer.succeed[ClientCompanyRepository](new InMemoryClientCompanyRepository) ++
         (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
     repo ++ auth
+  }
+
+  // Like `layersWithRepo`, but also exposes the ClientCompanyRepository so a test can seed
+  // client companies (used by the updateUser client-company link tests).
+  def layersWithClientCompanies: ZLayer[Any, Nothing, AuthService & PersonRepository & ClientCompanyRepository] = {
+    val repo      = ZLayer.succeed[PersonRepository](InMemoryPersonRepositoryWithUsers())
+    val companies = ZLayer.succeed[ClientCompanyRepository](new InMemoryClientCompanyRepository)
+    val auth      =
+      (repo ++ ZLayer.succeed(InMemoryTokenRepository()) ++
+        ZLayer.succeed[SessionRepository](InMemorySessionRepository()) ++ companies ++
+        (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
+    repo ++ companies ++ auth
   }
 
   // Like `layers`, but also exposes the SessionRepository so a login test can assert the
@@ -43,6 +63,7 @@ object AuthServiceSpec extends ZIOSpecDefault {
     val auth     =
       (ZLayer.succeed(InMemoryPersonRepositoryWithUsers()) ++
         ZLayer.succeed(InMemoryTokenRepository()) ++ sessions ++
+        ZLayer.succeed[ClientCompanyRepository](new InMemoryClientCompanyRepository) ++
         (JwtConfig.live.orDie >>> JwtService.live)) >>> AuthService.live
     sessions ++ auth
   }
@@ -729,12 +750,130 @@ object AuthServiceSpec extends ZIOSpecDefault {
               }
             case _                   => false
           })
-        }.provide(layers)
+        }.provide(layers),
+        // ── client-company link (dispatcher assigns a client to a company) ──
+        test("links the client to a client company of the same tenant") {
+          val cc = ClientCompany(id = ClientCompanyId(UUID.randomUUID()), name = "BMW AG", taxiCompanyId = testCompanyA)
+          for {
+            companies <- ZIO.service[ClientCompanyRepository]
+            _         <- companies.create(cc)
+            service   <- ZIO.service[AuthService]
+            updated   <- service.updateUser(
+                           testUserId1,
+                           testCompanyA,
+                           UpdateUserRequest(clientCompanyId = Some(cc.id.value.toString))
+                         )
+            repo      <- ZIO.service[PersonRepository]
+            saved     <- repo.findById(PersonId(testUserId1))
+          } yield assertTrue(
+            updated.clientCompanyId.contains(cc.id.value),
+            saved.exists(_.clientCompanyId.contains(cc.id))
+          )
+        }.provide(layersWithClientCompanies),
+        test("clears the client-company link with an empty string") {
+          val cc = ClientCompany(id = ClientCompanyId(UUID.randomUUID()), name = "BMW AG", taxiCompanyId = testCompanyA)
+          for {
+            companies <- ZIO.service[ClientCompanyRepository]
+            _         <- companies.create(cc)
+            service   <- ZIO.service[AuthService]
+            _         <- service.updateUser(
+                           testUserId1,
+                           testCompanyA,
+                           UpdateUserRequest(clientCompanyId = Some(cc.id.value.toString))
+                         )
+            cleared   <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(clientCompanyId = Some("")))
+            repo      <- ZIO.service[PersonRepository]
+            saved     <- repo.findById(PersonId(testUserId1))
+          } yield assertTrue(
+            cleared.clientCompanyId.isEmpty,
+            saved.exists(_.clientCompanyId.isEmpty)
+          )
+        }.provide(layersWithClientCompanies),
+        test("leaves the client-company link unchanged when the field is absent") {
+          val cc = ClientCompany(id = ClientCompanyId(UUID.randomUUID()), name = "BMW AG", taxiCompanyId = testCompanyA)
+          for {
+            companies <- ZIO.service[ClientCompanyRepository]
+            _         <- companies.create(cc)
+            service   <- ZIO.service[AuthService]
+            _         <- service.updateUser(
+                           testUserId1,
+                           testCompanyA,
+                           UpdateUserRequest(clientCompanyId = Some(cc.id.value.toString))
+                         )
+            updated   <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(name = Some("Renamed")))
+          } yield assertTrue(
+            updated.name == "Renamed",
+            updated.clientCompanyId.contains(cc.id.value)
+          )
+        }.provide(layersWithClientCompanies),
+        test("rejects a client company that belongs to another tenant (no existence leak)") {
+          val foreign = ClientCompany(
+            id = ClientCompanyId(UUID.randomUUID()),
+            name = "Foreign GmbH",
+            taxiCompanyId = testCompanyB
+          )
+          for {
+            companies <- ZIO.service[ClientCompanyRepository]
+            _         <- companies.create(foreign)
+            service   <- ZIO.service[AuthService]
+            result    <-
+              service
+                .updateUser(
+                  testUserId1,
+                  testCompanyA,
+                  UpdateUserRequest(clientCompanyId = Some(foreign.id.value.toString))
+                )
+                .exit
+            repo      <- ZIO.service[PersonRepository]
+            saved     <- repo.findById(PersonId(testUserId1))
+          } yield assertTrue(
+            result match {
+              case Exit.Failure(cause) =>
+                cause.failureOption.exists {
+                  case ValidationError("clientCompanyId", _) => true
+                  case _                                     => false
+                }
+              case _                   => false
+            },
+            saved.exists(_.clientCompanyId.isEmpty)
+          )
+        }.provide(layersWithClientCompanies),
+        test("rejects a malformed clientCompanyId") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <-
+              service
+                .updateUser(testUserId1, testCompanyA, UpdateUserRequest(clientCompanyId = Some("not-a-uuid")))
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case ValidationError("clientCompanyId", _) => true
+                case _                                     => false
+              }
+            case _                   => false
+          })
+        }.provide(layers),
+        // ── VIP flag (regression: the app sent isVip but the backend dropped it) ──
+        test("updates isVip and preserves it on later updates that omit the field") {
+          for {
+            service   <- ZIO.service[AuthService]
+            madeVip   <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(isVip = Some(true)))
+            untouched <- service.updateUser(testUserId1, testCompanyA, UpdateUserRequest(name = Some("Still VIP")))
+            repo      <- ZIO.service[PersonRepository]
+            saved     <- repo.findById(PersonId(testUserId1))
+          } yield assertTrue(
+            madeVip.isVip,
+            untouched.isVip,
+            saved.exists(_.isVip)
+          )
+        }.provide(layersWithRepo)
       ),
       suite("upgradeProvisionalClient")(
         test("fills in fields and clears the provisional flag in place (clientId stays)") {
           val companyId = CompanyId(UUID.randomUUID())
-          val ccId      = UUID.randomUUID()
+          // The linked client company must exist and belong to the caller's tenant.
+          val cc        = ClientCompany(id = ClientCompanyId(UUID.randomUUID()), name = "BMW AG", taxiCompanyId = companyId)
           val person    = Person(
             id = PersonId.generate(),
             name = "Walk-in",
@@ -747,28 +886,77 @@ object AuthServiceSpec extends ZIOSpecDefault {
             provisional = true
           )
           for {
-            repo    <- ZIO.service[PersonRepository]
-            _       <- repo.create(person)
-            service <- ZIO.service[AuthService]
-            _       <- service.upgradeProvisionalClient(
-                         person.id.value,
-                         companyId,
-                         UpgradeProvisionalClientRequest(
-                           name = Some("Real Client"),
-                           phone = Some("+49 170 1234567"),
-                           clientCompanyId = Some(ccId.toString)
+            repo      <- ZIO.service[PersonRepository]
+            companies <- ZIO.service[ClientCompanyRepository]
+            _         <- repo.create(person)
+            _         <- companies.create(cc)
+            service   <- ZIO.service[AuthService]
+            _         <- service.upgradeProvisionalClient(
+                           person.id.value,
+                           companyId,
+                           UpgradeProvisionalClientRequest(
+                             name = Some("Real Client"),
+                             phone = Some("+49 170 1234567"),
+                             clientCompanyId = Some(cc.id.value.toString)
+                           )
                          )
-                       )
-            saved   <- repo.findById(person.id)
+            saved     <- repo.findById(person.id)
           } yield assertTrue(
             saved.exists(p => !p.provisional),
             saved.exists(_.name == "Real Client"),
             saved.exists(_.phone.contains("+49 170 1234567")),
-            saved.exists(_.clientCompanyId.exists(_.value == ccId)),
+            saved.exists(_.clientCompanyId.contains(cc.id)),
             // id is unchanged → the ride's clientId and history stay intact
             saved.exists(_.id == person.id)
           )
-        }.provide(layersWithRepo),
+        }.provide(layersWithClientCompanies),
+        // Regression: upgradeProvisionalClient used to accept any UUID without checking the
+        // client company exists or belongs to the caller's tenant.
+        test("rejects a client company from another tenant on upgrade") {
+          val companyId = CompanyId(UUID.randomUUID())
+          val foreign   = ClientCompany(
+            id = ClientCompanyId(UUID.randomUUID()),
+            name = "Foreign GmbH",
+            taxiCompanyId = CompanyId(UUID.randomUUID())
+          )
+          val person    = Person(
+            id = PersonId.generate(),
+            name = "Walk-in",
+            email = s"provisional+z@chat.dispax.local",
+            role = PersonRole.Client,
+            passwordHash = "provisional-no-login",
+            status = UserStatus.ACTIVE,
+            companyId = Some(companyId),
+            roles = Set(PersonRole.Client),
+            provisional = true
+          )
+          for {
+            repo      <- ZIO.service[PersonRepository]
+            companies <- ZIO.service[ClientCompanyRepository]
+            _         <- repo.create(person)
+            _         <- companies.create(foreign)
+            service   <- ZIO.service[AuthService]
+            result    <-
+              service
+                .upgradeProvisionalClient(
+                  person.id.value,
+                  companyId,
+                  UpgradeProvisionalClientRequest(clientCompanyId = Some(foreign.id.value.toString))
+                )
+                .exit
+            untouched <- repo.findById(person.id)
+          } yield assertTrue(
+            result match {
+              case Exit.Failure(cause) =>
+                cause.failureOption.exists {
+                  case ValidationError("clientCompanyId", _) => true
+                  case _                                     => false
+                }
+              case _                   => false
+            },
+            untouched.exists(p => p.provisional && p.clientCompanyId.isEmpty)
+          )
+        }.provide(layersWithClientCompanies),
         test("does not touch a provisional client from another company") {
           val ownerCompany    = CompanyId(UUID.randomUUID())
           val attackerCompany = CompanyId(UUID.randomUUID())

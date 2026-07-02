@@ -3568,6 +3568,18 @@ abstract class AppLocalizations {
   /// **'No rides yet'**
   String get noRidesYet;
 
+  /// No description provided for @clientCompanyFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get clientCompanyFieldLabel;
+
+  /// No description provided for @clientCompanyNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No company'**
+  String get clientCompanyNone;
+
   /// No description provided for @vipClientLabel.
   ///
   /// In en, this message translates to:

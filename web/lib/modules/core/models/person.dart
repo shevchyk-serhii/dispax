@@ -54,6 +54,11 @@ class Person {
   final String status;
   final int reminderMinutes;
 
+  /// Business client-company this client belongs to (e.g. "BMW AG"), as a
+  /// ClientCompany id. Null when the client is not linked to any company.
+  /// Distinct from [companyId], which is the taxi company (the tenant).
+  final String? clientCompanyId;
+
   /// Full set of roles the person carries. Always includes [role].
   /// Defaults to {role} when the server does not send the `roles` field
   /// (e.g. for very old cached responses — back-compat fallback).
@@ -91,6 +96,7 @@ class Person {
     this.preferredDriverId,
     this.status = 'ACTIVE',
     this.reminderMinutes = 60,
+    this.clientCompanyId,
     Set<PersonRole>? roles,
     this.hasAvatar = false,
     this.companyName,
@@ -139,6 +145,9 @@ class Person {
       preferredDriverId: json['preferredDriverId']?.toString(),
       status: json['status']?.toString() ?? 'ACTIVE',
       reminderMinutes: (json['reminderMinutes'] as int?) ?? 60,
+      clientCompanyId: json['clientCompanyId'] != null
+          ? _extractId(json['clientCompanyId'])
+          : null,
       roles: parsedRoles,
       hasAvatar: json['hasAvatar'] as bool? ?? false,
       companyName: json['companyName']?.toString(),
@@ -161,6 +170,7 @@ class Person {
       'isVip': isVip,
       'preferredDriverId': preferredDriverId,
       'status': status,
+      'clientCompanyId': clientCompanyId,
       'hasAvatar': hasAvatar,
       'companyName': companyName,
       'preferredLanguage': preferredLanguage,

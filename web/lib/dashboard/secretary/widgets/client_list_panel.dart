@@ -7,6 +7,8 @@ import '../../../blocs/client/client_state.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../modules/core/services/error_messages.dart';
 import '../../../modules/core/widgets/error_widget.dart';
+import '../../../modules/billing/models/client_company.dart';
+import '../../../modules/billing/services/client_company_service.dart';
 import '../../../modules/core/models/person.dart';
 import '../../../modules/core/models/user_requests.dart';
 import '../../../constants/app_colors.dart';
@@ -16,7 +18,10 @@ import '../../../utils/temp_password.dart';
 import 'client_detail_screen.dart';
 
 class ClientListPanel extends StatefulWidget {
-  const ClientListPanel({super.key});
+  /// Injectable for tests; when null the panel creates (and owns) its own.
+  final ClientCompanyService? companyService;
+
+  const ClientListPanel({super.key, this.companyService});
 
   @override
   State<ClientListPanel> createState() => _ClientListPanelState();
@@ -25,15 +30,53 @@ class ClientListPanel extends StatefulWidget {
 class _ClientListPanelState extends State<ClientListPanel> {
   final TextEditingController _searchController = TextEditingController();
 
+  late final ClientCompanyService _companyService;
+  late final bool _ownsCompanyService;
+
+  /// Client companies of this tenant, used to resolve the company name on the
+  /// client card and to populate the edit-dialog dropdown. Empty until loaded.
+  List<ClientCompany> _companies = const [];
+
+  /// True once the companies list has loaded successfully. While false the
+  /// edit dialog hides the company field entirely (instead of showing an empty
+  /// dropdown whose save would silently clear the client's existing link).
+  bool _companiesLoaded = false;
+
   @override
   void initState() {
     super.initState();
+    _companyService = widget.companyService ?? ClientCompanyService();
+    _ownsCompanyService = widget.companyService == null;
     context.read<ClientBloc>().add(const ClientLoadRequested());
+    _loadCompanies();
+  }
+
+  Future<void> _loadCompanies() async {
+    try {
+      final companies = await _companyService.getCompanies();
+      if (!mounted) return;
+      setState(() {
+        _companies = companies;
+        _companiesLoaded = true;
+      });
+    } catch (_) {
+      // Non-fatal: the list still works, only the company name/dropdown is absent.
+    }
+  }
+
+  String? _companyNameFor(Person client) {
+    final id = client.clientCompanyId;
+    if (id == null) return null;
+    for (final company in _companies) {
+      if (company.id == id) return company.name;
+    }
+    return null;
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    if (_ownsCompanyService) _companyService.dispose();
     super.dispose();
   }
 
@@ -201,6 +244,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
   Widget _buildClientCard(BuildContext context, Person client) {
     final l10n = AppLocalizations.of(context)!;
     final phone = client.phone;
+    final companyName = _companyNameFor(client);
     return Card(
       margin: const EdgeInsets.only(bottom: AppDimensions.paddingSmall),
       child: ListTile(
@@ -251,6 +295,26 @@ class _ClientListPanelState extends State<ClientListPanel> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (companyName != null)
+              Row(
+                children: [
+                  Icon(
+                    Icons.business,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      companyName,
+                      style: AppStyles.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             Text(client.email, style: AppStyles.bodySmall),
             if (phone != null && phone.isNotEmpty)
               Text(phone, style: AppStyles.bodySmall),
@@ -411,6 +475,13 @@ class _ClientListPanelState extends State<ClientListPanel> {
     final phoneController = TextEditingController(text: client.phone ?? '');
     final formKey = GlobalKey<FormState>();
     bool isVip = client.isVip;
+    // '' means "no company" — matches the backend contract where an empty
+    // string clears the link. Fall back to '' if the client's company is not
+    // in the loaded list (it cannot be rendered as a dropdown value).
+    String selectedCompanyId =
+        _companies.any((c) => c.id == client.clientCompanyId)
+        ? client.clientCompanyId!
+        : '';
 
     showAdaptiveDialog(
       context: context,
@@ -460,6 +531,35 @@ class _ClientListPanelState extends State<ClientListPanel> {
                         ),
                         keyboardType: TextInputType.phone,
                       ),
+                      // Company link — shown only once the companies list has
+                      // loaded, so a failed load can never silently clear an
+                      // existing link on save.
+                      if (_companiesLoaded) ...[
+                        const SizedBox(height: AppDimensions.paddingMedium),
+                        DropdownButtonFormField<String>(
+                          initialValue: selectedCompanyId,
+                          decoration: InputDecoration(
+                            labelText: l10n.clientCompanyFieldLabel,
+                            prefixIcon: const Icon(Icons.business),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: '',
+                              child: Text(l10n.clientCompanyNone),
+                            ),
+                            for (final company in _companies)
+                              DropdownMenuItem(
+                                value: company.id,
+                                child: Text(
+                                  company.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (v) =>
+                              setDialogState(() => selectedCompanyId = v ?? ''),
+                        ),
+                      ],
                       const SizedBox(height: AppDimensions.paddingMedium),
                       // VIP toggle — kept in parity with the client-detail edit
                       // dialog so VIP status is editable from the list too.
@@ -502,6 +602,11 @@ class _ClientListPanelState extends State<ClientListPanel> {
                                 ? phoneController.text.trim()
                                 : null,
                             isVip: isVip,
+                            // Omit (null = unchanged) when the companies list
+                            // never loaded and the field was hidden.
+                            clientCompanyId: _companiesLoaded
+                                ? selectedCompanyId
+                                : null,
                           ),
                         ),
                       );
