@@ -226,6 +226,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  // NOTE: un-scoped (across ALL companies) — platform/SuperAdmin and maintenance/tests only;
+  // request-driven callers must use a company-scoped variant (see RideRepository).
   override def findAll(): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides ORDER BY request_time DESC")
       .query[Ride]
@@ -234,6 +236,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  // NOTE: un-scoped (no company filter) — prefer findByClientIdAndCompany for anything
+  // request-driven (see RideRepository).
   def findByClientId(clientId: PersonId): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE client_id = ${clientId.value} ORDER BY request_time DESC")
       .query[Ride]
@@ -242,6 +246,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       .mapError(ex => RideError.DatabaseError(ex))
   }
 
+  // NOTE: un-scoped (no company filter) — prefer findByDriverIdAndCompany for anything
+  // request-driven (see RideRepository).
   def findByDriverId(driverId: PersonId): Task[List[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE driver_id = ${driverId.value} ORDER BY request_time DESC")
       .query[Ride]

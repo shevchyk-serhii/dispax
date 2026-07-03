@@ -15,14 +15,21 @@ trait RideRepository {
   def create(ride: Ride): Task[Ride]
   def findById(id: RideId): Task[Option[Ride]]
   def findByStatus(status: RideStatus): Task[List[Ride]]
+  // NOTE: un-scoped (no company filter, across ALL companies) — for platform/SuperAdmin and
+  // maintenance/tests only. A request-driven caller must use a company-scoped variant below.
   def findAll(): Task[List[Ride]]
+  // NOTE: un-scoped (no company filter) — only for callers that have already enforced company
+  // isolation on the id (e.g. a driver validated against the ride's company). Prefer
+  // findByClientIdAndCompany for anything request-driven.
   def findByClientId(clientId: PersonId): Task[List[Ride]]
+  // NOTE: un-scoped (no company filter) — same rule as findByClientId; prefer
+  // findByDriverIdAndCompany for anything request-driven.
   def findByDriverId(driverId: PersonId): Task[List[Ride]]
   // Tenant-scoped variants: the same lookups but constrained to a single company.
   // Use these whenever the caller acts within one tenant (e.g. a dispatcher listing
-  // a driver's/client's rides). The unscoped variants above must only be used where
-  // company isolation is enforced elsewhere (status machine on an already-loaded ride,
-  // GDPR self-export, SuperAdmin) — never with an id taken straight from the request path.
+  // a driver's/client's rides, or a user's self-data reads). The unscoped variants above
+  // must only be used where company isolation is enforced elsewhere (status machine on an
+  // already-loaded ride, SuperAdmin) — never with an id taken straight from the request path.
   def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]]
   def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]]
   def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]]
