@@ -599,6 +599,85 @@ object AuthServiceSpec extends ZIOSpecDefault {
           )
         }.provide(layers)
       ),
+      // ── privilege escalation guard (regression) ──────────────────────────────
+      // The owner-facing update path must never apply privileged fields: before this
+      // guard existed, any authenticated user could PUT {"role":"ADMIN","roles":["ADMIN"]}
+      // (or isVip / status / clientCompanyId) to their own id and the generic updateUser
+      // applied it — self-service privilege escalation.
+      suite("updateOwnProfile")(
+        test("rejects a role self-grant with AccessDenied and leaves the user unchanged") {
+          for {
+            service   <- ZIO.service[AuthService]
+            repo      <- ZIO.service[PersonRepository]
+            result    <-
+              service
+                .updateOwnProfile(
+                  testUserId1,
+                  testCompanyA,
+                  UpdateUserRequest(role = Some("ADMIN"), roles = Some(List("ADMIN")))
+                )
+                .exit
+            untouched <- repo.findById(PersonId(testUserId1))
+          } yield assertTrue(
+            result match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[AccessDenied])
+              case _                   => false
+            },
+            untouched.exists(_.role == PersonRole.Client)
+          )
+        }.provide(layersWithRepo),
+        test("rejects isVip self-grant with AccessDenied") {
+          for {
+            service <- ZIO.service[AuthService]
+            result  <- service.updateOwnProfile(testUserId1, testCompanyA, UpdateUserRequest(isVip = Some(true))).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[AccessDenied])
+            case _                   => false
+          })
+        }.provide(layers),
+        test("rejects status and clientCompanyId changes with AccessDenied") {
+          for {
+            service       <- ZIO.service[AuthService]
+            statusResult  <-
+              service.updateOwnProfile(testUserId1, testCompanyA, UpdateUserRequest(status = Some("INACTIVE"))).exit
+            companyResult <-
+              service
+                .updateOwnProfile(
+                  testUserId1,
+                  testCompanyA,
+                  UpdateUserRequest(clientCompanyId = Some("11111111-1111-1111-1111-111111111111"))
+                )
+                .exit
+          } yield assertTrue(
+            statusResult match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[AccessDenied])
+              case _                   => false
+            },
+            companyResult match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[AccessDenied])
+              case _                   => false
+            }
+          )
+        }.provide(layers),
+        test("applies plain profile fields (name/phone/preferredLanguage)") {
+          for {
+            service <- ZIO.service[AuthService]
+            updated <- service.updateOwnProfile(
+                         testUserId1,
+                         testCompanyA,
+                         UpdateUserRequest(
+                           name = Some("Self Edited"),
+                           phone = Some("+491234567890"),
+                           preferredLanguage = Some("de")
+                         )
+                       )
+          } yield assertTrue(
+            updated.name == "Self Edited" &&
+              updated.role == "CLIENT" &&
+              updated.preferredLanguage.contains("de")
+          )
+        }.provide(layers)
+      ),
       suite("updateUser")(
         test("partial update changes only specified fields") {
           for {
