@@ -56,7 +56,8 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       )
       private def nope(m: String): Nothing                                                                   = throw new NotImplementedError(s"unexpected PersonRepository.$m")
       def create(person: Person): Task[Person]                                                               = nope("create")
-      def findById(id: PersonId): Task[Option[Person]]                                                       = nope("findById")
+      // Resolved for the recipient's push language; None → English default.
+      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.none
       def findByIdAndCompany(id: PersonId, company: CompanyId): Task[Option[Person]]                         = nope("findByIdAndCompany")
       def findByEmail(email: String): Task[Option[Person]]                                                   = nope("findByEmail")
       def findByRole(role: PersonRole): Task[List[Person]]                                                   = nope("findByRole")
@@ -101,6 +102,24 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       notifs    <- notifRepo.findByPersonId(forPerson, limit = 10, offset = 0)
     } yield notifs
 
+  /**
+   * The base person-repo stub with `findById` answering a person whose preferredLanguage is `lang` — models a recipient
+   * with that push language. All other lookups behave like `personRepoStub`.
+   */
+  private def personRepoWithLanguage(lang: String): PersonRepository =
+    new PersonRepository:
+      export personRepoStub.{findById as _, *}
+      def findById(id: PersonId): Task[Option[Person]] = ZIO.some(
+        dispatcher.copy(id = id, preferredLanguage = Some(lang))
+      )
+
+  private def languageLayers(lang: String) =
+    EventHub.layer ++
+      InMemoryNotificationRepository.layer ++
+      testFcmLayer ++
+      ZLayer.succeed(personRepoWithLanguage(lang)) ++
+      InMemoryCheckpointNotificationRepository.layer
+
   def spec =
     suite("PushNotificationListener")(
       test("RideAssigned saves notification for driver") {
@@ -130,6 +149,42 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           }
         }
       }.provide(baseLayers),
+
+      // ── l10n: pushes follow the recipient's preferredLanguage ───────────
+
+      test("RideAssigned driver with preferredLanguage=de receives the German push") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.title == "Neue Fahrt zugewiesen"),
+              notifs.exists(_.body.contains("Ihnen wurde eine neue Fahrt zugewiesen."))
+            )
+          }
+        }
+      }.provide(languageLayers("de")),
+      test("RideStatusChanged Cancelled client with preferredLanguage=uk receives the Ukrainian push") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "Cancelled", Some(driverId), clientId, companyId, None),
+            PersonId(clientId)
+          ).map { notifs =>
+            assertTrue(notifs.exists(_.title == "Поїздку скасовано"))
+          }
+        }
+      }.provide(languageLayers("uk")),
+      test("an unsupported preferredLanguage falls back to English") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(notifs.exists(_.title == "New Ride Assigned"))
+          }
+        }
+      }.provide(languageLayers("xx")),
       test("RideAssigned includes the fare in the driver notification when priced") {
         ZIO.scoped {
           publishAndCollect(
