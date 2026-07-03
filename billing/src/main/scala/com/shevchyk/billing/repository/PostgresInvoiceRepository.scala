@@ -366,6 +366,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
       WHERE p.client_company_id = ${clientCompanyId.value}
         AND r.status = 'Completed'
         AND r.invoice_id IS NULL
+        AND (r.final_price_amount IS NOT NULL OR r.estimated_price_amount IS NOT NULL)
         AND r.pickup_datetime::date >= $from
         AND r.pickup_datetime::date <= $to
       ORDER BY r.pickup_datetime
@@ -393,6 +394,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
           AND r.status = 'Completed'
           AND r.invoice_id IS NULL
           AND NOT p.provisional
+          AND (r.final_price_amount IS NOT NULL OR r.estimated_price_amount IS NOT NULL)
       """
     val fromFilter = from.map(d => fr"AND r.pickup_datetime::date >= $d").getOrElse(Fragment.empty)
     val toFilter   = to.map(d => fr"AND r.pickup_datetime::date <= $d").getOrElse(Fragment.empty)
@@ -418,6 +420,7 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
           AND r.company_id = ${taxiCompanyId.value}
           AND r.status = 'Completed'
           AND r.invoice_id IS NULL
+          AND (r.final_price_amount IS NOT NULL OR r.estimated_price_amount IS NOT NULL)
         ORDER BY r.pickup_datetime
       """
         .query[(UUID, UUID, UUID, String, String, Instant, BigDecimal)]
