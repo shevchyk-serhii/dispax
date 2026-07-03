@@ -851,6 +851,20 @@ class RideServiceImpl(
                   )
                   .when(!client.companyId.contains(ride.companyId))
                   .unit
+              // The ride may already carry a driver; the new client must not have blacklisted
+              // them — the same rule assignDriver/reassignDriver enforce. Checked before any
+              // side effect (token revocation below) so a rejected reassignment changes nothing.
+              _         <-
+                ZIO.foreachDiscard(ride.driverId) { driverId =>
+                  blacklistRepository
+                    .isBlacklisted(newClientId, driverId)
+                    .mapDatabaseError
+                    .flatMap(blocked =>
+                      failRule("blacklist", "This driver is blacklisted for the ride's client")
+                        .when(blocked)
+                        .unit
+                    )
+                }
               // The previous client's guest /track link must die with the reassignment —
               // otherwise they keep a live view of the driver's position and route for up
               // to 24h on a ride that is no longer theirs. Revoked BEFORE the ride row is
@@ -1058,11 +1072,12 @@ class RideServiceImpl(
 
       // A ride whose pickup time has already passed must not be handed to a new driver — reassignment only makes
       // sense for rides still ahead. The emergency-reassignment flow bypasses this (allowPastRide = true): it exists
-      // precisely for a ride going wrong right now, i.e. at/after its pickup time. ASAP rides (no scheduledTime)
-      // stay reassignable.
+      // precisely for a ride going wrong right now, i.e. at/after its pickup time. The effective pickup is
+      // scheduledTime when set (airport transfers) falling back to pickupDateTime (always set) — the same
+      // fallback checkScheduleConflict uses; ordinary rides carry their pickup only in pickupDateTime.
       _    <-
         failRule("past_ride", "A ride scheduled in the past cannot be reassigned")
-          .when(!allowPastRide && ride.scheduledTime.exists(RidePolicy.isInThePast(_)))
+          .when(!allowPastRide && RidePolicy.isInThePast(ride.scheduledTime.getOrElse(ride.pickupDateTime)))
           .unit
 
       driverOpt <- personRepository.findById(newDriverId).mapDatabaseError

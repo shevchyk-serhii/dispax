@@ -395,24 +395,28 @@ e2e-backend-down:
 # Each suite starts from a clean transactional state for isolation.
 e2e-android: emulator-up e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on Android..."
-	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
-	  echo "▶ $$t"; \
-	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
-	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
-	done ; \
-	$(MAKE) e2e-backend-down
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_SUITES); do \
+	    echo "▶ $$t"; \
+	    PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	    $(PATROL) test --target integration_test/$$t\_test.dart \
+	      --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
 
 # Run all E2E suites on an iOS simulator (host reached via localhost).
 e2e-ios: e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on iOS..."
-	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
-	  echo "▶ $$t"; \
-	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
-	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
-	done ; \
-	$(MAKE) e2e-backend-down
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_SUITES); do \
+	    echo "▶ $$t"; \
+	    PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	    $(PATROL) test --target integration_test/$$t\_test.dart \
+	      --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
 
 # Default E2E target: Android.
 e2e-test: e2e-android
