@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -95,9 +96,20 @@ class _MultiColumnViewWidgetState extends State<MultiColumnViewWidget> {
   @override
   void didUpdateWidget(MultiColumnViewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Compare list CONTENTS (by id), not references: the parent builds these
+    // lists fresh on every build, so a reference comparison saw "changed" on
+    // every parent rebuild and refetched the whole board with a spinner flash.
+    final driversChanged = !listEquals(
+      oldWidget.drivers.map((d) => d.id).toList(),
+      widget.drivers.map((d) => d.id).toList(),
+    );
+    final sharesChanged = !listEquals(
+      oldWidget.externalShares.map((s) => s.id).toList(),
+      widget.externalShares.map((s) => s.id).toList(),
+    );
     if (oldWidget.selectedDay != widget.selectedDay ||
-        oldWidget.drivers != widget.drivers ||
-        oldWidget.externalShares != widget.externalShares) {
+        driversChanged ||
+        sharesChanged) {
       setState(() {
         _ridesFuture = _fetchRides();
         _sharesFuture = _fetchShares();
