@@ -2,9 +2,9 @@ package com.shevchyk.billing.openapi
 
 import com.shevchyk.auth.domain.{ExpiredTokenError, InvalidTokenError, JwtError}
 import com.shevchyk.auth.middleware.AuthenticatedUser
-import com.shevchyk.auth.service.JwtService
+import com.shevchyk.auth.service.{JwtPayload, JwtService}
 import com.shevchyk.billing.domain.{InvoiceError, InvoiceId}
-import com.shevchyk.core.domain.{ClientCompanyId, CompanyId}
+import com.shevchyk.core.domain.{ClientCompanyId, CompanyId, PersonRole}
 import com.shevchyk.core.openapi.ApiError
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
@@ -34,6 +34,24 @@ object BillingSecure:
     def clampLimit(limit: Int): Int   = limit.min(MaxLimit).max(1)
     def clampOffset(offset: Int): Int = offset.max(0)
 
+  /**
+   * Map a validated JWT payload to the request's [[AuthenticatedUser]]. Roles are normalised to wire form via
+   * `PersonRole.toWire` and the FULL roles set is carried over (multi-role users such as a dispatcher who also drives),
+   * mirroring `RideSecure`/`AppSecure`. Package-private for unit testing.
+   */
+  private[openapi] def toAuthenticatedUser(payload: JwtPayload): AuthenticatedUser =
+    val wireRoles = payload.roles
+      .map(_.map(PersonRole.toWire).toSet)
+      .getOrElse(Set(PersonRole.toWire(payload.role)))
+    AuthenticatedUser(
+      userId = payload.userId,
+      email = payload.email,
+      role = PersonRole.toWire(payload.role),
+      companyId = payload.companyId,
+      clientCompanyId = payload.clientCompanyId,
+      roles = wireRoles
+    )
+
   // -- Authenticated base endpoint (mirrors AuthMiddleware.authenticateRequest) --
   val secureEndpoint = endpoint
     .securityIn(auth.bearer[String]())
@@ -47,22 +65,16 @@ object BillingSecure:
               (StatusCode.Unauthorized, ApiError("Invalid or expired token"))
             case _: JwtError                                 => (StatusCode.Unauthorized, ApiError("Authentication failed"))
           },
-          payload =>
-            AuthenticatedUser(
-              userId = payload.userId,
-              email = payload.email,
-              role = payload.role.toString,
-              companyId = payload.companyId,
-              clientCompanyId = payload.clientCompanyId
-            )
+          toAuthenticatedUser
         )
     }
 
   // -- Role checks (mirror AuthMiddleware.checkRole) -----------------------
 
   def checkRole(user: AuthenticatedUser, roles: String*): ZIO[Any, Err, Unit] =
-    val userRoleUpper = user.role.toUpperCase
-    if roles.exists(_.toUpperCase == userRoleUpper) then ZIO.unit
+    // Check the FULL effective role set, not just the primary role — a multi-role user (e.g. primary DRIVER with
+    // DISPATCHER in the set) must pass a dispatcher-gated billing endpoint, same as RideSecure/AppSecure.
+    if user.hasAnyRole(roles*) then ZIO.unit
     else ZIO.fail((StatusCode.Forbidden, ApiError("Insufficient permissions")))
 
   // -- UUID parsing (mirrors UuidParser, which fails with 400) -------------
