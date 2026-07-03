@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../constants/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import 'shift_window.dart';
 
 /// A shift rendered as a stretched translucent green "available" region on the
 /// day timeline.
@@ -63,13 +64,6 @@ class DayTimeline extends StatelessWidget {
 
   /// Width of the left hour-scale gutter.
   static const double _gutterWidth = 30;
-
-  static double _parseHhmm(String raw) {
-    final parts = raw.split(':');
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-    return hour + minute / 60.0;
-  }
 
   static String _hhmm(String raw) =>
       raw.length >= 5 ? raw.substring(0, 5) : raw;
@@ -155,10 +149,19 @@ class DayTimeline extends StatelessWidget {
     TimelineShiftRegion region,
     double height,
   ) {
-    final top = _offsetFor(_parseHhmm(region.startTime), height);
-    final bottom = _offsetFor(_parseHhmm(region.endTime), height);
+    // Clip into the visible window via the shared helper: it keeps the
+    // evening segment of a shift crossing midnight (22:00–06:00) instead of
+    // dropping the whole region (the old negative-height bug).
+    final segment = visibleShiftSegment(
+      parseShiftHour(region.startTime),
+      parseShiftHour(region.endTime),
+      windowStart: _startHour,
+      windowEnd: _endHour,
+    );
+    if (segment == null) return const SizedBox.shrink();
+    final top = _offsetFor(segment.start, height);
+    final bottom = _offsetFor(segment.end, height);
     final regionHeight = bottom - top;
-    if (regionHeight <= 0) return const SizedBox.shrink();
 
     return Positioned(
       key: ValueKey(region.keyValue),

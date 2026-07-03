@@ -3,6 +3,7 @@
 // shows availability chips under the header, and the month view marks days
 // carrying a shift with a small green bar.
 
+import 'package:dispax/dashboard/driver/calendar/day_timeline.dart';
 import 'package:dispax/dashboard/driver/calendar/day_view_widget.dart';
 import 'package:dispax/dashboard/driver/calendar/month_view_widget.dart';
 import 'package:dispax/dashboard/driver/calendar/week_view_widget.dart';
@@ -113,6 +114,123 @@ void main() {
         find.byKey(const ValueKey('shift-band-s-next-week')),
         findsNothing,
       );
+    });
+
+    // Regression: a shift crossing midnight (22:00-06:00) used to vanish
+    // entirely -- the end offset clamped to the top of the 06-23 window gave a
+    // negative height and the band was dropped, so the driver looked
+    // unavailable all evening. The in-window evening segment (22:00-23:00)
+    // must render.
+    testWidgets('an overnight shift renders its evening segment', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        wrap(
+          WeekViewWidget(
+            selectedDay: day,
+            onDaySelected: (_) {},
+            onWeekChanged: (_) {},
+            ridesOverride: const [],
+            shifts: [shift(id: 'overnight', start: '22:00', end: '06:00')],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final band = find.byKey(const ValueKey('shift-band-overnight'));
+      expect(
+        band,
+        findsOneWidget,
+        reason: 'The evening part of an overnight shift must stay visible',
+      );
+      // 22:00->23:00 in a 06-23 grid of 40 px/hour: one hour tall.
+      expect(tester.getSize(band).height, closeTo(40.0, 0.5));
+      // The label still shows the shift's real time range.
+      expect(find.text('22:00\u201306:00'), findsOneWidget);
+    });
+
+    testWidgets('a shift fully before 06:00 renders no band', (tester) async {
+      tester.view.physicalSize = const Size(1400, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        wrap(
+          WeekViewWidget(
+            selectedDay: day,
+            onDaySelected: (_) {},
+            onWeekChanged: (_) {},
+            ridesOverride: const [],
+            shifts: [shift(id: 'early', start: '02:00', end: '05:00')],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Nothing of the shift falls into the 06-23 window: no band, but also
+      // no crash and no negative-size Positioned.
+      expect(find.byKey(const ValueKey('shift-band-early')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('DayTimeline shift regions (board columns / day view)', () {
+    Widget wrapTimeline(List<TimelineShiftRegion> regions) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      home: Scaffold(
+        body: SizedBox(
+          height: 680,
+          width: 240,
+          child: DayTimeline(shiftRegions: regions, blocks: const []),
+        ),
+      ),
+    );
+
+    testWidgets('an overnight shift region renders its evening segment', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapTimeline(const [
+          TimelineShiftRegion(
+            keyValue: 'region-overnight',
+            startTime: '22:00',
+            endTime: '06:00',
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      final region = find.byKey(const ValueKey('region-overnight'));
+      expect(
+        region,
+        findsOneWidget,
+        reason:
+            'The board timeline dropped overnight shifts entirely -- the '
+            'evening segment must render',
+      );
+      expect(find.text('22:00\u201306:00'), findsOneWidget);
+    });
+
+    testWidgets('a fully-before-window region renders nothing', (tester) async {
+      await tester.pumpWidget(
+        wrapTimeline(const [
+          TimelineShiftRegion(
+            keyValue: 'region-early',
+            startTime: '02:00',
+            endTime: '05:00',
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('region-early')), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 
