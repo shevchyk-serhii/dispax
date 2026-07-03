@@ -28,6 +28,7 @@ import zio.test.*
 import zio.*
 import java.time.Instant
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 object RideServiceSpec extends ZIOSpecDefault {
 
@@ -226,7 +227,7 @@ object RideServiceSpec extends ZIOSpecDefault {
       scheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
   // Shared by the scheduleDay-validation suite. Schedule-day id used across those tests.
   private val scheduleDayValidationDayId = ScheduleDayId(UUID.fromString("00000099-0000-0000-0000-000000000001"))
@@ -288,6 +289,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           InMemoryPartnerCompanyRepository.layer,
           SentConfirmationRequestRepository.inMemory,
           InMemoryRideShareTokenRepository.layer,
+          CompanySettingsRepository.inMemory,
           RideService.layer
         )
       ),
@@ -717,7 +719,7 @@ object RideServiceSpec extends ZIOSpecDefault {
               noopScheduleDayLookup ++
               InMemoryExternalDriverRepository.layer ++
               InMemoryPartnerCompanyRepository.layer ++
-              SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+              SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
           (for {
             service <- ZIO.service[RideService]

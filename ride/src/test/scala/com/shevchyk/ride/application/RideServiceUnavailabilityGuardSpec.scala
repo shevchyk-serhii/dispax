@@ -20,6 +20,7 @@ import zio.test.*
 import zio.*
 import java.time.Instant
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 /**
  * Unit tests for the new DriverAvailabilityChecker integration in RideService.assignDriver.
@@ -196,7 +197,7 @@ object RideServiceUnavailabilityGuardSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
   val standardLayers = buildLayers()
 

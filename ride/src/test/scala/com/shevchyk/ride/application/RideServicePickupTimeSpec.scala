@@ -182,7 +182,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> service.RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> service.RideService.layer
 
   // ── Flight departure time used in all departure tests ───────────────────
   // 2030-06-15T12:00:00Z → with global defaults (buffer=15, checkIn=60) and travel=30:

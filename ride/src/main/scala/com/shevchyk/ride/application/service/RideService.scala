@@ -21,7 +21,7 @@ import com.shevchyk.ride.repository.{
 }
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
-import com.shevchyk.core.repository.SentConfirmationRequestRepository
+import com.shevchyk.core.repository.{CompanySettingsRepository, SentConfirmationRequestRepository}
 import zio.*
 import java.time.{Duration, Instant, LocalDate, ZoneOffset}
 import monocle.syntax.all.*
@@ -172,7 +172,8 @@ class RideServiceImpl(
     externalDriverRepo: ExternalDriverRepository,
     partnerCompanyRepo: PartnerCompanyRepository,
     sentConfirmationRequestRepository: SentConfirmationRequestRepository,
-    rideShareTokenRepository: RideShareTokenRepository
+    rideShareTokenRepository: RideShareTokenRepository,
+    companySettingsRepository: CompanySettingsRepository
 ) extends RideService:
 
   /**
@@ -614,6 +615,13 @@ class RideServiceImpl(
           .fail(RideError.ValidationError("Cancellation fee cannot be negative"))
           .when(request.fee.exists(_ < 0))
           .unit
+      // When the caller did not set an explicit fee, fall back to the company's configured
+      // default for CLIENT-caused cancellations (client_request -> cancellationFeeDefault,
+      // client_no_show -> noShowFee). An explicit fee — including an explicit 0 — always wins.
+      fee          <-
+        request.fee match
+          case some @ Some(_) => ZIO.succeed(some)
+          case None           => defaultCancellationFee(ride.companyId, reason)
 
       // Persist the canonical wire form so statistics group cleanly regardless of input casing.
       updatedRide   = ride
@@ -622,7 +630,7 @@ class RideServiceImpl(
                         .focus(_.cancellationReason)
                         .replace(Some(CancellationReason.toWire(reason)))
                         .focus(_.cancellationFee)
-                        .replace(request.fee)
+                        .replace(fee)
                         .focus(_.cancelledBy)
                         .replace(Some(userId))
       // Atomic compare-and-set: only cancel from a still-cancellable status. Guards against a
@@ -675,6 +683,30 @@ class RideServiceImpl(
           .tapError(e => ZIO.logWarning(s"Failed to write audit log: $e"))
           .ignore
     } yield persistedRide
+
+  /**
+   * Company-default cancellation fee for cancellations where the caller set no explicit fee.
+   *
+   * Only CLIENT-caused cancellations may charge a default (client_request -> cancellationFeeDefault, client_no_show ->
+   * noShowFee) — weather or operational reasons (driver/vehicle) must never silently charge the client. A missing
+   * settings row or a configured 0 means "no fee".
+   */
+  private def defaultCancellationFee(
+      companyId: CompanyId,
+      reason: CancellationReason
+  ): IO[RideError, Option[BigDecimal]] =
+    val pick: Option[CompanySettings => BigDecimal] =
+      reason match
+        case CancellationReason.ClientRequest => Some(_.cancellationFeeDefault)
+        case CancellationReason.ClientNoShow  => Some(_.noShowFee)
+        case _                                => None
+    pick match
+      case None    => ZIO.none
+      case Some(f) =>
+        companySettingsRepository
+          .findByCompanyId(companyId)
+          .mapDatabaseError
+          .map(_.map(f).filter(_ > 0))
 
   def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]] =
     for {
@@ -1632,7 +1664,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository & RideShareTokenRepository,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository & RideShareTokenRepository & CompanySettingsRepository,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

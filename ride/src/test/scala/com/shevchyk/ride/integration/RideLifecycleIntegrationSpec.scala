@@ -21,6 +21,7 @@ import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import zio.test.*
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
 
@@ -150,7 +151,7 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) = service.createRide(
     CreateRideRequest(

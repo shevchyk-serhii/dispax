@@ -13,6 +13,7 @@ import com.shevchyk.core.application.{
 }
 import com.shevchyk.core.domain.WebSocketEvent
 import com.shevchyk.core.repository.BlacklistRepository
+import com.shevchyk.core.repository.CompanySettingsRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
@@ -187,6 +188,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
       SentConfirmationRequestRepository.inMemory ++
+      CompanySettingsRepository.inMemory ++
       InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
@@ -321,6 +323,99 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
             case _                   => false
           })
+        }.provide(standardLayers),
+        // ── company-default cancellation fee (audit item) ──
+        // When the caller does not set an explicit fee, client-caused cancellations pick up the
+        // company's configured defaults (client_request → cancellationFeeDefault, client_no_show
+        // → noShowFee). Operational reasons must never silently charge the client.
+        test("a client_request cancellation without an explicit fee picks up the company default") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(companyId = testCompanyId, cancellationFeeDefault = BigDecimal("7.50"))
+                         )
+            ride      <- service.createRide(mkRide())
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           testClientId,
+                           PersonRole.Client,
+                           CancelRideRequest("client_request"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.contains(BigDecimal("7.50")))
+        }.provide(standardLayers),
+        test("a client_no_show cancellation without an explicit fee picks up the company noShowFee") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(
+                             companyId = testCompanyId,
+                             cancellationFeeDefault = BigDecimal("7.50"),
+                             noShowFee = BigDecimal("12.00")
+                           )
+                         )
+            assigned  <- createAssignedRide(service)
+            cancelled <- service.cancelRideWithReason(
+                           assigned.id,
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           CancelRideRequest("client_no_show"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.contains(BigDecimal("12.00")))
+        }.provide(standardLayers),
+        test("an explicit fee always wins over the company default") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(companyId = testCompanyId, cancellationFeeDefault = BigDecimal("7.50"))
+                         )
+            ride      <- service.createRide(mkRide())
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           CancelRideRequest("client_request", Some(BigDecimal("3.00"))),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.contains(BigDecimal("3.00")))
+        }.provide(standardLayers),
+        test("an operational cancellation (vehicle_issue) never charges the company default") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(
+                             companyId = testCompanyId,
+                             cancellationFeeDefault = BigDecimal("7.50"),
+                             noShowFee = BigDecimal("12.00")
+                           )
+                         )
+            assigned  <- createAssignedRide(service)
+            cancelled <- service.cancelRideWithReason(
+                           assigned.id,
+                           testDriverId,
+                           PersonRole.Driver,
+                           CancelRideRequest("vehicle_issue"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.isEmpty)
+        }.provide(standardLayers),
+        test("no settings row (or a zero default) means no fee") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(mkRide())
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           testClientId,
+                           PersonRole.Client,
+                           CancelRideRequest("client_request"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.isEmpty)
         }.provide(standardLayers),
         test("a client cannot cancel another client's ride") {
           for {
@@ -1214,6 +1309,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
             SentConfirmationRequestRepository.inMemory ++
+            CompanySettingsRepository.inMemory ++
             InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         ),
         test("assignment succeeds when driver is not blacklisted") {
@@ -1267,6 +1363,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
             SentConfirmationRequestRepository.inMemory ++
+            CompanySettingsRepository.inMemory ++
             InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         ),
         // ── updateRideDetails client change: moving a ride onto a client who blacklisted the
