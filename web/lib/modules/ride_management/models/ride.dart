@@ -338,7 +338,10 @@ class Ride {
     String? id,
     String? clientId,
     String? creatorId,
-    String? driverId,
+    // Sentinel-based so a driver reassignment can explicitly CLEAR the stale
+    // driver id/name/location (pass null) while omitting the argument still
+    // keeps the current value — `?? this.x` cannot tell those apart.
+    Object? driverId = _sentinel,
     String? companyId,
     String? scheduleDayId,
     DateTime? pickupDateTime,
@@ -359,10 +362,10 @@ class Ride {
     String? terminal,
     String? flightStatus,
     Object? optimalEntryTime = _sentinel,
-    String? driverName,
+    Object? driverName = _sentinel,
     double? driverRating,
     int? driverRatingCount,
-    Location? driverLocation,
+    Object? driverLocation = _sentinel,
     Location? clientLocation,
     bool? driverApproaching,
     int? driverDistanceMeters,
@@ -393,7 +396,7 @@ class Ride {
       id: id ?? this.id,
       clientId: clientId ?? this.clientId,
       creatorId: creatorId ?? this.creatorId,
-      driverId: driverId ?? this.driverId,
+      driverId: driverId == _sentinel ? this.driverId : driverId as String?,
       companyId: companyId ?? this.companyId,
       scheduleDayId: scheduleDayId ?? this.scheduleDayId,
       pickupDateTime: pickupDateTime ?? this.pickupDateTime,
@@ -422,10 +425,14 @@ class Ride {
       gate: gate ?? this.gate,
       terminal: terminal ?? this.terminal,
       flightStatus: flightStatus ?? this.flightStatus,
-      driverName: driverName ?? this.driverName,
+      driverName: driverName == _sentinel
+          ? this.driverName
+          : driverName as String?,
       driverRating: driverRating ?? this.driverRating,
       driverRatingCount: driverRatingCount ?? this.driverRatingCount,
-      driverLocation: driverLocation ?? this.driverLocation,
+      driverLocation: driverLocation == _sentinel
+          ? this.driverLocation
+          : driverLocation as Location?,
       clientLocation: clientLocation ?? this.clientLocation,
       driverApproaching: driverApproaching ?? this.driverApproaching,
       driverDistanceMeters: driverDistanceMeters ?? this.driverDistanceMeters,
