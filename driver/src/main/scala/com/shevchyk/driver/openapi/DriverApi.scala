@@ -237,6 +237,10 @@ object DriverApi:
         driverUuid <- parseUuid(driverId)
         _          <- checkRoleOrOwner(user, driverUuid, "DISPATCHER")
         companyId  <- requireCompanyId(user.companyId)
+        // Company isolation, for parity with the three sibling driver endpoints: a foreign
+        // driver must be a 404, not a 200 with an all-zero report (defense-in-depth — the
+        // service already scopes the query by the caller's companyId).
+        _          <- assertDriverInCompany(driverUuid, companyId)
         periodStr   = periodOpt.getOrElse("week")
         period     <- ZIO
                         .fromOption(EarningsPeriod.fromString(periodStr))
