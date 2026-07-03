@@ -3787,7 +3787,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get shiftOverlapSnack =>
-      'На цей день вже є зміна, що перетинається з обраним часом.';
+      'Обраний час перетинається з наявною зміною. Кілька змін на день дозволено — оберіть час без перетину.';
 
   @override
   String get shiftTimeOrderError => 'Початок має бути раніше за кінець';
