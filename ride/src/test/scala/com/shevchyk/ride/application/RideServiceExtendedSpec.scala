@@ -649,6 +649,66 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             leftover  <- tokenRepo.findActiveByRideId(ride.id)
           } yield assertTrue(leftover.nonEmpty)
         }.provide(standardLayers),
+        // ── isVipRide/preferredDriverUsed recompute on client reassignment (regression) ──
+        // Both flags are derived from the CLIENT at assignment time; a client change on an
+        // already-assigned ride must re-derive them, otherwise a ride reassigned from a VIP
+        // client to a regular one stays flagged VIP (and vice versa) and skews stats/service.
+        test("reassigning an assigned ride from a VIP client to a regular one recomputes the VIP flags") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide(vipClientId))
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            updated  <- service.updateRideDetails(
+                          ride.id,
+                          UpdateRideDetailsRequest(clientId = Some(testClientId)),
+                          dispatcherId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            assigned.isVipRide,
+            assigned.preferredDriverUsed,
+            !updated.isVipRide,
+            !updated.preferredDriverUsed
+          )
+        }.provide(standardLayers),
+        test("reassigning an assigned ride from a regular client to a VIP one recomputes the VIP flags") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide())
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            updated  <- service.updateRideDetails(
+                          ride.id,
+                          UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                          dispatcherId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            !assigned.isVipRide,
+            !assigned.preferredDriverUsed,
+            updated.isVipRide,
+            // vipClient.preferredDriverId == testDriverId, the ride's assigned driver.
+            updated.preferredDriverUsed
+          )
+        }.provide(standardLayers),
+        test("changing the client on a driverless ride leaves the VIP flags untouched") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                         dispatcherId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(
+            // No driver on the ride: the flags stay false until assignDriver derives them.
+            !updated.isVipRide,
+            !updated.preferredDriverUsed
+          )
+        }.provide(standardLayers),
         test("update notes and specialRequirements") {
           for {
             service <- ZIO.service[RideService]

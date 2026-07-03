@@ -814,9 +814,9 @@ class RideServiceImpl(
       companyId: Option[CompanyId]
   ): IO[RideError, Ride] =
     for {
-      ride        <- getRideById(rideId)
-      _           <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, ride.status)).when(!ride.canBeEdited).unit
-      _           <-
+      ride       <- getRideById(rideId)
+      _          <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, ride.status)).when(!ride.canBeEdited).unit
+      _          <-
         ZIO
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(ride.creatorId != userId && userRole != PersonRole.Dispatcher)
@@ -824,7 +824,7 @@ class RideServiceImpl(
       // Company isolation: the ride must belong to the caller's company. A missing
       // companyId is treated as a failure (not a bypass) so a caller can never skip the
       // check by omitting it — the HTTP layer always supplies it via requireCompanyId.
-      _           <-
+      _          <-
         companyId match
           case Some(cid) => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != cid).unit
           case None      => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId))
@@ -832,7 +832,7 @@ class RideServiceImpl(
       // Reassigning the ride to another client is dispatcher-only (a client-creator must not
       // move their ride onto someone else) and follows the same company-isolation rule as
       // createRide: the new client must exist and belong to the ride's company.
-      newClientId <-
+      newClient  <-
         request.clientId.filter(_ != ride.clientId) match
           case None              => ZIO.none
           case Some(newClientId) =>
@@ -871,7 +871,16 @@ class RideServiceImpl(
               // persisted: if the revoke fails the whole update fails (consistent state);
               // a revoke that succeeds before a failing persist only costs a re-share.
               _         <- rideShareTokenRepository.deleteByRideId(rideId).mapDatabaseError
-            } yield Some(newClientId)
+            } yield Some((newClientId, client))
+
+      // isVipRide / preferredDriverUsed are derived from the CLIENT when a driver is assigned
+      // (see assignDriver). When the client changes on a ride that already carries a driver,
+      // re-derive both flags from the NEW client — otherwise a ride reassigned from a VIP
+      // client to a regular one stays flagged VIP (and vice versa). On a driverless ride the
+      // flags stay untouched: assignDriver will derive them when a driver is set.
+      newVipFlags = newClient.flatMap((_, client) =>
+                      ride.driverId.map(driverId => (client.isVip, client.preferredDriverId.contains(driverId)))
+                    )
 
       newPickup  <-
         ZIO.foreach(request.pickupLocation)(loc =>
@@ -883,7 +892,11 @@ class RideServiceImpl(
         )
       updatedRide = ride
                       .focus(_.clientId)
-                      .replace(newClientId.getOrElse(ride.clientId))
+                      .replace(newClient.map(_._1).getOrElse(ride.clientId))
+                      .focus(_.isVipRide)
+                      .replace(newVipFlags.fold(ride.isVipRide)(_._1))
+                      .focus(_.preferredDriverUsed)
+                      .replace(newVipFlags.fold(ride.preferredDriverUsed)(_._2))
                       .focus(_.pickupLocation)
                       .replace(newPickup.getOrElse(ride.pickupLocation))
                       .focus(_.dropoffLocation)
@@ -915,7 +928,7 @@ class RideServiceImpl(
               companyId = persistedRide.companyId.value,
               // Only set when this update actually moved the ride to another client, so
               // consumers can tell a reassignment apart from an ordinary details edit.
-              previousClientId = newClientId.map(_ => ride.clientId.value)
+              previousClientId = newClient.map(_ => ride.clientId.value)
             )
           )
           .ignore
