@@ -30,6 +30,7 @@ import '../../../widgets/common/cancel_ride_dialog.dart';
 import '../../../widgets/common/notification_bell.dart';
 import '../../../widgets/common/hand_off_ride_dialog.dart';
 import '../../../modules/flight_management/widgets/flight_progress_bar.dart';
+import '../../driver/today_rides_screen.dart' show DriverEntryTimeRow;
 import 'assignment_dialog.dart';
 import 'eta_alert_card.dart';
 
@@ -1356,6 +1357,13 @@ class _RideRow extends StatelessWidget {
                     child: bar,
                   );
                 },
+              ),
+              // Recommended terminal-entry time ("Entry at HH:mm") for an
+              // arrival — the dispatcher needs it to judge the pickup, same as
+              // the driver cards. Renders nothing without a computed time.
+              DriverEntryTimeRow(
+                ride: ride,
+                isDark: Theme.of(context).brightness == Brightness.dark,
               ),
             ],
             // Payment method
