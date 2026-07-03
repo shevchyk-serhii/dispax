@@ -10,8 +10,11 @@ import '../flight_phases.dart';
 /// departure: Geplant → Gestartet → Unterwegs; arrival: Geplant → Unterwegs → Gelandet.
 /// Completed steps are green, the current step is amber (red when delayed), future
 /// steps are grey. Labels come from the shared `flightStatus*` l10n keys (never
-/// hardcoded). Mirrors the visual of [AirportCheckpointProgress] — stateless, no
-/// animation; the colour hierarchy alone marks the current step.
+/// hardcoded). Each step circle shows its phase's airplane icon (plane / takeoff /
+/// landing) — the colour hierarchy alone marks the current step. The only
+/// continuous animation is the en-route pulse: the airplane gliding across the
+/// bar blinks (like the ride-status pulse) while the flight is mid-air, and is
+/// static when parked before take-off or after landing.
 ///
 /// Status that has no position on the linear chain is handled out-of-band:
 ///  - `cancelled`/`diverted` → the whole bar collapses to a single error label;
@@ -82,7 +85,8 @@ class FlightProgressBar extends StatefulWidget {
   State<FlightProgressBar> createState() => _FlightProgressBarState();
 }
 
-class _FlightProgressBarState extends State<FlightProgressBar> {
+class _FlightProgressBarState extends State<FlightProgressBar>
+    with SingleTickerProviderStateMixin {
   static const Color _completed = Color(0xFF4CAF50); // green
   static const Color _current = Color(0xFFFF9800); // amber
   static const Color _pending = Color(0xFF9E9E9E); // grey
@@ -90,9 +94,25 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
 
   Timer? _ticker;
 
+  /// Blinks the en-route airplane, mirroring the ride-status pulse in
+  /// [RideLifecycleStepper] (900 ms, easeInOut). Runs only while the plane is
+  /// mid-flight (see [_syncPulse]) so parked planes stay static and widget
+  /// tests without a mid-air flight are never kept awake by a repeat().
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+      // Full opacity while idle — a parked plane must not look half-faded.
+      value: 1.0,
+    );
+    _pulseAnimation = Tween<double>(begin: 0.45, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
     // A delayed flight is placed on the bar by the wall clock (its airplane and
     // phase highlight both track [flightProgress]); re-read the clock once a
     // minute so "Im Flug"/"Gelandet" light up (and the plane advances) as time
@@ -108,7 +128,20 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  /// Starts/stops the pulse to match whether the plane is actually mid-air.
+  /// Idempotent — called from [build] on every frame the bar recomputes (the
+  /// per-minute ticker rebuilds, so the blink self-stops once the flight lands).
+  void _syncPulse(bool active) {
+    if (active && !_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
+    } else if (!active && _pulseController.isAnimating) {
+      _pulseController.stop();
+      _pulseController.value = 1.0;
+    }
   }
 
   bool get _delayed =>
@@ -173,6 +206,14 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
     // before take-off and at the right ("Gelandet") after landing; in between it
     // follows `progress`. Only shown for an arrival with a known window.
     final showPlane = isArrival && progress != null;
+    // The plane blinks only while genuinely mid-air: strictly between the
+    // window endpoints and not already confirmed landed by the wire status.
+    final blink =
+        showPlane &&
+        progress > 0 &&
+        progress < 1 &&
+        FlightPhases.phaseOf(status) != FlightPhase.landed;
+    _syncPulse(blink);
     final steps = showPlane
         ? Stack(
             clipBehavior: Clip.none,
@@ -189,6 +230,7 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
                     child: _BarPlane(
                       fraction: progress,
                       color: _delayed ? _delayedColor : _current,
+                      pulse: blink ? _pulseAnimation : null,
                     ),
                   ),
                 ),
@@ -282,6 +324,7 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
       color = _pending;
     }
 
+    final icon = Icon(_phaseIcon(phase), size: 15, color: Colors.white);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -289,13 +332,11 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
           width: 26,
           height: 26,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          child: Icon(
-            index <= currentOrdinal
-                ? Icons.check
-                : Icons.radio_button_unchecked,
-            size: 15,
-            color: Colors.white,
-          ),
+          // The en-route plane points right ("in motion" toward landing);
+          // every other phase keeps its icon's natural orientation.
+          child: phase == FlightPhase.enRoute
+              ? RotatedBox(quarterTurns: 1, child: icon)
+              : icon,
         ),
         const SizedBox(height: 4),
         Text(
@@ -311,6 +352,16 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
       ],
     );
   }
+
+  /// The airplane icon a step circle shows for its phase — replaces the old
+  /// check/radio marks; the circle colour alone conveys completed/current/pending.
+  IconData _phaseIcon(FlightPhase phase) => switch (phase) {
+    FlightPhase.scheduled => Icons.flight, // plain plane, nose up
+    FlightPhase.boarding => Icons.airplane_ticket, // departure chain only
+    FlightPhase.departed => Icons.flight_takeoff, // departure chain only
+    FlightPhase.enRoute => Icons.flight, // rotated to nose-right in _buildStep
+    FlightPhase.landed => Icons.flight_land,
+  };
 
   String _phaseLabel(AppLocalizations l10n, FlightPhase phase) {
     switch (phase) {
@@ -331,16 +382,31 @@ class _FlightProgressBarState extends State<FlightProgressBar> {
 /// A small airplane at the flight's current [fraction] (0..1) across the WHOLE
 /// progress bar. Stateless: the fraction is computed by the parent (which owns
 /// the per-minute ticker), and the per-tick jump is smoothed by a one-shot
-/// [AnimatedPositioned] — so there is no continuously-running animation to hang
-/// `pumpAndSettle`. 0 parks it at "Planmäßig", 1 at "Gelandet".
+/// [AnimatedPositioned]. 0 parks it at "Planmäßig", 1 at "Gelandet".
+///
+/// When [pulse] is non-null the icon blinks with it (the parent passes its
+/// repeating pulse only while the flight is mid-air — a repeating animation
+/// would hang `pumpAndSettle`, so tests around a mid-air plane must use
+/// `pump(duration)` instead). A null [pulse] renders fully opaque.
 class _BarPlane extends StatelessWidget {
   static const double _iconSize = 16;
+
+  /// Finds the gliding plane in tests — the step circles now also contain
+  /// [Icons.flight], so `find.byIcon` alone no longer identifies it.
+  static const Key planeKey = Key('flight-bar-plane');
 
   /// Flight progress in [0, 1] (the same value that drives the phase highlight).
   final double fraction;
   final Color color;
+  final Animation<double>? pulse;
 
-  const _BarPlane({required this.fraction, required this.color});
+  const _BarPlane({required this.fraction, required this.color, this.pulse});
+
+  Widget _withPulse(Widget child) {
+    final pulse = this.pulse;
+    if (pulse == null) return child;
+    return FadeTransition(opacity: pulse, child: child);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -372,7 +438,14 @@ class _BarPlane extends StatelessWidget {
                   // tilt is added so the nose follows the climb/descent.
                   child: Transform.rotate(
                     angle: 1.5708 + tilt,
-                    child: Icon(Icons.flight, size: _iconSize, color: color),
+                    child: _withPulse(
+                      Icon(
+                        Icons.flight,
+                        key: planeKey,
+                        size: _iconSize,
+                        color: color,
+                      ),
+                    ),
                   ),
                 ),
               ),

@@ -111,6 +111,43 @@ void main() {
     });
   });
 
+  group('FlightProgressBar step icons (phase planes, not checkmarks)', () {
+    testWidgets('arrival steps show plane icons and no check/radio marks', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(isArrival: true, flightStatus: 'en_route'),
+        ),
+      );
+      // Scheduled + EnRoute circles both use the plain plane (no gliding plane
+      // here — the ride has no flight window); Landed uses the landing plane.
+      expect(find.byIcon(Icons.flight), findsNWidgets(2));
+      expect(find.byIcon(Icons.flight_land), findsOneWidget);
+      // Mutation guard: the old check/radio marks must be gone in every state.
+      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
+    });
+
+    testWidgets('departure steps show ticket/takeoff icons, no landing plane', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(isArrival: false, flightStatus: 'departed'),
+        ),
+      );
+      expect(find.byIcon(Icons.airplane_ticket), findsOneWidget); // boarding
+      expect(find.byIcon(Icons.flight_takeoff), findsOneWidget); // departed
+      expect(find.byIcon(Icons.flight), findsNWidgets(2)); // scheduled+enRoute
+      expect(find.byIcon(Icons.flight_land), findsNothing);
+      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
+    });
+  });
+
   group('FlightProgressBar arrival phase highlighting', () {
     // Color of the rendered step label, used to tell completed (green) from
     // current (amber) from pending (grey). Mirrors FlightProgressBar's palette.
@@ -190,6 +227,10 @@ void main() {
   });
 
   group('FlightProgressBar airplane (spans the whole bar by flight time)', () {
+    // The step circles also contain Icons.flight now, so the gliding plane is
+    // identified by its stable key, never by icon.
+    final planeFinder = find.byKey(const Key('flight-bar-plane'));
+
     // Pump the bar at a fixed width and return the plane's x measured from the
     // bar's own left edge (0..300), so assertions are independent of where the
     // centered bar sits on the test surface.
@@ -200,12 +241,13 @@ void main() {
           child: SizedBox(width: 300, child: FlightProgressBar.forRide(ride)),
         ),
       );
-      // Settle the one-shot AnimatedPositioned (300ms) — needed when the same
+      // Advance the one-shot AnimatedPositioned (300ms) — needed when the same
       // tester is re-pumped with a new window within one test (the plane then
-      // animates from its previous x to the new one).
+      // animates from its previous x to the new one). pump(duration), not
+      // pumpAndSettle: a mid-air plane runs a repeating blink that never settles.
       await tester.pump(const Duration(milliseconds: 350));
       final barLeft = tester.getTopLeft(find.byType(FlightProgressBar)).dx;
-      return tester.getCenter(find.byIcon(Icons.flight)).dx - barLeft;
+      return tester.getCenter(planeFinder).dx - barLeft;
     }
 
     testWidgets('en-route arrival with a window shows the airplane mid-bar', (
@@ -300,7 +342,63 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byIcon(Icons.flight), findsNothing);
+      expect(planeFinder, findsNothing);
+    });
+
+    testWidgets('mid-air plane blinks — its opacity changes over time', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'en_route',
+            // Halfway through the flight → strictly mid-air → pulsing.
+            flightDepartureTime: now.subtract(const Duration(hours: 1)),
+            flightTime: now.add(const Duration(hours: 1)),
+          ),
+        ),
+      );
+      // Scope to the bar's own FadeTransition — the enclosing route may add
+      // transition widgets of its own above the bar.
+      FadeTransition fade() => tester.widget<FadeTransition>(
+        find.descendant(
+          of: find.byType(FlightProgressBar),
+          matching: find.byType(FadeTransition),
+        ),
+      );
+      final initial = fade().opacity.value;
+      // Half the 900ms pulse period later the opacity must have moved.
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(fade().opacity.value, isNot(closeTo(initial, 0.01)));
+    });
+
+    testWidgets('parked plane (landed) does not blink — no fade wrapper', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'landed',
+            flightDepartureTime: now.subtract(const Duration(hours: 2)),
+            flightTime: now.subtract(const Duration(minutes: 10)),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(planeFinder, findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(FlightProgressBar),
+          matching: find.byType(FadeTransition),
+        ),
+        findsNothing,
+      );
     });
   });
 
