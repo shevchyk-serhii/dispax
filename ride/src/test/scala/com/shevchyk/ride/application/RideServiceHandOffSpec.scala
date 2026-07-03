@@ -101,7 +101,7 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
     def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                           = ZIO.unit
     def findByStatus(s: UserStatus): Task[List[Person]]                                           = ZIO.succeed(Nil)
     def searchByQuery(q: String): Task[List[Person]]                                              = ZIO.succeed(Nil)
-    def updateLastLogin(id: PersonId): Task[Unit]                                                 = ZIO.unit
+    def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                   = ZIO.unit
     def findByClientCompany(cid: ClientCompanyId): Task[List[Person]]                             = ZIO.succeed(Nil)
     def upsertDriverRow(personId: PersonId): Task[Unit]                                           = ZIO.unit
     def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                              = ZIO.none

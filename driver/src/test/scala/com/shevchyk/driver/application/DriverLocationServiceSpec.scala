@@ -38,7 +38,7 @@ private def personRepoReturning(person: Person): ZLayer[Any, Nothing, PersonRepo
     def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit]           = ZIO.unit
     def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(Nil)
     def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-    def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+    def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
     def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]                                     = ZIO.succeed(Nil)
     def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
     def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
@@ -104,7 +104,7 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
       def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit]           = ZIO.unit
       def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(Nil)
       def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-      def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none

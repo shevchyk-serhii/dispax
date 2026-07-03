@@ -8,8 +8,9 @@ import sttp.tapir.json.zio.*
  *
  * The handlers in this codebase already encode their own success/error responses as raw bodies, so for documentation we
  * describe the *outer shape* (paths, query params, security, error body) with Tapir and let a thin adapter forward the
- * actual request to the existing zio-http handler. See `com.shevchyk.auth.openapi.SecureEndpoint` for the authenticated
- * variant and the adapter.
+ * actual request to the existing zio-http handler. Authenticated endpoints declare their own module-local `secureBase`
+ * (e.g. `RideSecure`, `AppSecure`, `UserApi`) that validates the bearer token and builds the `AuthenticatedUser` with
+ * wire-form roles via `PersonRole.toWire`.
  */
 object BaseEndpoint:
 

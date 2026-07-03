@@ -69,8 +69,15 @@ class InMemoryPersonRepository extends PersonRepository:
       .toList
   )
 
-  override def updateLastLogin(id: PersonId): Task[Unit] =
-    people.update(m => m.get(id).fold(m)(p => m.updated(id, p.copy(lastLoginAt = Some(java.time.Instant.now()))))).unit
+  override def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit] =
+    // Mirror the SQL "AND company_id = ?" guard: a scoped write for a person of another company is a no-op.
+    people
+      .update(m =>
+        m.get(id)
+          .filter(p => companyId.forall(c => p.companyId.contains(c)))
+          .fold(m)(p => m.updated(id, p.copy(lastLoginAt = Some(java.time.Instant.now()))))
+      )
+      .unit
 
   override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = people.get.map(
     _.values.filter(_.clientCompanyId.contains(clientCompanyId)).toList

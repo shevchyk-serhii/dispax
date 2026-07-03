@@ -27,7 +27,9 @@ trait PersonRepository {
   def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]
   def findByStatus(status: UserStatus): Task[List[Person]]
   def searchByQuery(query: String): Task[List[Person]]
-  def updateLastLogin(id: PersonId): Task[Unit]
+  // Tenant-scoped (defense-in-depth): when companyId is Some, the write only applies if the
+  // person belongs to that company; None (a person without a company, e.g. SuperAdmin) is unscoped.
+  def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]
   def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]
 
   /**

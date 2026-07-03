@@ -19,25 +19,28 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
     )
 
   override def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] =
+    // Single atomic upsert. The old UPDATE-then-INSERT-if-absent ran as two separate
+    // transactions, so two concurrent FIRST updates could both observe zero updated
+    // rows and race their INSERTs — the loser failed on the primary-key conflict and
+    // that location update was lost. ON CONFLICT (id) DO UPDATE has no such window.
     sql"""
-      UPDATE drivers SET
-        current_location_lat = $latitude,
-        current_location_lng = $longitude,
+      INSERT INTO drivers (id, current_location_lat, current_location_lng, company_id, status)
+      SELECT ${driverId.value}, $latitude, $longitude, p.company_id, 'Available'
+      FROM persons p WHERE p.id = ${driverId.value}
+      ON CONFLICT (id) DO UPDATE SET
+        current_location_lat = EXCLUDED.current_location_lat,
+        current_location_lng = EXCLUDED.current_location_lng,
         updated_at = NOW()
-      WHERE id = ${driverId.value}
     """.update.run
       .transact(xa)
-      .flatMap { rowsUpdated =>
-        if (rowsUpdated == 0)
-          sql"""
-            INSERT INTO drivers (id, current_location_lat, current_location_lng, company_id, status)
-            SELECT ${driverId.value}, $latitude, $longitude, p.company_id, 'Available'
-            FROM persons p WHERE p.id = ${driverId.value}
-          """.update.run.transact(xa).unit
-        else
-          ZIO.unit
-      }
+      .unit
 
+  // NOTE: un-scoped by company (PersonId is the drivers PK and one person belongs to exactly one
+  // company, so this is not exploitable today). Request-driven callers MUST verify ownership first:
+  // DriverApi gates every per-driver endpoint behind assertDriverInCompany, and the internal callers
+  // (EtaService, proximity/track flows) derive the driverId from a ride that is itself
+  // company-checked. Scoping these reads would require threading companyId through
+  // DriverLocationService and all of its callers — tracked as defense-in-depth follow-up.
   override def getLocation(driverId: PersonId): Task[Option[DriverLocation]] =
     sql"""
       SELECT id, current_location_lat, current_location_lng, updated_at
@@ -51,6 +54,8 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .map(_.map { case (id, lat, lng, updatedAt) => DriverLocation(PersonId(id), lat, lng, updatedAt) })
 
+  // NOTE: un-scoped by company — see the note on getLocation; the writing route
+  // (DriverApi.updateAvailabilityServer) asserts company membership before calling.
   override def updateAvailability(driverId: PersonId, status: String): Task[Unit] =
     sql"""
       UPDATE drivers SET status = ${status}::driver_status
@@ -59,6 +64,8 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .unit
 
+  // NOTE: un-scoped by company — see the note on getLocation; the reading route
+  // (DriverApi.getAvailabilityServer) asserts company membership before calling.
   override def getAvailability(driverId: PersonId): Task[Option[String]] =
     sql"""
       SELECT status::text FROM drivers WHERE id = ${driverId.value}

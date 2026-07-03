@@ -306,6 +306,32 @@ object PostgresPersonRepositorySpec extends ZIOSpecDefault {
           found.get._2 == contentType
         )
       },
+      // ── last-login tenant isolation (defense-in-depth: AND company_id) ─────
+      test("updateLastLogin scoped to the person's company sets last_login_at") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "last-login-own@test.com")
+          _     <- repo.create(person)
+          _     <- repo.updateLastLogin(person.id, Some(testCompanyId))
+          found <- repo.findById(person.id)
+        } yield assertTrue(found.exists(_.lastLoginAt.isDefined))
+      },
+      test("updateLastLogin with a foreign company id is a no-op — last_login_at stays NULL") {
+        val otherCompany = CompanyId(UUID.fromString("00000099-0000-0000-0000-000000000099"))
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedCompany(xa)
+          _     <- cleanPersons(xa)
+          repo   = PostgresPersonRepository(xa)
+          person = makePerson(email = "last-login-foreign@test.com")
+          _     <- repo.create(person)
+          _     <- repo.updateLastLogin(person.id, Some(otherCompany))
+          found <- repo.findById(person.id)
+        } yield assertTrue(found.exists(_.lastLoginAt.isEmpty))
+      },
       // ── avatar tenant isolation (defense-in-depth: AND company_id) ─────────
       test("setAvatar with a foreign company id is a no-op — avatar is not written") {
         val bytes        = Array.fill(256)(0x55.toByte)

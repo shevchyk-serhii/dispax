@@ -56,7 +56,8 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       )
       private def nope(m: String): Nothing                                                                   = throw new NotImplementedError(s"unexpected PersonRepository.$m")
       def create(person: Person): Task[Person]                                                               = nope("create")
-      def findById(id: PersonId): Task[Option[Person]]                                                       = nope("findById")
+      // Resolved for the recipient's push language; None → English default.
+      def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.none
       def findByIdAndCompany(id: PersonId, company: CompanyId): Task[Option[Person]]                         = nope("findByIdAndCompany")
       def findByEmail(email: String): Task[Option[Person]]                                                   = nope("findByEmail")
       def findByRole(role: PersonRole): Task[List[Person]]                                                   = nope("findByRole")
@@ -69,7 +70,7 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       )
       def findByStatus(status: UserStatus): Task[List[Person]]                                               = nope("findByStatus")
       def searchByQuery(query: String): Task[List[Person]]                                                   = nope("searchByQuery")
-      def updateLastLogin(id: PersonId): Task[Unit]                                                          = nope("updateLastLogin")
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = nope("updateLastLogin")
       def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                                        = nope("findByClientCompany")
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
@@ -101,6 +102,24 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       notifs    <- notifRepo.findByPersonId(forPerson, limit = 10, offset = 0)
     } yield notifs
 
+  /**
+   * The base person-repo stub with `findById` answering a person whose preferredLanguage is `lang` — models a recipient
+   * with that push language. All other lookups behave like `personRepoStub`.
+   */
+  private def personRepoWithLanguage(lang: String): PersonRepository =
+    new PersonRepository:
+      export personRepoStub.{findById as _, *}
+      def findById(id: PersonId): Task[Option[Person]] = ZIO.some(
+        dispatcher.copy(id = id, preferredLanguage = Some(lang))
+      )
+
+  private def languageLayers(lang: String) =
+    EventHub.layer ++
+      InMemoryNotificationRepository.layer ++
+      testFcmLayer ++
+      ZLayer.succeed(personRepoWithLanguage(lang)) ++
+      InMemoryCheckpointNotificationRepository.layer
+
   def spec =
     suite("PushNotificationListener")(
       test("RideAssigned saves notification for driver") {
@@ -130,6 +149,42 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           }
         }
       }.provide(baseLayers),
+
+      // ── l10n: pushes follow the recipient's preferredLanguage ───────────
+
+      test("RideAssigned driver with preferredLanguage=de receives the German push") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.title == "Neue Fahrt zugewiesen"),
+              notifs.exists(_.body.contains("Ihnen wurde eine neue Fahrt zugewiesen."))
+            )
+          }
+        }
+      }.provide(languageLayers("de")),
+      test("RideStatusChanged Cancelled client with preferredLanguage=uk receives the Ukrainian push") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideStatusChanged(rideId, "Cancelled", Some(driverId), clientId, companyId, None),
+            PersonId(clientId)
+          ).map { notifs =>
+            assertTrue(notifs.exists(_.title == "Поїздку скасовано"))
+          }
+        }
+      }.provide(languageLayers("uk")),
+      test("an unsupported preferredLanguage falls back to English") {
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId),
+            PersonId(driverId)
+          ).map { notifs =>
+            assertTrue(notifs.exists(_.title == "New Ride Assigned"))
+          }
+        }
+      }.provide(languageLayers("xx")),
       test("RideAssigned includes the fare in the driver notification when priced") {
         ZIO.scoped {
           publishAndCollect(
@@ -826,6 +881,53 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
             notifs    <- notifRepo.findByPersonId(PersonId(clientId), limit = 10, offset = 0)
           } yield assertTrue(notifs.size == 1)
         }
-      }.provide(baseLayers)
+      }.provide(baseLayers),
+
+      // ── multi-instance dedup race ────────────────────────────────────────
+
+      // MUTATION TARGET (atomic dedup): two listener instances subscribed to the same hub model two
+      // app replicas — the hub broadcasts one AirportCheckpointReached to BOTH, and both handle it
+      // concurrently. With the old isAlreadySent → notify → markSent sequence both pass the check
+      // and the driver gets two pushes. The FCM stub records the push and BLOCKS on a gate, pinning
+      // the winner inside its send (before the old code would have marked) while the loser decides.
+      // The RideCreated marker event tells us the loser finished its checkpoint decision: a listener
+      // only reaches the marker after the checkpoint event, so the poll ends deterministically.
+      test("AirportCheckpointReached with two listener instances → exactly one push (atomic dedup claim)") {
+        for {
+          sends   <- Ref.make(List.empty[String])
+          gate    <- Promise.make[Nothing, Unit]
+          gatedFcm =
+            new FcmService:
+              def registerToken(p: PersonId, c: CompanyId, token: String, platform: String): Task[Unit] = ZIO.unit
+              def unregisterToken(token: String): Task[Unit]                                            = ZIO.unit
+              def sendToUser(
+                  p: PersonId,
+                  c: CompanyId,
+                  n: com.shevchyk.notification.domain.PushNotification
+              ): Task[Unit] = sends.update(_ :+ n.data.getOrElse("type", "unknown")) *> gate.await
+          program  =
+            for {
+              _        <- PushNotificationListener.start // instance 1
+              _        <- PushNotificationListener.start // instance 2
+              eventHub <- ZIO.service[EventHub]
+              _        <- eventHub.publish(
+                            WebSocketEvent
+                              .AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+                          )
+              _        <- eventHub.publish(WebSocketEvent.RideCreated(rideId, clientId, companyId))
+              // Either the race fired twice (old bug) or the losing instance moved on to the marker.
+              _        <- sends.get.repeatUntil(s => s.count(_ == "airport_checkpoint") >= 2 || s.contains("ride_created"))
+              _        <- gate.succeed(())
+              result   <- sends.get
+            } yield result
+          result  <- program.provide(
+                       EventHub.layer,
+                       InMemoryNotificationRepository.layer,
+                       ZLayer.succeed[FcmService](gatedFcm),
+                       ZLayer.succeed(personRepoStub),
+                       InMemoryCheckpointNotificationRepository.layer
+                     )
+        } yield assertTrue(result.count(_ == "airport_checkpoint") == 1)
+      }
     )
 }

@@ -109,7 +109,7 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       persons.values.filter(_.status == status).toList
     )
     override def searchByQuery(query: String): Task[List[Person]]                          = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                 = ZIO.unit
+    override def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]   = ZIO.unit
     override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
     override def upsertDriverRow(personId: PersonId): Task[Unit]                           = ZIO.unit
     override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]              = ZIO.none
