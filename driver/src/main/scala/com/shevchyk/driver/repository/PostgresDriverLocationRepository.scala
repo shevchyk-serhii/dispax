@@ -19,24 +19,21 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
     )
 
   override def updateLocation(driverId: PersonId, latitude: Double, longitude: Double): Task[Unit] =
+    // Single atomic upsert. The old UPDATE-then-INSERT-if-absent ran as two separate
+    // transactions, so two concurrent FIRST updates could both observe zero updated
+    // rows and race their INSERTs — the loser failed on the primary-key conflict and
+    // that location update was lost. ON CONFLICT (id) DO UPDATE has no such window.
     sql"""
-      UPDATE drivers SET
-        current_location_lat = $latitude,
-        current_location_lng = $longitude,
+      INSERT INTO drivers (id, current_location_lat, current_location_lng, company_id, status)
+      SELECT ${driverId.value}, $latitude, $longitude, p.company_id, 'Available'
+      FROM persons p WHERE p.id = ${driverId.value}
+      ON CONFLICT (id) DO UPDATE SET
+        current_location_lat = EXCLUDED.current_location_lat,
+        current_location_lng = EXCLUDED.current_location_lng,
         updated_at = NOW()
-      WHERE id = ${driverId.value}
     """.update.run
       .transact(xa)
-      .flatMap { rowsUpdated =>
-        if (rowsUpdated == 0)
-          sql"""
-            INSERT INTO drivers (id, current_location_lat, current_location_lng, company_id, status)
-            SELECT ${driverId.value}, $latitude, $longitude, p.company_id, 'Available'
-            FROM persons p WHERE p.id = ${driverId.value}
-          """.update.run.transact(xa).unit
-        else
-          ZIO.unit
-      }
+      .unit
 
   override def getLocation(driverId: PersonId): Task[Option[DriverLocation]] =
     sql"""

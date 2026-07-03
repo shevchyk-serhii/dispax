@@ -161,6 +161,27 @@ object PostgresDriverLocationRepositorySpec extends ZIOSpecDefault {
           loc.get.longitude == 11.5
         )
       } @@ TestAspect.tag("integration"),
+      test("updateLocation: concurrent FIRST updates for the same driver all succeed (atomic upsert)") {
+        // Regression for the two-transaction UPDATE-then-INSERT window: several concurrent
+        // first updates all saw zero updated rows and raced their INSERTs — every loser
+        // failed on the drivers.id primary-key conflict and its update was lost (error to
+        // the caller). The single INSERT ... ON CONFLICT (id) DO UPDATE upsert has no such
+        // window: all callers must succeed and a location must be recorded.
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanDrivers(xa)
+          repo   = PostgresDriverLocationRepository(xa)
+          // driverA1 has a persons row but NO drivers row yet — every caller races the insert.
+          exits <- ZIO.collectAllPar(
+                     (1 to 8).toList.map(i => repo.updateLocation(driverA1, 48.0 + i * 0.01, 11.5).exit)
+                   )
+          loc   <- repo.getLocation(driverA1)
+        } yield assertTrue(
+          exits.forall(_.isSuccess),
+          loc.isDefined
+        )
+      } @@ TestAspect.tag("integration"),
       test("updateLocation when person row missing: silent no-op, getLocation returns None") {
         val unknownId = PersonId(UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff"))
         for {
