@@ -436,6 +436,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           final cs = Theme.of(context).colorScheme;
           final l10n = AppLocalizations.of(context)!;
           return FloatingActionButton(
+            heroTag: 'calendar_today',
             onPressed: () {
               selectedDayNotifier.value = DateTime.now();
               viewTypeNotifier.value = CalendarViewType.day;

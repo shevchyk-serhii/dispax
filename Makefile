@@ -344,7 +344,8 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_secretary_create_ride e2e_driver_confirm \
               e2e_two_dispatchers_assign_race e2e_two_dispatchers_handoff_visibility \
               e2e_two_dispatchers_reassign e2e_dispatcher_assign_conflict_override \
-              e2e_dispatcher_self_conflict e2e_ws_dispatcher_status_live
+              e2e_dispatcher_self_conflict e2e_ws_dispatcher_status_live \
+              e2e_dispatcher_close_ride e2e_duplicate_ride e2e_hand_off_ride
 
 # Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
 # over REST. Run with `flutter test` via `make e2e-notif-http`. These are green.
