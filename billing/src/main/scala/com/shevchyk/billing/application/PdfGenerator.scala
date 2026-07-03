@@ -3,7 +3,7 @@ package com.shevchyk.billing.application
 import com.lowagie.text.{List => _, Chunk => PdfChunk, *}
 import com.lowagie.text.pdf.*
 import com.lowagie.text.pdf.draw.LineSeparator
-import com.shevchyk.billing.domain.{CompanyBillingProfile, Invoice, InvoiceItem}
+import com.shevchyk.billing.domain.{CompanyBillingProfile, Invoice, InvoiceItem, TaxSplit}
 import com.shevchyk.core.domain.ClientCompany
 import zio.*
 
@@ -248,11 +248,13 @@ object PdfGenerator:
 
     doc.add(table).discard
 
-  // Brutto (gross) in → Netto and MwSt derived. Same HALF_UP rounding as the invoice path.
+  // Brutto (gross) in → Netto and MwSt derived via the shared TaxSplit, so this receipt and the
+  // stored invoice (InvoiceService.recalculate) can never round apart on a formula/rounding change.
   private def addReceiptAmounts(doc: Document, grossPrice: BigDecimal, taxRatePct: BigDecimal): Unit =
-    val gross = grossPrice.setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val net   = (gross / (1 + taxRatePct / 100)).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val tax   = (gross - net).setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    val split = TaxSplit.fromGross(grossPrice, taxRatePct)
+    val gross = split.gross
+    val net   = split.net
+    val tax   = split.tax
 
     val table = new PdfPTable(2)
     table.setWidthPercentage(100)

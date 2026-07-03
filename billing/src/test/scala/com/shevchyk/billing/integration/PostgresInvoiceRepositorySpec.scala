@@ -31,10 +31,32 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
                  VALUES (${clientCompanyId.value}, 'Test Client GmbH', ${testCompanyId.value}, 'client@test.com')
                  ON CONFLICT DO NOTHING""".update.run
       _ <-
-        sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
-                 VALUES (${clientId.value}, 'Test Client', 'person@test.com', 'client'::person_role, ${testCompanyId.value}, 'placeholder')
+        sql"""INSERT INTO persons (id, name, email, role, company_id, client_company_id, password_hash)
+                 VALUES (${clientId.value}, 'Test Client', 'person@test.com', 'client'::person_role, ${testCompanyId.value}, ${clientCompanyId.value}, 'placeholder')
                  ON CONFLICT DO NOTHING""".update.run
     } yield ()).transact(xa)
+
+  /**
+   * Insert a Completed ride for the seeded client with the given prices. Either price may be None to model a price-less
+   * ride (both None = the €0.00 case that must be excluded from invoicing).
+   */
+  private def seedRide(
+      xa: Transactor[Task],
+      rideId: UUID,
+      estimated: Option[BigDecimal],
+      finalPrice: Option[BigDecimal],
+      pickup: Instant = Instant.parse("2026-01-15T10:00:00Z")
+  ): Task[Unit] =
+    sql"""INSERT INTO rides
+            (id, client_id, creator_id, company_id, from_address, to_address, pickup_datetime, status,
+             estimated_price_amount, final_price_amount)
+          VALUES
+            ($rideId, ${clientId.value}, ${clientId.value}, ${testCompanyId.value},
+             'Marienplatz', 'Flughafen', $pickup, 'Completed'::ride_status, $estimated, $finalPrice)
+          ON CONFLICT DO NOTHING""".update.run.transact(xa).unit
+
+  private def cleanRides(xa: Transactor[Task]): Task[Unit] =
+    sql"DELETE FROM rides WHERE company_id = ${testCompanyId.value}".update.run.transact(xa).unit
 
   private def cleanInvoices(xa: Transactor[Task]): Task[Unit] =
     sql"DELETE FROM invoice_items".update.run.transact(xa) *>
@@ -438,6 +460,36 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
           counts.getOrElse(testCompanyId.value, 0) == 2,
           counts.getOrElse(company2Id.value, 0) == 1
         )
+      },
+      // ── price-less rides excluded from invoicing (regression for the €0.00 finding) ──
+      test("findUnbilledRides skips a ride with no price instead of billing it as €0.00") {
+        for {
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <- cleanRides(xa)
+          repo      = PostgresInvoiceRepository(xa)
+          priced    = UUID.randomUUID()
+          priceless = UUID.randomUUID()
+          _        <- seedRide(xa, priced, estimated = Some(BigDecimal("42.00")), finalPrice = None)
+          _        <- seedRide(xa, priceless, estimated = None, finalPrice = None)
+          rides    <- repo.findUnbilledRides(clientCompanyId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31))
+        } yield assertTrue(
+          rides.map(_.rideId).toSet == Set(priced),
+          rides.forall(_.price == BigDecimal("42.00"))
+        )
+      },
+      test("findBillableRides also skips price-less rides") {
+        for {
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <- cleanRides(xa)
+          repo      = PostgresInvoiceRepository(xa)
+          priced    = UUID.randomUUID()
+          priceless = UUID.randomUUID()
+          _        <- seedRide(xa, priced, estimated = None, finalPrice = Some(BigDecimal("99.00")))
+          _        <- seedRide(xa, priceless, estimated = None, finalPrice = None)
+          rides    <- repo.findBillableRides(testCompanyId, clientCompanyId, None, None)
+        } yield assertTrue(rides.map(_.rideId).toSet == Set(priced))
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"
