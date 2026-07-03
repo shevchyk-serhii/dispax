@@ -11,6 +11,7 @@ import 'patrol_helpers.dart';
 ///
 /// Seed-account UUIDs from V2__Insert_seed_accounts.sql (single company):
 const String bmwClientId = '66666666-6666-6666-6666-666666666666';
+const String siemensClientId = '77777777-7777-7777-7777-777777777777';
 const String hansDriverId = '33333333-3333-3333-3333-333333333333';
 const String klausDriverId = '44444444-4444-4444-4444-444444444444';
 const String dispatcherId = '11111111-1111-1111-1111-111111111111';
