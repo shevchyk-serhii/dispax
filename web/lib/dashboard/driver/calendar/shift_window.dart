@@ -40,3 +40,29 @@ double parseShiftHour(String raw) {
   if (end - start <= 0) return null;
   return (start: start, end: end);
 }
+
+/// Clips an occupied block (a ride or a busy slot, fractional hours) into the
+/// visible [windowStart]–[windowEnd] window, with the same midnight handling
+/// as [visibleShiftSegment]: an end before its start (a 22:00→00:30 busy slot)
+/// crosses midnight, so the visible part is the evening segment — NOT a
+/// `bottom < top` rectangle that renderers used to collapse into a 10 px stub.
+///
+/// Unlike a shift region, a block is never dropped: when it lies entirely
+/// outside the window (a 02:00 ride) a zero-length segment pinned at the
+/// nearest window edge is returned, so renderers can draw their
+/// minimum-height marker INSIDE the grid instead of positioning the block at
+/// a negative offset above it.
+({double start, double end}) visibleBlockSegment(
+  double startHour,
+  double endHour, {
+  double windowStart = 6,
+  double windowEnd = 23,
+}) {
+  final effectiveEnd = endHour < startHour ? 24.0 : endHour;
+  final start = startHour.clamp(windowStart, windowEnd);
+  final end = effectiveEnd.clamp(windowStart, windowEnd);
+  if (end - start > 0) return (start: start, end: end);
+  // Entirely outside the window: pin at the nearest edge (start already
+  // clamped there) so the block stays discoverable inside the grid.
+  return (start: start, end: start);
+}

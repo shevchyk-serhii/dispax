@@ -71,4 +71,59 @@ void main() {
       ));
     });
   });
+
+  group('visibleBlockSegment', () {
+    test('a fully in-window block is unchanged', () {
+      expect(visibleBlockSegment(10.5, 12), (start: 10.5, end: 12.0));
+    });
+
+    test(
+      'a busy slot crossing midnight keeps its evening part (22:00→00:30)',
+      () {
+        expect(
+          visibleBlockSegment(22, 0.5),
+          (start: 22.0, end: 23.0),
+          reason:
+              'end < start means the slot crosses midnight — it must render '
+              'as the 22–23 evening band, not a bottom<top 10 px stub',
+        );
+      },
+    );
+
+    test('a block ending at midnight keeps its evening part', () {
+      expect(visibleBlockSegment(21, 0), (start: 21.0, end: 23.0));
+    });
+
+    test('a block overlapping the window start is clipped to it', () {
+      expect(visibleBlockSegment(5, 7.5), (start: 6.0, end: 7.5));
+    });
+
+    test('a block overlapping the window end is clipped to it', () {
+      expect(visibleBlockSegment(22.5, 24), (start: 22.5, end: 23.0));
+    });
+
+    test(
+      'a block fully before the window pins at the window start (02:00 ride)',
+      () {
+        expect(
+          visibleBlockSegment(2, 3.5),
+          (start: 6.0, end: 6.0),
+          reason:
+              'a night ride must pin inside the grid instead of rendering '
+              'at a negative offset above it',
+        );
+      },
+    );
+
+    test('a block fully after the window pins at the window end', () {
+      expect(visibleBlockSegment(23.25, 23.75), (start: 23.0, end: 23.0));
+    });
+
+    test('custom window bounds are honoured', () {
+      expect(visibleBlockSegment(22, 0.5, windowStart: 0, windowEnd: 24), (
+        start: 22.0,
+        end: 24.0,
+      ));
+    });
+  });
 }

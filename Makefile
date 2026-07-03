@@ -2,7 +2,7 @@
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
-        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules \
+        emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules e2e-validation \
         flutter-dev-iphone-sergii flutter-dev-android-sergii flutter-dev-sergii \
         dev-all dev-sim dev-roles dev-dispatchers free-port stop-dev \
         deploy logs setup-hooks \
@@ -365,6 +365,14 @@ E2E_RIDE_RULES_HTTP_TESTS := integration_test/e2e_ride_validation_test.dart \
                              integration_test/e2e_ride_authorization_test.dart \
                              integration_test/e2e_ride_assign_rules_test.dart
 
+# Domain-validation HTTP checks (flutter_test, no Patrol/UI): the backend must
+# reject a negative/zero expense amount, a rating outside 1..5 and bad ride
+# payment operations. These suites existed but were referenced by NO target
+# (never executed). Green. Run via `make e2e-validation`.
+E2E_VALIDATION_HTTP_TESTS := integration_test/e2e_expense_validation_test.dart \
+                             integration_test/e2e_rating_validation_test.dart \
+                             integration_test/e2e_ride_payment_test.dart
+
 # "Red" suites assert DESIRED behaviour the backend does not implement yet. They
 # are EXPECTED TO FAIL and serve as an executable backlog, kept out of the green
 # bundle and run via `make e2e-red`. Currently: the dispatcher Pending list has
@@ -469,6 +477,20 @@ e2e-ride-rules: emulator-up e2e-backend-up
 	@echo "🚦 Running ride-rule HTTP checks (flutter test)..."
 	@cd $(FLUTTER_DIR) && STATUS=0 ; \
 	  for t in $(E2E_RIDE_RULES_HTTP_TESTS); do \
+	    echo "▶ $$t"; \
+	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
+	    $(FLUTTER) test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
+
+# Expense / rating / ride-payment validation HTTP checks (flutter test, no
+# Patrol/UI). Same harness as e2e-ride-rules: per-file, backend reset between
+# suites, host reached from the emulator via 10.0.2.2.
+e2e-validation: emulator-up e2e-backend-up
+	@echo "🧾 Running expense/rating/payment validation checks (flutter test)..."
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_VALIDATION_HTTP_TESTS); do \
 	    echo "▶ $$t"; \
 	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
 	    $(FLUTTER) test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
