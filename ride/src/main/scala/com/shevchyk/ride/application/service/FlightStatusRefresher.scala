@@ -50,8 +50,25 @@ object FlightStatusRefresher:
           case Some(info) =>
             val newRow = toRow(info)
             rideRepo.findFlightStatus(ride.id).flatMap { current =>
-              // Publish + persist only when the live data actually differs from what's stored.
-              if current.contains(newRow) then ZIO.succeed(RefreshResult.Unchanged)
+              // Mirror the repository's COALESCE semantics BEFORE deduping: gate/terminal/scheduled/departure
+              // fall back to the stored value when this tick could not read them (None means "unknown this
+              // tick", not "clear"), while status and flightTime are the scrape's authoritative payload.
+              // Comparing the raw scrape row instead would see a permanent difference whenever e.g. the gate
+              // detail page fails while the DB still holds the gate — re-persisting and re-publishing an
+              // identical visible state on every tick (WS event storm + a false "Updated" from the manual
+              // refresh endpoint).
+              val effective =
+                current match
+                  case Some(cur) =>
+                    newRow.copy(
+                      gate = newRow.gate.orElse(cur.gate),
+                      terminal = newRow.terminal.orElse(cur.terminal),
+                      scheduledTime = newRow.scheduledTime.orElse(cur.scheduledTime),
+                      departureTime = newRow.departureTime.orElse(cur.departureTime)
+                    )
+                  case None      => newRow
+              // Publish + persist only when the effective (post-merge) data actually differs from what's stored.
+              if current.contains(effective) then ZIO.succeed(RefreshResult.Unchanged)
               else
                 rideRepo.updateFlightStatus(
                   ride.id,
@@ -69,16 +86,19 @@ object FlightStatusRefresher:
                       companyId = ride.companyId.value,
                       flightNumber = info.flightNumber,
                       status = FlightStatus.toWire(info.status),
-                      gate = newRow.gate,
-                      terminal = newRow.terminal,
-                      estimatedTime = newRow.flightTime.map(_.toString),
-                      departureTime = newRow.departureTime.map(_.toString)
+                      // The event carries the effective values — what the row looks like AFTER the
+                      // COALESCE merge — so subscribers never see a gate/terminal blanked by one
+                      // failed detail scrape.
+                      gate = effective.gate,
+                      terminal = effective.terminal,
+                      estimatedTime = effective.flightTime.map(_.toString),
+                      departureTime = effective.departureTime.map(_.toString)
                     )
                   ) *>
                   ZIO.logInfo(
                     s"Flight ${info.flightNumber} for ride ${ride.id.value}: status=${FlightStatus.toWire(info.status)}"
                   ) *>
-                  ZIO.succeed(RefreshResult.Updated(newRow))
+                  ZIO.succeed(RefreshResult.Updated(effective))
             }
         }
       case _                                                                                                   => ZIO.succeed(RefreshResult.NotFound)

@@ -149,13 +149,14 @@ object MucFlightParser:
     // rolled to the next day. (Detail-page lookup refines this with the origin's own date later; this list value is the
     // reliable primary so the plane always shows.)
     val arrivalInstant = estimatedTime.orElse(scheduledTime)
-    val departureTime =
+    val departureTime  =
       if isArrival then
         otherTimeLt.map { dep =>
-          val anchoredToArrivalDate = arrivalInstant match
-            case Some(arr) => arr.atZone(BerlinZone).toLocalDate
-            case None      => date
-          val depInstant = atBerlin(anchoredToArrivalDate, dep)
+          val anchoredToArrivalDate =
+            arrivalInstant match
+              case Some(arr) => arr.atZone(BerlinZone).toLocalDate
+              case None      => date
+          val depInstant            = atBerlin(anchoredToArrivalDate, dep)
           arrivalInstant match
             case Some(arr) if depInstant.isAfter(arr) => atBerlin(anchoredToArrivalDate.minusDays(1), dep)
             case _                                    => depInstant
