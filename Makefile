@@ -346,7 +346,10 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_two_dispatchers_reassign e2e_dispatcher_assign_conflict_override \
               e2e_dispatcher_self_conflict e2e_ws_dispatcher_status_live \
               e2e_dispatcher_close_ride e2e_duplicate_ride e2e_hand_off_ride \
-              e2e_edit_ride_client
+              e2e_edit_ride_client \
+              e2e_navigate_dialog e2e_today_upcoming_split e2e_upcoming_renders \
+              e2e_estimate_clear_on_address \
+              e2e_driver_reject e2e_client_rate e2e_shift_overlap_reject
 
 # Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
 # over REST. Run with `flutter test` via `make e2e-notif-http`. These are green.
@@ -363,7 +366,10 @@ E2E_NOTIF_HTTP_TESTS := integration_test/e2e_notif_isolation_test.dart \
 E2E_RIDE_RULES_HTTP_TESTS := integration_test/e2e_ride_validation_test.dart \
                              integration_test/e2e_ride_illegal_transitions_test.dart \
                              integration_test/e2e_ride_authorization_test.dart \
-                             integration_test/e2e_ride_assign_rules_test.dart
+                             integration_test/e2e_ride_assign_rules_test.dart \
+                             integration_test/e2e_ride_payment_test.dart \
+                             integration_test/e2e_rating_validation_test.dart \
+                             integration_test/e2e_expense_validation_test.dart
 
 # "Red" suites assert DESIRED behaviour the backend does not implement yet. They
 # are EXPECTED TO FAIL and serve as an executable backlog, kept out of the green
