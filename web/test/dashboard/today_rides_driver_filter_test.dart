@@ -1,5 +1,7 @@
+import 'package:dispax/blocs/ride/ride_state.dart';
 import 'package:dispax/dashboard/driver/today_rides_screen.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,7 +54,7 @@ void main() {
     /// back to the plain literal.
     Future<String> resolve(
       WidgetTester tester,
-      String? errorMessage, {
+      RideState state, {
       required bool withL10n,
     }) async {
       late String result;
@@ -65,7 +67,7 @@ void main() {
           locale: const Locale('en'),
           home: Builder(
             builder: (context) {
-              result = rideErrorMessageOrFallback(errorMessage, context);
+              result = rideErrorMessageOrFallback(state, context);
               return const SizedBox.shrink();
             },
           ),
@@ -74,15 +76,34 @@ void main() {
       return result;
     }
 
-    testWidgets('returns the error message verbatim when non-null', (
+    // The helper must route through friendlyError (the canonical error-UX
+    // pattern): a typed ApiException cause maps to the localized message and
+    // the raw technical text never reaches the UI.
+    testWidgets('maps an ApiException cause to the friendly localized text', (
       tester,
     ) async {
-      final result = await resolve(
-        tester,
-        'Boom: server exploded',
-        withL10n: true,
+      final state = RideState(
+        status: RideStateStatus.error,
+        errorMessage: 'Failed to load rides: ApiException: boom',
+        error: ApiException('boom', statusCode: 500),
       );
-      expect(result, 'Boom: server exploded');
+      final result = await resolve(tester, state, withL10n: true);
+      expect(
+        result,
+        'Something went wrong on our side. Please try again in a moment.',
+      );
+      expect(result.contains('ApiException'), isFalse);
+    });
+
+    testWidgets('collapses a raw technical errorMessage to the generic text', (
+      tester,
+    ) async {
+      const state = RideState(
+        status: RideStateStatus.error,
+        errorMessage: 'Boom: server exploded',
+      );
+      final result = await resolve(tester, state, withL10n: true);
+      expect(result, 'Something went wrong. Please try again.');
     });
 
     // Regression guard for the "Null check operator used on a null value"
@@ -90,14 +111,16 @@ void main() {
     testWidgets('returns the localized fallback when the message is null', (
       tester,
     ) async {
-      final result = await resolve(tester, null, withL10n: true);
+      const state = RideState(status: RideStateStatus.error);
+      final result = await resolve(tester, state, withL10n: true);
       expect(result, 'Failed to load rides');
     });
 
     testWidgets(
       'returns the literal fallback when message is null and no l10n is present',
       (tester) async {
-        final result = await resolve(tester, null, withL10n: false);
+        const state = RideState(status: RideStateStatus.error);
+        final result = await resolve(tester, state, withL10n: false);
         expect(result, 'Failed to load rides');
       },
     );

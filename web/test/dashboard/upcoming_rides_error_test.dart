@@ -97,7 +97,37 @@ void main() {
     },
   );
 
-  testWidgets('error state with a real message shows it verbatim', (
+  // Error-UX: the screen must route the error through friendlyError. A typed
+  // ApiException cause renders the localized friendly text; the raw
+  // 'ApiException:' string must never reach the UI.
+  testWidgets(
+    'an ApiException cause renders the friendly localized text, not the raw exception',
+    (tester) async {
+      final state = RideState(
+        status: RideStateStatus.error,
+        rides: const [],
+        errorMessage: 'Failed to load rides: ApiException: boom (500)',
+        error: ApiException('boom', statusCode: 500),
+      );
+
+      await pumpScreen(tester, state);
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text(
+          'Something went wrong on our side. Please try again in a moment.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('ApiException'),
+        findsNothing,
+        reason: 'raw exception text must never reach the UI',
+      );
+    },
+  );
+
+  testWidgets('a raw technical message collapses to the generic text', (
     tester,
   ) async {
     const state = RideState(
@@ -109,6 +139,7 @@ void main() {
     await pumpScreen(tester, state);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Boom: server exploded'), findsOneWidget);
+    expect(find.text('Something went wrong. Please try again.'), findsWidgets);
+    expect(find.text('Boom: server exploded'), findsNothing);
   });
 }

@@ -128,7 +128,12 @@ class _ClientRideHistoryScreenState extends State<ClientRideHistoryScreen> {
           if (rideState.hasError && rideState.rides.isEmpty) {
             return ErrorDisplayWidget(
               title: l10n.failedToLoadRideHistory,
-              message: rideState.errorMessage ?? '',
+              // friendlyError, not the raw errorMessage: never leak
+              // 'ApiException: ...' to the UI.
+              message: friendlyError(
+                rideState.error ?? rideState.errorMessage,
+                l10n,
+              ),
               onRetry: () => _loadRides(context),
             );
           }
