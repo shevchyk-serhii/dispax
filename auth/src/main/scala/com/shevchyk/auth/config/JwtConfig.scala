@@ -4,13 +4,15 @@ import com.shevchyk.core.config.Environment
 import zio.*
 import scala.concurrent.duration.Duration
 
+// NOTE: the signing algorithm is intentionally NOT configurable — JwtService hardcodes
+// JwtAlgorithm.HS256 (a previous `algorithm` field here was dead: changing it was silently
+// ignored, so it was removed rather than wired up).
 final case class JwtConfig(
     secret: String,
     issuer: String,
     audience: String,
     expirationTime: Duration,
-    maxSessionDuration: Duration = Duration.fromNanos(90L * 24 * 60 * 60 * 1_000_000_000L), // 90 days
-    algorithm: String = "HS256"
+    maxSessionDuration: Duration = Duration.fromNanos(90L * 24 * 60 * 60 * 1_000_000_000L) // 90 days
 )
 
 object JwtConfig:

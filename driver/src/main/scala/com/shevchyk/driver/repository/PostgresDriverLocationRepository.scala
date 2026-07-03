@@ -35,6 +35,12 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .unit
 
+  // NOTE: un-scoped by company (PersonId is the drivers PK and one person belongs to exactly one
+  // company, so this is not exploitable today). Request-driven callers MUST verify ownership first:
+  // DriverApi gates every per-driver endpoint behind assertDriverInCompany, and the internal callers
+  // (EtaService, proximity/track flows) derive the driverId from a ride that is itself
+  // company-checked. Scoping these reads would require threading companyId through
+  // DriverLocationService and all of its callers — tracked as defense-in-depth follow-up.
   override def getLocation(driverId: PersonId): Task[Option[DriverLocation]] =
     sql"""
       SELECT id, current_location_lat, current_location_lng, updated_at
@@ -48,6 +54,8 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .map(_.map { case (id, lat, lng, updatedAt) => DriverLocation(PersonId(id), lat, lng, updatedAt) })
 
+  // NOTE: un-scoped by company — see the note on getLocation; the writing route
+  // (DriverApi.updateAvailabilityServer) asserts company membership before calling.
   override def updateAvailability(driverId: PersonId, status: String): Task[Unit] =
     sql"""
       UPDATE drivers SET status = ${status}::driver_status
@@ -56,6 +64,8 @@ final class PostgresDriverLocationRepository(xa: Transactor[Task]) extends Drive
       .transact(xa)
       .unit
 
+  // NOTE: un-scoped by company — see the note on getLocation; the reading route
+  // (DriverApi.getAvailabilityServer) asserts company membership before calling.
   override def getAvailability(driverId: PersonId): Task[Option[String]] =
     sql"""
       SELECT status::text FROM drivers WHERE id = ${driverId.value}
