@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 /// A single flight row from the MUC arrivals board (GET /api/flights/arrivals).
 /// Times arrive as ISO-8601 UTC strings and are parsed to local DateTime for display.
 class MucFlight {
@@ -44,7 +46,7 @@ class MucFlight {
     DateTime? parse(String? v) =>
         v == null ? null : DateTime.tryParse(v)?.toLocal();
     return MucFlight(
-      flightNumber: json['flightNumber'] as String,
+      flightNumber: JsonParse.requiredString(json, 'flightNumber'),
       status: (json['status'] as String?) ?? 'unknown',
       scheduledTime: parse(json['scheduledTime'] as String?),
       estimatedTime: parse(json['estimatedTime'] as String?),

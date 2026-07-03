@@ -68,7 +68,12 @@ void main() {
       ),
       expect: () => [
         isA<RideState>().having((s) => s.isCancelling, 'isCancelling', true),
-        isA<RideState>().having((s) => s.hasError, 'hasError', true),
+        isA<RideState>()
+            .having((s) => s.hasError, 'hasError', true)
+            // Regression: the ApiException branch used to drop the typed
+            // cause (only the generic branch set `error: e`), so friendlyError
+            // could not classify the failure.
+            .having((s) => s.error, 'error', isA<ApiException>()),
       ],
     );
 

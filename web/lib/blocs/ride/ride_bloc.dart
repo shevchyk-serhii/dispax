@@ -429,7 +429,13 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       emit(RideState.loaded(updatedRides));
     } on ApiException catch (e) {
       emit(
-        state.copyWith(status: RideStateStatus.error, errorMessage: e.message),
+        state.copyWith(
+          status: RideStateStatus.error,
+          errorMessage: e.message,
+          // Carry the typed cause so the UI can classify via friendlyError
+          // (the generic branch below already did).
+          error: e,
+        ),
       );
     } catch (e) {
       emit(

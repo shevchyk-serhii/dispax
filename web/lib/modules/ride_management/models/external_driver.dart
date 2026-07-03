@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 class ExternalDriver {
   final String id;
   final String name;
@@ -24,8 +26,8 @@ class ExternalDriver {
       phone: json['phone']?.toString(),
       partnerCompanyId: json['partnerCompanyId']?.toString(),
       taxiCompanyId: json['taxiCompanyId']?.toString() ?? '',
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
+      updatedAt: JsonParse.requiredDateTime(json, 'updatedAt'),
     );
   }
 
