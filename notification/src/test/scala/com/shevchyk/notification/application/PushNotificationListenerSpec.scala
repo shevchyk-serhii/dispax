@@ -70,7 +70,7 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
       )
       def findByStatus(status: UserStatus): Task[List[Person]]                                               = nope("findByStatus")
       def searchByQuery(query: String): Task[List[Person]]                                                   = nope("searchByQuery")
-      def updateLastLogin(id: PersonId): Task[Unit]                                                          = nope("updateLastLogin")
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = nope("updateLastLogin")
       def findByClientCompany(c: ClientCompanyId): Task[List[Person]]                                        = nope("findByClientCompany")
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none

@@ -73,7 +73,7 @@ object PersonNameLookupSpec extends ZIOSpecDefault:
           def deleteInCompany(id: PersonId, cid: CompanyId): Task[Unit]                                    = notImpl
           def findByStatus(status: UserStatus): Task[List[Person]]                                         = notImpl
           def searchByQuery(query: String): Task[List[Person]]                                             = notImpl
-          def updateLastLogin(id: PersonId): Task[Unit]                                                    = notImpl
+          def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                      = notImpl
           def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                               = notImpl
           def upsertDriverRow(pid: PersonId): Task[Unit]                                                   = notImpl
           def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                 = notImpl

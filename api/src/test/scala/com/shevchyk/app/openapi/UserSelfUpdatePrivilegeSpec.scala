@@ -139,7 +139,7 @@ object UserSelfUpdatePrivilegeSpec extends ZIOSpecDefault:
       def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                       = notImpl
       def findByStatus(s: UserStatus): Task[List[Person]]                                       = notImpl
       def searchByQuery(q: String): Task[List[Person]]                                          = notImpl
-      def updateLastLogin(id: PersonId): Task[Unit]                                             = ZIO.unit
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]               = ZIO.unit
       def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
       def upsertDriverRow(pid: PersonId): Task[Unit]                                            = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = ZIO.none

@@ -131,7 +131,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
       def searchByQuery(q: String): Task[List[Person]]                                          = peopleRef.get.map(
         _.values.filter(p => p.name.contains(q) || p.email.contains(q)).toList
       )
-      def updateLastLogin(id: PersonId): Task[Unit]                                             = ZIO.unit
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]               = ZIO.unit
       def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
       def upsertDriverRow(pid: PersonId): Task[Unit]                                            = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = avatarsRef.get.map(_.get(id))
