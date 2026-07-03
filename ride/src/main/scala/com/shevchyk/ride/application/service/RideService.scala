@@ -182,6 +182,25 @@ class RideServiceImpl(
     ZIO.logWarning(s"assignDriver rejected: rule=$rule msg=$msg") *>
       ZIO.fail(RideError.BusinessRuleViolation(rule, msg))
 
+  /**
+   * Best-effort event publication stays best-effort, but a dropped event must be visible: `EventHub.publish` returns
+   * `false` when the hub is shut down (the subscribers — push notifications, WebSocket clients — never see the event),
+   * which the old bare `.ignore` silently discarded. Only the event *name* is logged — the payload can carry fares and
+   * location data (PII).
+   */
+  private def warnUnlessPublished(eventName: String)(published: Boolean): UIO[Unit] =
+    ZIO.logWarning(s"WebSocket event $eventName was not published: event hub is shut down").unless(published).unit
+
+  /**
+   * Best-effort dedup-state cleanup: a failure must not fail the ride operation, but it must be visible — a stale dedup
+   * row suppresses the next confirmation-request push for this ride.
+   */
+  private def clearConfirmationDedup(rideId: RideId): UIO[Unit] =
+    sentConfirmationRequestRepository
+      .clear(rideId)
+      .tapError(e => ZIO.logWarning(s"Failed to clear confirmation-request dedup for ride ${rideId.value}: $e"))
+      .ignore
+
   def getRideById(rideId: RideId): IO[RideError, Ride] = rideRepository
     .findById(rideId)
     .mapDatabaseError
@@ -281,17 +300,16 @@ class RideServiceImpl(
             ZIO.succeed(enrichedRequest)
       ride            <- ZIO.succeed(RideMapper.fromRequest(adjustedRequest))
       persistedRide   <- rideRepository.create(ride).mapDatabaseError
-      _               <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideCreated(
-              rideId = persistedRide.id.value,
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value,
-              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
-            )
-          )
-          .ignore
+      _               <- eventHub
+                           .publish(
+                             WebSocketEvent.RideCreated(
+                               rideId = persistedRide.id.value,
+                               clientId = persistedRide.clientId.value,
+                               companyId = persistedRide.companyId.value,
+                               price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
+                             )
+                           )
+                           .flatMap(warnUnlessPublished("RideCreated"))
       _               <-
         emailSmsService
           .sendRideConfirmation(
@@ -407,18 +425,17 @@ class RideServiceImpl(
           .unit
       persistedRide = updatedRide
       // Clear dedup so a re-assigned ride can receive a new confirmation request.
-      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
-      _            <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideConfirmed(
-              rideId = persistedRide.id.value,
-              driverId = driverId.value,
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
-            )
-          )
-          .ignore
+      _            <- clearConfirmationDedup(rideId)
+      _            <- eventHub
+                        .publish(
+                          WebSocketEvent.RideConfirmed(
+                            rideId = persistedRide.id.value,
+                            driverId = driverId.value,
+                            clientId = persistedRide.clientId.value,
+                            companyId = persistedRide.companyId.value
+                          )
+                        )
+                        .flatMap(warnUnlessPublished("RideConfirmed"))
       _            <-
         auditService
           .log(
@@ -491,20 +508,19 @@ class RideServiceImpl(
           .unit
       persistedRide = updatedRide
       // Clear dedup for both confirmations and reminders so a re-assigned ride starts fresh.
-      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
+      _            <- clearConfirmationDedup(rideId)
       _            <- rideRepository.clearReminders(rideId).mapDatabaseError
-      _            <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideRejected(
-              rideId = persistedRide.id.value,
-              driverId = driverId.value,
-              clientId = persistedRide.clientId.value,
-              reason = reason,
-              companyId = persistedRide.companyId.value
-            )
-          )
-          .ignore
+      _            <- eventHub
+                        .publish(
+                          WebSocketEvent.RideRejected(
+                            rideId = persistedRide.id.value,
+                            driverId = driverId.value,
+                            clientId = persistedRide.clientId.value,
+                            reason = reason,
+                            companyId = persistedRide.companyId.value
+                          )
+                        )
+                        .flatMap(warnUnlessPublished("RideRejected"))
       _            <-
         auditService
           .log(
@@ -647,19 +663,18 @@ class RideServiceImpl(
       persistedRide = updatedRide
       // Side-effects only fire once the cancel actually applied, so we never emit a
       // RideStatusChanged/audit entry for a cancellation that lost the race.
-      _            <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideStatusChanged(
-              rideId = persistedRide.id.value,
-              newStatus = "Cancelled",
-              driverId = persistedRide.driverId.map(_.value),
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value,
-              cancellationReason = Some(request.reason)
-            )
-          )
-          .ignore
+      _            <- eventHub
+                        .publish(
+                          WebSocketEvent.RideStatusChanged(
+                            rideId = persistedRide.id.value,
+                            newStatus = "Cancelled",
+                            driverId = persistedRide.driverId.map(_.value),
+                            clientId = persistedRide.clientId.value,
+                            companyId = persistedRide.companyId.value,
+                            cancellationReason = Some(request.reason)
+                          )
+                        )
+                        .flatMap(warnUnlessPublished("RideStatusChanged"))
       _            <-
         auditService
           .log(
@@ -777,18 +792,17 @@ class RideServiceImpl(
       persistedRide = updatedRide
       // Side-effects only fire once the transition actually applied, so we never emit a
       // RideStatusChanged/audit entry for a transition that lost the race.
-      _            <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideStatusChanged(
-              rideId = persistedRide.id.value,
-              newStatus = persistedRide.status.toString,
-              driverId = persistedRide.driverId.map(_.value),
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
-            )
-          )
-          .ignore
+      _            <- eventHub
+                        .publish(
+                          WebSocketEvent.RideStatusChanged(
+                            rideId = persistedRide.id.value,
+                            newStatus = persistedRide.status.toString,
+                            driverId = persistedRide.driverId.map(_.value),
+                            clientId = persistedRide.clientId.value,
+                            companyId = persistedRide.companyId.value
+                          )
+                        )
+                        .flatMap(warnUnlessPublished("RideStatusChanged"))
       _            <-
         auditService
           .log(
@@ -905,20 +919,19 @@ class RideServiceImpl(
       persistedRide    <- rideRepository.update(updatedRide).mapDatabaseError
       pickupTimeChanged = request.pickupDateTime.exists(_ != ride.pickupDateTime)
       _                <- ZIO.when(pickupTimeChanged)(rideRepository.clearReminders(rideId).mapDatabaseError)
-      _                <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideDetailsUpdated(
-              rideId = persistedRide.id.value,
-              driverId = persistedRide.driverId.map(_.value),
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value,
-              // Only set when this update actually moved the ride to another client, so
-              // consumers can tell a reassignment apart from an ordinary details edit.
-              previousClientId = newClientId.map(_ => ride.clientId.value)
-            )
-          )
-          .ignore
+      _                <- eventHub
+                            .publish(
+                              WebSocketEvent.RideDetailsUpdated(
+                                rideId = persistedRide.id.value,
+                                driverId = persistedRide.driverId.map(_.value),
+                                clientId = persistedRide.clientId.value,
+                                companyId = persistedRide.companyId.value,
+                                // Only set when this update actually moved the ride to another client, so
+                                // consumers can tell a reassignment apart from an ordinary details edit.
+                                previousClientId = newClientId.map(_ => ride.clientId.value)
+                              )
+                            )
+                            .flatMap(warnUnlessPublished("RideDetailsUpdated"))
     } yield persistedRide
 
   /**
@@ -1014,18 +1027,17 @@ class RideServiceImpl(
           }
           .unit
       persistedRide = updatedRide
-      _            <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideAssigned(
-              rideId = persistedRide.id.value,
-              driverId = driverId.value,
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value,
-              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
-            )
-          )
-          .ignore
+      _            <- eventHub
+                        .publish(
+                          WebSocketEvent.RideAssigned(
+                            rideId = persistedRide.id.value,
+                            driverId = driverId.value,
+                            clientId = persistedRide.clientId.value,
+                            companyId = persistedRide.companyId.value,
+                            price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
+                          )
+                        )
+                        .flatMap(warnUnlessPublished("RideAssigned"))
       _            <-
         emailSmsService
           .sendDriverAssignment(
@@ -1124,23 +1136,22 @@ class RideServiceImpl(
           .unit
       persistedRide = updatedRide
       // Clear confirmation dedup so the new driver receives a confirmation request.
-      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
-      _            <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideAssigned(
-              rideId = persistedRide.id.value,
-              driverId = newDriverId.value,
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value,
-              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice),
-              // The displaced driver (from the pre-update ride) so the notification layer can
-              // tell them the ride is no longer theirs. Omitted when "reassigning" to the same
-              // driver — there is nobody to notify then.
-              previousDriverId = ride.driverId.map(_.value).filter(_ != newDriverId.value)
-            )
-          )
-          .ignore
+      _            <- clearConfirmationDedup(rideId)
+      _            <- eventHub
+                        .publish(
+                          WebSocketEvent.RideAssigned(
+                            rideId = persistedRide.id.value,
+                            driverId = newDriverId.value,
+                            clientId = persistedRide.clientId.value,
+                            companyId = persistedRide.companyId.value,
+                            price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice),
+                            // The displaced driver (from the pre-update ride) so the notification layer can
+                            // tell them the ride is no longer theirs. Omitted when "reassigning" to the same
+                            // driver — there is nobody to notify then.
+                            previousDriverId = ride.driverId.map(_.value).filter(_ != newDriverId.value)
+                          )
+                        )
+                        .flatMap(warnUnlessPublished("RideAssigned"))
       _            <-
         auditService
           .log(
@@ -1555,18 +1566,17 @@ class RideServiceImpl(
           .mapDatabaseError
       _              <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, RideStatus.HandedOff)).when(!applied).unit
       persistedRide   = updatedRide
-      _              <-
-        eventHub
-          .publish(
-            WebSocketEvent.RideStatusChanged(
-              rideId = persistedRide.id.value,
-              newStatus = "HandedOff",
-              driverId = None,
-              clientId = persistedRide.clientId.value,
-              companyId = persistedRide.companyId.value
-            )
-          )
-          .ignore
+      _              <- eventHub
+                          .publish(
+                            WebSocketEvent.RideStatusChanged(
+                              rideId = persistedRide.id.value,
+                              newStatus = "HandedOff",
+                              driverId = None,
+                              clientId = persistedRide.clientId.value,
+                              companyId = persistedRide.companyId.value
+                            )
+                          )
+                          .flatMap(warnUnlessPublished("RideStatusChanged"))
       _              <-
         auditService
           .log(
