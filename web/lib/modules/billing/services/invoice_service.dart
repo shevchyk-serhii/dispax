@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import '../../core/services/api_client.dart';
+import '../../core/services/query_string.dart';
 import '../models/invoice.dart';
 import '../models/billable_ride.dart';
 
@@ -17,9 +18,13 @@ class InvoiceService {
     int limit = 50,
     int offset = 0,
   }) async {
-    var endpoint = '/billing/invoices?limit=$limit&offset=$offset';
-    if (status != null) endpoint += '&status=${status.value}';
-    final response = await _apiClient.get(endpoint);
+    final response = await _apiClient.get(
+      withQuery('/billing/invoices', {
+        'limit': '$limit',
+        'offset': '$offset',
+        'status': status?.value,
+      }),
+    );
     if (response.statusCode == 200) {
       final List<dynamic> json = jsonDecode(response.body);
       return json
@@ -68,10 +73,13 @@ class InvoiceService {
     DateTime? from,
     DateTime? to,
   }) async {
-    var endpoint = '/billing/billable-rides?clientCompanyId=$clientCompanyId';
-    if (from != null) endpoint += '&from=${_fmtDate(from)}';
-    if (to != null) endpoint += '&to=${_fmtDate(to)}';
-    final response = await _apiClient.get(endpoint);
+    final response = await _apiClient.get(
+      withQuery('/billing/billable-rides', {
+        'clientCompanyId': clientCompanyId,
+        'from': from == null ? null : _fmtDate(from),
+        'to': to == null ? null : _fmtDate(to),
+      }),
+    );
     if (response.statusCode == 200) {
       final List<dynamic> json = jsonDecode(response.body);
       return json

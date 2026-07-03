@@ -460,9 +460,13 @@ void main() {
 
           expect(rides.length, 2);
           expect(capturedPath, contains('/rides/by-drivers'));
-          expect(capturedPath, contains('driverIds=driver-a,driver-b'));
-          expect(capturedPath, contains('from=2026-06-22'));
-          expect(capturedPath, contains('to=2026-06-22'));
+          // Query values are built via withQuery (encoded), so assert the
+          // decoded parameters rather than the raw string (the comma is
+          // legitimately sent as %2C).
+          final query = Uri.parse(capturedPath!).queryParameters;
+          expect(query['driverIds'], 'driver-a,driver-b');
+          expect(query['from'], '2026-06-22');
+          expect(query['to'], '2026-06-22');
         },
       );
 
