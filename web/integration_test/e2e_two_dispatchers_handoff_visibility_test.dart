@@ -107,7 +107,7 @@ void main() {
       expect(hoStatus, 200, reason: 'Hand-off should succeed for dispatcher B');
 
       await bootstrapTestApp();
-      await $.pumpAndSettle();
+      await pumpFor($, const Duration(seconds: 2));
 
       // Dispatcher A opens the board and switches to the Assigned tab.
       await loginViaUi($, kDevDispatcherA, kDevPassword);
@@ -118,7 +118,7 @@ void main() {
         'Assigned',
       ).waitUntilVisible(timeout: const Duration(seconds: 20));
       await $('Assigned').tap();
-      await $.pumpAndSettle(timeout: const Duration(seconds: 10));
+      await pumpFor($, const Duration(seconds: 3));
 
       // The handed-off ride is visible with the "Handed Off" badge.
       await $(

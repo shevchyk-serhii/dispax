@@ -112,7 +112,7 @@ void main() {
       await _assign(dispToken, rideId, _hansDriver);
 
       await bootstrapTestApp();
-      await $.pumpAndSettle();
+      await pumpFor($, const Duration(seconds: 2));
 
       await loginViaUi($, kDevDispatcherA, kDevPassword);
       if (skipIfBackendDown($)) return;
@@ -122,7 +122,7 @@ void main() {
         'Assigned',
       ).waitUntilVisible(timeout: const Duration(seconds: 20));
       await $('Assigned').tap();
-      await $.pumpAndSettle(timeout: const Duration(seconds: 10));
+      await pumpFor($, const Duration(seconds: 3));
 
       // Baseline: the ride is on the Assigned tab as "Assigned".
       expect(

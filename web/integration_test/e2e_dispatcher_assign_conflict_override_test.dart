@@ -107,32 +107,34 @@ void main() {
       );
 
       await bootstrapTestApp();
-      await $.pumpAndSettle();
+      await pumpFor($, const Duration(seconds: 2));
 
       await loginViaUi($, kDevDispatcherA, kDevPassword);
       if (skipIfBackendDown($)) return;
 
       await tapNav($, 'Home');
 
-      // On the Pending tab, open the BMW (Requested) ride's driver sheet.
+      // On the Pending tab, open the BMW (Requested) ride's driver sheet. The
+      // row joins time and client into one Text ("10:00 · BMW AG - …"), so an
+      // exact-text finder never matches — use textContaining.
       await $(
-        'BMW AG - Herr Schneider',
+        find.textContaining('BMW AG - Herr Schneider'),
       ).waitUntilVisible(timeout: const Duration(seconds: 20));
       await $('Assign').waitUntilVisible(timeout: const Duration(seconds: 10));
       await $('Assign').scrollTo().tap();
-      await $.pumpAndSettle(timeout: const Duration(seconds: 10));
+      await pumpFor($, const Duration(seconds: 3));
 
       expect($('Select Driver'), findsWidgets);
       // Pick Hans, who is busy in the overlapping window.
       await $('Hans Weber').scrollTo().tap();
-      await $.pumpAndSettle();
+      await pumpFor($, const Duration(seconds: 2));
 
       // The AssignmentDialog must offer "Assign Anyway" (local conflict found).
       await $(
         'Assign Anyway',
       ).waitUntilVisible(timeout: const Duration(seconds: 10));
       await $('Assign Anyway').tap();
-      await $.pumpAndSettle(timeout: const Duration(seconds: 15));
+      await pumpFor($, const Duration(seconds: 3));
 
       // The override went through: no raw failure, still logged in.
       expect(find.textContaining('Failed to assign'), findsNothing);

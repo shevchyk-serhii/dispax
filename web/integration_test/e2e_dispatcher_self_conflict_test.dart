@@ -84,7 +84,7 @@ void main() {
     await _assign(dispToken, rideId, _hansDriver);
 
     await bootstrapTestApp();
-    await $.pumpAndSettle();
+    await pumpFor($, const Duration(seconds: 2));
 
     await loginViaUi($, kDevDispatcherA, kDevPassword);
     if (skipIfBackendDown($)) return;
@@ -92,11 +92,11 @@ void main() {
     await tapNav($, 'Home');
     await $('Assigned').waitUntilVisible(timeout: const Duration(seconds: 20));
     await $('Assigned').tap();
-    await $.pumpAndSettle();
+    await pumpFor($, const Duration(seconds: 2));
 
     await $('Reassign').waitUntilVisible(timeout: const Duration(seconds: 15));
     await $('Reassign').scrollTo().tap();
-    await $.pumpAndSettle(timeout: const Duration(seconds: 10));
+    await pumpFor($, const Duration(seconds: 3));
 
     expect($('Reassign Driver'), findsWidgets);
 
@@ -109,7 +109,7 @@ void main() {
     );
 
     await $('Hans Weber').scrollTo().tap();
-    await $.pumpAndSettle();
+    await pumpFor($, const Duration(seconds: 2));
 
     // No self-conflict → the confirm dialog shows the plain "Assign driver"
     // button, never the orange "Assign Anyway".
@@ -121,7 +121,7 @@ void main() {
     expect($('Assign driver'), findsWidgets);
 
     await $('Assign driver').tap();
-    await $.pumpAndSettle(timeout: const Duration(seconds: 15));
+    await pumpFor($, const Duration(seconds: 3));
 
     expect(find.textContaining('Failed to reassign'), findsNothing);
     expect($('Sign in'), findsNothing);

@@ -94,7 +94,7 @@ void main() {
     await _assign(dispAToken, rideId, _hansDriver);
 
     await bootstrapTestApp();
-    await $.pumpAndSettle();
+    await pumpFor($, const Duration(seconds: 2));
 
     // Dispatcher B logs in, opens the Assigned tab, reassigns to Klaus.
     await loginViaUi($, kDevDispatcherB, kDevPassword);
@@ -103,20 +103,20 @@ void main() {
     await tapNav($, 'Home');
     await $('Assigned').waitUntilVisible(timeout: const Duration(seconds: 20));
     await $('Assigned').tap();
-    await $.pumpAndSettle();
+    await pumpFor($, const Duration(seconds: 2));
 
     await $('Reassign').waitUntilVisible(timeout: const Duration(seconds: 15));
     await $('Reassign').scrollTo().tap();
-    await $.pumpAndSettle(timeout: const Duration(seconds: 10));
+    await pumpFor($, const Duration(seconds: 3));
 
     expect($('Reassign Driver'), findsWidgets);
     await $('Klaus Fischer').scrollTo().tap();
-    await $.pumpAndSettle();
+    await pumpFor($, const Duration(seconds: 2));
 
     // No local conflict (single ride) → "Assign driver" confirm.
     if ($('Assign driver').exists) {
       await $('Assign driver').tap();
-      await $.pumpAndSettle(timeout: const Duration(seconds: 15));
+      await pumpFor($, const Duration(seconds: 3));
     }
 
     // No raw failure leaked.

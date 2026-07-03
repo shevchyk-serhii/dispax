@@ -86,7 +86,7 @@ void main() {
       );
 
       await bootstrapTestApp();
-      await $.pumpAndSettle();
+      await pumpFor($, const Duration(seconds: 2));
 
       // Dispatcher A opens the Pending board.
       await loginViaUi($, kDevDispatcherA, kDevPassword);

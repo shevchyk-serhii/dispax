@@ -378,8 +378,8 @@ e2e-backend-up:
 	@docker compose up -d postgres-test
 	@until docker exec dispax-postgres-test-1 pg_isready -U dispax -d dispax_test >/dev/null 2>&1; do sleep 1; done
 	@echo "🚀 Starting full backend on port $(TEST_PORT) (test DB)..."
-	@export $$(grep -v '^#' .env.dev | grep -vE '^(PORT|DATABASE_URL)=' | xargs) && \
-	  DATABASE_URL=$(TEST_DB_URL) PORT=$(TEST_PORT) APP_ENV=development sbt run & \
+	@export $$(grep -v '^#' .env.dev | grep -vE '^(PORT|DATABASE_URL|DB_URL)=' | xargs) && \
+	  DB_URL=$(TEST_DB_URL) DATABASE_URL=$(TEST_DB_URL) PORT=$(TEST_PORT) APP_ENV=development sbt run & \
 	  echo $$! > /tmp/dispax-e2e-backend.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
