@@ -16,6 +16,7 @@ import '../../../constants/app_dimensions.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_styles.dart';
 import '../../../modules/core/services/error_messages.dart';
+import '../../superadmin/widgets/billing_widgets.dart' show fmtEur;
 
 class ClientDetailScreen extends StatefulWidget {
   final Person client;
@@ -397,7 +398,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       ),
                     if (price != null)
                       Text(
-                        '€${price.toStringAsFixed(2)}',
+                        fmtEur(price),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,

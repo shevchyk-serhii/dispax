@@ -1263,7 +1263,7 @@ class _InvoiceDetailSheetState extends State<_InvoiceDetailSheet> {
                         ),
                       ),
                       Text(
-                        '€${item.total.toStringAsFixed(2)}',
+                        fmtEur(item.total),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -1458,7 +1458,7 @@ class _TotalRow extends StatelessWidget {
           style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
         ),
         Text(
-          '€${amount.toStringAsFixed(2)}',
+          fmtEur(amount),
           style: bold
               ? TextStyle(
                   fontWeight: FontWeight.bold,
