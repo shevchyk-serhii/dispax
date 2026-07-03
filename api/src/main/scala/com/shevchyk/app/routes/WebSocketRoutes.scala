@@ -1,7 +1,7 @@
 package com.shevchyk.app.routes
 
 import com.shevchyk.core.application.EventHub
-import com.shevchyk.core.domain.WebSocketEvent
+import com.shevchyk.core.domain.{PersonRole, WebSocketEvent}
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.ride.application.service.RideShareTokenService
 import zio.*
@@ -62,6 +62,22 @@ object WebSocketRoutes:
   }
 
   private val TICKET_TTL_SECONDS = 30L
+
+  /**
+   * Tenant filter for the authenticated event socket — fail-closed. A subscriber whose JWT carries a companyId receives
+   * exactly that company's events. A token WITHOUT a companyId receives events only when it belongs to a SuperAdmin
+   * (platform-wide monitoring); any other companyId-less token receives nothing. The previous
+   * `payload.companyId.getOrElse(event.companyId)` made a missing companyId match EVERY event — a fail-open stream of
+   * all tenants' data to any historically companyId-less account.
+   */
+  private[app] def shouldDeliverToAuthenticated(
+      eventCompanyId: UUID,
+      subscriberCompanyId: Option[UUID],
+      subscriberRoles: Set[PersonRole]
+  ): Boolean =
+    subscriberCompanyId match
+      case Some(cid) => cid == eventCompanyId
+      case None      => subscriberRoles.contains(PersonRole.SuperAdmin)
 
   // Server-side heartbeat: without traffic the connection goes idle and Netty's
   // default read timeout (~60s) tears it down, causing clients to flap-reconnect.
@@ -223,8 +239,12 @@ object WebSocketRoutes:
                             val sendEvents =
                               dequeue.take
                                 .flatMap { event =>
-                                  if event.companyId == payload.companyId.getOrElse(event.companyId) then
-                                    channel.send(ChannelEvent.Read(WebSocketFrame.text(event.toJson))).ignore
+                                  if shouldDeliverToAuthenticated(
+                                        event.companyId,
+                                        payload.companyId,
+                                        payload.roles.getOrElse(Nil).toSet + payload.role
+                                      )
+                                  then channel.send(ChannelEvent.Read(WebSocketFrame.text(event.toJson))).ignore
                                   else ZIO.unit
                                 }
                                 .forever

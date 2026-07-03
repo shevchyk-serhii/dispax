@@ -186,6 +186,74 @@ object ScheduleServiceVisibilitySpec extends ZIOSpecDefault {
                        )
           } yield assertTrue(days.nonEmpty && days.forall(_.driverId == driverBId))
         }.provide(layers),
+        // ── broken-access-control regression ──────────────────────────────────
+        // The authorization used to be "anything that is not DRIVER → allowed": the
+        // else-branch let CLIENT / CLIENT_SECRETARY (and any unknown role) read ANY
+        // driver's operational schedule in their company. Staff roles are now an
+        // explicit whitelist; everything else is AccessDenied.
+        test("CLIENT viewing a driver's schedule → AccessDenied (regression)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            _       <- makeScheduleForDriver(service, driverBId, companyA, futureDate.plusDays(4))
+            result  <-
+              service
+                .getDriverScheduleAs(
+                  requesterId = PersonId.generate(),
+                  requesterRole = "CLIENT",
+                  targetDriverId = driverBId,
+                  companyId = companyA
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.AccessDenied])
+            case _                   => false
+          })
+        }.provide(layers),
+        test("CLIENT_SECRETARY and unknown roles → AccessDenied (regression)") {
+          for {
+            service     <- ZIO.service[ScheduleService]
+            _           <- makeScheduleForDriver(service, driverBId, companyA, futureDate.plusDays(5))
+            csResult    <-
+              service
+                .getDriverScheduleAs(
+                  requesterId = PersonId.generate(),
+                  requesterRole = "CLIENT_SECRETARY",
+                  targetDriverId = driverBId,
+                  companyId = companyA
+                )
+                .exit
+            weirdResult <-
+              service
+                .getDriverScheduleAs(
+                  requesterId = PersonId.generate(),
+                  requesterRole = "SOMETHING_ELSE",
+                  targetDriverId = driverBId,
+                  companyId = companyA
+                )
+                .exit
+          } yield assertTrue(
+            csResult match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.AccessDenied])
+              case _                   => false
+            },
+            weirdResult match {
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.AccessDenied])
+              case _                   => false
+            }
+          )
+        }.provide(layers),
+        test("SUPER_ADMIN viewing another driver → allowed (staff whitelist)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            _       <- makeScheduleForDriver(service, driverBId, companyA, futureDate.plusDays(6))
+            days    <- service.getDriverScheduleAs(
+                         requesterId = PersonId.generate(),
+                         requesterRole = "SUPER_ADMIN",
+                         targetDriverId = driverBId,
+                         companyId = companyA
+                       )
+          } yield assertTrue(days.nonEmpty && days.forall(_.driverId == driverBId))
+        }.provide(layers),
         test("Driver with canViewOtherSchedules=true → allowed to view colleague") {
           for {
             service <- ZIO.service[ScheduleService]

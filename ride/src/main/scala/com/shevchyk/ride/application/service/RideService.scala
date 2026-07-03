@@ -16,6 +16,7 @@ import com.shevchyk.ride.repository.{
   ExternalDriverRepository,
   PartnerCompanyRepository,
   RideRepository,
+  RideShareTokenRepository,
   TimeBucket
 }
 import com.shevchyk.core.repository.PersonRepository
@@ -170,7 +171,8 @@ class RideServiceImpl(
     scheduleDayLookup: ScheduleDayLookup,
     externalDriverRepo: ExternalDriverRepository,
     partnerCompanyRepo: PartnerCompanyRepository,
-    sentConfirmationRequestRepository: SentConfirmationRequestRepository
+    sentConfirmationRequestRepository: SentConfirmationRequestRepository,
+    rideShareTokenRepository: RideShareTokenRepository
 ) extends RideService:
 
   /**
@@ -849,6 +851,12 @@ class RideServiceImpl(
                   )
                   .when(!client.companyId.contains(ride.companyId))
                   .unit
+              // The previous client's guest /track link must die with the reassignment —
+              // otherwise they keep a live view of the driver's position and route for up
+              // to 24h on a ride that is no longer theirs. Revoked BEFORE the ride row is
+              // persisted: if the revoke fails the whole update fails (consistent state);
+              // a revoke that succeeds before a failing persist only costs a re-share.
+              _         <- rideShareTokenRepository.deleteByRideId(rideId).mapDatabaseError
             } yield Some(newClientId)
 
       newPickup  <-
@@ -1592,7 +1600,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository & RideShareTokenRepository,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

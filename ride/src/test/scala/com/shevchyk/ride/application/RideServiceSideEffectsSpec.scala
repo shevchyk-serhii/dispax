@@ -16,7 +16,7 @@ import com.shevchyk.core.application.{
 import com.shevchyk.core.repository.{BlacklistRepository, PersonRepository, SentConfirmationRequestRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{PickupTimeService, RideService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, InMemoryRideShareTokenRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.test.*
 import zio.*
@@ -149,7 +149,8 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       emailConcrete ++ (emailConcrete >>> emailAsService) ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory
+      SentConfirmationRequestRepository.inMemory ++
+      InMemoryRideShareTokenRepository.layer
 
   private val fullLayers = baseLayers >+> RideService.layer
 

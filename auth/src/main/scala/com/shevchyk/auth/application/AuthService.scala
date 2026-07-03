@@ -50,6 +50,15 @@ trait AuthService:
   def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
 
   /**
+   * Owner-facing profile update: applies only the self-editable fields (email, name, phone, preferredLanguage) and
+   * fails `AccessDenied` when the request carries any privileged field (`role`, `roles`, `status`, `isVip`,
+   * `clientCompanyId`). Routes MUST use this method whenever the caller is the account owner rather than a
+   * dispatcher/admin — the generic [[updateUser]] applies every field of the request and would let a user escalate
+   * their own account (self-grant ADMIN, self-mark VIP, rebind the billing client-company).
+   */
+  def updateOwnProfile(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto]
+
+  /**
    * Promote a provisional ("from-chat / walk-in") client to a real client, scoped to `companyId`: the row is read and
    * updated only when it belongs to that company AND is currently provisional. Fills in name/phone/clientCompanyId and
    * clears the `provisional` flag in place, so the ride keeps its `clientId` and history. Fails `UserNotFound` for a
@@ -248,6 +257,24 @@ class AuthServiceImpl(
       personOpt <- personRepository.findByEmail(email).orElseFail(UserNotFound(email))
       person    <- ZIO.fromOption(personOpt).orElseFail(UserNotFound(email))
     yield UserDto.fromPerson(person)
+
+  override def updateOwnProfile(
+      id: UUID,
+      companyId: CompanyId,
+      request: UpdateUserRequest
+  ): ZIO[Any, AuthError, UserDto] =
+    // Privileged fields are managed exclusively through dispatcher/admin flows; accepting any of
+    // them here would let a user escalate their own account via the generic update path.
+    val privileged = List(
+      request.role.isDefined            -> "role",
+      request.roles.isDefined           -> "roles",
+      request.status.isDefined          -> "status",
+      request.isVip.isDefined           -> "isVip",
+      request.clientCompanyId.isDefined -> "clientCompanyId"
+    ).collect { case (true, field) => field }
+    if privileged.nonEmpty then
+      ZIO.fail(AccessDenied(s"Only a dispatcher or admin can change: ${privileged.mkString(", ")}"))
+    else updateUser(id, companyId, request)
 
   override def updateUser(id: UUID, companyId: CompanyId, request: UpdateUserRequest): ZIO[Any, AuthError, UserDto] =
     for

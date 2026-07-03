@@ -318,6 +318,16 @@ object RideApi:
       _               <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
       companyId       <- requireCompanyId(user.companyId)
       validRequest    <- apiRequest.validate.mapError(fromRideError)
+      // provisionalClient is a staff affordance (driver/dispatcher/secretary booking a walk-in
+      // passenger). A CLIENT/CLIENT_SECRETARY must always book as an identified client — honouring
+      // the flag for them would let a client fabricate phantom Person rows and book rides under an
+      // arbitrary name/phone instead of their own identity.
+      _               <- ZIO
+                           .fail((StatusCode.Forbidden, ApiError("provisionalClient is not available to client roles")))
+                           .when(
+                             validRequest.provisionalClient &&
+                               Set("CLIENT", "CLIENT_SECRETARY").contains(user.role.toUpperCase)
+                           )
       personRepo      <- ZIO.service[PersonRepository]
       // Provisional ("from-chat") ride: no real client is known. Create a lightweight provisional
       // client carrying the typed clientName/clientPhone (which were previously discarded), stamped
@@ -333,7 +343,10 @@ object RideApi:
             )
             personRepo
               .create(provisional)
-              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+              // Never surface raw repository/driver text (constraint and table names) to the
+              // caller — log the cause, answer with the same generic 500 as fromRideError.
+              .tapError(e => ZIO.logError(s"Failed to create provisional client: ${e.getMessage}"))
+              .mapError(_ => (StatusCode.InternalServerError, ApiError("Internal server error")))
           }
       // For a client booking, the client is always the authenticated user. For a provisional ride,
       // point clientId at the freshly created provisional client. Otherwise use the supplied clientId.
@@ -359,7 +372,8 @@ object RideApi:
           case None    =>
             personRepo
               .findById(domainRequest.clientId)
-              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+              .tapError(e => ZIO.logError(s"Failed to load ride client: ${e.getMessage}"))
+              .mapError(_ => (StatusCode.InternalServerError, ApiError("Internal server error")))
       enrichedRequest  =
         clientPerson
           .flatMap(_.clientCompanyId)

@@ -151,6 +151,7 @@ object UserApi:
       case InvalidCredentials(_)     => (StatusCode.Unauthorized, ApiError("Invalid credentials"))
       case WeakPassword(reason)      => (StatusCode.BadRequest, ApiError(reason))
       case ValidationError(field, m) => (StatusCode.BadRequest, ApiError(s"$field: $m"))
+      case AccessDenied(reason)      => (StatusCode.Forbidden, ApiError(reason))
       case _                         => (StatusCode.InternalServerError, ApiError("Internal server error"))
 
   // -- Environment ----------------------------------------------------------
@@ -550,8 +551,10 @@ object UserApi:
     user => updateReq =>
       for {
         companyId <- requireCompanyId(user)
+        // Owner path: updateOwnProfile rejects privileged fields (role/roles/status/isVip/
+        // clientCompanyId) — a user must not escalate their own account via profile update.
         userDto   <- ZIO
-                       .serviceWithZIO[AuthService](_.updateUser(user.userId, companyId, updateReq))
+                       .serviceWithZIO[AuthService](_.updateOwnProfile(user.userId, companyId, updateReq))
                        .mapError(mapAuthError)
       } yield userDto
   }
@@ -666,7 +669,15 @@ object UserApi:
         _         <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
         _         <- requireSameCompany(user, uid)
         companyId <- requireCompanyId(user)
-        userDto   <- ZIO.serviceWithZIO[AuthService](_.updateUser(uid, companyId, updateReq)).mapError(mapAuthError)
+        // A dispatcher/admin may set privileged fields; a plain owner (the checkRoleOrOwner
+        // owner branch) goes through updateOwnProfile, which rejects role/roles/status/isVip/
+        // clientCompanyId — otherwise any user could self-grant ADMIN via this generic PUT.
+        userDto   <- ZIO
+                       .serviceWithZIO[AuthService] { svc =>
+                         if user.hasAnyRole("DISPATCHER", "ADMIN") then svc.updateUser(uid, companyId, updateReq)
+                         else svc.updateOwnProfile(uid, companyId, updateReq)
+                       }
+                       .mapError(mapAuthError)
       } yield userDto
     }
   }
