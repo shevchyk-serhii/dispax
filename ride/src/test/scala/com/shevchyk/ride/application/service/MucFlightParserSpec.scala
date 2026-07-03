@@ -21,6 +21,17 @@ object MucFlightParserSpec extends ZIOSpecDefault:
 
   private val theDate = LocalDate.of(2026, 6, 26)
 
+  /**
+   * A minimal synthetic board row with the given MUC time cell ("planned | expected"), shaped like the real fixture
+   * markup — used to pin down the time-anchoring rules without a captured fixture per case.
+   */
+  private def syntheticRow(mucTimeCell: String): String =
+    s"""<table><tr data-flight-id="1.0" class="fp-flight-item">
+       |<td class="fp-flight-number">LH 123 (A320)</td>
+       |<td class="fp-flight-time-muc">$mucTimeCell</td>
+       |<td class="fp-flight-status">verspätet</td>
+       |</tr></table>""".stripMargin
+
   def spec =
     suite("MucFlightParser")(
       test("parses the single number-filtered departure (4Y 1410)") {
@@ -77,6 +88,25 @@ object MucFlightParserSpec extends ZIOSpecDefault:
       test("carries the requested direction through to the result") {
         val arr = MucFlightParser.parse(fixture("departure_single.html"), theDate, isArrival = true)
         assertTrue(arr.exists(_.isArrival))
+      },
+      test("an after-midnight expected time rolls to the NEXT day (23:50 | 00:15)") {
+        // Both halves of the MUC time cell are bare wall-clock HH:mm on the request date. When a late-evening
+        // flight slips past midnight ("23:50 | 00:15"), the expected half belongs to the NEXT calendar day —
+        // anchoring it to the same date would put the estimate ~23.5h BEFORE the schedule (a negative delay).
+        val info = MucFlightParser.parse(syntheticRow("23:50&nbsp;|&nbsp;00:15"), theDate, isArrival = true)
+        assertTrue(
+          // 23:50 Europe/Berlin (CEST, +02:00) on 2026-06-26 == 21:50 UTC
+          info.get.scheduledTime.contains(Instant.parse("2026-06-26T21:50:00Z")),
+          // 00:15 on the NEXT day (2026-06-27) Europe/Berlin == 2026-06-26T22:15 UTC
+          info.get.estimatedTime.contains(Instant.parse("2026-06-26T22:15:00Z"))
+        )
+      },
+      test("a normal same-day expected time stays on the request date (10:00 | 10:20)") {
+        val info = MucFlightParser.parse(syntheticRow("10:00&nbsp;|&nbsp;10:20"), theDate, isArrival = true)
+        assertTrue(
+          info.get.scheduledTime.contains(Instant.parse("2026-06-26T08:00:00Z")),
+          info.get.estimatedTime.contains(Instant.parse("2026-06-26T08:20:00Z"))
+        )
       },
       test("normalizeFlightNumber strips whitespace and upper-cases") {
         assertTrue(
