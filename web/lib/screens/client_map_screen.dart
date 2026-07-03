@@ -16,6 +16,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_dimensions.dart';
 import '../utils/ride_status_styles.dart';
+import '../utils/serial_task_queue.dart';
 
 class ClientMapScreen extends StatefulWidget {
   /// When set, the screen tracks exactly this ride (by id) instead of falling
@@ -150,6 +151,12 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
   String? _approachingBannerMessage;
   Timer? _pulseTimer;
   bool _pulseState = false;
+
+  /// Serializes every live-marker mutation (driver/self delete→create
+  /// replacement and the pulse-tick radius updates): the replacement is not
+  /// atomic, so a concurrent update or pulse tick could otherwise touch an
+  /// already-deleted annotation or leave a duplicate dot.
+  final SerialTaskQueue _markerQueue = SerialTaskQueue();
   final Set<String> _airportCheckpointSent = {};
 
   @override
@@ -164,16 +171,22 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
       if (!mounted) return;
       _pulseState = !_pulseState;
-      final driverCircle = _driverCircle;
-      if (driverCircle != null) {
-        driverCircle.circleRadius = _pulseState ? 15.0 : 12.0;
-        _driverCircleManager?.update(driverCircle);
-      }
-      final selfCircle = _selfCircle;
-      if (selfCircle != null) {
-        selfCircle.circleRadius = _pulseState ? 12.0 : 9.0;
-        _selfCircleManager?.update(selfCircle);
-      }
+      // Queued so a tick can never update an annotation that an in-flight
+      // delete→create replacement has just removed.
+      unawaited(
+        _markerQueue.run(() async {
+          final driverCircle = _driverCircle;
+          if (driverCircle != null) {
+            driverCircle.circleRadius = _pulseState ? 15.0 : 12.0;
+            await _driverCircleManager?.update(driverCircle);
+          }
+          final selfCircle = _selfCircle;
+          if (selfCircle != null) {
+            selfCircle.circleRadius = _pulseState ? 12.0 : 9.0;
+            await _selfCircleManager?.update(selfCircle);
+          }
+        }),
+      );
     });
   }
 
@@ -359,7 +372,13 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     _updateMapMarkers();
   }
 
-  Future<void> _updateCurrentLocationMarker() async {
+  /// Replaces the client's own dot. Enqueued: the delete→await→create pair is
+  /// not atomic, so it must not interleave with the pulse tick or another
+  /// GPS-fix replacement.
+  Future<void> _updateCurrentLocationMarker() =>
+      _markerQueue.run(_updateCurrentLocationMarkerNow);
+
+  Future<void> _updateCurrentLocationMarkerNow() async {
     final currentPosition = _currentPosition;
     if (_mapboxMap == null || currentPosition == null) return;
 
@@ -379,7 +398,14 @@ class _ClientMapScreenState extends State<ClientMapScreen> {
     );
   }
 
-  Future<void> _updateDriverMarker(double latitude, double longitude) async {
+  /// Replaces the driver dot/label. The delete→await→create pair below is not
+  /// atomic, so it is enqueued: a burst of updates (WS replay on reconnect,
+  /// events racing each other) can no longer interleave and delete an
+  /// already-deleted annotation or leave a duplicate marker.
+  Future<void> _updateDriverMarker(double latitude, double longitude) =>
+      _markerQueue.run(() => _updateDriverMarkerNow(latitude, longitude));
+
+  Future<void> _updateDriverMarkerNow(double latitude, double longitude) async {
     if (_driverCircleManager == null) return;
 
     // Driver dot colour follows the ride status palette (design §8); falls back
