@@ -7,6 +7,7 @@ import '../modules/core/models/expense.dart';
 import '../modules/core/services/expense_service.dart';
 import '../dashboard/superadmin/widgets/billing_widgets.dart';
 import '../modules/core/services/error_messages.dart';
+import '../utils/parse_amount.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});
@@ -143,7 +144,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
             ),
             FilledButton(
               onPressed: () async {
-                final amount = double.tryParse(amountController.text);
+                final amount = parseAmount(amountController.text);
                 if (amount == null || amount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.invalidAmountError)),

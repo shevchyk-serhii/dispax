@@ -5,6 +5,7 @@ import 'package:dispax/l10n/app_localizations.dart';
 import '../../../../blocs/blocs.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
+import '../../../../utils/parse_amount.dart';
 
 /// Optional ride price input for the create-ride form. The operator may leave it
 /// empty — the ride is then created without a price and one can be set later. The
@@ -84,12 +85,12 @@ class _CreateRidePriceSectionState extends State<CreateRidePriceSection> {
           ),
         ),
         onChanged: (value) {
-          final normalized = value.trim().replaceAll(',', '.');
-          final parsed = double.tryParse(normalized);
+          final trimmed = value.trim();
+          final parsed = parseAmount(trimmed);
           // Empty or invalid input clears the price; a value <= 0 is rejected by
           // the backend, so we still forward it to surface the validation error.
           context.read<CreateRideFormBloc>().add(
-            RidePriceChanged(normalized.isEmpty ? null : parsed),
+            RidePriceChanged(trimmed.isEmpty ? null : parsed),
           );
         },
       ),

@@ -14,6 +14,7 @@ import '../modules/billing/models/client_company.dart';
 import '../modules/billing/models/invoice.dart';
 import '../modules/billing/services/client_company_service.dart';
 import '../modules/billing/services/invoice_service.dart';
+import '../utils/parse_amount.dart';
 import '../dashboard/superadmin/widgets/billing_widgets.dart';
 
 /// Per-ride billing: pick a client company, select its completed unbilled rides,
@@ -544,7 +545,7 @@ class _BillingRidesScreenState extends State<BillingRidesScreen> {
                       isDense: true,
                     ),
                     onChanged: (v) =>
-                        setState(() => _taxRate = double.tryParse(v) ?? 0),
+                        setState(() => _taxRate = parseAmount(v) ?? 0),
                   ),
                 ),
               ],
