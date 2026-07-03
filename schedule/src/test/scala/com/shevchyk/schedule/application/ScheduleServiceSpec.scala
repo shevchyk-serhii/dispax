@@ -191,10 +191,10 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
                        )
           } yield assertTrue(day.driverId == testDriverId2)
         }.provide(standardLayers),
-        test("back-to-back (touching) shifts on the same date do not count as overlap") {
+        test("back-to-back (touching) shifts on the same date are both created") {
           // 09:00–12:00 and 12:00–15:00 share only the boundary point, so the half-open
-          // interval check must NOT flag them. Same-date co-existence is still blocked by the
-          // repository duplicate guard, so the error here must be DuplicateScheduleDay, not OverlapConflict.
+          // interval check must NOT flag them, and (since the one-shift-per-date DB
+          // constraint was relaxed) the second shift is persisted alongside the first.
           for {
             service <- ZIO.service[ScheduleService]
             date     = futureDate.plusDays(203)
@@ -207,22 +207,50 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
                            endTime = LocalTime.of(12, 0)
                          )
                        )
-            result  <-
-              service
-                .createScheduleDay(
-                  CreateScheduleDayRequest(
-                    driverId = testDriverId,
-                    companyId = testCompanyId,
-                    date = date,
-                    startTime = LocalTime.of(12, 0),
-                    endTime = LocalTime.of(15, 0)
-                  )
-                )
-                .exit
-          } yield assertTrue(result match {
-            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.DuplicateScheduleDay])
-            case _                   => false
-          })
+            second  <- service.createScheduleDay(
+                         CreateScheduleDayRequest(
+                           driverId = testDriverId,
+                           companyId = testCompanyId,
+                           date = date,
+                           startTime = LocalTime.of(12, 0),
+                           endTime = LocalTime.of(15, 0)
+                         )
+                       )
+            allDays <- service.getDriverSchedule(testDriverId, testCompanyId)
+          } yield assertTrue(
+            second.startTime == LocalTime.of(12, 0),
+            allDays.count(_.date == date) == 2
+          )
+        }.provide(standardLayers),
+        test("cancelled shift frees its day for a new shift") {
+          // Cancelling is a soft-delete (row stays with status Cancelled); a new shift with
+          // the same times on the same day must be creatable afterwards.
+          for {
+            service   <- ZIO.service[ScheduleService]
+            date       = futureDate.plusDays(204)
+            first     <- service.createScheduleDay(
+                           CreateScheduleDayRequest(
+                             driverId = testDriverId,
+                             companyId = testCompanyId,
+                             date = date,
+                             startTime = LocalTime.of(8, 0),
+                             endTime = LocalTime.of(16, 0)
+                           )
+                         )
+            _         <- service.cancelScheduleDay(first.id, testCompanyId)
+            recreated <- service.createScheduleDay(
+                           CreateScheduleDayRequest(
+                             driverId = testDriverId,
+                             companyId = testCompanyId,
+                             date = date,
+                             startTime = LocalTime.of(8, 0),
+                             endTime = LocalTime.of(16, 0)
+                           )
+                         )
+          } yield assertTrue(
+            recreated.date == date,
+            recreated.status == ScheduleDayStatus.Scheduled
+          )
         }.provide(standardLayers),
         test("should fail when driver not found") {
           val unknownDriverId = PersonId(UUID.fromString("99999999-9999-9999-9999-999999999999"))
@@ -504,14 +532,14 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(standardLayers),
-        test("partial failure: first day persists when second day has duplicate date (non-atomic semantics)") {
+        test("partial failure: first day persists when second day overlaps an existing shift (non-atomic semantics)") {
           // BUG: createBatch is not atomic — day 1 persists even when day 2 fails.
           // Fix tracked as a separate run: wrap createBatch in a transactional boundary or
           // collect all records first and emit them in a single multi-row INSERT.
           for {
             service     <- ZIO.service[ScheduleService]
             existingDate = futureDate.plusDays(150)
-            // Pre-create a day so that the second batch entry triggers DuplicateScheduleDay
+            // Pre-create a day so that the second batch entry triggers OverlapConflict
             _           <- service.createScheduleDay(
                              CreateScheduleDayRequest(
                                driverId = testDriverId,
@@ -521,7 +549,7 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
                                endTime = LocalTime.of(12, 0)
                              )
                            )
-            // Batch: batchNewDate (new) succeeds first, then existingDate duplicate causes failure
+            // Batch: batchNewDate (new) succeeds first, then existingDate overlap causes failure
             batchNewDate = futureDate.plusDays(151)
             batchResult <-
               service
@@ -531,14 +559,13 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
                     companyId = testCompanyId,
                     days = List(
                       CreateScheduleBatchDay(batchNewDate, LocalTime.of(8, 0), LocalTime.of(12, 0), None),
-                      // Back-to-back with the pre-created 08:00–12:00 (no overlap) so the failure is the
-                      // repository duplicate guard, not OverlapConflict — keeping the non-atomic assertion intact.
+                      // Overlaps the pre-created 08:00–12:00 shift on the same date.
                       CreateScheduleBatchDay(
                         existingDate,
-                        LocalTime.of(12, 0),
+                        LocalTime.of(10, 0),
                         LocalTime.of(17, 0),
                         None
-                      ) // duplicate date
+                      )
                     )
                   )
                 )
@@ -546,9 +573,9 @@ object ScheduleServiceSpec extends ZIOSpecDefault {
             // Verify via the service (not the raw repo) — both approaches work here
             allDays     <- service.getDriverSchedule(testDriverId, testCompanyId)
           } yield assertTrue(
-            // The batch must fail with DuplicateScheduleDay
+            // The batch must fail with OverlapConflict
             (batchResult match {
-              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.DuplicateScheduleDay])
+              case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.OverlapConflict])
               case _                   => false
             }) &&
               // BUG: batchNewDate was already persisted by the first iteration despite the batch failure

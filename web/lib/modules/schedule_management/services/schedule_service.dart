@@ -30,8 +30,12 @@ class ScheduleService {
       if (response.statusCode == 201) {
         return ScheduleDay.fromJson(jsonDecode(response.body));
       } else {
-        throw ApiException(
-          'Failed to create schedule day: ${response.statusCode} ${response.body}',
+        // fromResponse threads statusCode + the backend's {"error": ...} reason
+        // through, so ApiException.kind classifies correctly (409 → conflict)
+        // instead of collapsing every failure to the generic snackbar text.
+        throw ApiException.fromResponse(
+          response,
+          'Failed to create schedule day',
         );
       }
     } catch (e) {
@@ -54,8 +58,9 @@ class ScheduleService {
         final List<dynamic> jsonList = jsonDecode(response.body);
         return jsonList.map((json) => ScheduleDay.fromJson(json)).toList();
       } else {
-        throw ApiException(
-          'Failed to create batch schedule: ${response.statusCode} ${response.body}',
+        throw ApiException.fromResponse(
+          response,
+          'Failed to create batch schedule',
         );
       }
     } catch (e) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../modules/core/services/api_client.dart';
 import '../../../../modules/core/services/error_messages.dart';
 import '../../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../../modules/schedule_management/services/schedule_service.dart';
@@ -112,11 +113,14 @@ class _ShiftStripState extends State<ShiftStrip> {
       await widget.onChanged();
     } catch (e) {
       if (!mounted) return;
+      // A 409 means the requested time overlaps an existing (non-cancelled)
+      // shift — say so in the user's language instead of the raw backend text
+      // (which carries the driver UUID).
+      final message = (e is ApiException && e.kind == AppErrorKind.conflict)
+          ? l10n.shiftOverlapSnack
+          : friendlyError(e, l10n);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(friendlyError(e, l10n)),
-          backgroundColor: AppColors.error,
-        ),
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
       );
     }
   }

@@ -3775,6 +3775,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get shiftOverlapSnack =>
+      'This day already has a shift that overlaps the selected time.';
+
+  @override
   String get shiftTimeOrderError => 'Start time must be before end time';
 
   @override

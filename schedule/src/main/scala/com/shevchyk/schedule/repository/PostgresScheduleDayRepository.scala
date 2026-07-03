@@ -76,9 +76,9 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
       .transact(xa)
       .mapBoth(
         {
-          case ex if ex.getMessage != null && ex.getMessage.contains("uq_driver_date") =>
-            ScheduleError.DuplicateScheduleDay(scheduleDay.driverId, scheduleDay.date)
-          case ex                                                                      => ScheduleError.DatabaseError(ex)
+          case ex if ex.getMessage != null && ex.getMessage.contains("excl_schedule_days_shift_overlap") =>
+            ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date)
+          case ex                                                                                        => ScheduleError.DatabaseError(ex)
         },
         _ => scheduleDay
       )
@@ -168,7 +168,11 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
     """.update.run
       .transact(xa)
       .as(scheduleDay)
-      .mapError(ex => ScheduleError.DatabaseError(ex))
+      .mapError {
+        case ex if ex.getMessage != null && ex.getMessage.contains("excl_schedule_days_shift_overlap") =>
+          ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date)
+        case ex                                                                                        => ScheduleError.DatabaseError(ex)
+      }
 
   override def delete(id: ScheduleDayId, companyId: CompanyId): Task[Unit] =
     sql"""DELETE FROM schedule_days WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run

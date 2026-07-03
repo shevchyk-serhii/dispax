@@ -114,6 +114,7 @@ import com.shevchyk.schedule.domain.{
   DriverUnavailability,
   DriverScheduleVisibility,
   ScheduleDay,
+  ScheduleDayStatus,
   ScheduleError
 }
 import com.shevchyk.schedule.repository.{
@@ -893,9 +894,15 @@ object TestApplication extends ZIOAppDefault:
     Ref.Synchronized.make(Map.empty[ScheduleDayId, ScheduleDay]).map { store =>
       registerReset(store.set(Map.empty[ScheduleDayId, ScheduleDay]))
       new ScheduleDayRepository:
+        // Mirrors excl_schedule_days_shift_overlap: only overlapping non-cancelled
+        // shifts of the same driver conflict (half-open intervals).
         def create(scheduleDay: ScheduleDay): Task[ScheduleDay]                                                      = store.get.flatMap { current =>
-          if current.values.exists(d => d.driverId == scheduleDay.driverId && d.date == scheduleDay.date)
-          then ZIO.fail(ScheduleError.DuplicateScheduleDay(scheduleDay.driverId, scheduleDay.date))
+          if scheduleDay.status != ScheduleDayStatus.Cancelled && current.values.exists(d =>
+                d.driverId == scheduleDay.driverId && d.date == scheduleDay.date &&
+                  d.status != ScheduleDayStatus.Cancelled &&
+                  scheduleDay.startTime.isBefore(d.endTime) && d.startTime.isBefore(scheduleDay.endTime)
+              )
+          then ZIO.fail(ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date))
           else store.update(_.updated(scheduleDay.id, scheduleDay)).as(scheduleDay)
         }
         def findById(id: ScheduleDayId): Task[Option[ScheduleDay]]                                                   = store.get.map(_.get(id))
