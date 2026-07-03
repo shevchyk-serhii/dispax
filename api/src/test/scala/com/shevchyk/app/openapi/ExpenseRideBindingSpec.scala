@@ -65,12 +65,12 @@ object ExpenseRideBindingSpec extends ZIOSpecDefault:
       }
       .provideLayer(layers)
 
-  private def createReq(token: String, rideId: Option[RideId]): Request =
+  private def createReq(token: String, rideId: Option[RideId], category: String = "Fuel"): Request =
     val rideField = rideId.map(id => s""""rideId":"${id.value}",""").getOrElse("")
     Request
       .post(
         URL.decode("/api/expenses").toOption.get,
-        Body.fromString(s"""{${rideField}"category":"Fuel","amount":12.5,"description":"diesel"}""")
+        Body.fromString(s"""{${rideField}"category":"$category","amount":12.5,"description":"diesel"}""")
       )
       .addHeader(Header.Authorization.Bearer(token))
       .addHeader(Header.ContentType(zio.http.MediaType.application.json))
@@ -139,6 +139,21 @@ object ExpenseRideBindingSpec extends ZIOSpecDefault:
           token   <- tokenFor(PersonRole.Dispatcher, driverId)
           resp    <- run(createReq(token, Some(rideId)), layers)
         } yield assertTrue(resp.status == Status.Created)
+      },
+      // Regression: `ExpenseCategory.valueOf(req.category)` used to throw on an unknown value —
+      // the fiber died and the caller got a 500 for what is plain bad input. It must be a 400.
+      test("an unknown expense category → 400 (not a 500 defect) and nothing persisted") {
+        for {
+          repo    <- CheckpointRideRepository.make(seededRide())
+          expenses = new InMemoryExpenseRepository
+          layers   = buildLayers(repo, expenses)
+          token   <- tokenFor(PersonRole.Driver, driverId)
+          resp    <- run(createReq(token, None, category = "Bogus"), layers)
+          stored  <- expenses.findByDriverId(driverId)
+        } yield assertTrue(
+          resp.status == Status.BadRequest,
+          stored.isEmpty
+        )
       },
       test("an expense without a rideId is still accepted → 201 (unchanged behaviour)") {
         for {

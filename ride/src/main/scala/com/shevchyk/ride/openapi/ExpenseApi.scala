@@ -76,12 +76,17 @@ object ExpenseApi:
                           .when(user.role == "DRIVER" && !ride.driverId.contains(PersonId(user.userId)))
           } yield ()
         }
+      // Safe enum parse: `ExpenseCategory.valueOf` throws on an unknown value, which killed the
+      // fiber and surfaced as a 500 — plain bad input must be a 400 instead.
+      category  <- ZIO
+                     .fromOption(ExpenseCategory.values.find(_.toString == req.category))
+                     .orElseFail((StatusCode.BadRequest, ApiError(s"Invalid expense category: ${req.category}")))
       expense    = Expense(
                      id = ExpenseId.generate(),
                      rideId = rideIdOpt,
                      driverId = PersonId(user.userId),
                      companyId = companyId,
-                     category = ExpenseCategory.valueOf(req.category),
+                     category = category,
                      amount = BigDecimal(req.amount),
                      description = req.description
                    )

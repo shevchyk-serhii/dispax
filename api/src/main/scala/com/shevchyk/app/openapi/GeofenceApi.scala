@@ -3,6 +3,7 @@ package com.shevchyk.app.openapi
 import com.shevchyk.auth.service.JwtService
 import com.shevchyk.core.application.GeofenceService
 import com.shevchyk.core.domain.*
+import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.{GeofenceRepository, PersonRepository}
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
@@ -117,9 +118,11 @@ object GeofenceApi:
     for {
       _         <- checkRole(user, "DISPATCHER", "ADMIN")
       companyId <- requireCompanyId(user.companyId)
+      // Safe enum parse: `GeofenceType.valueOf` throws on an unknown value; mapping that to
+      // `internal` produced a 500 for plain bad input — it must be a 400.
       gfType    <- ZIO
-                     .attempt(GeofenceType.valueOf(req.geofenceType))
-                     .mapError(internal)
+                     .fromOption(GeofenceType.values.find(_.toString == req.geofenceType))
+                     .orElseFail((StatusCode.BadRequest, ApiError(s"Invalid geofence type: ${req.geofenceType}")))
       geofence   = Geofence(
                      id = GeofenceId.generate(),
                      companyId = companyId,
@@ -157,9 +160,10 @@ object GeofenceApi:
         _         <- ZIO
                        .fail(internal(new RuntimeException("Geofence belongs to different company")))
                        .when(geofence.companyId != companyId)
+        // Safe enum parse — same rationale as in createServer: unknown value → 400, not 500.
         gfType    <- ZIO
-                       .attempt(GeofenceType.valueOf(req.geofenceType))
-                       .mapError(internal)
+                       .fromOption(GeofenceType.values.find(_.toString == req.geofenceType))
+                       .orElseFail((StatusCode.BadRequest, ApiError(s"Invalid geofence type: ${req.geofenceType}")))
         updated    = geofence.copy(
                        name = req.name,
                        geofenceType = gfType,
