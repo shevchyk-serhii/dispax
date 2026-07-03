@@ -136,6 +136,27 @@ object MucFlightParserSpec extends ZIOSpecDefault:
           info.get.departureTime.get.isBefore(info.get.estimatedTime.get)
         )
       },
+      test(
+        "arrival delayed past midnight: take-off anchors to the ACTUAL (rolled) arrival, not the planned wall-clock"
+      ) {
+        // A late red-eye whose landing is delayed across midnight: planned MUC arrival 23:00, expected 01:00 → the
+        // estimate rolls to the NEXT day (04.07). The take-off wall-clock 23:30 is later than the PLANNED 23:00, so the
+        // old code (comparing dep vs the raw planned time) rolled the take-off a full day BACK to 02.07 — ~26h before
+        // the real departure, stretching the en-route window. The take-off actually happened 03.07 23:30, ~1.5h before
+        // the 04.07 01:00 landing. Anchoring against the actual arrival instant keeps it on the query date.
+        val info = MucFlightParser.parse(
+          syntheticRow("23:00&nbsp;|&nbsp;01:00", otherTime = "23:30"),
+          LocalDate.of(2026, 7, 3),
+          isArrival = true
+        )
+        assertTrue(
+          // 23:30 Berlin (CEST, UTC+2) on 2026-07-03 — NOT 02.07 (the old, buggy roll-back).
+          info.get.departureTime.contains(Instant.parse("2026-07-03T21:30:00Z")),
+          // The window is positive and short (take-off ~1.5h before the landing), which is what makes the plane render
+          // near the start of the arc instead of almost-landed.
+          info.get.departureTime.get.isBefore(info.get.estimatedTime.get)
+        )
+      },
       test("departure direction: the 'other airport' time is the destination, not a take-off → no departureTime") {
         val info = MucFlightParser.parse(
           syntheticRow("10:00&nbsp;|&nbsp;10:20", otherTime = "13:00"),

@@ -137,23 +137,37 @@ object MucFlightParser:
         case (Some(p), Some(e)) if e.isBefore(p) && java.time.Duration.between(e, p).toHours > 12 => date.plusDays(1)
         case _                                                                                    => date
 
+    val scheduledTime = plannedLt.map(atBerlin(date, _))
+    val estimatedTime = expectedLt.map(atBerlin(expectedDate, _))
+
     // For an arrival, the origin take-off (the start of the en-route window the card animates). The board gives only
     // wall-clock time, not the origin date: a long-haul that departs the previous evening reads as e.g. "22:55" against
-    // a "05:15" MUC arrival — i.e. the take-off is LATER in the day than the landing, which only makes sense a day
-    // earlier. So when the departure time is after the MUC arrival time, roll it back one day. (Detail-page lookup
-    // refines this with the origin's own date later; this list value is the reliable primary so the plane always shows.)
-    val departureDate =
-      (otherTimeLt, plannedLt) match
-        case (Some(dep), Some(arr)) if dep.isAfter(arr) => date.minusDays(1)
-        case _                                          => date
-    val departureTime = if isArrival then otherTimeLt.map(atBerlin(departureDate, _)) else None
+    // a "05:15" MUC arrival — the take-off is LATER in the day than the landing, which only makes sense a day earlier.
+    // Anchor the take-off to the ACTUAL arrival instant (estimated, else scheduled — so a landing delayed past midnight
+    // still anchors correctly), then roll the take-off back one day when it lands after the arrival. Comparing against
+    // the actual arrival instant (not the raw planned wall-clock) keeps the window right when the arrival itself has
+    // rolled to the next day. (Detail-page lookup refines this with the origin's own date later; this list value is the
+    // reliable primary so the plane always shows.)
+    val arrivalInstant = estimatedTime.orElse(scheduledTime)
+    val departureTime =
+      if isArrival then
+        otherTimeLt.map { dep =>
+          val anchoredToArrivalDate = arrivalInstant match
+            case Some(arr) => arr.atZone(BerlinZone).toLocalDate
+            case None      => date
+          val depInstant = atBerlin(anchoredToArrivalDate, dep)
+          arrivalInstant match
+            case Some(arr) if depInstant.isAfter(arr) => atBerlin(anchoredToArrivalDate.minusDays(1), dep)
+            case _                                    => depInstant
+        }
+      else None
 
     FlightInfo(
       flightNumber = normalizeFlightNumber(rawNumber),
       isArrival = isArrival,
       status = FlightStatus.fromMuc(statusLabel),
-      scheduledTime = plannedLt.map(atBerlin(date, _)),
-      estimatedTime = expectedLt.map(atBerlin(expectedDate, _)),
+      scheduledTime = scheduledTime,
+      estimatedTime = estimatedTime,
       terminal = terminal,
       airline = airline,
       otherAirport = other,
