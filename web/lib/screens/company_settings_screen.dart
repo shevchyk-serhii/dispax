@@ -121,16 +121,19 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         _cancellationFeeController.text = (settings['cancellationFee'] ?? 0)
             .toString();
         _noShowFeeController.text = (settings['noShowFee'] ?? 0).toString();
+        // num->toInt, not a raw `as int`: a backend value serialized as a
+        // double (e.g. 6.0) would throw on the cast and fail the whole
+        // settings load into the error state.
         if (settings['workStartHour'] != null) {
           _workStart = TimeOfDay(
-            hour: settings['workStartHour'] as int,
-            minute: (settings['workStartMinute'] as int?) ?? 0,
+            hour: (settings['workStartHour'] as num).toInt(),
+            minute: (settings['workStartMinute'] as num?)?.toInt() ?? 0,
           );
         }
         if (settings['workEndHour'] != null) {
           _workEnd = TimeOfDay(
-            hour: settings['workEndHour'] as int,
-            minute: (settings['workEndMinute'] as int?) ?? 0,
+            hour: (settings['workEndHour'] as num).toInt(),
+            minute: (settings['workEndMinute'] as num?)?.toInt() ?? 0,
           );
         }
         _datevBeraternummerController.text =
