@@ -333,6 +333,11 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
   private def layers(
       createdPersons: Ref[List[Person]],
       capturedRide: Ref[Option[CreateRideRequest]]
+  ): ZLayer[Any, Throwable, RideApi.RideEnv] = layersWithPersonRepo(recordingPersonRepo(createdPersons), capturedRide)
+
+  private def layersWithPersonRepo(
+      personRepo: PersonRepository,
+      capturedRide: Ref[Option[CreateRideRequest]]
   ): ZLayer[Any, Throwable, RideApi.RideEnv] =
     testJwtService ++
       ZLayer.succeed(recordingRideService(capturedRide)) ++
@@ -341,7 +346,7 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
       stubAirportCheckpointService ++
       stubChatService ++
       RideRatingRepository.inMemory ++
-      ZLayer.succeed(recordingPersonRepo(createdPersons)) ++
+      ZLayer.succeed(personRepo) ++
       stubTariffRepo ++
       stubRideEstimateService ++
       GeocodingService.noop ++
@@ -428,6 +433,56 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
           resp.status == Status.Forbidden,
           persons.isEmpty,
           booked.isEmpty
+        )
+      },
+      // ── error-leakage regression ────────────────────────────────────────────
+      // The provisional-create and client-lookup error paths used to answer with
+      // ApiError(e.getMessage): raw driver/DB exception text (constraint and table names)
+      // went straight to the authenticated caller. Unknown throwables must collapse into
+      // the generic "Internal server error" like every other handler.
+      test("a DB failure while creating the provisional client leaks no exception detail") {
+        val failingRepo: PersonRepository =
+          new PersonRepository:
+            private def boom                                                                          = ZIO.fail(
+              new RuntimeException("""pq: duplicate key value violates unique constraint "persons_pkey"""")
+            )
+            def create(person: Person): Task[Person]                                                  = boom
+            def findById(id: PersonId): Task[Option[Person]]                                          = boom
+            def findByIdAndCompany(id: PersonId, cid: CompanyId): Task[Option[Person]]                = boom
+            def findByEmail(e: String): Task[Option[Person]]                                          = boom
+            def findByRole(r: PersonRole): Task[List[Person]]                                         = boom
+            def findByRoleAndCompany(r: PersonRole, cid: CompanyId): Task[List[Person]]               = boom
+            def findByCompanyId(cid: CompanyId): Task[List[Person]]                                   = boom
+            def findAll(): Task[List[Person]]                                                         = boom
+            def update(p: Person): Task[Person]                                                       = boom
+            def delete(id: PersonId): Task[Unit]                                                      = boom
+            def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                       = boom
+            def findByStatus(s: UserStatus): Task[List[Person]]                                       = boom
+            def searchByQuery(q: String): Task[List[Person]]                                          = boom
+            def updateLastLogin(id: PersonId): Task[Unit]                                             = boom
+            def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                        = boom
+            def upsertDriverRow(pid: PersonId): Task[Unit]                                            = boom
+            def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = boom
+            def setAvatar(id: PersonId, companyId: CompanyId, b: Array[Byte], ct: String): Task[Unit] = boom
+            def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                          = boom
+        for {
+          capturedRide <- Ref.make(Option.empty[CreateRideRequest])
+          ls            = layersWithPersonRepo(failingRepo, capturedRide)
+          token        <- driverToken.provideLayer(testJwtService)
+          req           = Request
+                            .post(
+                              URL.decode("/api/rides").toOption.get,
+                              Body.fromString(provisionalBody)
+                            )
+                            .addHeader(Header.Authorization.Bearer(token))
+                            .addHeader(Header.ContentType(MediaType.application.json))
+          resp         <- run(req, ls)
+          body         <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.InternalServerError,
+          !body.contains("persons_pkey"),
+          !body.contains("pq:"),
+          body.contains("Internal server error")
         )
       }
     )

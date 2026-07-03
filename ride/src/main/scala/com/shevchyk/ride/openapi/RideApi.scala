@@ -343,7 +343,10 @@ object RideApi:
             )
             personRepo
               .create(provisional)
-              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+              // Never surface raw repository/driver text (constraint and table names) to the
+              // caller — log the cause, answer with the same generic 500 as fromRideError.
+              .tapError(e => ZIO.logError(s"Failed to create provisional client: ${e.getMessage}"))
+              .mapError(_ => (StatusCode.InternalServerError, ApiError("Internal server error")))
           }
       // For a client booking, the client is always the authenticated user. For a provisional ride,
       // point clientId at the freshly created provisional client. Otherwise use the supplied clientId.
@@ -369,7 +372,8 @@ object RideApi:
           case None    =>
             personRepo
               .findById(domainRequest.clientId)
-              .mapError(e => (StatusCode.InternalServerError, ApiError(e.getMessage)))
+              .tapError(e => ZIO.logError(s"Failed to load ride client: ${e.getMessage}"))
+              .mapError(_ => (StatusCode.InternalServerError, ApiError("Internal server error")))
       enrichedRequest  =
         clientPerson
           .flatMap(_.clientCompanyId)
