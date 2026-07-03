@@ -47,7 +47,7 @@ class DriverLocationServiceImpl(
               )
               .ignore
           case None            => ZIO.unit
-      _           <- checkGeofences(driverId, latitude, longitude).forkDaemon
+      _           <- checkGeofences(driverId, companyIdOpt, latitude, longitude).forkDaemon
     } yield ()
 
   /**
@@ -62,30 +62,38 @@ class DriverLocationServiceImpl(
         .when(longitude < -180.0 || longitude > 180.0)
         .unit
 
-  private def checkGeofences(driverId: PersonId, latitude: Double, longitude: Double): UIO[Unit] =
+  private def checkGeofences(
+      driverId: PersonId,
+      companyIdOpt: Option[CompanyId],
+      latitude: Double,
+      longitude: Double
+  ): UIO[Unit] =
     val effect: Task[Unit] =
       for {
-        // Try to determine driver's company from their active rides or location data
-        driverRides <- rideRepository.findByDriverId(driverId)
-        companyIdOpt = driverRides.headOption.map(_.companyId)
+        // Zone entry/exit alerts only need the driver's company geofences. The company comes
+        // from the driver's Person row (already resolved by updateLocation) — NOT from ride
+        // history, so a driver on shift without any rides still triggers enter/exit alerts.
         _           <-
           companyIdOpt match
-            case Some(companyId) =>
-              geofenceService.checkDriverLocation(driverId, companyId, latitude, longitude).unit *> {
-                val activeRides = driverRides
-                  .filter(r => r.status == RideStatus.Assigned || r.status == RideStatus.InProgress)
-                  .map(r =>
-                    ActiveRideInfo(
-                      rideId = r.id.value,
-                      clientId = r.clientId.value,
-                      pickupLatitude = r.pickupLocation.latitude,
-                      pickupLongitude = r.pickupLocation.longitude,
-                      companyId = r.companyId.value
-                    )
-                  )
-                geofenceService.checkClientProximity(driverId, latitude, longitude, activeRides)
-              }
+            case Some(companyId) => geofenceService.checkDriverLocation(driverId, companyId, latitude, longitude).unit
             case None            => ZIO.unit
+        // Client-proximity alerts are per active ride — only meaningful when the driver has some.
+        driverRides <- rideRepository.findByDriverId(driverId)
+        activeRides  = driverRides
+                         .filter(r => r.status == RideStatus.Assigned || r.status == RideStatus.InProgress)
+                         .map(r =>
+                           ActiveRideInfo(
+                             rideId = r.id.value,
+                             clientId = r.clientId.value,
+                             pickupLatitude = r.pickupLocation.latitude,
+                             pickupLongitude = r.pickupLocation.longitude,
+                             companyId = r.companyId.value
+                           )
+                         )
+        _           <-
+          ZIO.unless(activeRides.isEmpty)(
+            geofenceService.checkClientProximity(driverId, latitude, longitude, activeRides)
+          )
       } yield ()
     effect.catchAll(e => ZIO.logWarning(s"Geofence check error: ${Option(e.getMessage).getOrElse(e.toString)}"))
 

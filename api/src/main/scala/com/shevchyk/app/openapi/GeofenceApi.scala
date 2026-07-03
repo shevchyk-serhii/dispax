@@ -197,7 +197,7 @@ object GeofenceApi:
         limit      = limitOpt.getOrElse(50).min(100).max(1)
         repo      <- ZIO.service[GeofenceRepository]
         alerts    <- repo.findAlertsByCompany(companyId, limit).mapError(internal)
-        names     <- PersonNameLookup.names(alerts.map(_.driverId)).mapError(internal)
+        names     <- PersonNameLookup.names(alerts.map(_.driverId), companyId).mapError(internal)
       } yield alerts.map(GeofenceAlertDto.fromDomain(_, names))
   }
 
@@ -213,7 +213,7 @@ object GeofenceApi:
           // Enforce tenant isolation: findAlertsByDriver is not company-scoped, so
           // a dispatcher must not see alerts of a driver from another company.
           alerts    <- repo.findAlertsByDriver(dPid, limit).map(_.filter(_.companyId == companyId)).mapError(internal)
-          names     <- PersonNameLookup.names(alerts.map(_.driverId)).mapError(internal)
+          names     <- PersonNameLookup.names(alerts.map(_.driverId), companyId).mapError(internal)
         } yield alerts.map(GeofenceAlertDto.fromDomain(_, names))
       }
     }

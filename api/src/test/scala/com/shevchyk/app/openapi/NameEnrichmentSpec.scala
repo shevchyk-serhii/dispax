@@ -83,18 +83,22 @@ object NameEnrichmentSpec extends ZIOSpecDefault:
   // ---------------------------------------------------------------------------
 
   /**
-   * PersonRepository stub whose findById resolves from the fixture map; everything else is unused.
+   * PersonRepository stub whose findByCompanyId resolves from the fixture map; everything else is unused. findById
+   * deliberately dies: name enrichment must resolve via ONE company-scoped query, never per-id lookups (the old N+1
+   * `foreachPar(findById)` implementation would die here).
    */
   private val stubPersonRepo: ZLayer[Any, Nothing, PersonRepository] = ZLayer.succeed(
     new PersonRepository:
       private def notImpl                                                                              = ZIO.die(new NotImplementedError("NameEnrichmentSpec PersonRepository stub"))
       def create(p: Person): Task[Person]                                                              = notImpl
-      def findById(id: PersonId): Task[Option[Person]]                                                 = ZIO.succeed(people.get(id))
+      def findById(id: PersonId): Task[Option[Person]]                                                 = notImpl
       def findByIdAndCompany(id: PersonId, cid: CompanyId): Task[Option[Person]]                       = notImpl
       def findByEmail(email: String): Task[Option[Person]]                                             = notImpl
       def findByRole(role: PersonRole): Task[List[Person]]                                             = notImpl
       def findByRoleAndCompany(role: PersonRole, cid: CompanyId): Task[List[Person]]                   = notImpl
-      def findByCompanyId(cid: CompanyId): Task[List[Person]]                                          = notImpl
+      def findByCompanyId(cid: CompanyId): Task[List[Person]]                                          = ZIO.succeed(
+        people.values.filter(_.companyId.contains(cid)).toList
+      )
       def findAll(): Task[List[Person]]                                                                = notImpl
       def update(p: Person): Task[Person]                                                              = notImpl
       def delete(id: PersonId): Task[Unit]                                                             = notImpl

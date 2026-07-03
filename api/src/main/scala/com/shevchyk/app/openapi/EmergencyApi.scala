@@ -190,7 +190,7 @@ object EmergencyApi:
         companyId     <- requireCompanyId(user.companyId)
         reassignments <- repo.findByCompanyId(companyId).mapError(internal)
         names         <- PersonNameLookup
-                           .names(reassignments.flatMap(r => r.originalDriverId :: r.newDriverId.toList))
+                           .names(reassignments.flatMap(r => r.originalDriverId :: r.newDriverId.toList), companyId)
                            .mapError(internal)
       } yield reassignments.map(EmergencyReassignmentDto.fromDomain(_, names))
     }

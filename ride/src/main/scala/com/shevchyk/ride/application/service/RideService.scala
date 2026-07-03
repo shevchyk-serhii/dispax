@@ -1133,7 +1133,11 @@ class RideServiceImpl(
               driverId = newDriverId.value,
               clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value,
-              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice),
+              // The displaced driver (from the pre-update ride) so the notification layer can
+              // tell them the ride is no longer theirs. Omitted when "reassigning" to the same
+              // driver — there is nobody to notify then.
+              previousDriverId = ride.driverId.map(_.value).filter(_ != newDriverId.value)
             )
           )
           .ignore

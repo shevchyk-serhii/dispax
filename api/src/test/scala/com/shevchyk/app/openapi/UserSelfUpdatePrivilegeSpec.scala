@@ -75,7 +75,7 @@ object UserSelfUpdatePrivilegeSpec extends ZIOSpecDefault:
   private def dummyDto(id: UUID): UserDto = UserDto(id = id, email = "x@x.de", name = "X", role = "CLIENT")
 
   private class RecordingAuthService(val calls: Ref[List[String]]) extends AuthService:
-    private def notImpl                                                                                     = ZIO.die(new NotImplementedError("UserSelfUpdatePrivilegeSpec AuthService stub"))
+    private def notImpl = ZIO.die(new NotImplementedError("UserSelfUpdatePrivilegeSpec AuthService stub"))
 
     def login(
         email: String,
@@ -83,11 +83,11 @@ object UserSelfUpdatePrivilegeSpec extends ZIOSpecDefault:
         deviceInfo: Option[String],
         ipAddress: Option[String]
     ): IO[AuthError, LoginResponse] = notImpl
-    def createUser(req: CreateUserRequest, companyId: CompanyId): IO[AuthError, UserDto]                    = notImpl
-    def getUserById(id: UUID): IO[AuthError, UserDto]                                                       = notImpl
-    def getUserByEmail(email: String): IO[AuthError, UserDto]                                               = notImpl
+    def createUser(req: CreateUserRequest, companyId: CompanyId): IO[AuthError, UserDto] = notImpl
+    def getUserById(id: UUID): IO[AuthError, UserDto]                                    = notImpl
+    def getUserByEmail(email: String): IO[AuthError, UserDto]                            = notImpl
 
-    def updateUser(id: UUID, companyId: CompanyId, req: UpdateUserRequest): IO[AuthError, UserDto]          = calls
+    def updateUser(id: UUID, companyId: CompanyId, req: UpdateUserRequest): IO[AuthError, UserDto] = calls
       .update("updateUser" :: _)
       .as(dummyDto(id))
 
@@ -105,10 +105,10 @@ object UserSelfUpdatePrivilegeSpec extends ZIOSpecDefault:
     def validateToken(token: String): IO[AuthError, UserDto]                                                = notImpl
     def refreshToken(token: String): IO[AuthError, String]                                                  = notImpl
 
-    def getAllUsers(role: Option[PersonRole], status: Option[UserStatus]): IO[AuthError, List[UserDto]]     = ZIO.succeed(
+    def getAllUsers(role: Option[PersonRole], status: Option[UserStatus]): IO[AuthError, List[UserDto]] = ZIO.succeed(
       Nil
     )
-    def searchUsers(query: String): IO[AuthError, List[UserDto]]                                            = ZIO.succeed(Nil)
+    def searchUsers(query: String): IO[AuthError, List[UserDto]]                                        = ZIO.succeed(Nil)
 
   private val recordingAuthLayer: ZLayer[Any, Nothing, AuthService & Ref[List[String]]] = ZLayer.fromZIOEnvironment(
     Ref

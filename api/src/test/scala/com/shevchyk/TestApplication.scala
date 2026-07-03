@@ -909,6 +909,10 @@ object TestApplication extends ZIOAppDefault:
           then ZIO.fail(ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date))
           else store.update(_.updated(scheduleDay.id, scheduleDay)).as(scheduleDay)
         }
+        // Atomic batch insert: either all days land or none (mirrors the single-transaction
+        // Postgres impl). The in-memory Ref update is already atomic.
+        def createAll(scheduleDays: List[ScheduleDay]): Task[List[ScheduleDay]]                                      = store
+          .modify(current => (scheduleDays, current ++ scheduleDays.map(d => d.id -> d)))
         def findById(id: ScheduleDayId): Task[Option[ScheduleDay]]                                                   = store.get.map(_.get(id))
         def findByDriverId(driverId: PersonId): Task[List[ScheduleDay]]                                              = store.get
           .map(_.values.filter(_.driverId == driverId).toList.sortBy(_.date))
