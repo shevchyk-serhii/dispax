@@ -191,6 +191,45 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       CompanySettingsRepository.inMemory ++
       InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
+  /**
+   * Blacklist double for the TOCTOU tests: `isBlacklisted` answers `false` while `falseBudget` is positive (consuming
+   * one unit per call) and `true` once it is exhausted — simulating an entry that appears between the service's early
+   * check and its atomic write. All other methods are inert.
+   */
+  final class FlippingBlacklistRepository extends BlacklistRepository {
+    val falseBudget = new java.util.concurrent.atomic.AtomicInteger(Int.MaxValue)
+
+    override def isBlacklisted(clientId: PersonId, driverId: PersonId): Task[Boolean] = ZIO.succeed(
+      blacklistAnswer()
+    )
+    private def blacklistAnswer(): Boolean                                            = falseBudget.getAndUpdate(n => if n > 0 then n - 1 else n) <= 0
+
+    override def create(entry: BlacklistEntry): Task[BlacklistEntry]                   = ZIO.succeed(entry)
+    override def findByCompanyId(companyId: CompanyId): Task[List[BlacklistEntry]]     = ZIO.succeed(Nil)
+    override def findByClientId(clientId: PersonId): Task[List[BlacklistEntry]]        = ZIO.succeed(Nil)
+    override def findByDriverId(driverId: PersonId): Task[List[BlacklistEntry]]        = ZIO.succeed(Nil)
+    override def deactivate(id: BlacklistEntryId, companyId: CompanyId): Task[Boolean] = ZIO.succeed(false)
+    override def delete(id: BlacklistEntryId): Task[Boolean]                           = ZIO.succeed(false)
+  }
+
+  private def layersWithBlacklist(blacklist: BlacklistRepository) =
+    (InMemoryRideRepository.layer ++
+      ZLayer.succeed[PersonRepository](testPersonRepo) ++
+      EventHub.layer ++
+      noopEmailSms ++
+      AuditService.inMemory ++
+      ZLayer.succeed(blacklist) ++
+      GeocodingService.noop ++
+      ExpenseRepository.inMemory ++
+      PickupTimeService.noopLayer ++
+      noopAvailabilityChecker ++
+      noopScheduleDayLookup ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory ++
+      CompanySettingsRepository.inMemory ++
+      InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
     clientId = clientId,
@@ -1424,6 +1463,62 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               updated.driverId.contains(testDriverId)
           )
         }.provide(standardLayers)
+      ),
+
+      // ────────────────────────────────────────────────────────────────────
+      // 6b. TOCTOU: blacklist re-check right before the atomic write
+      // ────────────────────────────────────────────────────────────────────
+      // The atomic CAS (updateIfStatus) only guards the ride's STATUS, not the blacklist: an
+      // entry added between the early check and the write used to slip through. The service
+      // re-checks the blacklist immediately before the CAS; the flipping stub simulates exactly
+      // that interleaving (first isBlacklisted call false, every later one true).
+      suite("blacklist TOCTOU re-check")(
+        test("assignDriver fails when the blacklist gains an entry between check and write") {
+          val blacklist = new FlippingBlacklistRepository
+          val program   =
+            for {
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _        = blacklist.falseBudget.set(1) // early check passes; any later check sees the new entry
+              exit    <- service.assignDriver(ride.id, testDriverId).exit
+              after   <- service.getRideById(ride.id)
+            } yield assertTrue(
+              exit match {
+                case Exit.Failure(cause) =>
+                  cause.failureOption.exists {
+                    case RideError.BusinessRuleViolation("blacklist", _) => true
+                    case _                                               => false
+                  }
+                case _                   => false
+              },
+              after.status == RideStatus.Requested,
+              after.driverId.isEmpty
+            )
+          program.provideLayer(layersWithBlacklist(blacklist))
+        },
+        test("reassignDriver fails when the blacklist gains an entry between check and write") {
+          val blacklist = new FlippingBlacklistRepository
+          val program   =
+            for {
+              service  <- ZIO.service[RideService]
+              assigned <- createAssignedRide(service)
+              _         = blacklist.falseBudget.set(1)
+              exit     <- service.reassignDriver(assigned.id, testDriver2Id).exit
+              after    <- service.getRideById(assigned.id)
+            } yield assertTrue(
+              exit match {
+                case Exit.Failure(cause) =>
+                  cause.failureOption.exists {
+                    case RideError.BusinessRuleViolation("blacklist", _) => true
+                    case _                                               => false
+                  }
+                case _                   => false
+              },
+              // The losing write never applied: the original driver still holds the ride.
+              after.driverId.contains(testDriverId)
+            )
+          program.provideLayer(layersWithBlacklist(blacklist))
+        }
       ),
 
       // ────────────────────────────────────────────────────────────────────

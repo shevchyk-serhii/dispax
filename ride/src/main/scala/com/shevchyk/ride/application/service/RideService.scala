@@ -1021,14 +1021,30 @@ class RideServiceImpl(
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
       _       <- failRule("blacklist", "This driver is blacklisted for the ride's client").when(blocked).unit
 
-      // Check scheduling conflicts (ride-vs-ride + unavailability windows).
-      // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
-      _ <- checkScheduleConflict(driverId, ride).unless(overrideScheduleConflict)
-
-      // Check VIP and preferred driver
+      // Check VIP and preferred driver (fetched BEFORE the conflict check so the schedule-conflict
+      // read sits as close as possible to the atomic write below — see the TOCTOU note there).
       clientOpt        <- personRepository.findById(ride.clientId).mapDatabaseError
       isVip             = clientOpt.exists(_.isVip)
       isPreferredDriver = clientOpt.flatMap(_.preferredDriverId).contains(driverId)
+
+      // Check scheduling conflicts (ride-vs-ride + unavailability windows).
+      // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
+      // TOCTOU note: this read-then-write is NOT atomic — updateIfStatus below only guards THIS
+      // ride's status, not the driver's schedule, so two dispatchers assigning the same driver to
+      // overlapping slots at the same instant can both pass. The check is kept immediately before
+      // the write to shrink the window; fully closing it needs a DB-level exclusion constraint,
+      // which is disproportionate for the residual risk (a dispatcher can also override on purpose).
+      _ <- checkScheduleConflict(driverId, ride).unless(overrideScheduleConflict)
+
+      // TOCTOU tightening: the blacklist could have gained an entry since the early check above
+      // (the CAS below only guards the ride's status, not the blacklist). Re-check immediately
+      // before the write so the window shrinks to a single read; a residual race remains — closing
+      // it fully needs an in-transaction check, disproportionate for this risk.
+      recheckBlocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
+      _              <-
+        failRule("blacklist", "This driver is blacklisted for the ride's client")
+          .when(recheckBlocked)
+          .unit
 
       updatedRide   = ride
                         .focus(_.status)
@@ -1140,37 +1156,49 @@ class RideServiceImpl(
 
       // Check scheduling conflicts (exclude current ride from conflict check).
       // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
+      // TOCTOU note: like assignDriver, this read-then-write is not atomic — the CAS below guards
+      // only this ride's status, not the driver's schedule. Kept immediately before the write to
+      // shrink the window; fully closing it needs a DB-level exclusion constraint.
       _ <- checkScheduleConflict(newDriverId, ride).unless(overrideScheduleConflict)
 
+      // TOCTOU tightening: re-check the blacklist immediately before the write — an entry added
+      // between the early check and the CAS must not slip through. A residual single-read race
+      // remains (an in-transaction check would be disproportionate for this risk).
+      recheckBlocked <- blacklistRepository.isBlacklisted(ride.clientId, newDriverId).mapDatabaseError
+      _              <-
+        failRule("blacklist", "This driver is blacklisted for the ride's client")
+          .when(recheckBlocked)
+          .unit
+
       // Reset confirmation state when the driver changes so the new driver must confirm afresh.
-      updatedRide   = ride
-                        .focus(_.driverId)
-                        .replace(Some(newDriverId))
-                        .focus(_.status)
-                        .replace(RideStatus.Assigned)
-                        .focus(_.confirmedAt)
-                        .replace(None)
-                        .focus(_.rejectionReason)
-                        .replace(None)
-                        .focus(_.rejectedBy)
-                        .replace(None)
-                        .focus(_.rejectedAt)
-                        .replace(None)
+      updatedRide     = ride
+                          .focus(_.driverId)
+                          .replace(Some(newDriverId))
+                          .focus(_.status)
+                          .replace(RideStatus.Assigned)
+                          .focus(_.confirmedAt)
+                          .replace(None)
+                          .focus(_.rejectionReason)
+                          .replace(None)
+                          .focus(_.rejectedBy)
+                          .replace(None)
+                          .focus(_.rejectedAt)
+                          .replace(None)
 
       // Atomic compare-and-set: only reassign while the ride is still `Assigned` or `Confirmed`.
-      applied      <-
+      applied        <-
         rideRepository
           .updateIfStatus(updatedRide, Set(RideStatus.Assigned, RideStatus.Confirmed))
           .mapDatabaseError
-      _            <-
+      _              <-
         ZIO
           .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned))
           .when(!applied)
           .unit
-      persistedRide = updatedRide
+      persistedRide   = updatedRide
       // Clear confirmation dedup so the new driver receives a confirmation request.
-      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
-      _            <-
+      _              <- sentConfirmationRequestRepository.clear(rideId).ignore
+      _              <-
         eventHub
           .publish(
             WebSocketEvent.RideAssigned(
@@ -1186,7 +1214,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _            <-
+      _              <-
         auditService
           .log(
             AuditLogEntry.record(
