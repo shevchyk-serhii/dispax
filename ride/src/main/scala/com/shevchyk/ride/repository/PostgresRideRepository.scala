@@ -289,6 +289,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   // dropped start_time/cancellation_*/payment_* on the transitions that go through it.)
   private def rideSetClause(ride: Ride): Fragment =
     fr"""SET
+      client_id = ${ride.clientId.value},
       driver_id = ${ride.driverId.map(_.value)},
       status = ${ride.status},
       from_address = ${ride.pickupLocation.address},
