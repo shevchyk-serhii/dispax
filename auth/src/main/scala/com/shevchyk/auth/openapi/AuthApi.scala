@@ -100,18 +100,28 @@ object AuthApi:
     // Throttle by BOTH source IP and normalized email: a single IP hammering one login is caught by
     // the ip bucket, and distributed password-spraying on one account (one attempt per IP) is caught
     // by the per-email bucket. Both must pass. The email is lowercased so case variants share a bucket.
+    //
+    // The email bucket counts only FAILED attempts (peek before login, record after a credentials
+    // failure). Counting every attempt would hand an attacker a targeted lockout: ~10 requests per
+    // window carrying the victim's email — from any IPs, wrong password and all — would 429 the
+    // victim's own correct-password login indefinitely. Successful logins never consume the bucket.
     val ipKey    = s"ip:${ip.getOrElse("unknown")}"
     val emailKey = s"email:${req.email.trim.toLowerCase}"
     for {
-      ipOk     <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(ipKey))
-      emailOk  <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(emailKey))
-      _        <- ZIO.unless(ipOk && emailOk)(ZIO.fail(ApiError(RateLimitError)))
-      response <- ZIO
-                    .serviceWithZIO[AuthService](_.login(req.email, req.password, userAgent, ip))
-                    .mapError {
-                      case _: UserNotFound | _: InvalidCredentials => ApiError("Invalid credentials")
-                      case _                                       => ApiError("Internal server error")
-                    }
+      limiter      <- ZIO.service[RateLimiter]
+      ipOk         <- limiter.checkRate(ipKey)
+      emailLimited <- limiter.isLimited(emailKey)
+      _            <- ZIO.unless(ipOk && !emailLimited)(ZIO.fail(ApiError(RateLimitError)))
+      response     <- ZIO
+                        .serviceWithZIO[AuthService](_.login(req.email, req.password, userAgent, ip))
+                        .tapError {
+                          case _: UserNotFound | _: InvalidCredentials => limiter.record(emailKey)
+                          case _                                       => ZIO.unit
+                        }
+                        .mapError {
+                          case _: UserNotFound | _: InvalidCredentials => ApiError("Invalid credentials")
+                          case _                                       => ApiError("Internal server error")
+                        }
     } yield response
   }
 
