@@ -295,6 +295,7 @@ class RideServiceImpl(
           .sendRideConfirmation(
             RideConfirmationData(
               rideId = persistedRide.id.value.toString,
+              bookingReference = persistedRide.bookingReferenceOrId,
               clientName = "Client",
               pickupAddress = persistedRide.pickupLocation.address,
               dropoffAddress = persistedRide.dropoffLocation.address,
@@ -1008,6 +1009,7 @@ class RideServiceImpl(
           .sendDriverAssignment(
             RideConfirmationData(
               rideId = persistedRide.id.value.toString,
+              bookingReference = persistedRide.bookingReferenceOrId,
               clientName = "Client",
               pickupAddress = persistedRide.pickupLocation.address,
               dropoffAddress = persistedRide.dropoffLocation.address,

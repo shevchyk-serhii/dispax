@@ -35,6 +35,7 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
 
   private val testCompanyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001"))
   private val testClientId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100"))
+  private val testDriverId  = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000200"))
 
   private val testClient = Person(
     id = testClientId,
@@ -44,12 +45,20 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
     companyId = Some(testCompanyId)
   )
 
+  private val testDriver = Person(
+    id = testDriverId,
+    name = "Test Driver",
+    email = "test-driver@example.com",
+    role = PersonRole.Driver,
+    companyId = Some(testCompanyId)
+  )
+
   /**
-   * Minimal in-module PersonRepository holding just the one client createRide needs.
+   * Minimal in-module PersonRepository holding just the client and driver these tests need.
    */
   private val testPersonRepo: PersonRepository =
     new PersonRepository {
-      private val persons                                                                                             = Map(testClientId -> testClient)
+      private val persons                                                                                             = Map(testClientId -> testClient, testDriverId -> testDriver)
       override def create(person: Person): Task[Person]                                                               = ZIO.succeed(person)
       override def findById(id: PersonId): Task[Option[Person]]                                                       = ZIO.succeed(persons.get(id))
       override def findByIdAndCompany(id: PersonId, companyId: CompanyId): Task[Option[Person]]                       = ZIO.succeed(
@@ -81,12 +90,14 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
     }
 
   /**
-   * EmailSmsService double that captures every ride-confirmation payload.
+   * EmailSmsService double that captures every ride-confirmation and driver-assignment payload.
    */
-  final private class CapturingEmailSmsService(val confirmations: Ref[List[RideConfirmationData]])
-      extends EmailSmsService {
+  final private class CapturingEmailSmsService(
+      val confirmations: Ref[List[RideConfirmationData]],
+      val assignments: Ref[List[RideConfirmationData]]
+  ) extends EmailSmsService {
     override def sendRideConfirmation(data: RideConfirmationData): Task[Unit] = confirmations.update(_ :+ data)
-    override def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = ZIO.unit
+    override def sendDriverAssignment(data: RideConfirmationData): Task[Unit] = assignments.update(_ :+ data)
     override def sendInvoiceEmail(data: InvoiceEmailData): Task[Unit]         = ZIO.unit
   }
 
@@ -114,7 +125,10 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
   )
 
   private val emailConcrete: ULayer[CapturingEmailSmsService] = ZLayer.fromZIO(
-    Ref.make(List.empty[RideConfirmationData]).map(new CapturingEmailSmsService(_))
+    for {
+      confirmations <- Ref.make(List.empty[RideConfirmationData])
+      assignments   <- Ref.make(List.empty[RideConfirmationData])
+    } yield new CapturingEmailSmsService(confirmations, assignments)
   )
 
   private val emailAsService: URLayer[CapturingEmailSmsService, EmailSmsService] = ZLayer.fromFunction(
@@ -212,6 +226,33 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
           // Documents the current hard-coded value — update this assertion when the
           // real client name is wired through (see RideService.createRide ~line 255).
           mine.head.clientName == "Client"
+      )
+    },
+    test("confirmation email carries the persisted booking reference, not the ride UUID") {
+      for {
+        svc   <- ZIO.service[RideService]
+        email <- ZIO.service[CapturingEmailSmsService]
+        ride  <- svc.createRide(request())
+        sent  <- email.confirmations.get
+        mine   = sent.filter(_.rideId == ride.id.value.toString)
+      } yield assertTrue(
+        mine.size == 1 &&
+          ride.bookingReference.exists(_.matches("""R-\d{4}-\d{5}""")) &&
+          mine.head.bookingReference == ride.bookingReference.get
+      )
+    },
+    test("driver-assignment email carries the persisted booking reference") {
+      for {
+        svc      <- ZIO.service[RideService]
+        email    <- ZIO.service[CapturingEmailSmsService]
+        ride     <- svc.createRide(request())
+        assigned <- svc.assignDriver(ride.id, testDriverId)
+        sent     <- email.assignments.get
+        mine      = sent.filter(_.rideId == ride.id.value.toString)
+      } yield assertTrue(
+        mine.size == 1 &&
+          assigned.bookingReference.isDefined &&
+          mine.head.bookingReference == assigned.bookingReference.get
       )
     },
     test("accepts a pickup time inside the clock-skew tolerance (now - 200s)") {

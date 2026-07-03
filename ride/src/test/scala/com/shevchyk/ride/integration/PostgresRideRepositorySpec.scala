@@ -872,6 +872,95 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.partnerCompanyId.contains(pcId)
         )
       },
+      suite("booking reference")(
+        test("create allocates a reference and findById round-trips it") {
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            saved <- repo.create(makeRide())
+            found <- repo.findById(saved.id)
+          } yield assertTrue(
+            saved.bookingReference.exists(_.matches("""R-\d{4}-\d{5}""")),
+            found.get.bookingReference == saved.bookingReference
+          )
+        },
+        test("sequences are independent per company: both first rides get 00001") {
+          val company2Id = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000002"))
+          val client2Id  = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003"))
+          for {
+            xa  <- ZIO.service[Transactor[Task]]
+            _   <- seedTestData(xa)
+            _   <-
+              (for {
+                _ <-
+                  sql"""INSERT INTO companies (id, name, email)
+                               VALUES (${company2Id.value}, 'Company 2 GmbH', 'c2@test.com')
+                               ON CONFLICT DO NOTHING""".update.run
+                _ <-
+                  sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                               VALUES (${client2Id.value}, 'Client 2', 'client2@test.com',
+                                       'client'::person_role, ${company2Id.value}, 'placeholder')
+                               ON CONFLICT DO NOTHING""".update.run
+              } yield ()).transact(xa)
+            _   <- cleanRides(xa)
+            // Reset the counters so this test owns the numbering regardless of sibling tests.
+            _   <- sql"DELETE FROM booking_reference_sequences".update.run.transact(xa).unit
+            repo = PostgresRideRepository(xa)
+            r1  <- repo.create(makeRide())
+            r2  <- repo.create(makeRide().copy(companyId = company2Id, clientId = client2Id))
+          } yield assertTrue(
+            r1.bookingReference.exists(_.endsWith("-00001")),
+            r2.bookingReference.exists(_.endsWith("-00001"))
+          )
+        },
+        test("concurrent creates never allocate duplicate references") {
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            saved <- ZIO.foreachPar((1 to 20).toList)(_ => repo.create(makeRide()))
+            refs   = saved.flatMap(_.bookingReference)
+          } yield assertTrue(
+            refs.length == 20,
+            refs.toSet.size == 20
+          )
+        },
+        test("a pre-set reference is persisted verbatim") {
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            ride   = makeRide().copy(bookingReference = Some("R-2026-99999"))
+            saved <- repo.create(ride)
+            found <- repo.findById(ride.id)
+          } yield assertTrue(
+            saved.bookingReference.contains("R-2026-99999"),
+            found.get.bookingReference.contains("R-2026-99999")
+          )
+        },
+        test("update does not clear the reference (deliberately absent from rideSetClause)") {
+          for {
+            xa    <- ZIO.service[Transactor[Task]]
+            _     <- seedTestData(xa)
+            _     <- cleanRides(xa)
+            repo   = PostgresRideRepository(xa)
+            saved <- repo.create(makeRide())
+            // A stale in-memory object (bookingReference = None) must not wipe the stored value.
+            _     <- repo.update(
+                       saved.copy(status = RideStatus.Assigned, driverId = Some(driverId), bookingReference = None)
+                     )
+            found <- repo.findById(saved.id)
+          } yield assertTrue(
+            found.get.status == RideStatus.Assigned,
+            found.get.bookingReference == saved.bookingReference,
+            saved.bookingReference.isDefined
+          )
+        }
+      ),
       test("findByDriverIdInWindow: half-open window, driver filter, Cancelled excluded") {
         val from                                                                  = Instant.parse("2026-07-01T00:00:00Z")
         val to                                                                    = Instant.parse("2026-07-08T00:00:00Z")
