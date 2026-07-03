@@ -3,7 +3,7 @@ package com.shevchyk.ride.application.service
 import com.shevchyk.core.config.MucFlightConfig
 import com.shevchyk.ride.domain.{FlightInfo, FlightStatus}
 import zio.*
-import zio.cache.{Cache, Lookup}
+import zio.cache.Lookup
 import zio.http.Client
 import zio.test.*
 
@@ -20,19 +20,28 @@ object MucFlightBoardCacheSpec extends ZIOSpecDefault:
 
   private def flight(n: String) = FlightInfo(flightNumber = n, isArrival = true, status = FlightStatus.Landed)
 
-  // A provider whose cache's lookup counts scrapes instead of hitting the network. Same TTL (60s) and key shape as the
-  // production layer, so the cache behaviour under test is identical.
-  private def cachedProvider(
-      calls: Ref[Int]
+  // A provider whose cache's lookup counts scrapes instead of hitting the network. Built through the SAME
+  // `makeBoardCache` factory the production layer uses, so the cache behaviour under test is identical.
+  private def providerWithLookup(
+      lookup: Lookup[(LocalDate, Boolean), Any, Throwable, List[FlightInfo]]
   ): ZIO[Client & Scope, Nothing, MucFlightStatusProvider] =
     for
       client <- ZIO.service[Client]
-      cache  <- Cache.make[(LocalDate, Boolean), Any, Throwable, List[FlightInfo]](
-                  capacity = 64,
-                  timeToLive = 60.seconds,
-                  lookup = Lookup { case (_, _) => calls.update(_ + 1).as(List(flight("LH1751"))) }
-                )
+      cache  <- MucFlightStatusProvider.makeBoardCache(lookup)
     yield new MucFlightStatusProvider(MucFlightConfig(enabled = true), client, cache)
+
+  private def cachedProvider(calls: Ref[Int]): ZIO[Client & Scope, Nothing, MucFlightStatusProvider] =
+    providerWithLookup(Lookup { case (_, _) => calls.update(_ + 1).as(List(flight("LH1751"))) })
+
+  // First scrape fails (MUC down), every later one succeeds — for the failure-is-not-cached tests.
+  private def failingFirstProvider(calls: Ref[Int]): ZIO[Client & Scope, Nothing, MucFlightStatusProvider] =
+    providerWithLookup(Lookup { case (_, _) =>
+      calls
+        .updateAndGet(_ + 1)
+        .flatMap(n =>
+          if n == 1 then ZIO.fail(new RuntimeException("MUC down")) else ZIO.succeed(List(flight("LH1751")))
+        )
+    })
 
   def spec = suite("MucFlightStatusProvider board cache")(
     test("a second list() within the TTL is served from cache (one scrape)") {
@@ -54,6 +63,18 @@ object MucFlightBoardCacheSpec extends ZIOSpecDefault:
         _        <- provider.list(theDate, isArrival = true)
         n        <- calls.get
       yield assertTrue(n == 2)
+    },
+    test("a failed scrape is NOT cached — the next list() within the TTL hits the source again") {
+      // A transient MUC outage degrades that one call to Nil but must not poison the board for the whole TTL:
+      // the very next list() re-scrapes and can succeed.
+      for
+        calls    <- Ref.make(0)
+        provider <- failingFirstProvider(calls)
+        r1       <- provider.list(theDate, isArrival = true) // scrape fails → degrades to Nil
+        _        <- TestClock.adjust(1.second)               // well within the 60s TTL
+        r2       <- provider.list(theDate, isArrival = true) // must hit the source again, not the cached failure
+        n        <- calls.get
+      yield assertTrue(r1.isEmpty, r2.map(_.flightNumber) == List("LH1751"), n == 2)
     },
     test("different keys (date / direction) are cached independently") {
       for

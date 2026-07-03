@@ -182,16 +182,25 @@ object MucFlightStatusProvider:
         }
     loop(0, Nil).map(dedupBoard)
 
+  /**
+   * Build the board TTL cache. Package-private so the cache spec exercises the EXACT production construction with a
+   * counting lookup.
+   *
+   * `Cache.makeWith` (not `Cache.make`) because `make` retains FAILED lookup Exits for the full TTL — a transient MUC
+   * outage would poison the board for 60s. Here a failure gets `Duration.Zero` (evicted immediately, the next get
+   * re-scrapes) while a success stays for [[BoardCacheTtl]].
+   */
+  private[service] def makeBoardCache(
+      lookup: Lookup[(LocalDate, Boolean), Any, Throwable, List[FlightInfo]]
+  ): UIO[Cache[(LocalDate, Boolean), Throwable, List[FlightInfo]]] =
+    Cache.makeWith(capacity = 64, lookup = lookup)(exit => if exit.isSuccess then BoardCacheTtl else Duration.Zero)
+
   // Scoped because the cache lives for the app's lifetime. The TTL cache also dedups concurrent lookups of the same
   // (date, direction) key, so simultaneous dispatcher refreshes trigger a single MUC scrape.
   val layer: ZLayer[MucFlightConfig & Client, Nothing, FlightStatusProvider] = ZLayer.scoped {
     for
       config <- ZIO.service[MucFlightConfig]
       client <- ZIO.service[Client]
-      cache  <- Cache.make[(LocalDate, Boolean), Any, Throwable, List[FlightInfo]](
-                  capacity = 64,
-                  timeToLive = BoardCacheTtl,
-                  lookup = Lookup { case (date, isArrival) => fetchBoard(config, client, date, isArrival) }
-                )
+      cache  <- makeBoardCache(Lookup { case (date, isArrival) => fetchBoard(config, client, date, isArrival) })
     yield new MucFlightStatusProvider(config, client, cache)
   }
