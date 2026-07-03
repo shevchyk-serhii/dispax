@@ -288,6 +288,16 @@ object DriverApi:
         ride0        <- rideService.getRideById(parsedRideId).orElseFail(internalError)
         // Company isolation: hide cross-tenant rides as not found.
         _            <- ZIO.fail(internalError).when(ride0.companyId != companyId)
+        // Participation guard (IDOR): the live driver position is only for the ride's parties.
+        // Staff (dispatcher/admin/secretary/super-admin) always; a CLIENT only for their own ride;
+        // a DRIVER only for a ride they are assigned to. Otherwise 403 — a plain company member must
+        // not track the driver of a ride they have nothing to do with.
+        callerId      = PersonId(user.userId)
+        isStaff       = user.hasAnyRole("DISPATCHER", "ADMIN", "SECRETARY", "SUPER_ADMIN")
+        isParty       = ride0.clientId == callerId || ride0.driverId.contains(callerId)
+        _            <- ZIO
+                          .fail((StatusCode.Forbidden, ApiError("You are not a party to this ride")))
+                          .when(!isStaff && !isParty)
         // Lazy geocoding: enrich pickup coords for old rides that have none
         ride         <-
           if ride0.pickupLocation.latitude.isEmpty then

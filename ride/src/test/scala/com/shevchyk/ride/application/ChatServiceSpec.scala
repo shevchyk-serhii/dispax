@@ -56,32 +56,63 @@ object ChatServiceSpec extends ZIOSpecDefault {
             msg  <- svc.sendMessage(ride.id, driverId, "on my way")
           } yield assertTrue(msg.message == "on my way")
         }.provide(layers),
-        test("fails for Requested ride") {
+        test("fails for Requested ride with a typed ChatNotAvailable error") {
           for {
-            ride   <- createRide(RideStatus.Requested)
-            svc    <- ZIO.service[ChatService]
-            result <- svc.sendMessage(ride.id, clientId, "hi").exit
-          } yield assertTrue(result.isFailure)
+            ride  <- createRide(RideStatus.Requested)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(ride.id, clientId, "hi").flip
+          } yield assertTrue(error == ChatError.ChatNotAvailable(RideStatus.Requested))
         }.provide(layers),
-        test("fails for Completed ride") {
+        test("fails for Completed ride with a typed ChatNotAvailable error") {
           for {
-            ride   <- createRide(RideStatus.Completed)
-            svc    <- ZIO.service[ChatService]
-            result <- svc.sendMessage(ride.id, clientId, "hi").exit
-          } yield assertTrue(result.isFailure)
+            ride  <- createRide(RideStatus.Completed)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(ride.id, clientId, "hi").flip
+          } yield assertTrue(error == ChatError.ChatNotAvailable(RideStatus.Completed))
         }.provide(layers),
-        test("fails for Cancelled ride") {
+        test("fails for Cancelled ride with a typed ChatNotAvailable error") {
           for {
-            ride   <- createRide(RideStatus.Cancelled)
-            svc    <- ZIO.service[ChatService]
-            result <- svc.sendMessage(ride.id, clientId, "hi").exit
-          } yield assertTrue(result.isFailure)
+            ride  <- createRide(RideStatus.Cancelled)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(ride.id, clientId, "hi").flip
+          } yield assertTrue(error == ChatError.ChatNotAvailable(RideStatus.Cancelled))
         }.provide(layers),
-        test("fails when ride not found") {
+        test("fails when ride not found with a typed RideNotFound error") {
+          val missingId = RideId.generate()
           for {
-            svc    <- ZIO.service[ChatService]
-            result <- svc.sendMessage(RideId.generate(), clientId, "hi").exit
-          } yield assertTrue(result.isFailure)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(missingId, clientId, "hi").flip
+          } yield assertTrue(error == ChatError.RideNotFound(missingId))
+        }.provide(layers),
+        test("rejects an empty message with EmptyMessage and stores nothing") {
+          for {
+            ride  <- createRide(RideStatus.Assigned)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(ride.id, clientId, "").flip
+            msgs  <- svc.getMessages(ride.id)
+          } yield assertTrue(error == ChatError.EmptyMessage, msgs.isEmpty)
+        }.provide(layers),
+        test("rejects a whitespace-only message with EmptyMessage") {
+          for {
+            ride  <- createRide(RideStatus.Assigned)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(ride.id, clientId, " \t\n ").flip
+          } yield assertTrue(error == ChatError.EmptyMessage)
+        }.provide(layers),
+        test("rejects a message above MaxMessageLength with MessageTooLong and stores nothing") {
+          for {
+            ride  <- createRide(RideStatus.Assigned)
+            svc   <- ZIO.service[ChatService]
+            error <- svc.sendMessage(ride.id, clientId, "x" * (ChatService.MaxMessageLength + 1)).flip
+            msgs  <- svc.getMessages(ride.id)
+          } yield assertTrue(error == ChatError.MessageTooLong(ChatService.MaxMessageLength), msgs.isEmpty)
+        }.provide(layers),
+        test("accepts a message exactly at MaxMessageLength") {
+          for {
+            ride <- createRide(RideStatus.Assigned)
+            svc  <- ZIO.service[ChatService]
+            msg  <- svc.sendMessage(ride.id, clientId, "x" * ChatService.MaxMessageLength)
+          } yield assertTrue(msg.message.length == ChatService.MaxMessageLength)
         }.provide(layers),
         test("publishes ChatMessageSent event to EventHub") {
           for {
