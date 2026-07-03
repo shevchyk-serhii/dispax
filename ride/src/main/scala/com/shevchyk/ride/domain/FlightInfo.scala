@@ -97,9 +97,9 @@ final case class FlightInfo(
     gate: Option[String] = None,
     airline: Option[String] = None,
     otherAirport: Option[String] = None,
-    // The flight's take-off instant from its ORIGIN airport (for an arrival, when the aircraft left elsewhere),
-    // scraped from the detail page's departure block. The start of the en-route window the card animates against.
-    // None until the detail lookup runs / the page has no departure time.
+    // The flight's take-off instant from its ORIGIN airport (for an arrival, when the aircraft left elsewhere). The
+    // start of the en-route window the card animates against. Read reliably from the board list ("other airport" time
+    // cell) and refined by the detail page's departure block when available. None for departures / when unparseable.
     departureTime: Option[Instant] = None
 ) derives JsonCodec
 
