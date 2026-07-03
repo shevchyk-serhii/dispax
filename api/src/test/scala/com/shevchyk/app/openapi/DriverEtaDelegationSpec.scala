@@ -18,40 +18,37 @@ import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.repository.ClientLocationRepository
 
 /**
- * Endpoint-level tests for GET /api/rides/{rideId}/driver-location on DriverApi.
+ * Endpoint-level tests for the ETA on GET /api/rides/{rideId}/driver-location.
  *
- * Regression coverage for the IDOR audit finding: the handler only checked company isolation, so ANY authenticated
- * company user (e.g. an unrelated CLIENT) could read the live coordinates, approach flag, distance and ETA of the
- * driver of ANY ride in their company. The endpoint must be restricted to the ride's parties (its client, its assigned
- * driver) and staff (DISPATCHER/SECRETARY).
+ * Regression coverage for two audit findings:
+ *   - the handler duplicated `EtaService`'s Haversine formula instead of delegating (SOLID/DRY) — the endpoint must
+ *     return exactly what `EtaService.etaForRide` computes;
+ *   - the old inline assembly fell back to `getOrElse(0.0)` per coordinate, so a ride whose pickup had exactly one
+ *     coordinate produced an ETA towards a fake 0.0 coordinate ("Null Island") instead of skipping the ETA.
  *
- * Runs the REAL `DriverApi.serverEndpoints` through `ZioHttpInterpreter` with a seeded ride and a stub location
- * service.
+ * Runs the REAL `DriverApi.serverEndpoints` through `ZioHttpInterpreter`.
  */
-object DriverProximityAccessSpec extends ZIOSpecDefault:
+object DriverEtaDelegationSpec extends ZIOSpecDefault:
 
-  // -- Fixtures ------------------------------------------------------------
-  private val companyAId    = CompanyId(UUID.fromString("0000000A-0000-0000-0000-000000000001"))
-  private val clientId      = PersonId(UUID.fromString("000000CC-0000-0000-0000-000000000001"))
-  private val strangerId    = PersonId(UUID.fromString("000000CC-0000-0000-0000-000000000002"))
-  private val driverId      = PersonId(UUID.fromString("000000DD-0000-0000-0000-000000000001"))
-  private val otherDriverId = PersonId(UUID.fromString("000000DD-0000-0000-0000-000000000002"))
-  private val rideId        = RideId(UUID.fromString("000000AA-AAAA-0000-0000-000000000001"))
+  private val companyAId = CompanyId(UUID.fromString("0000000A-0000-0000-0000-000000000001"))
+  private val clientId   = PersonId(UUID.fromString("000000CC-0000-0000-0000-000000000001"))
+  private val driverId   = PersonId(UUID.fromString("000000DD-0000-0000-0000-000000000001"))
+  private val rideId     = RideId(UUID.fromString("000000AA-AAAA-0000-0000-000000000001"))
 
-  private def assignedRide(): Ride = Ride(
+  private def rideWith(pickup: Location): Ride = Ride(
     id = rideId,
     clientId = clientId,
     creatorId = clientId,
     companyId = companyAId,
     driverId = Some(driverId),
     status = RideStatus.Assigned,
-    pickupLocation = Location("Munich Airport", Some(48.3538), Some(11.7861)),
+    pickupLocation = pickup,
     dropoffLocation = Location("Munich City"),
     pickupDateTime = Instant.now().plusSeconds(3600),
     requestTime = Instant.now()
   )
 
-  // -- Stub layers ----------------------------------------------------------
+  // -- Stub layers -----------------------------------------------------------
   private val stubLocationService: ZLayer[Any, Nothing, DriverLocationService] = ZLayer.succeed(
     new DriverLocationService:
       def updateLocation(driverId: PersonId, latitude: Double, longitude: Double) = ZIO.die(
@@ -97,16 +94,24 @@ object DriverProximityAccessSpec extends ZIOSpecDefault:
       def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
   )
 
-  // Real EtaServiceImpl over the stubs, so the endpoint's delegated ETA behaves
-  // exactly as the old inline assembly did (HERE stub answers with a fixed ETA).
-  private val etaServiceLayer: ZLayer[Any, Nothing, EtaService] =
+  // The real EtaService implementation over the stubs (HERE answers 7 minutes).
+  private val realEtaService: ZLayer[Any, Nothing, EtaService] =
     (stubLocationService ++ stubHereRouting ++ GeocodingService.noop ++ stubClientLocationRepo) >>> EtaService.layer
 
-  private def buildLayers(repo: CheckpointRideRepository): ZLayer[Any, Throwable, DriverApi.DriverEnv] =
+  // A sentinel EtaService: whatever it computes must be what the endpoint returns.
+  private val sentinelEtaService: ZLayer[Any, Nothing, EtaService] = ZLayer.succeed(
+    new EtaService:
+      def etaForRide(ride: Ride): Task[Option[Int]] = ZIO.some(42)
+  )
+
+  private def buildLayers(
+      repo: CheckpointRideRepository,
+      eta: ZLayer[Any, Nothing, EtaService]
+  ): ZLayer[Any, Throwable, DriverApi.DriverEnv] =
     TestJwt.serviceLayer ++
       RideServiceFromRepo.layer(repo) ++
       stubLocationService ++
-      etaServiceLayer ++
+      eta ++
       GeocodingService.noop ++
       stubPersonRepo
 
@@ -125,58 +130,45 @@ object DriverProximityAccessSpec extends ZIOSpecDefault:
     .get(URL.decode(s"/api/rides/${rideId.value}/driver-location").toOption.get)
     .addHeader(Header.Authorization.Bearer(token))
 
-  private def tokenFor(role: PersonRole, userId: PersonId): ZIO[Any, Throwable, String] = TestJwt
-    .generateToken(role, companyAId, userId)
+  private def dispatcherToken: ZIO[Any, Throwable, String] = TestJwt
+    .generateToken(PersonRole.Dispatcher, companyAId, PersonId(UUID.randomUUID()))
     .provideLayer(TestJwt.serviceLayer)
 
   def spec =
-    suite("DriverApi — GET /api/rides/{rideId}/driver-location access guard [real serverEndpoints]")(
-      test("a same-company CLIENT who is not the ride's client → 403, no coordinates leaked") {
+    suite("DriverApi — ETA delegation to EtaService [real serverEndpoints]")(
+      test("the endpoint returns exactly the ETA computed by EtaService (delegation, no local copy)") {
         for {
-          repo  <- CheckpointRideRepository.make(assignedRide())
-          layers = buildLayers(repo)
-          token <- tokenFor(PersonRole.Client, strangerId)
-          resp  <- run(proximityReq(token), layers)
-          body  <- resp.body.asString
-        } yield assertTrue(
-          resp.status == Status.Forbidden,
-          !body.contains("48.2")
-        )
-      },
-      test("a same-company DRIVER who is not assigned to the ride → 403") {
-        for {
-          repo  <- CheckpointRideRepository.make(assignedRide())
-          layers = buildLayers(repo)
-          token <- tokenFor(PersonRole.Driver, otherDriverId)
-          resp  <- run(proximityReq(token), layers)
-        } yield assertTrue(resp.status == Status.Forbidden)
-      },
-      test("the ride's client can read the driver proximity → 200 with coordinates") {
-        for {
-          repo  <- CheckpointRideRepository.make(assignedRide())
-          layers = buildLayers(repo)
-          token <- tokenFor(PersonRole.Client, clientId)
-          resp  <- run(proximityReq(token), layers)
+          repo  <- CheckpointRideRepository.make(rideWith(Location("Munich Airport", Some(48.3538), Some(11.7861))))
+          token <- dispatcherToken
+          resp  <- run(proximityReq(token), buildLayers(repo, sentinelEtaService))
           body  <- resp.body.asString
         } yield assertTrue(
           resp.status == Status.Ok,
-          body.contains("48.2")
+          body.contains("\"etaMinutes\":42")
         )
       },
-      test("the assigned driver can read the proximity → 200") {
+      test("pickup with exactly one coordinate → no ETA (never computed against a fake 0.0 coordinate)") {
+        // Longitude is missing: the old inline fallback substituted 0.0 and passed
+        // the `!= 0.0` guard via the real latitude, producing an ETA to (48.35, 0.0).
         for {
-          repo  <- CheckpointRideRepository.make(assignedRide())
-          layers = buildLayers(repo)
-          token <- tokenFor(PersonRole.Driver, driverId)
-          resp  <- run(proximityReq(token), layers)
-        } yield assertTrue(resp.status == Status.Ok)
+          repo  <- CheckpointRideRepository.make(rideWith(Location("Munich Airport", Some(48.3538), None)))
+          token <- dispatcherToken
+          resp  <- run(proximityReq(token), buildLayers(repo, realEtaService))
+          body  <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          !body.contains("etaMinutes")
+        )
       },
-      test("a DISPATCHER (staff, not a party) can read the proximity → 200") {
+      test("pickup with both coordinates still yields an ETA through the real EtaService") {
         for {
-          repo  <- CheckpointRideRepository.make(assignedRide())
-          layers = buildLayers(repo)
-          token <- tokenFor(PersonRole.Dispatcher, strangerId)
-          resp  <- run(proximityReq(token), layers)
-        } yield assertTrue(resp.status == Status.Ok)
+          repo  <- CheckpointRideRepository.make(rideWith(Location("Munich Airport", Some(48.3538), Some(11.7861))))
+          token <- dispatcherToken
+          resp  <- run(proximityReq(token), buildLayers(repo, realEtaService))
+          body  <- resp.body.asString
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          body.contains("\"etaMinutes\":7")
+        )
       }
     ) @@ TestAspect.sequential

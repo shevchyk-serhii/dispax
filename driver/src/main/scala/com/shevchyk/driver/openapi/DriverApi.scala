@@ -7,7 +7,7 @@ import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.core.domain.{CompanyId, PersonId, PersonRole, RideId}
 import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService}
 import com.shevchyk.driver.infrastructure.http.{
   AvailableDriverDto,
   DriverEarningsDto,
@@ -19,7 +19,6 @@ import com.shevchyk.driver.infrastructure.http.{
 import com.shevchyk.ride.application.service.RideService
 import com.shevchyk.ride.domain.{DriverEarningsReport, EarningsPeriod}
 import com.shevchyk.ride.infrastructure.http.dto.RideDto
-import com.shevchyk.ride.repository.ClientLocationRepository
 import sttp.model.StatusCode
 import sttp.tapir.Schema
 import sttp.tapir.json.zio.*
@@ -51,9 +50,7 @@ object DriverApi:
     given Schema[AvailabilityResponse] = Schema.derived[AvailabilityResponse]
 
   // -- Environment ---------------------------------------------------------
-  type DriverEnv =
-    DriverLocationService & RideService & HereRoutingService & GeocodingService & ClientLocationRepository &
-      PersonRepository & JwtService
+  type DriverEnv = DriverLocationService & RideService & EtaService & GeocodingService & PersonRepository & JwtService
 
   private[openapi] type Err = (StatusCode, ApiError)
 
@@ -121,19 +118,6 @@ object DriverApi:
       driver     <- personRepo.findById(PersonId(driverUuid)).orElseFail(internalError)
       _          <- ZIO.fail((StatusCode.NotFound, ApiError("Not found"))).when(!driver.exists(_.companyId.contains(companyId)))
     } yield ()
-
-  // Fallback ETA estimate when HERE API key is not configured (~50 km/h urban speed)
-  private def estimateEtaMinutes(dLat: Double, dLng: Double, pickLat: Double, pickLng: Double): Option[Int] =
-    val R     = 6371000.0
-    val dPhi  = math.toRadians(pickLat - dLat)
-    val dLam  = math.toRadians(pickLng - dLng)
-    val a     =
-      math.sin(dPhi / 2) * math.sin(dPhi / 2) +
-        math.cos(math.toRadians(dLat)) * math.cos(math.toRadians(pickLat)) *
-        math.sin(dLam / 2) * math.sin(dLam / 2)
-    val distM = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    val eta   = math.ceil(distM / (50000.0 / 60.0)).toInt
-    Some(math.max(1, eta))
 
   private def toEarningsDto(report: DriverEarningsReport): DriverEarningsDto = DriverEarningsDto(
     period = report.period.toString.toLowerCase,
@@ -329,22 +313,12 @@ object DriverApi:
                           driverLat = driverLoc.map(_.latitude),
                           driverLng = driverLoc.map(_.longitude)
                         )
-        clientLoc    <- ZIO.serviceWithZIO[ClientLocationRepository](_.getLocation(parsedRideId)).orElse(ZIO.none)
-        eta          <-
-          (for {
-            dLat   <- driverLoc.map(_.latitude)
-            dLng   <- driverLoc.map(_.longitude)
-            destLat = clientLoc.map(_.latitude).getOrElse(ride.pickupLocation.latitude.getOrElse(0.0))
-            destLng = clientLoc.map(_.longitude).getOrElse(ride.pickupLocation.longitude.getOrElse(0.0))
-            if destLat != 0.0 || destLng != 0.0
-          } yield (dLat, dLng, destLat, destLng)) match {
-            case Some((dLat, dLng, destLat, destLng)) =>
-              ZIO
-                .serviceWithZIO[HereRoutingService](_.getEtaMinutes(dLat, dLng, destLat, destLng))
-                .map(_.orElse(estimateEtaMinutes(dLat, dLng, destLat, destLng)))
-                .orElseFail(internalError)
-            case None                                 => ZIO.none
-          }
+        // ETA assembly is delegated to EtaService — the single source of truth for
+        // origin/destination resolution (client live position first, else pickup
+        // coords) and the HERE-with-Haversine-fallback computation. It returns no
+        // ETA when either destination coordinate is missing instead of computing
+        // one against a fake 0.0 coordinate.
+        eta          <- ZIO.serviceWithZIO[EtaService](_.etaForRide(ride)).orElseFail(internalError)
         proximity     = DriverProximityDto(
                           driverLocation = rideDto.driverLocation,
                           driverApproaching = rideDto.driverApproaching,
