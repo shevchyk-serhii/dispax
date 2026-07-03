@@ -115,10 +115,23 @@ object GdprApi:
       expRepo     <- ZIO.service[ExpenseRepository]
       gdprRepo    <- ZIO.service[GdprRepository]
       personOpt   <- personRepo.findById(PersonId(user.userId)).mapError(internal)
-      clientRides <- rideRepo.findByClientId(PersonId(user.userId)).mapError(internal)
-      driverRides <- rideRepo.findByDriverId(PersonId(user.userId)).mapError(internal)
+      // Defense-in-depth company scoping: the id comes from the JWT, but scope the reads by the
+      // JWT company as well, so a future cross-company id collision can never export another
+      // company's rows. A caller without a company (platform-level user) owns no company data.
+      companyIdOpt = user.companyId.map(CompanyId(_))
+      clientRides <- ZIO
+                       .foreach(companyIdOpt)(cid => rideRepo.findByClientIdAndCompany(PersonId(user.userId), cid))
+                       .map(_.getOrElse(Nil))
+                       .mapError(internal)
+      driverRides <- ZIO
+                       .foreach(companyIdOpt)(cid => rideRepo.findByDriverIdAndCompany(PersonId(user.userId), cid))
+                       .map(_.getOrElse(Nil))
+                       .mapError(internal)
       userRides    = (clientRides ++ driverRides).distinctBy(_.id)
-      expenses    <- expRepo.findByDriverId(PersonId(user.userId)).mapError(internal)
+      expenses    <- ZIO
+                       .foreach(companyIdOpt)(cid => expRepo.findByDriverIdAndCompany(PersonId(user.userId), cid))
+                       .map(_.getOrElse(Nil))
+                       .mapError(internal)
       consents    <- gdprRepo.findConsentsByUserId(PersonId(user.userId)).mapError(internal)
       userData     = Map(
                        "id"    -> user.userId.toString,

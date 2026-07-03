@@ -19,6 +19,9 @@ import com.shevchyk.ride.repository.{RideRepository, TimeBucket}
  *     non-advancing mark fail with `InvalidOperation` in the service — the exact path the guest endpoint swallows as a
  *     204 no-op.
  *
+ * The client/driver find methods (scoped and unscoped) also read the seeded map, for the specs that assert
+ * company-scoped reads (e.g. the GDPR export).
+ *
  * `ride`'s own `InMemoryRideRepository` is not on the api test classpath, hence this local double. Every other method
  * dies loudly so an accidental call surfaces immediately.
  */
@@ -34,18 +37,26 @@ final class CheckpointRideRepository private (rides: Ref[Map[RideId, Ride]]) ext
       case _                                                                                      => (false, m)
   }
 
-  def create(ride: Ride): Task[Ride]                       = notImpl("create")
-  def findByStatus(status: RideStatus): Task[List[Ride]]   = notImpl("findByStatus")
-  def findAll(): Task[List[Ride]]                          = notImpl("findAll")
-  def findByClientId(clientId: PersonId): Task[List[Ride]] = notImpl("findByClientId")
-  def findByDriverId(driverId: PersonId): Task[List[Ride]] = notImpl("findByDriverId")
+  def create(ride: Ride): Task[Ride]                     = notImpl("create")
+  def findByStatus(status: RideStatus): Task[List[Ride]] = notImpl("findByStatus")
+  def findAll(): Task[List[Ride]]                        = notImpl("findAll")
 
-  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]] = notImpl(
-    "findByDriverIdAndCompany"
+  // Client/driver finds (scoped and unscoped) read the seeded map — used by the GDPR export spec
+  // to assert the company-scoped variants are what the endpoint actually calls.
+  def findByClientId(clientId: PersonId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(_.clientId == clientId).toList
   )
 
-  def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]] = notImpl(
-    "findByClientIdAndCompany"
+  def findByDriverId(driverId: PersonId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(_.driverId.contains(driverId)).toList
+  )
+
+  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(r => r.driverId.contains(driverId) && r.companyId == companyId).toList
+  )
+
+  def findByClientIdAndCompany(clientId: PersonId, companyId: CompanyId): Task[List[Ride]] = rides.get.map(
+    _.values.filter(r => r.clientId == clientId && r.companyId == companyId).toList
   )
 
   def findByStatusAndCompany(status: RideStatus, companyId: CompanyId): Task[List[Ride]] = notImpl(

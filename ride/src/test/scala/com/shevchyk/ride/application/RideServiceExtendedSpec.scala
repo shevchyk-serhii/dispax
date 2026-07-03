@@ -13,6 +13,7 @@ import com.shevchyk.core.application.{
 }
 import com.shevchyk.core.domain.WebSocketEvent
 import com.shevchyk.core.repository.BlacklistRepository
+import com.shevchyk.core.repository.CompanySettingsRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
@@ -187,6 +188,46 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
       SentConfirmationRequestRepository.inMemory ++
+      CompanySettingsRepository.inMemory ++
+      InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+
+  /**
+   * Blacklist double for the TOCTOU tests: `isBlacklisted` answers `false` while `falseBudget` is positive (consuming
+   * one unit per call) and `true` once it is exhausted — simulating an entry that appears between the service's early
+   * check and its atomic write. All other methods are inert.
+   */
+  final class FlippingBlacklistRepository extends BlacklistRepository {
+    val falseBudget = new java.util.concurrent.atomic.AtomicInteger(Int.MaxValue)
+
+    override def isBlacklisted(clientId: PersonId, driverId: PersonId): Task[Boolean] = ZIO.succeed(
+      blacklistAnswer()
+    )
+    private def blacklistAnswer(): Boolean                                            = falseBudget.getAndUpdate(n => if n > 0 then n - 1 else n) <= 0
+
+    override def create(entry: BlacklistEntry): Task[BlacklistEntry]                   = ZIO.succeed(entry)
+    override def findByCompanyId(companyId: CompanyId): Task[List[BlacklistEntry]]     = ZIO.succeed(Nil)
+    override def findByClientId(clientId: PersonId): Task[List[BlacklistEntry]]        = ZIO.succeed(Nil)
+    override def findByDriverId(driverId: PersonId): Task[List[BlacklistEntry]]        = ZIO.succeed(Nil)
+    override def deactivate(id: BlacklistEntryId, companyId: CompanyId): Task[Boolean] = ZIO.succeed(false)
+    override def delete(id: BlacklistEntryId): Task[Boolean]                           = ZIO.succeed(false)
+  }
+
+  private def layersWithBlacklist(blacklist: BlacklistRepository) =
+    (InMemoryRideRepository.layer ++
+      ZLayer.succeed[PersonRepository](testPersonRepo) ++
+      EventHub.layer ++
+      noopEmailSms ++
+      AuditService.inMemory ++
+      ZLayer.succeed(blacklist) ++
+      GeocodingService.noop ++
+      ExpenseRepository.inMemory ++
+      PickupTimeService.noopLayer ++
+      noopAvailabilityChecker ++
+      noopScheduleDayLookup ++
+      InMemoryExternalDriverRepository.layer ++
+      InMemoryPartnerCompanyRepository.layer ++
+      SentConfirmationRequestRepository.inMemory ++
+      CompanySettingsRepository.inMemory ++
       InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
@@ -321,6 +362,99 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[RideError.InvalidStatusTransition])
             case _                   => false
           })
+        }.provide(standardLayers),
+        // ── company-default cancellation fee (audit item) ──
+        // When the caller does not set an explicit fee, client-caused cancellations pick up the
+        // company's configured defaults (client_request → cancellationFeeDefault, client_no_show
+        // → noShowFee). Operational reasons must never silently charge the client.
+        test("a client_request cancellation without an explicit fee picks up the company default") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(companyId = testCompanyId, cancellationFeeDefault = BigDecimal("7.50"))
+                         )
+            ride      <- service.createRide(mkRide())
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           testClientId,
+                           PersonRole.Client,
+                           CancelRideRequest("client_request"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.contains(BigDecimal("7.50")))
+        }.provide(standardLayers),
+        test("a client_no_show cancellation without an explicit fee picks up the company noShowFee") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(
+                             companyId = testCompanyId,
+                             cancellationFeeDefault = BigDecimal("7.50"),
+                             noShowFee = BigDecimal("12.00")
+                           )
+                         )
+            assigned  <- createAssignedRide(service)
+            cancelled <- service.cancelRideWithReason(
+                           assigned.id,
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           CancelRideRequest("client_no_show"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.contains(BigDecimal("12.00")))
+        }.provide(standardLayers),
+        test("an explicit fee always wins over the company default") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(companyId = testCompanyId, cancellationFeeDefault = BigDecimal("7.50"))
+                         )
+            ride      <- service.createRide(mkRide())
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           CancelRideRequest("client_request", Some(BigDecimal("3.00"))),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.contains(BigDecimal("3.00")))
+        }.provide(standardLayers),
+        test("an operational cancellation (vehicle_issue) never charges the company default") {
+          for {
+            service   <- ZIO.service[RideService]
+            settings  <- ZIO.service[CompanySettingsRepository]
+            _         <- settings.upsert(
+                           CompanySettings(
+                             companyId = testCompanyId,
+                             cancellationFeeDefault = BigDecimal("7.50"),
+                             noShowFee = BigDecimal("12.00")
+                           )
+                         )
+            assigned  <- createAssignedRide(service)
+            cancelled <- service.cancelRideWithReason(
+                           assigned.id,
+                           testDriverId,
+                           PersonRole.Driver,
+                           CancelRideRequest("vehicle_issue"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.isEmpty)
+        }.provide(standardLayers),
+        test("no settings row (or a zero default) means no fee") {
+          for {
+            service   <- ZIO.service[RideService]
+            ride      <- service.createRide(mkRide())
+            cancelled <- service.cancelRideWithReason(
+                           ride.id,
+                           testClientId,
+                           PersonRole.Client,
+                           CancelRideRequest("client_request"),
+                           testCompanyId
+                         )
+          } yield assertTrue(cancelled.cancellationFee.isEmpty)
         }.provide(standardLayers),
         test("a client cannot cancel another client's ride") {
           for {
@@ -648,6 +782,66 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
                          )
             leftover  <- tokenRepo.findActiveByRideId(ride.id)
           } yield assertTrue(leftover.nonEmpty)
+        }.provide(standardLayers),
+        // ── isVipRide/preferredDriverUsed recompute on client reassignment (regression) ──
+        // Both flags are derived from the CLIENT at assignment time; a client change on an
+        // already-assigned ride must re-derive them, otherwise a ride reassigned from a VIP
+        // client to a regular one stays flagged VIP (and vice versa) and skews stats/service.
+        test("reassigning an assigned ride from a VIP client to a regular one recomputes the VIP flags") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide(vipClientId))
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            updated  <- service.updateRideDetails(
+                          ride.id,
+                          UpdateRideDetailsRequest(clientId = Some(testClientId)),
+                          dispatcherId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            assigned.isVipRide,
+            assigned.preferredDriverUsed,
+            !updated.isVipRide,
+            !updated.preferredDriverUsed
+          )
+        }.provide(standardLayers),
+        test("reassigning an assigned ride from a regular client to a VIP one recomputes the VIP flags") {
+          for {
+            service  <- ZIO.service[RideService]
+            ride     <- service.createRide(mkRide())
+            assigned <- service.assignDriver(ride.id, testDriverId)
+            updated  <- service.updateRideDetails(
+                          ride.id,
+                          UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                          dispatcherId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            !assigned.isVipRide,
+            !assigned.preferredDriverUsed,
+            updated.isVipRide,
+            // vipClient.preferredDriverId == testDriverId, the ride's assigned driver.
+            updated.preferredDriverUsed
+          )
+        }.provide(standardLayers),
+        test("changing the client on a driverless ride leaves the VIP flags untouched") {
+          for {
+            service <- ZIO.service[RideService]
+            ride    <- service.createRide(mkRide())
+            updated <- service.updateRideDetails(
+                         ride.id,
+                         UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                         dispatcherId,
+                         PersonRole.Dispatcher,
+                         Some(testCompanyId)
+                       )
+          } yield assertTrue(
+            // No driver on the ride: the flags stay false until assignDriver derives them.
+            !updated.isVipRide,
+            !updated.preferredDriverUsed
+          )
         }.provide(standardLayers),
         test("update notes and specialRequirements") {
           for {
@@ -1154,6 +1348,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
             SentConfirmationRequestRepository.inMemory ++
+            CompanySettingsRepository.inMemory ++
             InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         ),
         test("assignment succeeds when driver is not blacklisted") {
@@ -1207,6 +1402,7 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
             SentConfirmationRequestRepository.inMemory ++
+            CompanySettingsRepository.inMemory ++
             InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         ),
         // ── updateRideDetails client change: moving a ride onto a client who blacklisted the
@@ -1267,6 +1463,62 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
               updated.driverId.contains(testDriverId)
           )
         }.provide(standardLayers)
+      ),
+
+      // ────────────────────────────────────────────────────────────────────
+      // 6b. TOCTOU: blacklist re-check right before the atomic write
+      // ────────────────────────────────────────────────────────────────────
+      // The atomic CAS (updateIfStatus) only guards the ride's STATUS, not the blacklist: an
+      // entry added between the early check and the write used to slip through. The service
+      // re-checks the blacklist immediately before the CAS; the flipping stub simulates exactly
+      // that interleaving (first isBlacklisted call false, every later one true).
+      suite("blacklist TOCTOU re-check")(
+        test("assignDriver fails when the blacklist gains an entry between check and write") {
+          val blacklist = new FlippingBlacklistRepository
+          val program   =
+            for {
+              service <- ZIO.service[RideService]
+              ride    <- service.createRide(mkRide())
+              _        = blacklist.falseBudget.set(1) // early check passes; any later check sees the new entry
+              exit    <- service.assignDriver(ride.id, testDriverId).exit
+              after   <- service.getRideById(ride.id)
+            } yield assertTrue(
+              exit match {
+                case Exit.Failure(cause) =>
+                  cause.failureOption.exists {
+                    case RideError.BusinessRuleViolation("blacklist", _) => true
+                    case _                                               => false
+                  }
+                case _                   => false
+              },
+              after.status == RideStatus.Requested,
+              after.driverId.isEmpty
+            )
+          program.provideLayer(layersWithBlacklist(blacklist))
+        },
+        test("reassignDriver fails when the blacklist gains an entry between check and write") {
+          val blacklist = new FlippingBlacklistRepository
+          val program   =
+            for {
+              service  <- ZIO.service[RideService]
+              assigned <- createAssignedRide(service)
+              _         = blacklist.falseBudget.set(1)
+              exit     <- service.reassignDriver(assigned.id, testDriver2Id).exit
+              after    <- service.getRideById(assigned.id)
+            } yield assertTrue(
+              exit match {
+                case Exit.Failure(cause) =>
+                  cause.failureOption.exists {
+                    case RideError.BusinessRuleViolation("blacklist", _) => true
+                    case _                                               => false
+                  }
+                case _                   => false
+              },
+              // The losing write never applied: the original driver still holds the ride.
+              after.driverId.contains(testDriverId)
+            )
+          program.provideLayer(layersWithBlacklist(blacklist))
+        }
       ),
 
       // ────────────────────────────────────────────────────────────────────

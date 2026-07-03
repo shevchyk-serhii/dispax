@@ -210,6 +210,7 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
       def create(expense: Expense): Task[Expense]                                                             = ZIO.succeed(expense)
       def findById(id: ExpenseId): Task[Option[Expense]]                                                      = ZIO.none
       def findByDriverId(driverId: PersonId): Task[List[Expense]]                                             = ZIO.succeed(Nil)
+      def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Expense]]             = ZIO.succeed(Nil)
       def findByRideId(rideId: RideId): Task[List[Expense]]                                                   = ZIO.succeed(Nil)
       def findByCompanyId(companyId: CompanyId): Task[List[Expense]]                                          = ZIO.succeed(Nil)
       def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean]                                          = ZIO.succeed(false)

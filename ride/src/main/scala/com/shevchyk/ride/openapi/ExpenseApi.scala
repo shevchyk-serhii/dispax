@@ -76,12 +76,17 @@ object ExpenseApi:
                           .when(user.role == "DRIVER" && !ride.driverId.contains(PersonId(user.userId)))
           } yield ()
         }
+      // Safe enum parse: `ExpenseCategory.valueOf` throws on an unknown value, which killed the
+      // fiber and surfaced as a 500 — plain bad input must be a 400 instead.
+      category  <- ZIO
+                     .fromOption(ExpenseCategory.values.find(_.toString == req.category))
+                     .orElseFail((StatusCode.BadRequest, ApiError(s"Invalid expense category: ${req.category}")))
       expense    = Expense(
                      id = ExpenseId.generate(),
                      rideId = rideIdOpt,
                      driverId = PersonId(user.userId),
                      companyId = companyId,
-                     category = ExpenseCategory.valueOf(req.category),
+                     category = category,
                      amount = BigDecimal(req.amount),
                      description = req.description
                    )
@@ -97,7 +102,12 @@ object ExpenseApi:
         user.role match {
           case "DISPATCHER" =>
             requireCompanyId(user.companyId).flatMap(cid => repo.findByCompanyId(cid).mapError(_ => internalError))
-          case _            => repo.findByDriverId(PersonId(user.userId)).mapError(_ => internalError)
+          case _            =>
+            // Defense-in-depth: scope the self-read by the JWT company as well, so a future
+            // cross-company id collision can never surface another company's expenses.
+            requireCompanyId(user.companyId).flatMap(cid =>
+              repo.findByDriverIdAndCompany(PersonId(user.userId), cid).mapError(_ => internalError)
+            )
         }
     } yield expenses
   }

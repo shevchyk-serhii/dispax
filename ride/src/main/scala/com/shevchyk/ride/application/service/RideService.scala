@@ -21,7 +21,7 @@ import com.shevchyk.ride.repository.{
 }
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.core.application.{EmailSmsService, RideConfirmationData}
-import com.shevchyk.core.repository.SentConfirmationRequestRepository
+import com.shevchyk.core.repository.{CompanySettingsRepository, SentConfirmationRequestRepository}
 import zio.*
 import java.time.{Duration, Instant, LocalDate, ZoneOffset}
 import monocle.syntax.all.*
@@ -172,7 +172,8 @@ class RideServiceImpl(
     externalDriverRepo: ExternalDriverRepository,
     partnerCompanyRepo: PartnerCompanyRepository,
     sentConfirmationRequestRepository: SentConfirmationRequestRepository,
-    rideShareTokenRepository: RideShareTokenRepository
+    rideShareTokenRepository: RideShareTokenRepository,
+    companySettingsRepository: CompanySettingsRepository
 ) extends RideService:
 
   /**
@@ -614,6 +615,13 @@ class RideServiceImpl(
           .fail(RideError.ValidationError("Cancellation fee cannot be negative"))
           .when(request.fee.exists(_ < 0))
           .unit
+      // When the caller did not set an explicit fee, fall back to the company's configured
+      // default for CLIENT-caused cancellations (client_request -> cancellationFeeDefault,
+      // client_no_show -> noShowFee). An explicit fee — including an explicit 0 — always wins.
+      fee          <-
+        request.fee match
+          case some @ Some(_) => ZIO.succeed(some)
+          case None           => defaultCancellationFee(ride.companyId, reason)
 
       // Persist the canonical wire form so statistics group cleanly regardless of input casing.
       updatedRide   = ride
@@ -622,7 +630,7 @@ class RideServiceImpl(
                         .focus(_.cancellationReason)
                         .replace(Some(CancellationReason.toWire(reason)))
                         .focus(_.cancellationFee)
-                        .replace(request.fee)
+                        .replace(fee)
                         .focus(_.cancelledBy)
                         .replace(Some(userId))
       // Atomic compare-and-set: only cancel from a still-cancellable status. Guards against a
@@ -675,6 +683,30 @@ class RideServiceImpl(
           .tapError(e => ZIO.logWarning(s"Failed to write audit log: $e"))
           .ignore
     } yield persistedRide
+
+  /**
+   * Company-default cancellation fee for cancellations where the caller set no explicit fee.
+   *
+   * Only CLIENT-caused cancellations may charge a default (client_request -> cancellationFeeDefault, client_no_show ->
+   * noShowFee) — weather or operational reasons (driver/vehicle) must never silently charge the client. A missing
+   * settings row or a configured 0 means "no fee".
+   */
+  private def defaultCancellationFee(
+      companyId: CompanyId,
+      reason: CancellationReason
+  ): IO[RideError, Option[BigDecimal]] =
+    val pick: Option[CompanySettings => BigDecimal] =
+      reason match
+        case CancellationReason.ClientRequest => Some(_.cancellationFeeDefault)
+        case CancellationReason.ClientNoShow  => Some(_.noShowFee)
+        case _                                => None
+    pick match
+      case None    => ZIO.none
+      case Some(f) =>
+        companySettingsRepository
+          .findByCompanyId(companyId)
+          .mapDatabaseError
+          .map(_.map(f).filter(_ > 0))
 
   def getCancellationStats(companyId: CompanyId): IO[RideError, Map[String, Int]] =
     for {
@@ -814,9 +846,9 @@ class RideServiceImpl(
       companyId: Option[CompanyId]
   ): IO[RideError, Ride] =
     for {
-      ride        <- getRideById(rideId)
-      _           <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, ride.status)).when(!ride.canBeEdited).unit
-      _           <-
+      ride       <- getRideById(rideId)
+      _          <- ZIO.fail(RideError.InvalidStatusTransition(ride.status, ride.status)).when(!ride.canBeEdited).unit
+      _          <-
         ZIO
           .fail(RideError.UnauthorizedAccess(userId, rideId))
           .when(ride.creatorId != userId && userRole != PersonRole.Dispatcher)
@@ -824,7 +856,7 @@ class RideServiceImpl(
       // Company isolation: the ride must belong to the caller's company. A missing
       // companyId is treated as a failure (not a bypass) so a caller can never skip the
       // check by omitting it — the HTTP layer always supplies it via requireCompanyId.
-      _           <-
+      _          <-
         companyId match
           case Some(cid) => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId)).when(ride.companyId != cid).unit
           case None      => ZIO.fail(RideError.UnauthorizedAccess(userId, rideId))
@@ -832,7 +864,7 @@ class RideServiceImpl(
       // Reassigning the ride to another client is dispatcher-only (a client-creator must not
       // move their ride onto someone else) and follows the same company-isolation rule as
       // createRide: the new client must exist and belong to the ride's company.
-      newClientId <-
+      newClient  <-
         request.clientId.filter(_ != ride.clientId) match
           case None              => ZIO.none
           case Some(newClientId) =>
@@ -871,7 +903,16 @@ class RideServiceImpl(
               // persisted: if the revoke fails the whole update fails (consistent state);
               // a revoke that succeeds before a failing persist only costs a re-share.
               _         <- rideShareTokenRepository.deleteByRideId(rideId).mapDatabaseError
-            } yield Some(newClientId)
+            } yield Some((newClientId, client))
+
+      // isVipRide / preferredDriverUsed are derived from the CLIENT when a driver is assigned
+      // (see assignDriver). When the client changes on a ride that already carries a driver,
+      // re-derive both flags from the NEW client — otherwise a ride reassigned from a VIP
+      // client to a regular one stays flagged VIP (and vice versa). On a driverless ride the
+      // flags stay untouched: assignDriver will derive them when a driver is set.
+      newVipFlags = newClient.flatMap((_, client) =>
+                      ride.driverId.map(driverId => (client.isVip, client.preferredDriverId.contains(driverId)))
+                    )
 
       newPickup  <-
         ZIO.foreach(request.pickupLocation)(loc =>
@@ -883,7 +924,11 @@ class RideServiceImpl(
         )
       updatedRide = ride
                       .focus(_.clientId)
-                      .replace(newClientId.getOrElse(ride.clientId))
+                      .replace(newClient.map(_._1).getOrElse(ride.clientId))
+                      .focus(_.isVipRide)
+                      .replace(newVipFlags.fold(ride.isVipRide)(_._1))
+                      .focus(_.preferredDriverUsed)
+                      .replace(newVipFlags.fold(ride.preferredDriverUsed)(_._2))
                       .focus(_.pickupLocation)
                       .replace(newPickup.getOrElse(ride.pickupLocation))
                       .focus(_.dropoffLocation)
@@ -915,7 +960,7 @@ class RideServiceImpl(
               companyId = persistedRide.companyId.value,
               // Only set when this update actually moved the ride to another client, so
               // consumers can tell a reassignment apart from an ordinary details edit.
-              previousClientId = newClientId.map(_ => ride.clientId.value)
+              previousClientId = newClient.map(_ => ride.clientId.value)
             )
           )
           .ignore
@@ -976,14 +1021,30 @@ class RideServiceImpl(
       blocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
       _       <- failRule("blacklist", "This driver is blacklisted for the ride's client").when(blocked).unit
 
-      // Check scheduling conflicts (ride-vs-ride + unavailability windows).
-      // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
-      _ <- checkScheduleConflict(driverId, ride).unless(overrideScheduleConflict)
-
-      // Check VIP and preferred driver
+      // Check VIP and preferred driver (fetched BEFORE the conflict check so the schedule-conflict
+      // read sits as close as possible to the atomic write below — see the TOCTOU note there).
       clientOpt        <- personRepository.findById(ride.clientId).mapDatabaseError
       isVip             = clientOpt.exists(_.isVip)
       isPreferredDriver = clientOpt.flatMap(_.preferredDriverId).contains(driverId)
+
+      // Check scheduling conflicts (ride-vs-ride + unavailability windows).
+      // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
+      // TOCTOU note: this read-then-write is NOT atomic — updateIfStatus below only guards THIS
+      // ride's status, not the driver's schedule, so two dispatchers assigning the same driver to
+      // overlapping slots at the same instant can both pass. The check is kept immediately before
+      // the write to shrink the window; fully closing it needs a DB-level exclusion constraint,
+      // which is disproportionate for the residual risk (a dispatcher can also override on purpose).
+      _ <- checkScheduleConflict(driverId, ride).unless(overrideScheduleConflict)
+
+      // TOCTOU tightening: the blacklist could have gained an entry since the early check above
+      // (the CAS below only guards the ride's status, not the blacklist). Re-check immediately
+      // before the write so the window shrinks to a single read; a residual race remains — closing
+      // it fully needs an in-transaction check, disproportionate for this risk.
+      recheckBlocked <- blacklistRepository.isBlacklisted(ride.clientId, driverId).mapDatabaseError
+      _              <-
+        failRule("blacklist", "This driver is blacklisted for the ride's client")
+          .when(recheckBlocked)
+          .unit
 
       updatedRide   = ride
                         .focus(_.status)
@@ -1095,37 +1156,49 @@ class RideServiceImpl(
 
       // Check scheduling conflicts (exclude current ride from conflict check).
       // A dispatcher can knowingly override the conflict; tenant/role/blacklist checks above still apply.
+      // TOCTOU note: like assignDriver, this read-then-write is not atomic — the CAS below guards
+      // only this ride's status, not the driver's schedule. Kept immediately before the write to
+      // shrink the window; fully closing it needs a DB-level exclusion constraint.
       _ <- checkScheduleConflict(newDriverId, ride).unless(overrideScheduleConflict)
 
+      // TOCTOU tightening: re-check the blacklist immediately before the write — an entry added
+      // between the early check and the CAS must not slip through. A residual single-read race
+      // remains (an in-transaction check would be disproportionate for this risk).
+      recheckBlocked <- blacklistRepository.isBlacklisted(ride.clientId, newDriverId).mapDatabaseError
+      _              <-
+        failRule("blacklist", "This driver is blacklisted for the ride's client")
+          .when(recheckBlocked)
+          .unit
+
       // Reset confirmation state when the driver changes so the new driver must confirm afresh.
-      updatedRide   = ride
-                        .focus(_.driverId)
-                        .replace(Some(newDriverId))
-                        .focus(_.status)
-                        .replace(RideStatus.Assigned)
-                        .focus(_.confirmedAt)
-                        .replace(None)
-                        .focus(_.rejectionReason)
-                        .replace(None)
-                        .focus(_.rejectedBy)
-                        .replace(None)
-                        .focus(_.rejectedAt)
-                        .replace(None)
+      updatedRide     = ride
+                          .focus(_.driverId)
+                          .replace(Some(newDriverId))
+                          .focus(_.status)
+                          .replace(RideStatus.Assigned)
+                          .focus(_.confirmedAt)
+                          .replace(None)
+                          .focus(_.rejectionReason)
+                          .replace(None)
+                          .focus(_.rejectedBy)
+                          .replace(None)
+                          .focus(_.rejectedAt)
+                          .replace(None)
 
       // Atomic compare-and-set: only reassign while the ride is still `Assigned` or `Confirmed`.
-      applied      <-
+      applied        <-
         rideRepository
           .updateIfStatus(updatedRide, Set(RideStatus.Assigned, RideStatus.Confirmed))
           .mapDatabaseError
-      _            <-
+      _              <-
         ZIO
           .fail(RideError.InvalidStatusTransition(ride.status, RideStatus.Assigned))
           .when(!applied)
           .unit
-      persistedRide = updatedRide
+      persistedRide   = updatedRide
       // Clear confirmation dedup so the new driver receives a confirmation request.
-      _            <- sentConfirmationRequestRepository.clear(rideId).ignore
-      _            <-
+      _              <- sentConfirmationRequestRepository.clear(rideId).ignore
+      _              <-
         eventHub
           .publish(
             WebSocketEvent.RideAssigned(
@@ -1141,7 +1214,7 @@ class RideServiceImpl(
             )
           )
           .ignore
-      _            <-
+      _              <-
         auditService
           .log(
             AuditLogEntry.record(
@@ -1619,7 +1692,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository & RideShareTokenRepository,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository & RideShareTokenRepository & CompanySettingsRepository,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

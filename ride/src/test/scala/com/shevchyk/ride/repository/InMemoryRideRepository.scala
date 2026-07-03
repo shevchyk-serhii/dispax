@@ -41,11 +41,32 @@ class InMemoryRideRepository extends RideRepository:
 
   override def findById(id: RideId): Task[Option[Ride]] = rides.get.map(_.get(id))
 
-  override def update(ride: Ride): Task[Ride] = rides.update(_.updated(ride.id, ride)).as(ride)
+  // Mirror PostgresRideRepository.rideSetClause: the shared UPDATE ... SET deliberately does NOT
+  // write vehicle_class, flight_is_arrival or airport_checkpoint (the latter two have their own
+  // atomic writers updateCheckpoint/updateFlightStatus that a stale ride object must not clobber;
+  // vehicle_class has no update path at all). The double must not persist them either, or a unit
+  // test can go green on a field the production SQL silently drops — the exact class of trap the
+  // client_id bug slipped through.
+  private def alignWithSetClause(incoming: Ride, stored: Ride): Ride = incoming.copy(
+    vehicleClass = stored.vehicleClass,
+    flightIsArrival = stored.flightIsArrival,
+    airportCheckpoint = stored.airportCheckpoint
+  )
+
+  // Like the SQL, returns the incoming object as passed (its excluded fields are NOT persisted).
+  // A missing row is stored as given — the closest sane analogue for tests seeding via update.
+  override def update(ride: Ride): Task[Ride] = rides
+    .update(m =>
+      m.get(ride.id) match
+        case Some(stored) => m.updated(ride.id, alignWithSetClause(ride, stored))
+        case None         => m.updated(ride.id, ride)
+    )
+    .as(ride)
 
   override def updateIfStatus(ride: Ride, expectedStatuses: Set[RideStatus]): Task[Boolean] = rides.modify { m =>
     m.get(ride.id) match
-      case Some(current) if expectedStatuses.contains(current.status) => (true, m.updated(ride.id, ride))
+      case Some(current) if expectedStatuses.contains(current.status) =>
+        (true, m.updated(ride.id, alignWithSetClause(ride, current)))
       case _                                                          => (false, m)
   }
 

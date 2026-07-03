@@ -22,6 +22,7 @@ import zio.test.*
 import zio.*
 import java.time.Instant
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 /**
  * Verifies the side-effects createRide fires after persistence — the WebSocket RideCreated event, the audit-log entry,
@@ -150,7 +151,8 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
       SentConfirmationRequestRepository.inMemory ++
-      InMemoryRideShareTokenRepository.layer
+      InMemoryRideShareTokenRepository.layer ++
+      CompanySettingsRepository.inMemory
 
   private val fullLayers = baseLayers >+> RideService.layer
 

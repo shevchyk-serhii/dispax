@@ -19,6 +19,7 @@ import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, I
 import zio.*
 import zio.test.*
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 /**
  * Unit tests for confirmRide and rejectRide, and the updated updateRideStatus gate. All tests use
@@ -168,7 +169,7 @@ object RideConfirmationSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

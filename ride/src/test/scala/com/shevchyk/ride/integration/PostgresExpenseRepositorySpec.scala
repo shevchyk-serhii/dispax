@@ -133,6 +133,22 @@ object PostgresExpenseRepositorySpec extends ZIOSpecDefault {
           mine.forall(_.driverId == driverId)
         )
       },
+      test("findByDriverIdAndCompany filters by driver AND company") {
+        for {
+          xa   <- ZIO.service[Transactor[Task]]
+          _    <- seedTestData(xa)
+          _    <- cleanExpenses(xa)
+          repo  = PostgresExpenseRepository(xa)
+          // Same driver id under two companies: only the requested company's rows may surface.
+          _    <- repo.create(makeExpense(driver = driverId, company = testCompanyId, ride = None))
+          _    <- repo.create(makeExpense(driver = driverId, company = otherCompanyId, ride = None))
+          _    <- repo.create(makeExpense(driver = otherDriverId, company = testCompanyId, ride = None))
+          mine <- repo.findByDriverIdAndCompany(driverId, testCompanyId)
+        } yield assertTrue(
+          mine.length == 1,
+          mine.forall(e => e.driverId == driverId && e.companyId == testCompanyId)
+        )
+      },
       test("findByRideId filters by ride") {
         for {
           xa     <- ZIO.service[Transactor[Task]]
