@@ -142,69 +142,79 @@ class RideCalendarCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          DateFormat.Hm().format(ride.pickupDateTime),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        if (_estimatedTripMinutes() case final mins?) ...[
-                          const SizedBox(width: 10),
-                          Icon(
-                            Icons.timelapse,
-                            size: 15,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            _formatDuration(mins),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurfaceVariant,
+                    // Scale the time/duration/price group down instead of
+                    // overflowing when the card is narrow (e.g. next to the
+                    // day-view hour timeline).
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              DateFormat.Hm().format(ride.pickupDateTime),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                        ],
-                        // Price block — tappable to open edit dialog.
-                        const SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: onPriceEdited != null
-                              ? () => _showPriceDialog(context)
-                              : null,
-                          child: ride.price != null
-                              ? Text(
-                                  '€${ride.price?.toStringAsFixed(2) ?? ''}',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.onSurfaceVariant,
-                                    decoration: onPriceEdited != null
-                                        ? TextDecoration.underline
-                                        : null,
-                                  ),
-                                )
-                              : onPriceEdited != null
-                              ? Text(
-                                  l10n.setPrice,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontStyle: FontStyle.italic,
-                                    color: colorScheme.onSurfaceVariant
-                                        .withAlpha(153),
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
+                            if (_estimatedTripMinutes() case final mins?) ...[
+                              const SizedBox(width: 10),
+                              Icon(
+                                Icons.timelapse,
+                                size: 15,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                _formatDuration(mins),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                            // Price block — tappable to open edit dialog.
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: onPriceEdited != null
+                                  ? () => _showPriceDialog(context)
+                                  : null,
+                              child: ride.price != null
+                                  ? Text(
+                                      '€${ride.price?.toStringAsFixed(2) ?? ''}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurfaceVariant,
+                                        decoration: onPriceEdited != null
+                                            ? TextDecoration.underline
+                                            : null,
+                                      ),
+                                    )
+                                  : onPriceEdited != null
+                                  ? Text(
+                                      l10n.setPrice,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontStyle: FontStyle.italic,
+                                        color: colorScheme.onSurfaceVariant
+                                            .withAlpha(153),
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
