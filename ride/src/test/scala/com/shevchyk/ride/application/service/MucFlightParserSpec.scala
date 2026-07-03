@@ -25,10 +25,11 @@ object MucFlightParserSpec extends ZIOSpecDefault:
    * A minimal synthetic board row with the given MUC time cell ("planned | expected"), shaped like the real fixture
    * markup — used to pin down the time-anchoring rules without a captured fixture per case.
    */
-  private def syntheticRow(mucTimeCell: String): String =
+  private def syntheticRow(mucTimeCell: String, otherTime: String = ""): String =
     s"""<table><tr data-flight-id="1.0" class="fp-flight-item">
        |<td class="fp-flight-number">LH 123 (A320)</td>
        |<td class="fp-flight-time-muc">$mucTimeCell</td>
+       |<td class="fp-flight-time-other">$otherTime</td>
        |<td class="fp-flight-status">verspätet</td>
        |</tr></table>""".stripMargin
 
@@ -107,6 +108,41 @@ object MucFlightParserSpec extends ZIOSpecDefault:
           info.get.scheduledTime.contains(Instant.parse("2026-06-26T08:00:00Z")),
           info.get.estimatedTime.contains(Instant.parse("2026-06-26T08:20:00Z"))
         )
+      },
+      test("arrival: reads the origin take-off from the list ('other airport' time), same day") {
+        // Departure 10:00 is before the MUC arrival 13:30 → same-day take-off, anchored to the request date.
+        val info = MucFlightParser.parse(
+          syntheticRow("13:30&nbsp;|&nbsp;13:20", otherTime = "10:00"),
+          theDate,
+          isArrival = true
+        )
+        assertTrue(
+          info.get.departureTime.contains(Instant.parse("2026-06-26T08:00:00Z")),
+          // The window is positive (departure before the landing) — this is what makes the plane render.
+          info.get.departureTime.get.isBefore(info.get.estimatedTime.get)
+        )
+      },
+      test("arrival: an overnight take-off (later in the day than the landing) rolls to the PREVIOUS day") {
+        // Real captured board fragment: LH773 BKK→MUC, Abflug 22:55, MUC an 05:15 | 05:05. The take-off wall-clock
+        // (22:55) is after the landing (05:15), so it belongs to the day BEFORE the query date.
+        val info = MucFlightParser.parse(
+          fixture("arrivals_single_overnight.html"),
+          LocalDate.of(2026, 7, 3),
+          isArrival = true
+        )
+        assertTrue(
+          // 22:55 Berlin (CEST, UTC+2) on 2026-07-02.
+          info.get.departureTime.contains(Instant.parse("2026-07-02T20:55:00Z")),
+          info.get.departureTime.get.isBefore(info.get.estimatedTime.get)
+        )
+      },
+      test("departure direction: the 'other airport' time is the destination, not a take-off → no departureTime") {
+        val info = MucFlightParser.parse(
+          syntheticRow("10:00&nbsp;|&nbsp;10:20", otherTime = "13:00"),
+          theDate,
+          isArrival = false
+        )
+        assertTrue(info.get.departureTime.isEmpty)
       },
       test("normalizeFlightNumber strips whitespace and upper-cases") {
         assertTrue(

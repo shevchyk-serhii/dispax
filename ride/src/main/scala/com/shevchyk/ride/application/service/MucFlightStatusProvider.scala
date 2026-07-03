@@ -134,7 +134,12 @@ object MucFlightStatusProvider:
           gate = MucFlightParser.parseGate(detailBody),
           terminal = info.terminal.orElse(MucFlightParser.parseDetailTerminal(detailBody)),
           // Only an arrival's origin take-off is meaningful for the en-route progress; a departure's block is MUC itself.
-          departureTime = if info.isArrival then MucFlightParser.parseDepartureInstant(detailBody) else None
+          // Prefer the detail page's departure block (it carries the origin's own date, so overnight long-hauls anchor
+          // exactly), but fall back to the list value already on `info` when the detail block is missing/unparseable —
+          // otherwise a flight whose detail departure block fails mid-flight loses its plane entirely.
+          departureTime =
+            if info.isArrival then MucFlightParser.parseDepartureInstant(detailBody).orElse(info.departureTime)
+            else None
         )
       )
     }

@@ -121,6 +121,10 @@ object MucFlightParser:
     val airline  = cell(row, "fp-flight-airline").filter(_.nonEmpty)
     val other    = cell(row, "fp-flight-airport").flatMap(iataOf)
 
+    // The "other airport" time cell: for an ARRIVAL this is the origin's take-off, for a departure it is the
+    // arrival at the destination. Only the arrival's take-off is meaningful for the en-route progress window.
+    val otherTimeLt = localTimeOf(cell(row, "fp-flight-time-other").getOrElse(""))
+
     val plannedLt    = localTimeOf(plannedRaw)
     val expectedLt   = localTimeOf(expectedRaw)
     // Both halves are bare wall-clock HH:mm on the request date. A late-evening flight slipping past midnight
@@ -133,6 +137,17 @@ object MucFlightParser:
         case (Some(p), Some(e)) if e.isBefore(p) && java.time.Duration.between(e, p).toHours > 12 => date.plusDays(1)
         case _                                                                                    => date
 
+    // For an arrival, the origin take-off (the start of the en-route window the card animates). The board gives only
+    // wall-clock time, not the origin date: a long-haul that departs the previous evening reads as e.g. "22:55" against
+    // a "05:15" MUC arrival — i.e. the take-off is LATER in the day than the landing, which only makes sense a day
+    // earlier. So when the departure time is after the MUC arrival time, roll it back one day. (Detail-page lookup
+    // refines this with the origin's own date later; this list value is the reliable primary so the plane always shows.)
+    val departureDate =
+      (otherTimeLt, plannedLt) match
+        case (Some(dep), Some(arr)) if dep.isAfter(arr) => date.minusDays(1)
+        case _                                          => date
+    val departureTime = if isArrival then otherTimeLt.map(atBerlin(departureDate, _)) else None
+
     FlightInfo(
       flightNumber = normalizeFlightNumber(rawNumber),
       isArrival = isArrival,
@@ -141,7 +156,8 @@ object MucFlightParser:
       estimatedTime = expectedLt.map(atBerlin(expectedDate, _)),
       terminal = terminal,
       airline = airline,
-      otherAirport = other
+      otherAirport = other,
+      departureTime = departureTime
     )
   }
 

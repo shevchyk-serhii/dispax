@@ -9,6 +9,7 @@ import 'package:dispax/modules/flight_management/widgets/flight_progress_bar.dar
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 
 const _loc = Location(address: 'Flughafen München, 85356 München');
 
@@ -400,6 +401,95 @@ void main() {
         findsNothing,
       );
     });
+  });
+
+  group('FlightProgressBar time captions', () {
+    testWidgets('departure time is captioned under the Scheduled step', (
+      tester,
+    ) async {
+      // Fixed local departure time so the HH:mm rendering is deterministic.
+      final departure = DateTime(2026, 6, 24, 9, 5);
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'en_route',
+            flightDepartureTime: departure,
+            flightTime: DateTime(2026, 6, 24, 11, 30),
+          ),
+        ),
+      );
+      // The origin take-off time (09:05) is shown under "Scheduled".
+      final caption = tester.widget<Text>(
+        find.byKey(const Key('flight-step-time-caption')),
+      );
+      expect(caption.data, '09:05');
+    });
+
+    testWidgets('no departure caption when the take-off time is unknown', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'en_route',
+            flightTime: DateTime(2026, 6, 24, 11, 30),
+            // no flightDepartureTime
+          ),
+        ),
+      );
+      expect(find.byKey(const Key('flight-step-time-caption')), findsNothing);
+    });
+
+    testWidgets(
+      'current time is captioned under the plane only while airborne',
+      (tester) async {
+        final now = DateTime.now();
+        await _pump(
+          tester,
+          FlightProgressBar.forRide(
+            _airportRide(
+              isArrival: true,
+              flightStatus: 'en_route',
+              flightDepartureTime: now.subtract(const Duration(hours: 1)),
+              flightTime: now.add(const Duration(hours: 1)),
+            ),
+          ),
+        );
+        final caption = tester.widget<Text>(
+          find.byKey(const Key('flight-plane-time-caption')),
+        );
+        // Renders the current wall-clock time as HH:mm.
+        expect(caption.data, DateFormat.Hm().format(now));
+      },
+    );
+
+    testWidgets('no current-time caption on a landed (parked) plane', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      await _pump(
+        tester,
+        FlightProgressBar.forRide(
+          _airportRide(
+            isArrival: true,
+            flightStatus: 'landed',
+            flightDepartureTime: now.subtract(const Duration(hours: 2)),
+            flightTime: now.subtract(const Duration(minutes: 10)),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.byKey(const Key('flight-plane-time-caption')), findsNothing);
+    });
+
+    // NOTE: the caption's no-overflow clamp is unit-tested directly on the pure
+    // FlightArc.captionLeftPx in flight_phases_test.dart — a widget test can't
+    // observe the few-px overshoot near landing (it hides inside the card's
+    // padding, and a Stack(Clip.none) never throws).
   });
 
   group('FlightProgressBar off-ramp and delay', () {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
 import '../../ride_management/helpers/flight_status_l10n.dart';
@@ -193,7 +194,19 @@ class _FlightProgressBarState extends State<FlightProgressBar>
         for (int i = 0; i < chain.length; i++) ...[
           Expanded(
             flex: 3,
-            child: _buildStep(context, l10n, chain[i], i, ordinal),
+            child: _buildStep(
+              context,
+              l10n,
+              chain[i],
+              i,
+              ordinal,
+              // The origin take-off time is captioned under the first ("Scheduled")
+              // step of an arrival, when known. Hidden otherwise.
+              timeCaption:
+                  (chain[i] == FlightPhase.scheduled && departureTime != null)
+                  ? DateFormat.Hm().format(departureTime)
+                  : null,
+            ),
           ),
           if (i < chain.length - 1)
             Expanded(flex: 2, child: _connector(context, chain, i, ordinal)),
@@ -231,6 +244,13 @@ class _FlightProgressBarState extends State<FlightProgressBar>
                       fraction: progress,
                       color: _delayed ? _delayedColor : _current,
                       pulse: blink ? _pulseAnimation : null,
+                      // Current wall-clock time under the plane — only while it is
+                      // genuinely gliding (mid-air). Parked planes show no time, so
+                      // it never collides with the departure-time caption under
+                      // "Scheduled" (fraction 0) or clips at the right edge (1).
+                      timeCaption: blink
+                          ? DateFormat.Hm().format(DateTime.now())
+                          : null,
                     ),
                   ),
                 ),
@@ -310,8 +330,9 @@ class _FlightProgressBarState extends State<FlightProgressBar>
     AppLocalizations l10n,
     FlightPhase phase,
     int index,
-    int currentOrdinal,
-  ) {
+    int currentOrdinal, {
+    String? timeCaption,
+  }) {
     final bool isCompleted = index < currentOrdinal;
     final bool isCurrent = index == currentOrdinal;
 
@@ -349,6 +370,17 @@ class _FlightProgressBarState extends State<FlightProgressBar>
           softWrap: true,
           overflow: TextOverflow.ellipsis,
         ),
+        if (timeCaption != null)
+          Text(
+            timeCaption,
+            key: const Key('flight-step-time-caption'),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
       ],
     );
   }
@@ -388,6 +420,9 @@ class _FlightProgressBarState extends State<FlightProgressBar>
 /// repeating pulse only while the flight is mid-air — a repeating animation
 /// would hang `pumpAndSettle`, so tests around a mid-air plane must use
 /// `pump(duration)` instead). A null [pulse] renders fully opaque.
+///
+/// [timeCaption] (the current wall-clock time) is captioned under the icon and
+/// travels with it; the parent passes it only while the plane is airborne.
 class _BarPlane extends StatelessWidget {
   static const double _iconSize = 16;
 
@@ -400,7 +435,15 @@ class _BarPlane extends StatelessWidget {
   final Color color;
   final Animation<double>? pulse;
 
-  const _BarPlane({required this.fraction, required this.color, this.pulse});
+  /// Current time (HH:mm) shown under the moving plane; null → no caption.
+  final String? timeCaption;
+
+  const _BarPlane({
+    required this.fraction,
+    required this.color,
+    this.pulse,
+    this.timeCaption,
+  });
 
   Widget _withPulse(Widget child) {
     final pulse = this.pulse;
@@ -408,20 +451,32 @@ class _BarPlane extends StatelessWidget {
     return FadeTransition(opacity: pulse, child: child);
   }
 
+  // Fixed width reserved for the "HH:mm" caption box, so its horizontal position
+  // can be clamped inside the bar (a Stack(Clip.none) would otherwise paint it
+  // off the right edge near landing without ever throwing an overflow).
+  static const double _captionWidth = 30;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final travel = (constraints.maxWidth - _iconSize).clamp(
-          0.0,
-          double.infinity,
-        );
+        final maxWidth = constraints.maxWidth;
+        final travel = (maxWidth - _iconSize).clamp(0.0, double.infinity);
         // The plane traces a shallow arc: climb → cruise → descend, with the
         // nose tilted along the path tangent. Horizontal travel stays in the
         // AnimatedPositioned (so the per-minute nudge glides); the vertical arc
         // and tilt are applied as static Transforms on the icon for this frame.
         final arcOffset = FlightArc.offsetPx(fraction);
         final tilt = FlightArc.tiltRadians(fraction, travel);
+        // Caption is centered under the icon, but its left edge is clamped so the
+        // (wider-than-icon) box never spills past either end of the bar (pure
+        // arithmetic in FlightArc so the clamp is unit-tested directly).
+        final captionLeft = FlightArc.captionLeftPx(
+          fraction,
+          maxWidth,
+          _captionWidth,
+          _iconSize,
+        );
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -450,6 +505,25 @@ class _BarPlane extends StatelessWidget {
                 ),
               ),
             ),
+            if (timeCaption != null)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                left: captionLeft,
+                // Sit just below the icon row (icon is 16, arc lifts up to 8).
+                top: _iconSize + 2,
+                width: _captionWidth,
+                child: Text(
+                  timeCaption!,
+                  key: const Key('flight-plane-time-caption'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
           ],
         );
       },
