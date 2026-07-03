@@ -102,7 +102,12 @@ object ExpenseApi:
         user.role match {
           case "DISPATCHER" =>
             requireCompanyId(user.companyId).flatMap(cid => repo.findByCompanyId(cid).mapError(_ => internalError))
-          case _            => repo.findByDriverId(PersonId(user.userId)).mapError(_ => internalError)
+          case _            =>
+            // Defense-in-depth: scope the self-read by the JWT company as well, so a future
+            // cross-company id collision can never surface another company's expenses.
+            requireCompanyId(user.companyId).flatMap(cid =>
+              repo.findByDriverIdAndCompany(PersonId(user.userId), cid).mapError(_ => internalError)
+            )
         }
     } yield expenses
   }
