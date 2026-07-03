@@ -315,7 +315,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get passwordTooShort => 'Password must be at least 6 characters';
+  String get passwordPolicyRules =>
+      'Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a digit';
 
   @override
   String get forcePasswordChangeTitle => 'Set a new password';

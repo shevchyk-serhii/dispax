@@ -316,7 +316,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwörter stimmen nicht überein';
 
   @override
-  String get passwordTooShort => 'Passwort muss mindestens 6 Zeichen lang sein';
+  String get passwordPolicyRules =>
+      'Das Passwort muss mindestens 8 Zeichen lang sein und einen Großbuchstaben, einen Kleinbuchstaben und eine Ziffer enthalten';
 
   @override
   String get forcePasswordChangeTitle => 'Neues Passwort festlegen';

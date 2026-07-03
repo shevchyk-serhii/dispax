@@ -314,7 +314,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get passwordsDoNotMatch => 'Паролі не збігаються';
 
   @override
-  String get passwordTooShort => 'Пароль повинен містити щонайменше 6 символів';
+  String get passwordPolicyRules =>
+      'Пароль має містити щонайменше 8 символів, включно з великою літерою, малою літерою та цифрою';
 
   @override
   String get forcePasswordChangeTitle => 'Встановіть новий пароль';

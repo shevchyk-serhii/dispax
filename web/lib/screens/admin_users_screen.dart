@@ -7,6 +7,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/password_policy.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -202,6 +203,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final emailCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
     String selectedRole = 'client';
+    String? passwordError;
 
     showAdaptiveDialog(
       context: context,
@@ -235,6 +237,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     labelText: l10n.temporaryPassword,
                     helperText: l10n.temporaryPasswordHint,
                     helperMaxLines: 2,
+                    errorText: passwordError,
+                    errorMaxLines: 3,
                     border: const OutlineInputBorder(),
                   ),
                 ),
@@ -261,6 +265,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // Mirror the backend password policy so the admin gets a
+                // field-level hint instead of a raw 400 from the server.
+                if (!isPolicyCompliantPassword(passwordCtrl.text)) {
+                  setDialogState(
+                    () => passwordError = l10n.passwordPolicyRules,
+                  );
+                  return;
+                }
+                setDialogState(() => passwordError = null);
                 try {
                   final apiClient = context.read<AuthBloc>().apiClient;
                   await apiClient.post('/users', {
