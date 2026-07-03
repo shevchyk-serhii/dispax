@@ -408,6 +408,61 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             reassigned <- service.reassignDriver(assigned.id, testDriver2Id)
           } yield assertTrue(reassigned.driverId.contains(testDriver2Id))
         }.provide(standardLayers),
+        // ── ordinary (non-airport) rides: scheduledTime is None, the pickup lives in
+        // pickupDateTime — the past-ride guard must fall back to it (regression: the guard
+        // only looked at scheduledTime, so it was inert for every ordinary ride).
+        test("fails when an ordinary ride's pickupDateTime is already in the past (no scheduledTime)") {
+          for {
+            service  <- ZIO.service[RideService]
+            repo     <- ZIO.service[RideRepository]
+            assigned <- createAssignedRide(service)
+            _        <- repo.update(
+                          assigned.copy(
+                            scheduledTime = None,
+                            pickupDateTime = java.time.Instant.now().minusSeconds(3600)
+                          )
+                        )
+            result   <- service.reassignDriver(assigned.id, testDriver2Id).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("past_ride", _) => true
+                case _                                               => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("reassigns an ordinary ride whose pickupDateTime is still in the future (no scheduledTime)") {
+          for {
+            service    <- ZIO.service[RideService]
+            repo       <- ZIO.service[RideRepository]
+            assigned   <- createAssignedRide(service)
+            _          <- repo.update(
+                            assigned.copy(
+                              scheduledTime = None,
+                              pickupDateTime = java.time.Instant.now().plusSeconds(3600)
+                            )
+                          )
+            reassigned <- service.reassignDriver(assigned.id, testDriver2Id)
+          } yield assertTrue(reassigned.driverId.contains(testDriver2Id))
+        }.provide(standardLayers),
+        test("allowPastRide bypasses the past-ride guard for an ordinary ride (emergency flow)") {
+          for {
+            service    <- ZIO.service[RideService]
+            repo       <- ZIO.service[RideRepository]
+            assigned   <- createAssignedRide(service)
+            _          <- repo.update(
+                            assigned.copy(
+                              scheduledTime = None,
+                              pickupDateTime = java.time.Instant.now().minusSeconds(3600)
+                            )
+                          )
+            reassigned <- service.reassignDriver(assigned.id, testDriver2Id, allowPastRide = true)
+          } yield assertTrue(
+            reassigned.driverId.contains(testDriver2Id) &&
+              reassigned.status == RideStatus.Assigned
+          )
+        }.provide(standardLayers),
         test("fails when ride not in assignable state (Completed)") {
           for {
             service   <- ZIO.service[RideService]

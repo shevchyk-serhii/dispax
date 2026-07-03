@@ -1048,11 +1048,12 @@ class RideServiceImpl(
 
       // A ride whose pickup time has already passed must not be handed to a new driver — reassignment only makes
       // sense for rides still ahead. The emergency-reassignment flow bypasses this (allowPastRide = true): it exists
-      // precisely for a ride going wrong right now, i.e. at/after its pickup time. ASAP rides (no scheduledTime)
-      // stay reassignable.
+      // precisely for a ride going wrong right now, i.e. at/after its pickup time. The effective pickup is
+      // scheduledTime when set (airport transfers) falling back to pickupDateTime (always set) — the same
+      // fallback checkScheduleConflict uses; ordinary rides carry their pickup only in pickupDateTime.
       _    <-
         failRule("past_ride", "A ride scheduled in the past cannot be reassigned")
-          .when(!allowPastRide && ride.scheduledTime.exists(RidePolicy.isInThePast(_)))
+          .when(!allowPastRide && RidePolicy.isInThePast(ride.scheduledTime.getOrElse(ride.pickupDateTime)))
           .unit
 
       driverOpt <- personRepository.findById(newDriverId).mapDatabaseError
