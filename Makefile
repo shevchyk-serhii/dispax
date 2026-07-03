@@ -452,15 +452,15 @@ e2e-fast: emulator-up e2e-backend-up
 # runs on a device, so an emulator must be booted (host reached via 10.0.2.2).
 e2e-notif-http: emulator-up e2e-backend-up
 	@echo "🔔 Running notification HTTP checks (flutter test)..."
-	@cd $(FLUTTER_DIR) && for t in $(E2E_NOTIF_HTTP_TESTS); do \
-	  echo "▶ $$t"; \
-	  curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
-	  $(FLUTTER) test $$t \
-	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ; \
-	done ; \
-	STATUS=$$? ; \
-	$(MAKE) e2e-backend-down ; \
-	exit $$STATUS
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_NOTIF_HTTP_TESTS); do \
+	    echo "▶ $$t"; \
+	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
+	    $(FLUTTER) test $$t \
+	      --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
 
 # Negative / edge-case ride-rule HTTP checks. Green: each asserts the backend
 # rejects a bad operation AND leaves the ride state unchanged. Runs on the macOS
