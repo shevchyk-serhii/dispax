@@ -742,13 +742,17 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       scheduledTime: Option[Instant],
       departureTime: Option[Instant]
   ): Task[Boolean] =
+    // Merge, don't overwrite: gate/terminal/scheduled/departure are COALESCEd because None there means "the scrape
+    // could not read the value this tick" (e.g. the detail page failed) — it must not erase what an earlier tick
+    // stored. Status and flight_time (the live estimate) ARE the scrape's authoritative payload each tick and are
+    // always written, so a stale estimate never survives a fresher one.
     sql"""UPDATE rides
-          SET flight_gate = $gate,
-              flight_terminal = $terminal,
+          SET flight_gate = COALESCE($gate, flight_gate),
+              flight_terminal = COALESCE($terminal, flight_terminal),
               flight_status = $flightStatus,
               flight_time = $flightTime,
-              flight_scheduled_time = $scheduledTime,
-              flight_departure_time = $departureTime,
+              flight_scheduled_time = COALESCE($scheduledTime, flight_scheduled_time),
+              flight_departure_time = COALESCE($departureTime, flight_departure_time),
               updated_at = NOW()
           WHERE id = ${rideId.value}""".update.run
       .transact(xa)
