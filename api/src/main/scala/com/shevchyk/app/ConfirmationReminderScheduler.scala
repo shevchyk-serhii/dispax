@@ -58,9 +58,14 @@ object ConfirmationReminderScheduler:
               val shouldSend  = isEarlyRide || pastMorning
               ZIO
                 .when(shouldSend) {
-                  sentRepo.isAlreadySent(ride.id, driverId).flatMap {
-                    case true  => ZIO.unit
-                    case false =>
+                  // Atomic claim-then-send: `markSentIfNew` inserts the dedup record and reports
+                  // whether THIS call created it. Two concurrent ticks (e.g. two Cloud Run
+                  // instances) cannot both observe `true`, so the driver gets exactly one push.
+                  // The old isAlreadySent → send → markSent sequence let both instances read
+                  // "not sent yet" and both push before either recorded the send.
+                  sentRepo.markSentIfNew(ride.id, driverId).flatMap {
+                    case false => ZIO.unit
+                    case true  =>
                       val notification = PushNotification(
                         title = "Confirm your ride",
                         body = s"Please confirm or reject the ride at ${ride.pickupLocation.address}.",
@@ -70,7 +75,6 @@ object ConfirmationReminderScheduler:
                         )
                       )
                       fcm.sendToUser(driverId, ride.companyId, notification) *>
-                        sentRepo.markSent(ride.id, driverId) *>
                         ZIO.logInfo(
                           s"Confirmation request sent for ride ${ride.id.value} to driver ${driverId.value}"
                         )

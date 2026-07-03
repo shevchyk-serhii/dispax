@@ -213,5 +213,44 @@ object ConfirmationReminderSchedulerSpec extends ZIOSpecDefault:
           _       <- runTick(List(ride1, ride2), sentRepo, sends)
           result  <- sends.get
         } yield assertTrue(result.size == 2)
+      },
+
+      // MUTATION TARGET (atomic dedup): with the old isAlreadySent → send → markSent sequence,
+      // two concurrent ticks (two Cloud Run instances) both read "not sent" and both push.
+      // The FCM stub records the send and then BLOCKS on a gate, keeping the first tick inside
+      // its send region (i.e. before the old code would have called markSent) while the second
+      // tick runs its dedup check — a deterministic reconstruction of the multi-instance race.
+      test("two concurrent ticks send only ONE push (dedup claim is atomic)") {
+        val ride = assignedRide()
+        for {
+          sends   <- Ref.make(List.empty[(PersonId, String)])
+          gate    <- Promise.make[Nothing, Unit]
+          sentRepo = new InMemorySentConfirmationRequestRepository
+          gatedFcm =
+            new FcmService:
+              def registerToken(p: PersonId, c: CompanyId, t: String, pl: String): Task[Unit] = ZIO.unit
+              def unregisterToken(token: String): Task[Unit]                                  = ZIO.unit
+              def sendToUser(p: PersonId, c: CompanyId, n: PushNotification): Task[Unit]      =
+                sends.update(_ :+ (p, n.data.getOrElse("type", "unknown"))) *> gate.await
+          tick     = ConfirmationReminderScheduler.tick.provide(
+                       ZLayer.succeed(rideRepoStub(List(ride))),
+                       ZLayer.succeed[FcmService](gatedFcm),
+                       ZLayer.succeed[SentConfirmationRequestRepository](sentRepo)
+                     )
+          fiber1  <- tick.fork
+          // Wait until the first tick is inside its send (recorded, blocked on the gate).
+          _       <- sends.get.map(_.size).repeatUntil(_ >= 1)
+          fiber2  <- tick.fork
+          // Let the second tick run to its dedup decision: it either completes without
+          // sending (fixed, atomic claim) or records a second send (old racy sequence).
+          _       <- sends.get
+                       .map(_.size)
+                       .zip(fiber2.poll)
+                       .repeatUntil { case (n, done) => n >= 2 || done.isDefined }
+          _       <- gate.succeed(())
+          _       <- fiber1.join
+          _       <- fiber2.join
+          result  <- sends.get
+        } yield assertTrue(result.size == 1)
       }
     )

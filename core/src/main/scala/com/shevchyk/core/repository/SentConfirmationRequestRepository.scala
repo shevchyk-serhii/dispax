@@ -14,6 +14,13 @@ import zio.*
 trait SentConfirmationRequestRepository:
   def isAlreadySent(rideId: RideId, personId: PersonId): Task[Boolean]
   def markSent(rideId: RideId, personId: PersonId): Task[Unit]
+
+  /**
+   * Atomically records a confirmation request for (ride, person), returning `true` only if this call inserted a *new*
+   * record. Lets callers deduplicate without a check-then-act race: two concurrent scheduler ticks (e.g. two Cloud Run
+   * instances) cannot both observe `true`. Mirrors `EtaAlertRepository.markAlertedIfNew`.
+   */
+  def markSentIfNew(rideId: RideId, personId: PersonId): Task[Boolean]
   // Clear all confirmation-request records for a ride (called on confirm, reject or reassign).
   def clear(rideId: RideId): Task[Unit]
 
@@ -36,5 +43,10 @@ final class InMemorySentConfirmationRequestRepository extends SentConfirmationRe
   override def markSent(rideId: RideId, personId: PersonId): Task[Unit] = sent.update(
     _ + ((rideId.value, personId.value))
   )
+
+  override def markSentIfNew(rideId: RideId, personId: PersonId): Task[Boolean] = sent.modify { s =>
+    val key = (rideId.value, personId.value)
+    if s.contains(key) then (false, s) else (true, s + key)
+  }
 
   override def clear(rideId: RideId): Task[Unit] = sent.update(_.filter { case (rid, _) => rid != rideId.value })

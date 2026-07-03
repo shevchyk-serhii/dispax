@@ -405,9 +405,13 @@ object PushNotificationListener:
             companyId
           ) =>
         for
-          alreadySent <- checkpointRepo.isAlreadySent(RideId(rideId), PersonId(driverId), checkpointType)
-          _           <-
-            ZIO.unless(alreadySent) {
+          // Atomic claim-then-send: `markSentIfNew` inserts the dedup record and reports whether
+          // THIS call created it, so two concurrent checkpoint events (or two app instances)
+          // cannot both push. The old isAlreadySent → notify → markSent sequence let both pass
+          // the check before either recorded the send.
+          inserted <- checkpointRepo.markSentIfNew(RideId(rideId), PersonId(driverId), checkpointType)
+          _        <-
+            ZIO.when(inserted) {
               val notification = PushNotification(
                 title = s"Client at $checkpointName",
                 body = s"Your client has reached $checkpointName.",
@@ -425,8 +429,7 @@ object PushNotificationListener:
                 CompanyId(companyId),
                 notification,
                 "airport_checkpoint"
-              ) *>
-                checkpointRepo.markSent(RideId(rideId), PersonId(driverId), checkpointType)
+              )
             }
         yield ()
 

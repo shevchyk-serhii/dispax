@@ -826,6 +826,53 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
             notifs    <- notifRepo.findByPersonId(PersonId(clientId), limit = 10, offset = 0)
           } yield assertTrue(notifs.size == 1)
         }
-      }.provide(baseLayers)
+      }.provide(baseLayers),
+
+      // ── multi-instance dedup race ────────────────────────────────────────
+
+      // MUTATION TARGET (atomic dedup): two listener instances subscribed to the same hub model two
+      // app replicas — the hub broadcasts one AirportCheckpointReached to BOTH, and both handle it
+      // concurrently. With the old isAlreadySent → notify → markSent sequence both pass the check
+      // and the driver gets two pushes. The FCM stub records the push and BLOCKS on a gate, pinning
+      // the winner inside its send (before the old code would have marked) while the loser decides.
+      // The RideCreated marker event tells us the loser finished its checkpoint decision: a listener
+      // only reaches the marker after the checkpoint event, so the poll ends deterministically.
+      test("AirportCheckpointReached with two listener instances → exactly one push (atomic dedup claim)") {
+        for {
+          sends   <- Ref.make(List.empty[String])
+          gate    <- Promise.make[Nothing, Unit]
+          gatedFcm =
+            new FcmService:
+              def registerToken(p: PersonId, c: CompanyId, token: String, platform: String): Task[Unit] = ZIO.unit
+              def unregisterToken(token: String): Task[Unit]                                            = ZIO.unit
+              def sendToUser(
+                  p: PersonId,
+                  c: CompanyId,
+                  n: com.shevchyk.notification.domain.PushNotification
+              ): Task[Unit] = sends.update(_ :+ n.data.getOrElse("type", "unknown")) *> gate.await
+          program  =
+            for {
+              _        <- PushNotificationListener.start // instance 1
+              _        <- PushNotificationListener.start // instance 2
+              eventHub <- ZIO.service[EventHub]
+              _        <- eventHub.publish(
+                            WebSocketEvent
+                              .AirportCheckpointReached(rideId, driverId, clientId, "landed", "Landed", companyId)
+                          )
+              _        <- eventHub.publish(WebSocketEvent.RideCreated(rideId, clientId, companyId))
+              // Either the race fired twice (old bug) or the losing instance moved on to the marker.
+              _        <- sends.get.repeatUntil(s => s.count(_ == "airport_checkpoint") >= 2 || s.contains("ride_created"))
+              _        <- gate.succeed(())
+              result   <- sends.get
+            } yield result
+          result  <- program.provide(
+                       EventHub.layer,
+                       InMemoryNotificationRepository.layer,
+                       ZLayer.succeed[FcmService](gatedFcm),
+                       ZLayer.succeed(personRepoStub),
+                       InMemoryCheckpointNotificationRepository.layer
+                     )
+        } yield assertTrue(result.count(_ == "airport_checkpoint") == 1)
+      }
     )
 }

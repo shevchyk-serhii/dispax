@@ -32,6 +32,13 @@ final class PostgresSentConfirmationRequestRepository(xa: Transactor[Task]) exte
       .transact(xa)
       .unit
 
+  override def markSentIfNew(rideId: RideId, personId: PersonId): Task[Boolean] =
+    sql"""INSERT INTO sent_confirmation_requests (ride_id, person_id)
+          VALUES (${rideId.value}, ${personId.value})
+          ON CONFLICT DO NOTHING""".update.run
+      .transact(xa)
+      .map(_ > 0)
+
   override def clear(rideId: RideId): Task[Unit] =
     sql"""DELETE FROM sent_confirmation_requests WHERE ride_id = ${rideId.value}""".update.run
       .transact(xa)

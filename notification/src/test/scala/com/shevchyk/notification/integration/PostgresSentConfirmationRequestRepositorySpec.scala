@@ -137,6 +137,42 @@ object PostgresSentConfirmationRequestRepositorySpec extends ZIOSpecDefault:
           repo = PostgresSentConfirmationRequestRepository(xa)
           _   <- repo.clear(unknownRideId)
         } yield assertTrue(true)
+      },
+      test("markSentIfNew returns true on first insert and false once the record exists") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedBaseData(xa)
+          _      <- cleanSentConfirmations(xa)
+          rideId <- insertRide(xa)
+          repo    = PostgresSentConfirmationRequestRepository(xa)
+          first  <- repo.markSentIfNew(rideId, driver1)
+          second <- repo.markSentIfNew(rideId, driver1)
+          marked <- repo.isAlreadySent(rideId, driver1)
+        } yield assertTrue(first, !second, marked)
+      },
+      test("markSentIfNew: two concurrent callers — exactly one observes true (atomic dedup claim)") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedBaseData(xa)
+          _       <- cleanSentConfirmations(xa)
+          rideId  <- insertRide(xa)
+          repo     = PostgresSentConfirmationRequestRepository(xa)
+          results <- repo.markSentIfNew(rideId, driver1) <&> repo.markSentIfNew(rideId, driver1)
+          (a, b)   = results
+        } yield assertTrue(a ^ b) // one true, one false — never both
+      },
+      test("checkpoint repo: markSentIfNew returns true first, false afterwards; concurrent pair yields one true") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedBaseData(xa)
+          rideId  <- insertRide(xa)
+          repo     = com.shevchyk.notification.repository.PostgresCheckpointNotificationRepository(xa)
+          first   <- repo.markSentIfNew(rideId, driver1, "landed")
+          second  <- repo.markSentIfNew(rideId, driver1, "landed")
+          rideId2 <- insertRide(xa)
+          results <- repo.markSentIfNew(rideId2, driver1, "landed") <&> repo.markSentIfNew(rideId2, driver1, "landed")
+          (a, b)   = results
+        } yield assertTrue(first, !second, a ^ b)
       }
     ).provide(PostgresTestContainer.layer) @@
       TestAspect.sequential @@

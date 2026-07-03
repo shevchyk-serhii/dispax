@@ -117,6 +117,7 @@ object RideServiceBestEffortLoggingSpec extends ZIOSpecDefault {
     new SentConfirmationRequestRepository {
       override def isAlreadySent(rideId: RideId, personId: PersonId): Task[Boolean] = ZIO.succeed(false)
       override def markSent(rideId: RideId, personId: PersonId): Task[Unit]         = ZIO.unit
+      override def markSentIfNew(rideId: RideId, personId: PersonId): Task[Boolean] = ZIO.succeed(true)
       override def clear(rideId: RideId): Task[Unit]                                = ZIO.fail(
         new RuntimeException("dedup table unavailable")
       )
