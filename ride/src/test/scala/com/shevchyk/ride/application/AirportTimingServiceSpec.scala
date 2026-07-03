@@ -386,6 +386,34 @@ object AirportTimingServiceSpec extends ZIOSpecDefault:
         for result <- compute(Some(arrivalRide()), flightStatus = Some(noGateSatTerminal))
         yield assertTrue(result.walkBufferMinutes == config.satelliteWalkMinutes) // 18 via terminal fallback
       },
+      test("live delayed flight time shifts the recommended entry accordingly") {
+        // The monitor recorded a live (estimated) arrival 40 min after the booking's scheduled time. The entry must
+        // follow the LIVE time — otherwise the driver enters against the stale schedule and waits out the delay.
+        val delayed = arrival.plusSeconds(40 * 60L)
+        val live    = FlightStatusRow(flightTime = Some(delayed), scheduledTime = Some(arrival))
+        for result <- compute(Some(arrivalRide()), flightStatus = Some(live))
+        yield assertTrue(
+          result.actualArrivalTime == delayed,                     // 08:40, not the scheduled 08:00
+          result.optimalEntryTime == delayed.plusSeconds(10 * 60L) // 08:50 = live arrival + 10 walk
+        )
+      },
+      test("live status without a flight time → falls back to the booking's scheduled time") {
+        val noTime = FlightStatusRow(gate = Some("G35"), terminal = Some("T2"))
+        for result <- compute(Some(arrivalRide()), flightStatus = Some(noTime))
+        yield assertTrue(result.actualArrivalTime == arrival)
+      },
+      test("estimatedFlightTime: live flight time wins; else scheduledTime; else now + 2h") {
+        val now     = Instant.parse("2026-07-01T06:00:00Z")
+        val delayed = arrival.plusSeconds(40 * 60L)
+        val live    = Some(FlightStatusRow(flightTime = Some(delayed), scheduledTime = Some(arrival)))
+        assertTrue(
+          AirportTimingService.estimatedFlightTime(arrivalRide(), live, now)._1 == delayed,
+          AirportTimingService.estimatedFlightTime(arrivalRide(), None, now)._1 == arrival,
+          AirportTimingService
+            .estimatedFlightTime(arrivalRide(scheduled = None), None, now)
+            ._1 == now.plusSeconds(2 * 3600L)
+        )
+      },
       test("savings = early − optimal parking cost") {
         for result <- compute(Some(arrivalRide()))
         yield assertTrue(result.savings == 28.0, result.actualArrivalTime == arrival)

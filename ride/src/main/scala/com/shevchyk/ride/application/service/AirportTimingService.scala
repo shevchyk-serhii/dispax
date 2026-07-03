@@ -73,9 +73,10 @@ final case class AirportTimingResult(
  * Tenant isolation: the ride is loaded by id and its `companyId` is checked against the caller's JWT company. A ride
  * from another tenant is reported as [[AirportTimingService.Error.NotFound]] (→ 404) so existence is not leaked.
  *
- * Flight-time / terminal seam: today the flight time falls back to `ride.scheduledTime` and the terminal is unknown (so
- * the normal walk buffer applies). The future flight-status integration plugs the real estimated time and terminal code
- * into [[AirportTimingService.estimatedFlightTime]] — that single function is the only place to change.
+ * Flight-time / terminal seam: the live flight-status row (kept fresh by the flight-status monitor) supplies the real
+ * estimated time and terminal code via [[AirportTimingService.estimatedFlightTime]] — that single function is the only
+ * place to change. Without live data the flight time falls back to `ride.scheduledTime` and the terminal is unknown (so
+ * the normal walk buffer applies).
  */
 trait AirportTimingService:
 
@@ -100,8 +101,8 @@ object AirportTimingService:
    * real terminal code, which drives the walk-out buffer (satellite terminals such as MUC K/T2K need the longer walk).
    * When no flight data has been recorded yet the terminal is unknown (→ normal buffer).
    *
-   *   - Flight time: falls back to `ride.scheduledTime` (or now + 2h as a last resort) — the estimated-time integration
-   *     still plugs in here later.
+   *   - Flight time: the LIVE time recorded by the monitor (`flightStatus.flightTime`, the latest estimate — so a
+   *     delayed flight shifts the entry), falling back to `ride.scheduledTime`, then now + 2h as a last resort.
    *   - Status: "On time" for now.
    *
    * @return
@@ -112,7 +113,10 @@ object AirportTimingService:
       flightStatus: Option[FlightStatusRow],
       now: Instant
   ): (Instant, Option[String], String) =
-    val flightTime   = ride.scheduledTime.getOrElse(now.plus(2, ChronoUnit.HOURS))
+    val flightTime   = flightStatus
+      .flatMap(_.flightTime)
+      .orElse(ride.scheduledTime)
+      .getOrElse(now.plus(2, ChronoUnit.HOURS))
     // Terminal comes from the live flight-status row (RideSpecifics.AirportTransfer itself carries only
     // airportCode/flightNumber/isArrival). Unknown terminal → normal buffer via walkBuffer.
     val terminalCode = flightStatus.flatMap(_.terminal).filter(_.trim.nonEmpty)
