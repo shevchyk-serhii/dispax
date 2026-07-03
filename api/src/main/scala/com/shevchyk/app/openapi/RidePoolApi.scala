@@ -231,7 +231,7 @@ object RidePoolApi:
       repo      <- ZIO.service[RidePoolRepository]
       companyId <- requireCompanyId(user.companyId)
       pools     <- repo.findByCompanyId(companyId).mapError(internal)
-      names     <- PersonNameLookup.names(pools.flatMap(_.driverId)).mapError(internal)
+      names     <- PersonNameLookup.names(pools.flatMap(_.driverId), companyId).mapError(internal)
     } yield pools.map(RidePoolDto.fromDomain(_, names))
   }
 
@@ -259,7 +259,7 @@ object RidePoolApi:
                      .orElseFail((StatusCode.NotFound, ApiError("Pool not found")): Err)
       members   <- repo.findMembersByPoolId(pool.id).mapError(internal)
       names     <- PersonNameLookup
-                     .names(pool.driverId.toList ++ members.map(_.clientId))
+                     .names(pool.driverId.toList ++ members.map(_.clientId), companyId)
                      .mapError(internal)
     } yield PoolDetailResponse(
       RidePoolDto.fromDomain(pool, names),

@@ -160,6 +160,50 @@ object PushNotificationListenerSpec extends ZIOSpecDefault {
           }
         }
       }.provide(baseLayers),
+      test("RideAssigned with previousDriverId notifies the displaced driver") {
+        // Reassignment: the driver the ride was taken away from must get a push,
+        // otherwise a backgrounded driver keeps heading to a pickup that is no longer theirs.
+        val oldDriverId = UUID.fromString("00000011-0000-0000-0000-000000000011")
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, None, Some(oldDriverId)),
+            PersonId(oldDriverId)
+          ).map { notifs =>
+            assertTrue(
+              notifs.exists(_.notificationType == "ride_reassigned"),
+              notifs.exists(_.title == "Ride Reassigned")
+            )
+          }
+        }
+      }.provide(baseLayers),
+      test("RideAssigned with previousDriverId still notifies the new driver and the client") {
+        val oldDriverId = UUID.fromString("00000011-0000-0000-0000-000000000011")
+        ZIO.scoped {
+          for {
+            _            <- PushNotificationListener.start
+            eventHub     <- ZIO.service[EventHub]
+            notifRepo    <- ZIO.service[NotificationRepository]
+            _            <- eventHub.publish(
+                              WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, None, Some(oldDriverId))
+                            )
+            _            <- TestClock.adjust(200.millis)
+            driverNotifs <- notifRepo.findByPersonId(PersonId(driverId), limit = 10, offset = 0)
+            clientNotifs <- notifRepo.findByPersonId(PersonId(clientId), limit = 10, offset = 0)
+          } yield assertTrue(
+            driverNotifs.exists(_.title == "New Ride Assigned"),
+            clientNotifs.exists(_.title == "Driver Assigned")
+          )
+        }
+      }.provide(baseLayers),
+      test("RideAssigned without previousDriverId sends nothing to a former driver") {
+        val oldDriverId = UUID.fromString("00000011-0000-0000-0000-000000000011")
+        ZIO.scoped {
+          publishAndCollect(
+            WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId),
+            PersonId(oldDriverId)
+          ).map(notifs => assertTrue(notifs.isEmpty))
+        }
+      }.provide(baseLayers),
       test("RideCreated includes the fare in the client booking confirmation when priced") {
         ZIO.scoped {
           publishAndCollect(

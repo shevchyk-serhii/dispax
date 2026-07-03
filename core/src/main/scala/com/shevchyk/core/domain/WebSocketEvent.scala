@@ -34,7 +34,11 @@ object WebSocketEvent:
       companyId: UUID,
       // The ride fare (€) carried so notifications can show the amount without a
       // repository lookup. None when the ride has no price set.
-      price: Option[BigDecimal] = None
+      price: Option[BigDecimal] = None,
+      // Set when this assignment displaced another driver (reassignment): carries the
+      // driver the ride was taken away from so consumers can notify that person —
+      // otherwise a backgrounded driver keeps heading to a pickup that is no longer theirs.
+      previousDriverId: Option[UUID] = None
   ) extends WebSocketEvent
 
   final case class RideCreated(

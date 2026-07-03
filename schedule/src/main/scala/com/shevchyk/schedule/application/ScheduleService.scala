@@ -125,22 +125,31 @@ class ScheduleServiceImpl(
     } yield persisted
 
   def createBatch(req: CreateScheduleBatchRequest): IO[ScheduleError, List[ScheduleDay]] =
+    // Validate the WHOLE batch up front, then persist it in one atomic repository call:
+    // a failure anywhere must leave nothing committed (a partial batch cannot be retried,
+    // because the retry would conflict with the rows the first attempt already wrote).
+    val requests = req.days.map { day =>
+      CreateScheduleDayRequest(
+        driverId = req.driverId,
+        companyId = req.companyId,
+        date = day.date,
+        startTime = day.startTime,
+        endTime = day.endTime,
+        notes = day.notes
+      )
+    }
     for {
-      _       <- validateDriverBelongsToCompany(req.driverId, req.companyId)
-      results <-
-        ZIO.foreach(req.days) { day =>
-          createScheduleDay(
-            CreateScheduleDayRequest(
-              driverId = req.driverId,
-              companyId = req.companyId,
-              date = day.date,
-              startTime = day.startTime,
-              endTime = day.endTime,
-              notes = day.notes
-            )
-          )
+      _         <- validateDriverBelongsToCompany(req.driverId, req.companyId)
+      _         <-
+        ZIO.foreachDiscard(requests) { r =>
+          validateTimeRange(r.startTime, r.endTime) *> validateNoShiftOverlap(r)
         }
-    } yield results
+      _         <- validateNoIntraBatchOverlap(requests)
+      persisted <- scheduleDayRepository.createAll(requests.map(ScheduleMapper.fromRequest)).mapError {
+                     case e: ScheduleError => e
+                     case ex               => ScheduleError.DatabaseError(ex)
+                   }
+    } yield persisted
 
   def getScheduleDay(id: ScheduleDayId): IO[ScheduleError, ScheduleDay] = scheduleDayRepository
     .findById(id)
@@ -217,6 +226,22 @@ class ScheduleServiceImpl(
 
       newStatus = req.status.getOrElse(existing.status)
       _        <- validateStatusTransition(existing.status, newStatus)
+
+      // Re-run the overlap invariant on edit: moving/stretching a shift must not make it
+      // collide with another non-cancelled shift of the same driver on the same date.
+      // The edited day itself is excluded from the comparison set. A day being cancelled
+      // frees its slot, so no overlap check is needed for it.
+      _ <-
+        ZIO.unless(newStatus == ScheduleDayStatus.Cancelled)(
+          validateNoShiftOverlap(
+            existing.driverId,
+            existing.companyId,
+            existing.date,
+            newStartTime,
+            newEndTime,
+            excludeId = Some(existing.id)
+          )
+        )
 
       updated = req.applyTo(existing, newStartTime, newEndTime, newStatus)
 
@@ -300,20 +325,59 @@ class ScheduleServiceImpl(
    * shifts (e.g. 09:00–12:00 then 12:00–15:00) are allowed. Cancelled shifts free up their slot and never block a new
    * shift.
    */
-  private def validateNoShiftOverlap(req: CreateScheduleDayRequest): IO[ScheduleError, Unit] = scheduleDayRepository
-    .findShiftsForDriverOnDate(req.driverId, req.companyId, req.date)
+  private def validateNoShiftOverlap(req: CreateScheduleDayRequest): IO[ScheduleError, Unit] = validateNoShiftOverlap(
+    req.driverId,
+    req.companyId,
+    req.date,
+    req.startTime,
+    req.endTime,
+    excludeId = None
+  )
+
+  /**
+   * Shared overlap check for both create and update. `excludeId` removes the day being edited from the comparison set
+   * so a shift never conflicts with itself.
+   */
+  private def validateNoShiftOverlap(
+      driverId: PersonId,
+      companyId: CompanyId,
+      date: LocalDate,
+      startTime: java.time.LocalTime,
+      endTime: java.time.LocalTime,
+      excludeId: Option[ScheduleDayId]
+  ): IO[ScheduleError, Unit] = scheduleDayRepository
+    .findShiftsForDriverOnDate(driverId, companyId, date)
     .mapDatabaseError
     .flatMap { existing =>
       val overlaps = existing.exists { d =>
+        !excludeId.contains(d.id) &&
         d.status != ScheduleDayStatus.Cancelled &&
-        req.startTime.isBefore(d.endTime) && d.startTime.isBefore(req.endTime)
+        startTime.isBefore(d.endTime) && d.startTime.isBefore(endTime)
       }
       ZIO
         .when(overlaps)(
-          ZIO.fail(ScheduleError.OverlapConflict(req.driverId, req.date))
+          ZIO.fail(ScheduleError.OverlapConflict(driverId, date))
         )
         .unit
     }
+
+  /**
+   * Rejects a batch whose OWN days overlap each other (same date, intersecting half-open time ranges). Overlap against
+   * already-persisted shifts is checked per day by [[validateNoShiftOverlap]].
+   */
+  private def validateNoIntraBatchOverlap(requests: List[CreateScheduleDayRequest]): IO[ScheduleError, Unit] =
+    val conflict = requests.zipWithIndex.collectFirst {
+      case (r, idx)
+          if requests
+            .take(idx)
+            .exists(other =>
+              other.date == r.date && r.startTime.isBefore(other.endTime) && other.startTime.isBefore(r.endTime)
+            ) =>
+        r
+    }
+    conflict match
+      case Some(r) => ZIO.fail(ScheduleError.OverlapConflict(r.driverId, r.date))
+      case None    => ZIO.unit
 
   private def validateDriverBelongsToCompany(driverId: PersonId, companyId: CompanyId): IO[ScheduleError, Unit] =
     for {

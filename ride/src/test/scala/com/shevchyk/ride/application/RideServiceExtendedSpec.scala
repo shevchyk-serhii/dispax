@@ -367,6 +367,25 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       // 2. reassignDriver
       // ────────────────────────────────────────────────────────────────────
       suite("reassignDriver")(
+        test("publishes RideAssigned carrying the displaced driver as previousDriverId") {
+          // Regression: reassignDriver used to publish RideAssigned without the old driver,
+          // so the displaced driver never received a "ride taken away" notification.
+          ZIO.scoped {
+            for {
+              service  <- ZIO.service[RideService]
+              hub      <- ZIO.service[EventHub]
+              assigned <- createAssignedRide(service)
+              queue    <- hub.subscribe
+              _        <- service.reassignDriver(assigned.id, testDriver2Id)
+              events   <- queue.takeAll
+              published = events.collect { case e: WebSocketEvent.RideAssigned => e }
+            } yield assertTrue(
+              published.exists(e =>
+                e.driverId == testDriver2Id.value && e.previousDriverId.contains(testDriverId.value)
+              )
+            )
+          }
+        }.provide(standardLayers),
         test("happy path: reassign from one driver to another") {
           for {
             service    <- ZIO.service[RideService]

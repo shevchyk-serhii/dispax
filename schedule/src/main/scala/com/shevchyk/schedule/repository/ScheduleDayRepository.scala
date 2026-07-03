@@ -9,6 +9,13 @@ import java.time.LocalDate
 
 trait ScheduleDayRepository:
   def create(scheduleDay: ScheduleDay): Task[ScheduleDay]
+
+  /**
+   * Atomically persists all given schedule days in a single transaction: if any insert fails (e.g. the shift-overlap
+   * exclusion constraint fires), NOTHING is committed. Used by batch creation so a mid-batch failure never leaves a
+   * partial schedule behind.
+   */
+  def createAll(scheduleDays: List[ScheduleDay]): Task[List[ScheduleDay]]
   def findById(id: ScheduleDayId): Task[Option[ScheduleDay]]
   def findByDriverId(driverId: PersonId): Task[List[ScheduleDay]]
   def findByDriverAndDate(driverId: PersonId, date: LocalDate): Task[Option[ScheduleDay]]

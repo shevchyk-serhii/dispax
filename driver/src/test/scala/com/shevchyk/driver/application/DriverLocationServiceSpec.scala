@@ -224,12 +224,11 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
               loc2.get.latitude == 52.5200
           )
         }.provide(standardLayers),
-        // -- Edge case added by test audit 2026-06 -------------------------
-        // checkGeofences derives the driver's company from the FIRST of their rides.
-        // For a driver whose rides span multiple companies this is the first ride's
-        // company — pin that behaviour so a future change is a conscious decision.
-        test("checkGeofences uses the company of the driver's first ride") {
-          val companyA                         = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000a"))
+        // -- Reworked by audit fix 2026-07 ----------------------------------
+        // checkGeofences now derives the driver's company from their Person row,
+        // NOT from ride history. Rides in other companies must not change which
+        // company's geofences are evaluated.
+        test("checkGeofences uses the driver's own company (person row), not ride history") {
           val companyB                         = CompanyId(UUID.fromString("00000001-0000-0000-0000-00000000000b"))
           def rideIn(company: CompanyId): Ride = Ride(
             id = RideId.generate(),
@@ -266,19 +265,51 @@ object DriverLocationServiceSpec extends ZIOSpecDefault {
                 InMemoryDriverLocationRepository.layer ++
                 EventHub.layer ++
                 recordingGeofence ++
-                noopPersonRepository
+                personRepoReturning(testPerson(testDriverId, Some(testCompanyId)))
             serviceLayer      = depsLayer >+> DriverLocationService.layer
             result           <-
               (for {
                 rideRepo <- ZIO.service[RideRepository]
-                _        <- rideRepo.create(rideIn(companyA))
+                // Ride history in ANOTHER company must not steer the geofence check.
                 _        <- rideRepo.create(rideIn(companyB))
                 service  <- ZIO.service[DriverLocationService]
                 _        <- service.updateLocation(testDriverId, 48.1, 11.5)
                 // checkGeofences runs on a forked daemon — poll until it records.
                 seen     <- captured.get.repeatUntil(_.isDefined).timeout(5.seconds)
               } yield seen).provide(serviceLayer)
-          } yield assertTrue(result.flatten.contains(companyA))
+          } yield assertTrue(result.flatten.contains(testCompanyId))
+        } @@ TestAspect.withLiveClock @@ TestAspect.flaky,
+        // Regression (audit): zone entry/exit alerts used to be derived from ride history,
+        // so a driver on shift with NO rides never produced a single enter/exit alert.
+        test("zone entry/exit check fires for a driver with no rides at all") {
+          for {
+            captured         <- Ref.make(Option.empty[CompanyId])
+            recordingGeofence = ZLayer.succeed[GeofenceService](
+                                  new GeofenceService:
+                                    def checkDriverLocation(
+                                        driverId: PersonId,
+                                        companyId: CompanyId,
+                                        lat: Double,
+                                        lng: Double
+                                    ): UIO[List[GeofenceAlert]] = captured.set(Some(companyId)).as(Nil)
+                                    def checkClientProximity(
+                                        driverId: PersonId,
+                                        lat: Double,
+                                        lng: Double,
+                                        activeRides: List[ActiveRideInfo]
+                                    ): UIO[Unit] = ZIO.unit
+                                )
+            layers            =
+              InMemoryDriverLocationRepository.layer ++
+                EventHub.layer ++
+                recordingGeofence ++
+                InMemoryRideRepository.layer ++
+                personRepoReturning(testPerson(testDriverId, Some(testCompanyId))) >>>
+                DriverLocationService.layer
+            service          <- ZIO.service[DriverLocationService].provide(layers)
+            _                <- service.updateLocation(testDriverId, 48.1, 11.5)
+            seen             <- captured.get.repeatUntil(_.isDefined).timeout(5.seconds)
+          } yield assertTrue(seen.flatten.contains(testCompanyId))
         } @@ TestAspect.withLiveClock @@ TestAspect.flaky
       ),
       suite("getLocation")(
