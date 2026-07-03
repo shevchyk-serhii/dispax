@@ -288,6 +288,57 @@ object PostgresScheduleDayRepositorySpec extends ZIOSpecDefault {
           case _                   => false
         })
       },
+      test("createAll is atomic: a failing batch leaves ZERO new rows committed") {
+        // Regression: batch creation used to insert day-by-day, so a mid-batch overlap
+        // failure left the earlier days committed (retry then conflicted with itself).
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanScheduleDays(xa)
+          repo     = PostgresScheduleDayRepository(xa)
+          existing = makeDay(
+                       date = LocalDate.of(2026, 7, 10),
+                       startTime = LocalTime.of(8, 0),
+                       endTime = LocalTime.of(12, 0)
+                     )
+          _       <- repo.create(existing)
+          goodDay  = makeDay(
+                       date = LocalDate.of(2026, 7, 11),
+                       startTime = LocalTime.of(8, 0),
+                       endTime = LocalTime.of(12, 0)
+                     )
+          // Overlaps the pre-existing 08:00–12:00 shift → exclusion constraint fires
+          badDay   = makeDay(
+                       date = LocalDate.of(2026, 7, 10),
+                       startTime = LocalTime.of(10, 0),
+                       endTime = LocalTime.of(17, 0)
+                     )
+          result  <- repo.createAll(List(goodDay, badDay)).exit
+          allRows <- repo.findByDriverId(driverId)
+        } yield assertTrue(
+          result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.OverlapConflict])
+            case _                   => false
+          },
+          // ONLY the pre-existing row remains — the valid goodDay was rolled back too
+          allRows.map(_.id) == List(existing.id)
+        )
+      },
+      test("createAll persists every day of a valid batch") {
+        for {
+          xa      <- ZIO.service[Transactor[Task]]
+          _       <- seedTestData(xa)
+          _       <- cleanScheduleDays(xa)
+          repo     = PostgresScheduleDayRepository(xa)
+          d1       = makeDay(date = LocalDate.of(2026, 7, 12))
+          d2       = makeDay(date = LocalDate.of(2026, 7, 13))
+          created <- repo.createAll(List(d1, d2))
+          allRows <- repo.findByDriverId(driverId)
+        } yield assertTrue(
+          created.map(_.id) == List(d1.id, d2.id),
+          allRows.map(_.id).toSet == Set(d1.id, d2.id)
+        )
+      },
       test("rescheduling a shift into an overlap is rejected with OverlapConflict") {
         for {
           xa     <- ZIO.service[Transactor[Task]]
