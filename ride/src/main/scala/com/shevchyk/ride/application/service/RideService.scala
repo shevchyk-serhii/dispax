@@ -848,6 +848,19 @@ class RideServiceImpl(
                   )
                   .when(!client.companyId.contains(ride.companyId))
                   .unit
+              // The ride may already carry a driver; the new client must not have blacklisted
+              // them — the same rule assignDriver/reassignDriver enforce.
+              _         <-
+                ZIO.foreachDiscard(ride.driverId) { driverId =>
+                  blacklistRepository
+                    .isBlacklisted(newClientId, driverId)
+                    .mapDatabaseError
+                    .flatMap(blocked =>
+                      failRule("blacklist", "This driver is blacklisted for the ride's client")
+                        .when(blocked)
+                        .unit
+                    )
+                }
             } yield Some(newClientId)
 
       newPickup  <-

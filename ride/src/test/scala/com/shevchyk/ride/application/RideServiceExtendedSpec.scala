@@ -1124,7 +1124,65 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
             SentConfirmationRequestRepository.inMemory) >+> RideService.layer
-        )
+        ),
+        // ── updateRideDetails client change: moving a ride onto a client who blacklisted the
+        // ride's current driver must fail, the same rule assignDriver/reassignDriver enforce
+        // (regression: the newClientId branch never consulted the blacklist).
+        test("changing the ride's client fails when the new client blacklisted the assigned driver") {
+          for {
+            blacklistRepo <- ZIO.service[BlacklistRepository]
+            // vipClientId has blacklisted testDriverId — the driver currently on the ride
+            _             <- blacklistRepo.create(
+                               BlacklistEntry(
+                                 id = BlacklistEntryId.generate(),
+                                 companyId = testCompanyId,
+                                 clientId = vipClientId,
+                                 driverId = testDriverId,
+                                 reason = Some("bad experience"),
+                                 createdBy = dispatcherId
+                               )
+                             )
+            service       <- ZIO.service[RideService]
+            assigned      <- createAssignedRide(service) // client = testClientId, driver = testDriverId
+            result        <-
+              service
+                .updateRideDetails(
+                  assigned.id,
+                  UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                  dispatcherId,
+                  PersonRole.Dispatcher,
+                  Some(testCompanyId)
+                )
+                .exit
+            retrieved     <- service.getRideById(assigned.id)
+          } yield assertTrue(
+            (result match {
+              case Exit.Failure(cause) =>
+                cause.failureOption.exists {
+                  case RideError.BusinessRuleViolation("blacklist", _) => true
+                  case _                                               => false
+                }
+              case _                   => false
+            }) &&
+              retrieved.clientId == testClientId // ride left unchanged
+          )
+        }.provide(standardLayers),
+        test("changing the ride's client succeeds when the new client did not blacklist the assigned driver") {
+          for {
+            service  <- ZIO.service[RideService]
+            assigned <- createAssignedRide(service) // client = testClientId, driver = testDriverId
+            updated  <- service.updateRideDetails(
+                          assigned.id,
+                          UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                          dispatcherId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            updated.clientId == vipClientId &&
+              updated.driverId.contains(testDriverId)
+          )
+        }.provide(standardLayers)
       ),
 
       // ────────────────────────────────────────────────────────────────────
