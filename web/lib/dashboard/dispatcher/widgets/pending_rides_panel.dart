@@ -1022,8 +1022,15 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
         isReassign: isReassign,
         onAssign: (driverId, driverLabel, conflicts) {
           Navigator.pop(ctx);
+          // The row [context] this sheet was opened from may be deactivated by
+          // the time a driver is picked: a concurrent dispatcher can assign the
+          // ride first and the WS update rebuilds the pending list under the
+          // open sheet. Anchor the dialog to the panel's own live context and
+          // bail out if the panel itself is gone ("deactivated widget's
+          // ancestor" crash otherwise).
+          if (!mounted) return;
           showAdaptiveDialog(
-            context: context,
+            context: this.context,
             builder: (_) => AssignmentDialog(
               ride: ride,
               driverLabel: driverLabel,

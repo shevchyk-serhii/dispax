@@ -38,6 +38,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/modules/core/widgets/avatar_circle.dart';
 import 'package:dispax/blocs/ride/ride_bloc.dart';
+import 'package:dispax/blocs/ride/ride_event.dart';
 import 'package:dispax/blocs/schedule/schedule_bloc.dart';
 import 'package:dispax/dashboard/dispatcher/widgets/pending_rides_panel.dart';
 import 'package:dispax/l10n/app_localizations.dart';
@@ -287,6 +288,80 @@ void main() {
   );
 
   testWidgets(
+    'picking a driver after the pending list rebuilt under the open sheet '
+    '(concurrent assign removed the row) opens the AssignmentDialog instead '
+    'of crashing on the deactivated row context',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // First load shows the pending ride; every later load returns an empty
+      // list — the ride was taken by a concurrent dispatcher.
+      var firstLoad = true;
+      when(() => mockRideService.getPendingRides()).thenAnswer((_) async {
+        if (firstLoad) {
+          firstLoad = false;
+          return [pendingRide];
+        }
+        return <Ride>[];
+      });
+
+      await tester.pumpWidget(buildPanel());
+      await _pumpUntilFound(tester, find.text('Assign'));
+
+      // Open the driver-selection sheet from the pending row. The sheet's
+      // onAssign closure captures the row's itemBuilder context.
+      await tester.tap(find.text('Assign').first);
+      await _pumpUntilFound(tester, find.text('Select Driver'));
+      await _pumpUntilFound(tester, find.text('Driver Hans'));
+
+      // Concurrent-dispatcher moment: the pending list reloads to empty while
+      // the sheet is open, so the row (and its context) is deactivated.
+      rideBloc.add(const RideLoadPendingRequested());
+      // The row must really be gone — otherwise this test isn't exercising
+      // the deactivated-context path at all. The bloc delivers across real
+      // async hops, so drain the event loop until the row disappears.
+      await _pumpUntilGone(tester, find.text('Assign'));
+      final reloadException = tester.takeException();
+      expect(
+        reloadException,
+        isNull,
+        reason: 'reload under the open sheet threw: $reloadException',
+      );
+      // Let the sheet's slide-up animation finish so the driver row is inside
+      // the viewport and hit-testable (bounded, as elsewhere in this file).
+      await tester.pumpAndSettle(
+        const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate,
+        const Duration(seconds: 30),
+      );
+      await tester.ensureVisible(find.text('Driver Hans'));
+
+      // Picking the driver must anchor the dialog to the still-mounted panel,
+      // not the dead row context ("deactivated widget's ancestor" crash).
+      await tester.tap(find.text('Driver Hans'));
+      await tester.pump();
+      final tapException = tester.takeException();
+      expect(
+        tapException,
+        isNull,
+        reason: 'picking the driver threw: $tapException',
+      );
+      await _pumpUntilFound(tester, find.textContaining('Assign Ride'));
+
+      expect(find.textContaining('Assign Ride'), findsOneWidget);
+      final fromPump = tester.takeException();
+      expect(
+        fromPump,
+        isNull,
+        reason: 'pump surfaced a framework exception: $fromPump',
+      );
+    },
+  );
+
+  testWidgets(
     'assigning a ride that was already taken (409 "Ride already assigned") '
     'shows an info snackbar and reloads the pending list — no "Driver Busy" '
     'conflict dialog, no red error/Retry',
@@ -361,6 +436,23 @@ void main() {
 /// Fails fast (throws) when the budget is exhausted instead of returning
 /// silently: a silent return let a wrong-text finder slip through and hang the
 /// subsequent pumpAndSettle() for the full 10-minute test timeout.
+/// Inverse of [_pumpUntilFound]: pumps until [finder] matches nothing.
+Future<void> _pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  int maxTries = 60,
+}) async {
+  for (var i = 0; i < maxTries; i++) {
+    if (finder.evaluate().isEmpty) return;
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pump();
+  }
+  fail(
+    'Timed out after $maxTries pumps waiting for '
+    '${finder.describeMatch(Plurality.many)} to disappear',
+  );
+}
+
 Future<void> _pumpUntilFound(
   WidgetTester tester,
   Finder finder, {
