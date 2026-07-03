@@ -687,6 +687,28 @@ void main() {
       expect(a, isNot(b));
       expect(a.hashCode, isNot(b.hashCode));
     });
+
+    // Regression: the flight monitor / WS FlightStatusUpdated enrich a ride
+    // with ONLY gate/terminal/status/times. When these fields were missing
+    // from ==, the refreshed RideState compared equal, the BLoC suppressed
+    // the emit and the card never showed the flight data (prod: LH2483 card
+    // stuck without gate/status/progress plane).
+    test('a different flight enrichment means not equal', () {
+      final a = TestFixtures.ride();
+      expect(a, isNot(a.copyWith(gate: 'H26')));
+      expect(a, isNot(a.copyWith(terminal: 'T2')));
+      expect(a, isNot(a.copyWith(flightStatus: 'en_route')));
+      expect(a, isNot(a.copyWith(flightTime: DateTime(2026, 7, 3, 9, 25))));
+      expect(
+        a,
+        isNot(a.copyWith(flightScheduledTime: DateTime(2026, 7, 3, 9, 50))),
+      );
+      expect(
+        a,
+        isNot(a.copyWith(flightDepartureTime: DateTime(2026, 7, 3, 6, 55))),
+      );
+      expect(a.hashCode, isNot(a.copyWith(gate: 'H26').hashCode));
+    });
   });
 
   // Mirrors the backend RidePolicy past-ride guard: reassign affordances are

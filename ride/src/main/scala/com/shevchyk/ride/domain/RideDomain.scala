@@ -289,8 +289,14 @@ final case class Ride(
     rejectedBy: Option[PersonId] = None,
     rejectedAt: Option[java.time.Instant] = None,
     // Free-form operator labels (e.g. "Urgent", "Cash"). Normalized via TagNormalizer; empty by default.
-    tags: List[String] = Nil
+    tags: List[String] = Nil,
+    // Human-readable per-company reference (e.g. R-2026-00123), allocated by the repository at
+    // creation and immutable afterwards. None only for legacy rows created before the column existed.
+    bookingReference: Option[String] = None
 ):
+
+  // Client-facing identifier: the booking reference when allocated, the raw UUID for legacy rows.
+  def bookingReferenceOrId: String = bookingReference.getOrElse(id.value.toString)
 
   def canBeAssigned: Boolean   = status == RideStatus.Requested
   def canBeReassigned: Boolean = (status == RideStatus.Assigned || status == RideStatus.Confirmed) && driverId.isDefined

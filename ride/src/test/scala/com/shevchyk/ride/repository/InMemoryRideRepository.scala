@@ -19,9 +19,25 @@ class InMemoryRideRepository extends RideRepository:
     Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[RideId, Ride])).getOrThrowFiberFailure()
   }
 
+  // Per-company booking-reference counter, mirroring PostgresRideRepository.create's allocation.
+  private val referenceCounters = Unsafe.unsafe { implicit unsafe =>
+    Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[CompanyId, Int])).getOrThrowFiberFailure()
+  }
+
   override def create(ride: Ride): Task[Ride] =
-    val rideWithId = ride.copy(id = RideId.generate())
-    rides.update(_.updated(rideWithId.id, rideWithId)).as(rideWithId)
+    for
+      reference <-
+        ride.bookingReference match
+          case Some(ref) => ZIO.succeed(ref)
+          case None      =>
+            val year = ride.requestTime.atZone(ZoneOffset.UTC).getYear
+            referenceCounters.modify { counters =>
+              val n = counters.getOrElse(ride.companyId, 0) + 1
+              (f"R-$year-$n%05d", counters.updated(ride.companyId, n))
+            }
+      rideWithId = ride.copy(id = RideId.generate(), bookingReference = Some(reference))
+      _         <- rides.update(_.updated(rideWithId.id, rideWithId))
+    yield rideWithId
 
   override def findById(id: RideId): Task[Option[Ride]] = rides.get.map(_.get(id))
 

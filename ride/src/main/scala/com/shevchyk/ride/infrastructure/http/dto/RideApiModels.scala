@@ -113,7 +113,10 @@ case class RideDto(
     // Passenger-reported airport progress for arrival transfers: "landed" | "arrivals_hall" |
     // "terminal_exit" (None until the passenger reports). Surfaced so the driver/dispatcher card
     // can show the live status without an extra request.
-    airportCheckpoint: Option[String] = None
+    airportCheckpoint: Option[String] = None,
+    // Human-readable per-company reference (e.g. R-2026-00123) for client-facing display.
+    // None for legacy rides created before references existed.
+    bookingReference: Option[String] = None
 )
 
 given JsonEncoder[RideDto] = DeriveJsonEncoder.gen[RideDto]
@@ -525,7 +528,8 @@ object RideDto:
       confirmedAt = ride.confirmedAt.map(_.toString),
       rejectionReason = ride.rejectionReason,
       tags = ride.tags,
-      airportCheckpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString)
+      airportCheckpoint = ride.airportCheckpoint.map(AirportCheckpoint.toDbString),
+      bookingReference = ride.bookingReference
     )
 
   private def distanceMetersHaversine(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Int =
