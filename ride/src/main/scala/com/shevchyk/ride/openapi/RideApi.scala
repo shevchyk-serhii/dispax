@@ -978,6 +978,9 @@ object RideApi:
 
   // -- rating servers ------------------------------------------------------
 
+  // Maximum length of a rating comment (public client input persisted to a TEXT column).
+  private val MaxRatingCommentLength = 1000
+
   private val rateRideServer: ZServerEndpoint[RideEnv, Any] = rateRideEndpoint.serverLogic {
     user => (rideId, ratingReq) =>
       for {
@@ -985,6 +988,11 @@ object RideApi:
         _            <- ZIO
                           .fail(RideError.ValidationError("Rating must be between 1 and 5"))
                           .when(ratingReq.rating < 1 || ratingReq.rating > 5)
+                          .mapError(fromRideError)
+        // Cap public free-text input: the comment lands in an unbounded TEXT column otherwise.
+        _            <- ZIO
+                          .fail(RideError.ValidationError(s"Comment must be at most $MaxRatingCommentLength characters"))
+                          .when(ratingReq.comment.exists(_.length > MaxRatingCommentLength))
                           .mapError(fromRideError)
         parsedRideId <- parseRideId(rideId)
         companyId    <- requireCompanyId(user.companyId)
