@@ -11,6 +11,7 @@ object MessageTemplatesSpec extends ZIOSpecDefault {
 
   private val baseData = RideConfirmationData(
     rideId = "ride-123",
+    bookingReference = "R-2026-00042",
     clientName = "Anna Schmidt",
     pickupAddress = "Marienplatz 1",
     dropoffAddress = "Munich Airport"
@@ -19,13 +20,14 @@ object MessageTemplatesSpec extends ZIOSpecDefault {
   def spec =
     suite("MessageTemplates")(
       suite("rideConfirmationText")(
-        test("includes client name, pickup, dropoff and rideId") {
+        test("includes client name, pickup, dropoff and the booking reference instead of the ride id") {
           val text = MessageTemplates.rideConfirmationText(baseData)
           assertTrue(
             text.contains("Anna Schmidt") &&
               text.contains("Marienplatz 1") &&
               text.contains("Munich Airport") &&
-              text.contains("ride-123")
+              text.contains("R-2026-00042") &&
+              !text.contains("ride-123")
           )
         },
         test("omits scheduled time when not provided") {
@@ -55,12 +57,14 @@ object MessageTemplatesSpec extends ZIOSpecDefault {
           val text = MessageTemplates.driverAssignmentText(baseData)
           assertTrue(text.contains("a driver"))
         },
-        test("includes client name, pickup and dropoff") {
+        test("includes client name, pickup, dropoff and the booking reference instead of the ride id") {
           val text = MessageTemplates.driverAssignmentText(baseData.copy(driverName = Some("Hans")))
           assertTrue(
             text.contains("Anna Schmidt") &&
               text.contains("Marienplatz 1") &&
-              text.contains("Munich Airport")
+              text.contains("Munich Airport") &&
+              text.contains("R-2026-00042") &&
+              !text.contains("ride-123")
           )
         }
       ),

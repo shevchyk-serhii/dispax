@@ -7,6 +7,9 @@ import zio.*
  */
 final case class RideConfirmationData(
     rideId: String,
+    // Human-readable per-company reference (e.g. R-2026-00123) shown to the client instead of the
+    // raw ride UUID; falls back to the UUID string for legacy rides without one.
+    bookingReference: String,
     clientName: String,
     pickupAddress: String,
     dropoffAddress: String,
