@@ -156,6 +156,11 @@ class ScheduleServiceImpl(
       .mapDatabaseError
       .map(_.filter(_.companyId == companyId))
 
+  // Roles allowed to read ANY driver's operational schedule in their company. An explicit
+  // whitelist: the previous "anything that is not DRIVER → allowed" else-branch let CLIENT /
+  // CLIENT_SECRETARY (legitimate authenticated roles) read any driver's schedule.
+  private val staffScheduleRoles = Set("DISPATCHER", "ADMIN", "SECRETARY", "SUPER_ADMIN")
+
   def getDriverScheduleAs(
       requesterId: PersonId,
       requesterRole: String,
@@ -176,9 +181,12 @@ class ScheduleServiceImpl(
           )
         days    <- getDriverSchedule(targetDriverId, companyId)
       } yield days
-    else
-      // Dispatcher / Admin / Secretary — always allowed
+    else if staffScheduleRoles.contains(roleUpper) then
+      // Dispatcher / Admin / Secretary / SuperAdmin — always allowed
       getDriverSchedule(targetDriverId, companyId)
+    else
+      // CLIENT / CLIENT_SECRETARY / anything unknown: driver schedules are staff-only.
+      ZIO.fail(ScheduleError.AccessDenied("Driver schedules are visible to staff roles only"))
 
   def getScheduleForDate(companyId: CompanyId, date: LocalDate): IO[ScheduleError, List[ScheduleDay]] =
     scheduleDayRepository
