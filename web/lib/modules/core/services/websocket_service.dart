@@ -16,7 +16,14 @@ abstract class WebSocketServiceBase {
 class WebSocketService implements WebSocketServiceBase {
   static final WebSocketService instance = WebSocketService._();
 
-  WebSocketService._();
+  WebSocketService._() : _channelFactory = WebSocketChannel.connect;
+
+  /// Test-only constructor: injects the channel factory so tests can observe
+  /// connection attempts without opening a real socket.
+  @visibleForTesting
+  WebSocketService.forTest(this._channelFactory);
+
+  final WebSocketChannel Function(Uri) _channelFactory;
 
   WebSocketChannel? _channel;
   final _eventController = StreamController<WebSocketEvent>.broadcast();
@@ -37,6 +44,11 @@ class WebSocketService implements WebSocketServiceBase {
 
   @override
   Future<void> connect(String token, {required String wsBaseUrl}) async {
+    // A reconnect scheduled before this explicit connect (e.g. the socket
+    // dropped shortly before a re-login) must not fire afterwards: the stale
+    // timer would close the fresh channel and reopen it, losing events in the
+    // window. disconnect() already cancels it; connect() must too.
+    _reconnectTimer?.cancel();
     _token = token;
     _wsBaseUrl = wsBaseUrl;
     _shouldReconnect = true;
@@ -54,7 +66,7 @@ class WebSocketService implements WebSocketServiceBase {
       _channel?.sink.close(ws_status.normalClosure);
       // Browser WebSocket can't send custom headers; the token is carried in
       // the query string (`?token=...`, see `_wsUrl`), which the server accepts.
-      final channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      final channel = _channelFactory(Uri.parse(_wsUrl));
       _channel = channel;
       debugPrint('WebSocket connected');
 
