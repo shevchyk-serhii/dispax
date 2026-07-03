@@ -11,6 +11,8 @@ import '../../../modules/core/navigation_helper.dart';
 import '../../../constants/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
+import '../../../utils/ride_status_styles.dart';
+import 'day_timeline.dart';
 import 'widgets/ride_calendar_card.dart';
 
 class DayViewWidget extends StatelessWidget {
@@ -62,6 +64,7 @@ class DayViewWidget extends StatelessWidget {
   ) {
     final dayRides = getRidesForDay(rides, selectedDay);
     dayRides.sort((a, b) => a.pickupDateTime.compareTo(b.pickupDateTime));
+    final dayShifts = shiftsForSelectedDay();
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -82,12 +85,83 @@ class DayViewWidget extends StatelessWidget {
           buildDayHeader(context),
           buildShiftRow(context),
           Expanded(
-            child: dayRides.isEmpty
+            child: dayRides.isEmpty && dayShifts.isEmpty
                 ? buildEmptyState(context)
-                : buildRidesList(context, dayRides),
+                // Hour-scale timeline on the left (shift availability regions
+                // + ride blocks, like the week view), ride cards on the right.
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        width: 110,
+                        child: buildDayTimeline(context, dayRides, dayShifts),
+                      ),
+                      Expanded(
+                        child: dayRides.isEmpty
+                            ? buildEmptyState(context)
+                            : buildRidesList(context, dayRides),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
+    );
+  }
+
+  /// The displayed driver's shifts falling on [selectedDay], sorted by start.
+  List<ScheduleDay> shiftsForSelectedDay() =>
+      shifts
+          .where(
+            (s) =>
+                s.date.year == selectedDay.year &&
+                s.date.month == selectedDay.month &&
+                s.date.day == selectedDay.day,
+          )
+          .toList()
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  /// The vertical hour-scale timeline on the left of the day card: shift
+  /// availability regions with the ride blocks on top, like the week view.
+  Widget buildDayTimeline(
+    BuildContext context,
+    List<Ride> dayRides,
+    List<ScheduleDay> dayShifts,
+  ) {
+    return DayTimeline(
+      shiftRegions: dayShifts
+          .map(
+            (shift) => TimelineShiftRegion(
+              keyValue: 'day-tl-shift-${shift.id}',
+              startTime: shift.startTime,
+              endTime: shift.endTime,
+            ),
+          )
+          .toList(),
+      blocks: [
+        for (final ride in dayRides)
+          TimelineBlock(
+            keyValue: 'day-tl-ride-${ride.id}',
+            startHour:
+                ride.pickupDateTime.hour + ride.pickupDateTime.minute / 60.0,
+            endHour:
+                ride.pickupDateTime.hour +
+                ride.pickupDateTime.minute / 60.0 +
+                // Rides carry no duration; use the week view's nominal 1.5 h.
+                1.5,
+            color: RideStatusStyles.getStatusColor(ride.status).withAlpha(204),
+            borderColor: RideStatusStyles.getStatusColor(ride.status),
+            onTap: () => onRideSelected(ride),
+            content: Text(
+              DateFormat.Hm().format(ride.pickupDateTime),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -95,16 +169,7 @@ class DayViewWidget extends StatelessWidget {
   /// header. Collapses to nothing when the day has no shifts.
   Widget buildShiftRow(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final dayShifts =
-        shifts
-            .where(
-              (s) =>
-                  s.date.year == selectedDay.year &&
-                  s.date.month == selectedDay.month &&
-                  s.date.day == selectedDay.day,
-            )
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final dayShifts = shiftsForSelectedDay();
     if (dayShifts.isEmpty) return const SizedBox.shrink();
 
     String hhmm(String raw) => raw.length >= 5 ? raw.substring(0, 5) : raw;
