@@ -19,41 +19,18 @@ import java.time.LocalDate
  */
 final class MucFlightStatusProvider(
     config: MucFlightConfig,
-    client: Client,
-    boardCache: Cache[(LocalDate, Boolean), Throwable, List[FlightInfo]]
+    boardCache: Cache[(LocalDate, Boolean), Throwable, List[FlightInfo]],
+    lookupCache: Cache[(String, LocalDate, Boolean), Throwable, Option[FlightInfo]]
 ) extends FlightStatusProvider:
 
   override def lookup(flightNumber: String, date: LocalDate, isArrival: Boolean): Task[Option[FlightInfo]] =
     if !config.enabled then ZIO.logDebug("MUC flight provider disabled").as(None)
     else
-      val number    = MucFlightParser.normalizeFlightNumber(flightNumber)
-      val path      = if isArrival then "arrivals" else "departures"
-      val dirParam  = if isArrival then "flight_to_muc" else "flight_from_muc"
-      val dateParam = if isArrival then "flight_date_to_muc" else "flight_date_from_muc"
-
-      // Square brackets must be percent-encoded; the board reads form params under the
-      // `flight_search_presenter[...]` namespace. locale=de is irrelevant to the status string
-      // (it stays German regardless) but keeps the request shape identical to the browser's.
-      val q       =
-        s"flight_search_presenter%5B$dirParam%5D=1" +
-          s"&flight_search_presenter%5B$dateParam%5D=$date" +
-          s"&flight_search_presenter%5Bflight_number%5D=$number" +
-          s"&flight_search_presenter%5Blocale%5D=de" +
-          s"&page=0&per_page=6&allow_pagination=1"
-      val listUrl = s"${config.baseUrl}/flightsearch/$path?$q"
-
-      (for
-        listBody <- httpGet(listUrl)
-        base      = MucFlightParser.parse(listBody, date, isArrival)
-        // The gate is only on the flight's detail page; fetch it when the list yielded a flight and a detail link.
-        enriched <-
-          base match
-            case None       => ZIO.none
-            case Some(info) =>
-              MucFlightParser.detailHref(listBody) match
-                case None       => ZIO.some(info)
-                case Some(href) => enrichWithGate(info, href)
-      yield enriched)
+      // Keyed by the NORMALIZED number so "LH 123" / "lh123" share the entry. A fetch failure is surfaced through
+      // the cache's error channel, NOT cached (see makeLookupCache), and degrades to None here.
+      val number = MucFlightParser.normalizeFlightNumber(flightNumber)
+      lookupCache
+        .get((number, date, isArrival))
         .catchAll { err =>
           ZIO.logWarning(s"MUC flight lookup error for $number: ${err.getMessage}").as(None)
         }
@@ -69,32 +46,6 @@ final class MucFlightStatusProvider(
         .catchAll(err =>
           ZIO.logWarning(s"MUC flight board error ($date arrival=$isArrival): ${err.getMessage}").as(Nil)
         )
-
-  /**
-   * Fetch the detail page for `href` and merge its gate (and terminal fallback) into `info`. Detail failures are
-   * swallowed — a missing gate must not lose the list data we already have. For arrivals we also read the origin's
-   * take-off instant from the same page so the card can show how far along the flight is.
-   */
-  private def enrichWithGate(info: FlightInfo, href: String): Task[Option[FlightInfo]] = httpGet(
-    s"${config.baseUrl}$href"
-  )
-    .map { detailBody =>
-      Some(
-        info.copy(
-          gate = MucFlightParser.parseGate(detailBody),
-          terminal = info.terminal.orElse(MucFlightParser.parseDetailTerminal(detailBody)),
-          // Only an arrival's origin take-off is meaningful for the en-route progress; a departure's block is MUC itself.
-          departureTime = if info.isArrival then MucFlightParser.parseDepartureInstant(detailBody) else None
-        )
-      )
-    }
-    .catchAll(err => ZIO.logDebug(s"MUC gate fetch failed for $href: ${err.getMessage}").as(Some(info)))
-
-  /**
-   * GET a MUC page with browser-like headers. Delegates to the companion so the cache lookup (which has no instance)
-   * can reuse the same request logic.
-   */
-  private def httpGet(url: String): Task[String] = MucFlightStatusProvider.httpGet(client, url)
 
 object MucFlightStatusProvider:
 
@@ -124,6 +75,70 @@ object MucFlightStatusProvider:
       body     <- response.body.asString
     yield body
   }
+
+  /**
+   * Raw, uncached single-flight lookup — the lookup cache's fetch. Queries the number-filtered board list and, when a
+   * detail link is present, the detail page for the gate (2 HTTP requests). `None` is a NORMAL result (flight not on
+   * the board) and is cached; an HTTP/parse failure FAILS the effect so it is not cached (see makeLookupCache).
+   * `flightNumber` must already be normalized.
+   */
+  private def fetchLookup(
+      config: MucFlightConfig,
+      client: Client,
+      flightNumber: String,
+      date: LocalDate,
+      isArrival: Boolean
+  ): Task[Option[FlightInfo]] =
+    val path      = if isArrival then "arrivals" else "departures"
+    val dirParam  = if isArrival then "flight_to_muc" else "flight_from_muc"
+    val dateParam = if isArrival then "flight_date_to_muc" else "flight_date_from_muc"
+
+    // Square brackets must be percent-encoded; the board reads form params under the
+    // `flight_search_presenter[...]` namespace. locale=de is irrelevant to the status string
+    // (it stays German regardless) but keeps the request shape identical to the browser's.
+    val q       =
+      s"flight_search_presenter%5B$dirParam%5D=1" +
+        s"&flight_search_presenter%5B$dateParam%5D=$date" +
+        s"&flight_search_presenter%5Bflight_number%5D=$flightNumber" +
+        s"&flight_search_presenter%5Blocale%5D=de" +
+        s"&page=0&per_page=6&allow_pagination=1"
+    val listUrl = s"${config.baseUrl}/flightsearch/$path?$q"
+
+    for
+      listBody <- httpGet(client, listUrl)
+      base      = MucFlightParser.parse(listBody, date, isArrival)
+      // The gate is only on the flight's detail page; fetch it when the list yielded a flight and a detail link.
+      enriched <-
+        base match
+          case None       => ZIO.none
+          case Some(info) =>
+            MucFlightParser.detailHref(listBody) match
+              case None       => ZIO.some(info)
+              case Some(href) => enrichWithGate(config, client, info, href)
+    yield enriched
+
+  /**
+   * Fetch the detail page for `href` and merge its gate (and terminal fallback) into `info`. Detail failures are
+   * swallowed — a missing gate must not lose the list data we already have. For arrivals we also read the origin's
+   * take-off instant from the same page so the card can show how far along the flight is.
+   */
+  private def enrichWithGate(
+      config: MucFlightConfig,
+      client: Client,
+      info: FlightInfo,
+      href: String
+  ): Task[Option[FlightInfo]] = httpGet(client, s"${config.baseUrl}$href")
+    .map { detailBody =>
+      Some(
+        info.copy(
+          gate = MucFlightParser.parseGate(detailBody),
+          terminal = info.terminal.orElse(MucFlightParser.parseDetailTerminal(detailBody)),
+          // Only an arrival's origin take-off is meaningful for the en-route progress; a departure's block is MUC itself.
+          departureTime = if info.isArrival then MucFlightParser.parseDepartureInstant(detailBody) else None
+        )
+      )
+    }
+    .catchAll(err => ZIO.logDebug(s"MUC gate fetch failed for $href: ${err.getMessage}").as(Some(info)))
 
   // The board paginates server-side and IGNORES per_page (~one ~4h window per page), so a single page only covers the
   // morning. We walk pages 0,1,2,… until one comes back empty (or the safety cap), to cover the whole day. Cap is
@@ -195,12 +210,26 @@ object MucFlightStatusProvider:
   ): UIO[Cache[(LocalDate, Boolean), Throwable, List[FlightInfo]]] =
     Cache.makeWith(capacity = 64, lookup = lookup)(exit => if exit.isSuccess then BoardCacheTtl else Duration.Zero)
 
-  // Scoped because the cache lives for the app's lifetime. The TTL cache also dedups concurrent lookups of the same
-  // (date, direction) key, so simultaneous dispatcher refreshes trigger a single MUC scrape.
+  /**
+   * Build the per-flight lookup TTL cache, keyed by (normalized flight number, date, direction). Same shape as
+   * [[makeBoardCache]]: every uncached lookup() costs up to 2 live HTTP requests against the MUC site, so without a TTL
+   * cache a burst of card refreshes hammers their server (IP-ban risk). Failures get `Duration.Zero` (not retained);
+   * the larger capacity fits a day of distinct flights. Package-private for the cache spec.
+   */
+  private[service] def makeLookupCache(
+      lookup: Lookup[(String, LocalDate, Boolean), Any, Throwable, Option[FlightInfo]]
+  ): UIO[Cache[(String, LocalDate, Boolean), Throwable, Option[FlightInfo]]] =
+    Cache.makeWith(capacity = 256, lookup = lookup)(exit => if exit.isSuccess then BoardCacheTtl else Duration.Zero)
+
+  // Scoped because the caches live for the app's lifetime. The TTL caches also dedup concurrent gets of the same
+  // key, so simultaneous dispatcher refreshes trigger a single MUC scrape.
   val layer: ZLayer[MucFlightConfig & Client, Nothing, FlightStatusProvider] = ZLayer.scoped {
     for
-      config <- ZIO.service[MucFlightConfig]
-      client <- ZIO.service[Client]
-      cache  <- makeBoardCache(Lookup { case (date, isArrival) => fetchBoard(config, client, date, isArrival) })
-    yield new MucFlightStatusProvider(config, client, cache)
+      config      <- ZIO.service[MucFlightConfig]
+      client      <- ZIO.service[Client]
+      cache       <- makeBoardCache(Lookup { case (date, isArrival) => fetchBoard(config, client, date, isArrival) })
+      lookupCache <- makeLookupCache(Lookup { case (number, date, isArrival) =>
+                       fetchLookup(config, client, number, date, isArrival)
+                     })
+    yield new MucFlightStatusProvider(config, cache, lookupCache)
   }
