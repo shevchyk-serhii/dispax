@@ -51,18 +51,26 @@ class ScheduleState extends Equatable {
   ScheduleState copyWith({
     ScheduleStateStatus? status,
     List<ScheduleDay>? scheduleDays,
-    String? errorMessage,
-    Object? error,
+    // [errorMessage]/[error] use a sentinel so callers can distinguish "leave
+    // as is" (omit the argument) from "explicitly clear it" (pass null). An
+    // omitted argument used to silently null the field, losing the error text
+    // on any unrelated copyWith. Same pattern as RideState.copyWith.
+    Object? errorMessage = _unset,
+    Object? error = _unset,
     String? lastDriverId,
   }) {
     return ScheduleState(
       status: status ?? this.status,
       scheduleDays: scheduleDays ?? this.scheduleDays,
-      errorMessage: errorMessage,
-      error: error,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
+      error: identical(error, _unset) ? this.error : error,
       lastDriverId: lastDriverId ?? this.lastDriverId,
     );
   }
+
+  static const Object _unset = Object();
 
   bool get isLoading => status == ScheduleStateStatus.loading;
   bool get isLoaded => status == ScheduleStateStatus.loaded;

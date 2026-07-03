@@ -38,18 +38,26 @@ class ClientState extends Equatable {
   ClientState copyWith({
     ClientStateStatus? status,
     List<Person>? clients,
-    String? errorMessage,
-    Object? error,
+    // [errorMessage]/[error] use a sentinel so callers can distinguish "leave
+    // as is" (omit the argument) from "explicitly clear it" (pass null). An
+    // omitted argument used to silently null the field, losing the error text
+    // on any unrelated copyWith. Same pattern as RideState.copyWith.
+    Object? errorMessage = _unset,
+    Object? error = _unset,
     String? searchQuery,
   }) {
     return ClientState(
       status: status ?? this.status,
       clients: clients ?? this.clients,
-      errorMessage: errorMessage,
-      error: error,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
+      error: identical(error, _unset) ? this.error : error,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
+
+  static const Object _unset = Object();
 
   List<Person> get filteredClients {
     if (searchQuery.isEmpty) return clients;
