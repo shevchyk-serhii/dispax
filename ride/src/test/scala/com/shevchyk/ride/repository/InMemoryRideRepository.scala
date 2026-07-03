@@ -341,10 +341,24 @@ class InMemoryRideRepository extends RideRepository:
   ): Task[Boolean] = rides.get.flatMap { m =>
     if !m.contains(rideId) then ZIO.succeed(false)
     else
+      // Mirror the Postgres COALESCE semantics: gate/terminal/scheduled/departure merge with what is stored
+      // (None means "unknown this tick", it must not erase known data); status and flightTime are authoritative
+      // each tick and always overwritten.
       flightStatuses
-        .update(
-          _.updated(rideId, FlightStatusRow(gate, terminal, flightStatus, flightTime, scheduledTime, departureTime))
-        )
+        .update { fs =>
+          val existing = fs.getOrElse(rideId, FlightStatusRow())
+          fs.updated(
+            rideId,
+            FlightStatusRow(
+              gate = gate.orElse(existing.gate),
+              terminal = terminal.orElse(existing.terminal),
+              flightStatus = flightStatus,
+              flightTime = flightTime,
+              scheduledTime = scheduledTime.orElse(existing.scheduledTime),
+              departureTime = departureTime.orElse(existing.departureTime)
+            )
+          )
+        }
         .as(true)
   }
 

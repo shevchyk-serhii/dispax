@@ -86,6 +86,42 @@ object PostgresFlightStatusSpec extends ZIOSpecDefault:
           row.contains(FlightStatusRow(Some("A12"), Some("T2"), Some("delayed"), Some(t)))
         )
       },
+      test("a partial update keeps stored gate/terminal/scheduled/departure but overwrites status and time") {
+        // COALESCE semantics: a later scrape that could not read the gate/terminal/scheduled/departure values
+        // (e.g. the detail page failed) must not erase what an earlier tick stored; status and the live flight
+        // time are authoritative each tick and are always overwritten.
+        val t1 = Instant.parse("2026-06-26T08:20:00Z")
+        val t2 = Instant.parse("2026-06-26T08:45:00Z")
+        val s1 = Instant.parse("2026-06-26T08:00:00Z")
+        val d1 = Instant.parse("2026-06-25T20:45:00Z")
+        for
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanRides(xa)
+          repo = PostgresRideRepository(xa)
+          id   = RideId(UUID.randomUUID())
+          _   <- repo.create(makeRide(id))
+          _   <- repo.updateFlightStatus(id, Some("G35"), Some("T2"), Some("delayed"), Some(t1), Some(s1), Some(d1))
+          _   <- repo.updateFlightStatus(id, None, None, Some("landed"), Some(t2), None, None)
+          row <- repo.findFlightStatus(id)
+        yield assertTrue(
+          row.contains(FlightStatusRow(Some("G35"), Some("T2"), Some("landed"), Some(t2), Some(s1), Some(d1)))
+        )
+      },
+      test("a freshly scraped gate overrides the stored one") {
+        val t = Instant.parse("2026-06-26T08:20:00Z")
+        for
+          xa  <- ZIO.service[Transactor[Task]]
+          _   <- seedTestData(xa)
+          _   <- cleanRides(xa)
+          repo = PostgresRideRepository(xa)
+          id   = RideId(UUID.randomUUID())
+          _   <- repo.create(makeRide(id))
+          _   <- repo.updateFlightStatus(id, Some("G35"), Some("T2"), Some("boarding"), Some(t), None, None)
+          _   <- repo.updateFlightStatus(id, Some("K12"), Some("T2"), Some("landed"), Some(t), None, None)
+          row <- repo.findFlightStatus(id)
+        yield assertTrue(row.exists(_.gate.contains("K12")))
+      },
       test("updateFlightStatus on a missing ride updates no row") {
         for
           xa  <- ZIO.service[Transactor[Task]]
