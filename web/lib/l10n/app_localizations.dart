@@ -694,11 +694,11 @@ abstract class AppLocalizations {
   /// **'Passwords do not match'**
   String get passwordsDoNotMatch;
 
-  /// No description provided for @passwordTooShort.
+  /// No description provided for @passwordPolicyRules.
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 6 characters'**
-  String get passwordTooShort;
+  /// **'Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a digit'**
+  String get passwordPolicyRules;
 
   /// No description provided for @forcePasswordChangeTitle.
   ///

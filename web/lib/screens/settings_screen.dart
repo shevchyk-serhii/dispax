@@ -22,6 +22,7 @@ import 'calendar_sharing_screen.dart';
 import '../dashboard/client/client_addresses_screen.dart';
 import '../modules/core/services/error_messages.dart';
 import '../modules/core/services/api_client.dart';
+import '../utils/password_policy.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -1002,7 +1003,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: InputDecoration(labelText: ctxL10n.newPassword),
                   validator: (v) {
                     if (v == null || v.isEmpty) return ctxL10n.required;
-                    if (v.length < 6) return ctxL10n.passwordTooShort;
+                    if (!isPolicyCompliantPassword(v)) {
+                      return ctxL10n.passwordPolicyRules;
+                    }
                     return null;
                   },
                 ),

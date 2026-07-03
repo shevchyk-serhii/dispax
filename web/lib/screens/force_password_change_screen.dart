@@ -7,6 +7,7 @@ import '../blocs/auth/auth_state.dart';
 import '../l10n/app_localizations.dart';
 import '../modules/core/services/error_messages.dart';
 import '../modules/core/models/person.dart';
+import '../utils/password_policy.dart';
 
 /// Full-screen gate shown right after a user logs in with a temporary password.
 /// It cannot be dismissed (no back button / skip) — the only way forward is to
@@ -110,7 +111,9 @@ class _ForcePasswordChangeScreenState extends State<ForcePasswordChangeScreen> {
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return l10n.required;
-                          if (v.length < 6) return l10n.passwordTooShort;
+                          if (!isPolicyCompliantPassword(v)) {
+                            return l10n.passwordPolicyRules;
+                          }
                           return null;
                         },
                       ),

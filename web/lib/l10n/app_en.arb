@@ -127,7 +127,7 @@
   "confirmNewPassword": "Confirm New Password",
   "passwordChanged": "Password changed successfully",
   "passwordsDoNotMatch": "Passwords do not match",
-  "passwordTooShort": "Password must be at least 6 characters",
+  "passwordPolicyRules": "Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a digit",
   "forcePasswordChangeTitle": "Set a new password",
   "forcePasswordChangeMessage": "Your account uses a temporary password. Please set a new password to continue.",
   "updateRequired": "Update required",

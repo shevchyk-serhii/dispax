@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../constants/app_colors.dart';
 import '../../modules/core/models/person.dart';
+import '../../utils/parse_amount.dart';
 
 /// A single cancellation reason: the canonical wire value sent to the backend
 /// (matching `CancellationReason.toWire`) plus its human-readable label.
@@ -112,7 +113,7 @@ class _CancelRideDialogState extends State<CancelRideDialog> {
           onPressed: _selectedReason == null
               ? null
               : () {
-                  final fee = double.tryParse(_feeController.text);
+                  final fee = parseAmount(_feeController.text);
                   Navigator.of(
                     context,
                   ).pop({'reason': _selectedReason, 'fee': fee});

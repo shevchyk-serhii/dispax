@@ -69,6 +69,26 @@ void main() {
     expect(event.newPassword, 'NewPass123');
   });
 
+  testWidgets('weak new password (would pass the old <6 check) blocks submit', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildSubject());
+    final fields = find.byType(TextFormField);
+
+    await tester.enterText(fields.at(0), 'Temp1234');
+    // 6 chars, no uppercase, no digit — the backend policy (>=8 with
+    // upper+lower+digit) rejects it, so the form must too.
+    await tester.enterText(fields.at(1), 'abcdef');
+    await tester.enterText(fields.at(2), 'abcdef');
+
+    await tester.tap(find.byType(ElevatedButton));
+    await tester.pump();
+
+    verifyNever(
+      () => authBloc.add(any(that: isA<AuthPasswordChangeRequested>())),
+    );
+  });
+
   testWidgets('mismatched confirmation blocks submit', (tester) async {
     await tester.pumpWidget(buildSubject());
     final fields = find.byType(TextFormField);

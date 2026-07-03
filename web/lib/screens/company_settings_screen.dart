@@ -7,6 +7,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/parse_amount.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 
@@ -156,8 +157,44 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     }
   }
 
+  /// Reads a money/rate field accepting both "12.50" and the German "12,50".
+  /// An empty field means 0; garbage returns null so the save can abort
+  /// instead of silently zeroing the value.
+  double? _amountOf(TextEditingController controller) {
+    final text = controller.text.trim();
+    if (text.isEmpty) return 0;
+    return parseAmount(text);
+  }
+
   Future<void> _saveSettings() async {
     final l10n = AppLocalizations.of(context)!;
+
+    final commissionRate = _amountOf(_commissionController);
+    final cancellationFee = _amountOf(_cancellationFeeController);
+    final noShowFee = _amountOf(_noShowFeeController);
+    final basePrice = _amountOf(_basePriceController);
+    final pricePerKm = _amountOf(_pricePerKmController);
+    final airportSurcharge = _amountOf(_airportSurchargeController);
+    final nightSurcharge = _amountOf(_nightSurchargeController);
+    final amounts = [
+      commissionRate,
+      cancellationFee,
+      noShowFee,
+      basePrice,
+      pricePerKm,
+      airportSurcharge,
+      nightSurcharge,
+    ];
+    if (amounts.contains(null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.invalidAmountError),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -169,11 +206,10 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           : null;
 
       final settingsPayload = <String, dynamic>{
-        'commissionRate': double.tryParse(_commissionController.text) ?? 0,
+        'commissionRate': commissionRate,
         'defaultCurrency': _defaultCurrencyController.text,
-        'cancellationFee':
-            double.tryParse(_cancellationFeeController.text) ?? 0,
-        'noShowFee': double.tryParse(_noShowFeeController.text) ?? 0,
+        'cancellationFee': cancellationFee,
+        'noShowFee': noShowFee,
         'workStartHour': _workStart.hour,
         'workStartMinute': _workStart.minute,
         'workEndHour': _workEnd.hour,
@@ -201,11 +237,10 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
       await apiClient.put('/company/settings', settingsPayload);
 
       await apiClient.put('/company/tariff', {
-        'basePrice': double.tryParse(_basePriceController.text) ?? 0,
-        'pricePerKm': double.tryParse(_pricePerKmController.text) ?? 0,
-        'airportSurcharge':
-            double.tryParse(_airportSurchargeController.text) ?? 0,
-        'nightSurcharge': double.tryParse(_nightSurchargeController.text) ?? 0,
+        'basePrice': basePrice,
+        'pricePerKm': pricePerKm,
+        'airportSurcharge': airportSurcharge,
+        'nightSurcharge': nightSurcharge,
       });
 
       if (mounted) {
