@@ -454,6 +454,56 @@ object ExportApiSpec extends ZIOSpecDefault {
           assertTrue(result.isRight)
         }
       ),
+      // -- Audit fix: wjBeginn must be January 1 of the export month's year --------
+      suite("buildExtf wjBeginn (fiscal-year start)")(
+        test("wjBeginn header field is January 1 of the export month's year") {
+          val bytes  = buildExtfOk(
+            rides = Nil,
+            expenses = Nil,
+            clientNames = Map.empty,
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          val text   = new String(bytes, win1252)
+          val fields = text.split("\r\n", -1)(0).split(";", -1)
+          // Field 12 (0-indexed) is WJ-Beginn — must be Jan 1 of 2025, not May 1.
+          assertTrue(fields(12) == "20250101")
+        }
+      ),
+      // -- Audit fix: monetary aggregation in BigDecimal, not Double ---------------
+      suite("BigDecimal aggregation")(
+        test("summary revenue 100.005 rounds to 100.01 (Double sum would give 100.00)") {
+          // 100.005 as a Double is 100.00499999..., which %.2f rounds DOWN to 100.00.
+          // The exact BigDecimal rounds HALF_UP to 100.01 — this pins the BigDecimal path.
+          val ride = makeCompletedRide(estimatedPrice = Some(BigDecimal("100.005")))
+          val csv  = ExportApi.generateSummaryCsv(List(ride), Nil)
+          assertTrue(csv.linesIterator.exists(_.matches("Umsatzerloese;100[.,]01;EUR")))
+        },
+        test("totalGross sums exactly in BigDecimal") {
+          val rides = List(
+            makeCompletedRide(estimatedPrice = Some(BigDecimal("0.10"))),
+            makeCompletedRide(estimatedPrice = Some(BigDecimal("0.20"))),
+            makeCompletedRide(estimatedPrice = None, finalPrice = Some(BigDecimal("0.005")))
+          )
+          assertTrue(ExportApi.totalGross(rides) == BigDecimal("0.305"))
+        },
+        test("totalExpenseAmount sums exactly in BigDecimal") {
+          def expense(amount: String) = Expense(
+            id = ExpenseId.generate(),
+            driverId = driverA,
+            companyId = companyA,
+            category = ExpenseCategory.Fuel,
+            amount = BigDecimal(amount),
+            createdAt = Instant.parse("2025-05-10T12:00:00Z")
+          )
+          assertTrue(
+            ExportApi.totalExpenseAmount(List(expense("10.005"), expense("0.10"))) == BigDecimal("10.105")
+          )
+        }
+      ),
       suite("old generateRevenueCsv still uses dot (backward-compat)")(
         test("generateRevenueCsv amount format uses dot not comma") {
           val ride = makeCompletedRide(estimatedPrice = Some(BigDecimal("75.25")))

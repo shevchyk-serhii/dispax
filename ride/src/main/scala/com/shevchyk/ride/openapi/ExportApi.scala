@@ -17,13 +17,13 @@ import zio.{Clock, ZIO}
 
 import java.nio.charset.{Charset, CodingErrorAction}
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, YearMonth, ZoneOffset}
+import java.time.{Instant, LocalDate, YearMonth, ZoneOffset}
 
 /**
- * Tapir descriptions and server logic for the DATEV export endpoints. Replaces the zio-http handlers in `ExportRoutes`,
- * keeping the exact paths, status codes, role checks, company isolation and content types. The CSV/ text endpoints
- * respond with `text/csv` plain bodies; the full export responds with the JSON envelope. The pure DATEV CSV generation
- * is copied here so the same byte-for-byte output is produced.
+ * Tapir descriptions and server logic for the DATEV export endpoints (paths, status codes, role checks, company
+ * isolation and content types). The CSV/text endpoints respond with `text/csv` plain bodies; the full export responds
+ * with the JSON envelope. All DATEV CSV generation lives here (the legacy zio-http `ExportRoutes` handler was removed
+ * as dead code).
  */
 object ExportApi:
 
@@ -33,7 +33,7 @@ object ExportApi:
 
   private def internalError: Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
 
-  // --- DATEV helpers (copied verbatim from ExportRoutes) ---
+  // --- DATEV helpers ---
 
   /**
    * Sanitise a free-text value before it is placed into a `;`-delimited DATEV CSV field. Prevents:
@@ -97,8 +97,22 @@ object ExportApi:
     }
     (expenseCsvHeader +: rows).mkString("\n")
 
-  private def generateSummaryCsv(completedRides: List[Ride], expenses: List[Expense]): String =
-    val totalRevenue = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
+  /**
+   * Gross revenue of the given rides, summed in BigDecimal (never Double) so accounting totals keep exact decimal
+   * precision. Convert to Double only at the formatting/JSON boundary.
+   */
+  private[openapi] def totalGross(rides: List[Ride]): BigDecimal =
+    rides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum
+
+  /**
+   * Total expense amount, summed in BigDecimal (see [[totalGross]]).
+   */
+  private[openapi] def totalExpenseAmount(expenses: List[Expense]): BigDecimal = expenses.map(_.amount).sum
+
+  private[openapi] def generateSummaryCsv(completedRides: List[Ride], expenses: List[Expense]): String =
+    // Monetary aggregation stays in BigDecimal; %.2f on BigDecimal rounds HALF_UP over the exact
+    // decimal value (a Double sum would round over an inexact binary value).
+    val totalRevenue = totalGross(completedRides)
     val byCategory   = expenses.groupBy(_.category)
 
     val header = "Bezeichnung;Betrag;Waehrung"
@@ -111,10 +125,10 @@ object ExportApi:
         ExpenseCategory.Maintenance -> "Wartung",
         ExpenseCategory.Other       -> "Sonstiges"
       ).map { case (cat, label) =>
-        val amount = byCategory.getOrElse(cat, Nil).map(_.amount.doubleValue).sum
+        val amount = totalExpenseAmount(byCategory.getOrElse(cat, Nil))
         f"$label;$amount%.2f;EUR"
       } ++ {
-        val totalExp = expenses.map(_.amount.doubleValue).sum
+        val totalExp = totalExpenseAmount(expenses)
         val net      = totalRevenue - totalExp
         List(f"Ergebnis;$net%.2f;EUR")
       }
@@ -224,7 +238,9 @@ object ExportApi:
   ): Either[ExtfUnencodable, Array[Byte]] =
     val zonedNow    = now.atZone(ZoneOffset.UTC)
     val timestamp   = yyyyMMddHHmmssSSSFmt.format(zonedNow)
-    val wjBeginn    = yyyyMMddFmt.format(month.atDay(1).withDayOfYear(1))
+    // Wirtschaftsjahr start: the calendar year is the fiscal year, so this is explicitly January 1
+    // of the export month's year. (A non-calendar fiscal year is not supported.)
+    val wjBeginn    = yyyyMMddFmt.format(LocalDate.of(month.getYear, 1, 1))
     val datumVon    = yyyyMMddFmt.format(month.atDay(1))
     val datumBis    = yyyyMMddFmt.format(month.atEndOfMonth())
     val bezeichnung = s"Buchungsstapel ${month.getMonthValue.toString.padTo(2, ' ').reverse.mkString}/${month.getYear}"
@@ -345,17 +361,22 @@ object ExportApi:
       revenueCsv                                 = generateRevenueCsv(completedRides, clientMap)
       expensesCsv                                = generateExpensesCsv(monthExpenses)
       summaryCsv                                 = generateSummaryCsv(completedRides, monthExpenses)
-      totalRevenue                               = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
-      totalExpenses                              = monthExpenses.map(_.amount.doubleValue).sum
+      // Sum in BigDecimal; convert to Double only for the JSON response fields.
+      totalRevenue                               = totalGross(completedRides)
+      totalExpenses                              = totalExpenseAmount(monthExpenses)
     } yield DatevExportResponse(
       month = month.toString,
-      revenue = DatevCsvSection(csv = revenueCsv, totalRows = completedRides.size, totalAmount = totalRevenue),
-      expenses = DatevCsvSection(csv = expensesCsv, totalRows = monthExpenses.size, totalAmount = totalExpenses),
+      revenue = DatevCsvSection(csv = revenueCsv, totalRows = completedRides.size, totalAmount = totalRevenue.toDouble),
+      expenses = DatevCsvSection(
+        csv = expensesCsv,
+        totalRows = monthExpenses.size,
+        totalAmount = totalExpenses.toDouble
+      ),
       summary = DatevSummarySection(
         csv = summaryCsv,
-        totalRevenue = totalRevenue,
-        totalExpenses = totalExpenses,
-        netIncome = totalRevenue - totalExpenses
+        totalRevenue = totalRevenue.toDouble,
+        totalExpenses = totalExpenses.toDouble,
+        netIncome = (totalRevenue - totalExpenses).toDouble
       )
     )
   }
