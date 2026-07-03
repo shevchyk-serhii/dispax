@@ -89,6 +89,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late BiometricService privateBiometricService;
   final TokenStorage _storage;
   final WebSocketServiceBase _webSocketService;
+  final PushRegistrationService _pushService;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
@@ -98,8 +99,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     BiometricService? biometricService,
     TokenStorage? storage,
     WebSocketServiceBase? webSocketService,
+    PushRegistrationService? pushRegistrationService,
   }) : _storage = storage ?? _TokenStorage(),
        _webSocketService = webSocketService ?? WebSocketService.instance,
+       _pushService = pushRegistrationService ?? PushNotificationService.instance,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateApiClient.onUnauthorized = () => add(const AuthSessionExpired());
@@ -169,9 +172,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         AirportTimingService.configure(privateApiClient);
         ArrivalsBoardService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
-        PushNotificationService.instance.registerTokenWithClient(
-          privateApiClient,
-        );
+        _pushService.registerTokenWithClient(privateApiClient);
 
         /// Connect WebSocket for real-time updates
         _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
@@ -239,9 +240,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         AirportTimingService.configure(privateApiClient);
         ArrivalsBoardService.configure(privateApiClient);
         LocationClarificationService.configure(privateApiClient);
-        PushNotificationService.instance.registerTokenWithClient(
-          privateApiClient,
-        );
+        _pushService.registerTokenWithClient(privateApiClient);
 
         /// Connect WebSocket for real-time updates
         _webSocketService.connect(
@@ -375,6 +374,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Tears down all session state: stored token/user, in-memory token, the
   /// WebSocket connection, and the FCM registration.
   Future<void> _clearSession() async {
+    /// Unregister the FCM token FIRST, while the shared API client still
+    /// carries the auth token — the DELETE requires Authorization. Doing it
+    /// after clearAuthToken 401'd silently and the backend kept pushing this
+    /// user's notifications to the logged-out device.
+    await _pushService.unregisterToken();
+
     await _storage.delete(privateUserKey);
     await _storage.delete(privateTokenKey);
 
@@ -382,9 +387,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     /// Disconnect WebSocket
     _webSocketService.disconnect();
-
-    /// Unregister FCM token
-    await PushNotificationService.instance.unregisterToken();
   }
 
   void _onErrorCleared(AuthErrorCleared event, Emitter<AuthState> emit) {

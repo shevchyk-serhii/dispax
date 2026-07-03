@@ -5,7 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_client.dart';
 
-class PushNotificationService {
+/// Minimal interface the AuthBloc depends on so tests can inject a mock
+/// without touching Firebase (mirrors WebSocketServiceBase).
+abstract class PushRegistrationService {
+  Future<void> registerTokenWithClient(ApiClient client);
+  Future<void> unregisterToken();
+}
+
+class PushNotificationService implements PushRegistrationService {
   static final PushNotificationService instance = PushNotificationService._();
 
   PushNotificationService._();
@@ -193,7 +200,13 @@ class PushNotificationService {
     }
   }
 
+  /// Test hook: the current token is normally set only by Firebase
+  /// (getToken/onTokenRefresh), which is unavailable in unit tests.
+  @visibleForTesting
+  void debugSetCurrentToken(String? token) => _currentToken = token;
+
   // Call after login with an authenticated apiClient
+  @override
   Future<void> registerTokenWithClient(ApiClient client) async {
     _authApiClient = client;
     final token = _currentToken;
@@ -219,10 +232,16 @@ class PushNotificationService {
     await _registerTokenWithClient(token, client);
   }
 
+  @override
   Future<void> unregisterToken() async {
     if (_currentToken != null) {
       try {
-        await _apiClient.delete('/users/fcm-token/$_currentToken');
+        // Must go through the AUTHENTICATED client: the bare _apiClient never
+        // gets setAuthToken, so the DELETE arrived without Authorization,
+        // 401'd silently, and the backend kept pushing to this device after
+        // logout. Callers must invoke this before clearing the auth token.
+        final client = _authApiClient ?? _apiClient;
+        await client.delete('/users/fcm-token/$_currentToken');
       } catch (e) {
         debugPrint('Error unregistering FCM token: $e');
       }
