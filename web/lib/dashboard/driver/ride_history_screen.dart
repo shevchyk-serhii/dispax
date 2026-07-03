@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
+import '../../l10n/app_localizations.dart';
+import '../../modules/core/services/error_messages.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
@@ -95,7 +97,12 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                 if (rideState.hasError && rideState.rides.isEmpty) {
                   return ErrorDisplayWidget(
                     title: 'Failed to load ride history',
-                    message: rideState.errorMessage ?? '',
+                    // friendlyError, not the raw errorMessage: never leak
+                    // 'ApiException: ...' to the UI.
+                    message: friendlyError(
+                      rideState.error ?? rideState.errorMessage,
+                      AppLocalizations.of(context)!,
+                    ),
                     onRetry: () => loadRides(context),
                   );
                 }

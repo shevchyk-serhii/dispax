@@ -117,11 +117,14 @@ class _ClientListPanelState extends State<ClientListPanel> {
       // Surface mutation failures (create/update/deactivate) as a SnackBar.
       // The list below only renders an error view when it has no clients to
       // show, so without this listener a failed mutation was fully silent.
+      // Mutation errors fire REGARDLESS of list emptiness: a failed FIRST
+      // create (fresh company) must not fall through to the full-screen
+      // "Error loading data" view.
       body: BlocListener<ClientBloc, ClientState>(
         listenWhen: (previous, current) =>
             current.hasError &&
             previous.status != current.status &&
-            current.clients.isNotEmpty,
+            (current.clients.isNotEmpty || current.isMutationError),
         listener: (context, state) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -173,7 +176,12 @@ class _ClientListPanelState extends State<ClientListPanel> {
                     return Center(child: CircularProgressIndicator.adaptive());
                   }
 
-                  if (state.hasError && state.clients.isEmpty) {
+                  // Full-screen error is reserved for LOAD failures: its Retry
+                  // reloads the list, which is wrong (and destructive to the
+                  // SnackBar context) for a failed mutation.
+                  if (state.hasError &&
+                      state.clients.isEmpty &&
+                      !state.isMutationError) {
                     return ErrorDisplayWidget(
                       title: l10n.errorLoadingData,
                       message: friendlyError(
@@ -444,20 +452,30 @@ class _ClientListPanelState extends State<ClientListPanel> {
                 backgroundColor: AppColors.secretaryColor,
                 foregroundColor: AppColors.textOnPrimary,
               ),
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  context.read<ClientBloc>().add(
-                    ClientCreateRequested(
-                      request: CreateUserRequest(
-                        name: nameController.text.trim(),
-                        email: emailController.text.trim(),
-                        password: passwordController.text,
-                        phone: phoneController.text.trim().isNotEmpty
-                            ? phoneController.text.trim()
-                            : null,
-                      ),
+              onPressed: () async {
+                if (!(formKey.currentState?.validate() ?? false)) return;
+                final bloc = context.read<ClientBloc>();
+                bloc.add(
+                  ClientCreateRequested(
+                    request: CreateUserRequest(
+                      name: nameController.text.trim(),
+                      email: emailController.text.trim(),
+                      password: passwordController.text,
+                      phone: phoneController.text.trim().isNotEmpty
+                          ? phoneController.text.trim()
+                          : null,
                     ),
-                  );
+                  ),
+                );
+                // Pop only on SUCCESS: on failure the dialog stays open so
+                // the entered data and the generated temp password survive
+                // (the panel's listener surfaces the error as a SnackBar).
+                final settled = await bloc.stream.firstWhere(
+                  (s) => !s.isLoading,
+                  orElse: () => bloc.state,
+                );
+                if (!dialogContext.mounted) return;
+                if (!(settled.hasError && settled.isMutationError)) {
                   Navigator.of(dialogContext).pop();
                 }
               },

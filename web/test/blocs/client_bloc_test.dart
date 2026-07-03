@@ -132,6 +132,116 @@ void main() {
       ],
     );
 
+    // Regression: a failed create while the list is EMPTY (fresh company
+    // onboarding, e.g. duplicate email 409) must be distinguishable from a
+    // failed LOAD — the panel used to render the full-screen "Error loading
+    // data" view (whose Retry reloads the list, not the creation) and the
+    // entered data + generated temp password were lost.
+    blocTest<ClientBloc, ClientState>(
+      'ClientCreateRequested failure on an empty list is a MUTATION error',
+      build: () {
+        when(
+          () => mockUserService.createClient(any()),
+        ).thenThrow(ApiException('Email already registered', statusCode: 409));
+        return buildBloc();
+      },
+      seed: () => ClientState.loaded(const []),
+      act: (bloc) => bloc.add(
+        const ClientCreateRequested(
+          request: CreateUserRequest(
+            name: 'First Client',
+            email: 'dup@test.com',
+            password: 'Temp1234',
+          ),
+        ),
+      ),
+      expect: () => [
+        isA<ClientState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<ClientState>()
+            .having((s) => s.hasError, 'hasError', true)
+            .having((s) => s.isMutationError, 'isMutationError', true)
+            .having((s) => s.error, 'error', isA<ApiException>())
+            .having((s) => s.clients, 'clients', isEmpty),
+      ],
+    );
+
+    blocTest<ClientBloc, ClientState>(
+      'ClientLoadRequested failure is NOT a mutation error',
+      build: () {
+        when(() => mockUserService.getClients()).thenThrow(ApiException('f'));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(const ClientLoadRequested()),
+      expect: () => [
+        ClientState.loading(),
+        isA<ClientState>()
+            .having((s) => s.hasError, 'hasError', true)
+            .having((s) => s.isMutationError, 'isMutationError', false),
+      ],
+    );
+
+    blocTest<ClientBloc, ClientState>(
+      'a successful load after a mutation error clears the mutation flag',
+      build: () {
+        when(
+          () => mockUserService.getClients(),
+        ).thenAnswer((_) async => testClients);
+        return buildBloc();
+      },
+      seed: () => ClientState.loaded(
+        const [],
+      ).copyWith(status: ClientStateStatus.error, isMutationError: true),
+      act: (bloc) => bloc.add(const ClientLoadRequested()),
+      expect: () => [
+        ClientState.loading(),
+        isA<ClientState>()
+            .having((s) => s.isLoaded, 'isLoaded', true)
+            .having((s) => s.isMutationError, 'isMutationError', false),
+      ],
+    );
+
+    blocTest<ClientBloc, ClientState>(
+      'ClientUpdateRequested failure is a mutation error too',
+      build: () {
+        when(
+          () => mockUserService.updateClient(any(), any()),
+        ).thenThrow(ApiException('fail', statusCode: 500));
+        return buildBloc();
+      },
+      seed: () => ClientState.loaded([testClient]),
+      act: (bloc) => bloc.add(
+        const ClientUpdateRequested(
+          clientId: 'client-1',
+          request: UpdateUserRequest(name: 'X'),
+        ),
+      ),
+      expect: () => [
+        isA<ClientState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<ClientState>()
+            .having((s) => s.hasError, 'hasError', true)
+            .having((s) => s.isMutationError, 'isMutationError', true),
+      ],
+    );
+
+    blocTest<ClientBloc, ClientState>(
+      'ClientDeactivateRequested failure is a mutation error too',
+      build: () {
+        when(
+          () => mockUserService.deactivateClient(any()),
+        ).thenThrow(ApiException('fail', statusCode: 500));
+        return buildBloc();
+      },
+      seed: () => ClientState.loaded([testClient]),
+      act: (bloc) =>
+          bloc.add(const ClientDeactivateRequested(clientId: 'client-1')),
+      expect: () => [
+        isA<ClientState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<ClientState>()
+            .having((s) => s.hasError, 'hasError', true)
+            .having((s) => s.isMutationError, 'isMutationError', true),
+      ],
+    );
+
     blocTest<ClientBloc, ClientState>(
       'ClientUpdateRequested emits loading then loaded with updated client',
       build: () {

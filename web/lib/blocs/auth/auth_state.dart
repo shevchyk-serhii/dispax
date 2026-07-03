@@ -104,20 +104,30 @@ class AuthState extends Equatable {
   AuthState copyWith({
     AuthStatus? status,
     Person? user,
-    String? errorMessage,
-    Object? error,
+    // [errorMessage]/[error] use a sentinel so callers can distinguish "leave
+    // as is" (omit the argument) from "explicitly clear it" (pass null). A
+    // plain nullable parameter cannot tell those apart, so an omitted argument
+    // used to silently null the field — producing a `status == error` state
+    // with no message, which rendered an empty login error banner. Same
+    // pattern as RideState.copyWith.
+    Object? errorMessage = _unset,
+    Object? error = _unset,
     bool? biometricEnabled,
     bool? biometricAvailable,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
-      errorMessage: errorMessage,
-      error: error,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
+      error: identical(error, _unset) ? this.error : error,
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
       biometricAvailable: biometricAvailable ?? this.biometricAvailable,
     );
   }
+
+  static const Object _unset = Object();
 
   bool get isLoading => status == AuthStatus.loading;
   bool get isAuthenticated => status == AuthStatus.authenticated;

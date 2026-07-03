@@ -44,7 +44,7 @@ class UpcomingRidesScreen extends StatelessWidget {
                 if (state.hasError) {
                   NavigationHelper.showSnackBar(
                     context,
-                    rideErrorMessageOrFallback(state.errorMessage, context),
+                    rideErrorMessageOrFallback(state, context),
                     isError: true,
                   );
                 }
@@ -133,7 +133,7 @@ class UpcomingRidesScreen extends StatelessWidget {
     if (rideState.hasError && rideState.rides.isEmpty) {
       return ErrorDisplayWidget(
         title: 'Failed to load upcoming rides',
-        message: rideErrorMessageOrFallback(rideState.errorMessage, context),
+        message: rideErrorMessageOrFallback(rideState, context),
         onRetry: () => refreshRides(context),
       );
     }

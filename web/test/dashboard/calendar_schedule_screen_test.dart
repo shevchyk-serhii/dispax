@@ -337,6 +337,66 @@ void main() {
     },
   );
 
+  // Error-UX regression: a failed colleague-rides load used to render the raw
+  // 'Failed to load driver rides: ApiException(...)' string. The screen must
+  // route the stored error through friendlyError instead.
+  testWidgets(
+    'driver rides load failure renders the friendly localized error, not the raw exception',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Re-stub: the colleague's rides endpoint fails with a server error.
+      when(() => apiClient.get(any())).thenAnswer((invocation) async {
+        final path = invocation.positionalArguments.first as String;
+        if (path == '/schedules/visibility/me') {
+          return http.Response('{"canViewOtherSchedules": true}', 200);
+        }
+        if (path == '/users/drivers') {
+          return http.Response(
+            '[{"id":"colleague-1","name":"Hans Weber",'
+            '"email":"hans.weber@example.com","role":"DRIVER"}]',
+            200,
+          );
+        }
+        if (path == '/rides/driver/colleague-1') {
+          throw ApiException('boom', statusCode: 500);
+        }
+        return http.Response('[]', 200);
+      });
+
+      await tester.pumpWidget(buildApp(_selfDriver()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      CalendarScheduleScreen.viewTypeNotifierForTest.value =
+          CalendarViewType.day;
+      await tester.pump();
+
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hans Weber').last);
+      await tester.pump(); // dropdown closes, _loadDriverRides starts
+      await tester.pump(const Duration(milliseconds: 50)); // load fails
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Something went wrong on our side. Please try again in a moment.',
+        ),
+        findsOneWidget,
+        reason: 'the error placeholder must show the friendlyError mapping',
+      );
+      expect(
+        find.textContaining('ApiException'),
+        findsNothing,
+        reason: 'raw exception text must never reach the UI',
+      );
+      expect(find.textContaining('Failed to load driver rides:'), findsNothing);
+    },
+  );
+
   // Reference the unused fixture so analysis stays clean if it is later needed.
   test('colleague fixture is well-formed', () {
     expect(_colleague().name, 'Hans Weber');

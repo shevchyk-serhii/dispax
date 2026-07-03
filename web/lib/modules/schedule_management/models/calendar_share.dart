@@ -1,5 +1,10 @@
 // Models for cross-company personal calendar sharing
 // (see backend `CalendarShareApi`: /api/calendar-shares/*).
+//
+// Required fields go through JsonParse so a missing/malformed value throws a
+// FormatException naming the field instead of an opaque TypeError.
+
+import '../../core/json_parse.dart';
 
 class CalendarShareInvite {
   final String id;
@@ -16,10 +21,10 @@ class CalendarShareInvite {
 
   factory CalendarShareInvite.fromJson(Map<String, dynamic> json) {
     return CalendarShareInvite(
-      id: json['id'] as String,
-      code: json['code'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      expiresAt: DateTime.parse(json['expiresAt'] as String),
+      id: JsonParse.requiredString(json, 'id'),
+      code: JsonParse.requiredString(json, 'code'),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
+      expiresAt: JsonParse.requiredDateTime(json, 'expiresAt'),
     );
   }
 }
@@ -43,12 +48,12 @@ class CalendarShareGrant {
 
   factory CalendarShareGrant.fromJson(Map<String, dynamic> json) {
     return CalendarShareGrant(
-      id: json['id'] as String,
+      id: JsonParse.requiredString(json, 'id'),
       grantorName: json['grantorName'] as String? ?? '',
       grantorCompanyName: json['grantorCompanyName'] as String? ?? '',
       granteeName: json['granteeName'] as String? ?? '',
       granteeCompanyName: json['granteeCompanyName'] as String? ?? '',
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
     );
   }
 }
@@ -69,7 +74,7 @@ class SharedShift {
 
   factory SharedShift.fromJson(Map<String, dynamic> json) {
     return SharedShift(
-      date: DateTime.parse(json['date'] as String),
+      date: JsonParse.requiredDateTime(json, 'date'),
       startTime: json['startTime'] as String? ?? '',
       endTime: json['endTime'] as String? ?? '',
       status: json['status'] as String? ?? '',
@@ -91,8 +96,8 @@ class SharedBusySlot {
 
   factory SharedBusySlot.fromJson(Map<String, dynamic> json) {
     return SharedBusySlot(
-      start: DateTime.parse(json['start'] as String).toLocal(),
-      end: DateTime.parse(json['end'] as String).toLocal(),
+      start: JsonParse.requiredDateTime(json, 'start').toLocal(),
+      end: JsonParse.requiredDateTime(json, 'end').toLocal(),
       kind: json['kind'] as String? ?? 'Ride',
     );
   }
@@ -113,7 +118,7 @@ class SharedCalendar {
 
   factory SharedCalendar.fromJson(Map<String, dynamic> json) {
     return SharedCalendar(
-      grantId: json['grantId'] as String,
+      grantId: JsonParse.requiredString(json, 'grantId'),
       grantorName: json['grantorName'] as String? ?? '',
       shifts: (json['shifts'] as List<dynamic>? ?? [])
           .map((j) => SharedShift.fromJson(j as Map<String, dynamic>))

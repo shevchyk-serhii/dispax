@@ -41,13 +41,22 @@ List<Ride> ridesDrivenBy(List<Ride> rides, String driverId) =>
 
 /// Returns a non-null, user-facing message for an error [RideState].
 ///
-/// An error state can reach the UI with a null [RideState.errorMessage] (e.g.
-/// after [RideState.copyWith] scoping), so the error widgets must never `!` it.
-/// Falls back to the localized "Failed to load rides", then to a plain English
-/// literal when no [AppLocalizations] is available.
-String rideErrorMessageOrFallback(String? errorMessage, BuildContext context) =>
-    errorMessage ??
-    (AppLocalizations.of(context)?.failedToLoadRides ?? 'Failed to load rides');
+/// Routes through [friendlyError] (the canonical error-UX pattern, see the
+/// Today tab's own error view): a typed [RideState.error] cause maps to the
+/// localized message, and a raw technical [RideState.errorMessage] collapses
+/// to the generic text instead of leaking 'ApiException: ...' to the UI.
+///
+/// An error state can reach the UI with a null message AND cause (e.g. after
+/// [RideState.copyWith] scoping), so the error widgets must never `!` it —
+/// that case falls back to the localized "Failed to load rides", then to a
+/// plain English literal when no [AppLocalizations] is available.
+String rideErrorMessageOrFallback(RideState rideState, BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  if (l10n == null) return 'Failed to load rides';
+  final cause = rideState.error ?? rideState.errorMessage;
+  if (cause == null) return l10n.failedToLoadRides;
+  return friendlyError(cause, l10n);
+}
 
 /// Rides whose pickup falls on the calendar day of [now] — the driver's "Today"
 /// tab. Completed/cancelled rides are dropped. The window is `[todayStart,

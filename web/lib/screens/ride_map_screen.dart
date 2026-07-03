@@ -65,8 +65,103 @@ class RideMapScreen extends StatefulWidget {
           ride.status == RideStatus.confirmed ||
           ride.status == RideStatus.inProgress);
 
+  /// Pure decision for how a lifecycle WebSocket event changes the tracked
+  /// ride. Carries ALL the event→state logic so it is unit-testable without
+  /// mounting the Mapbox platform view. Returns null when the event does not
+  /// concern [ride] or changes nothing.
+  ///
+  /// Covered events:
+  /// * `RideAssigned` — a (re)assignment: the driver may have changed and the
+  ///   status becomes assigned. Without this the screen kept filtering
+  ///   locations by the OLD driver id after a reassignment, freezing the
+  ///   marker on the old driver with his name.
+  /// * `RideDetailsUpdated` — carries the ride's current driver (null =
+  ///   unassigned); only a driver change matters here.
+  /// * `RideConfirmed` / `RideRejected` — separate event types (NOT
+  ///   RideStatusChanged): confirm flips the pill to confirmed; reject
+  ///   reverts it to requested and unassigns the driver (backend contract).
+  /// * `RideStatusChanged` — plain status update for the pill.
+  @visibleForTesting
+  static RideMapEventDecision? decideRideEvent(
+    Ride ride,
+    WebSocketEvent event,
+  ) {
+    if (event.rideId != ride.id) return null;
+
+    if (event.isRideAssigned) {
+      final newDriverId = event.driverId;
+      final driverChanged = newDriverId != ride.driverId;
+      final newStatus = ride.status == RideStatus.assigned
+          ? null
+          : RideStatus.assigned;
+      if (!driverChanged && newStatus == null) return null;
+      return RideMapEventDecision(
+        status: newStatus,
+        driverChanged: driverChanged,
+        driverId: newDriverId,
+      );
+    }
+
+    if (event.isRideDetailsUpdated) {
+      final newDriverId = event.driverId;
+      if (newDriverId == ride.driverId) return null;
+      return RideMapEventDecision(driverChanged: true, driverId: newDriverId);
+    }
+
+    if (event.isRideConfirmed) {
+      if (ride.status == RideStatus.confirmed) return null;
+      return const RideMapEventDecision(status: RideStatus.confirmed);
+    }
+
+    if (event.isRideRejected) {
+      final driverChanged = ride.driverId != null;
+      final newStatus = ride.status == RideStatus.requested
+          ? null
+          : RideStatus.requested;
+      if (!driverChanged && newStatus == null) return null;
+      return RideMapEventDecision(
+        status: newStatus,
+        driverChanged: driverChanged,
+        driverId: null,
+      );
+    }
+
+    if (event.isRideStatusChanged) {
+      final newStatus = event.newStatus;
+      if (newStatus == null) return null;
+      final parsed = RideStatus.fromStringOrNull(newStatus);
+      if (parsed == null || parsed == ride.status) return null;
+      return RideMapEventDecision(status: parsed);
+    }
+
+    return null;
+  }
+
   @override
   State<RideMapScreen> createState() => _RideMapScreenState();
+}
+
+/// The outcome of [RideMapScreen.decideRideEvent]: what a lifecycle WebSocket
+/// event changes on the tracked ride.
+@visibleForTesting
+class RideMapEventDecision {
+  /// New status for the pill and marker colour; null keeps the current one.
+  final RideStatus? status;
+
+  /// True when the assigned driver changed (including unassignment). The
+  /// screen must then drop the stale marker/name/location and re-fetch the new
+  /// driver's position.
+  final bool driverChanged;
+
+  /// The new driver id — meaningful only when [driverChanged]; null means the
+  /// ride is now unassigned.
+  final String? driverId;
+
+  const RideMapEventDecision({
+    this.status,
+    this.driverChanged = false,
+    this.driverId,
+  });
 }
 
 class _RideMapScreenState extends State<RideMapScreen> {
@@ -224,17 +319,49 @@ class _RideMapScreenState extends State<RideMapScreen> {
   }
 
   void _handleStatusEvent(WebSocketEvent event) {
-    if (!event.isRideStatusChanged || event.rideId != _ride.id) return;
-    final newStatus = event.newStatus;
-    if (newStatus == null) return;
-    final parsed = RideStatus.fromStringOrNull(newStatus);
-    if (parsed == null || parsed == _ride.status) return;
-    setState(() => _ride = _ride.copyWith(status: parsed));
+    final decision = RideMapScreen.decideRideEvent(_ride, event);
+    if (decision == null) return;
+    setState(() {
+      var updated = _ride.copyWith(status: decision.status);
+      if (decision.driverChanged) {
+        // The old driver's id/name/location are stale the moment the ride is
+        // reassigned — clear them or the location filter keeps accepting the
+        // OLD driver's pings and the marker freezes on him with his name.
+        updated = updated.copyWith(
+          driverId: decision.driverId,
+          driverName: null,
+          driverLocation: null,
+        );
+      }
+      _ride = updated;
+    });
+    if (decision.driverChanged) {
+      _clearDriverMarker();
+      // New driver (if any): fetch a fresh fix so the marker reappears
+      // immediately instead of waiting for the next ~10s WebSocket ping.
+      _fetchInitialDriverLocation();
+      return;
+    }
     // The dot colour follows the status palette — redraw at the last fix.
     final driverLat = _ride.driverLocation?.latitude;
     final driverLng = _ride.driverLocation?.longitude;
     if (driverLat != null && driverLng != null) {
       _updateDriverMarker(driverLat, driverLng);
+    }
+  }
+
+  /// Removes the driver dot and name label from the map (used when the ride
+  /// is reassigned or the driver is unassigned).
+  Future<void> _clearDriverMarker() async {
+    final driverCircle = _driverCircle;
+    if (driverCircle != null) {
+      _driverCircle = null;
+      await _driverCircleManager?.delete(driverCircle);
+    }
+    final driverLabel = _driverLabel;
+    if (driverLabel != null) {
+      _driverLabel = null;
+      await _driverLabelManager?.delete(driverLabel);
     }
   }
 

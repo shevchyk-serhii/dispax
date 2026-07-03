@@ -390,7 +390,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   void _onErrorCleared(AuthErrorCleared event, Emitter<AuthState> emit) {
     if (state.hasError) {
       emit(
-        state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null),
+        state.copyWith(
+          status: AuthStatus.unauthenticated,
+          errorMessage: null,
+          error: null,
+        ),
       );
     }
   }
@@ -400,7 +404,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
-      emit(state.copyWith(status: AuthStatus.loading));
+      emit(
+        state.copyWith(
+          status: AuthStatus.loading,
+          errorMessage: null,
+          error: null,
+        ),
+      );
 
       final biometricAvailable = await privateBiometricService.isAvailable;
       final biometricEnabled = await privateBiometricService.isBiometricEnabled;

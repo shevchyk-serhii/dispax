@@ -34,7 +34,14 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     ClientCreateRequested event,
     Emitter<ClientState> emit,
   ) async {
-    emit(state.copyWith(status: ClientStateStatus.loading));
+    emit(
+      state.copyWith(
+        status: ClientStateStatus.loading,
+        errorMessage: null,
+        error: null,
+        isMutationError: false,
+      ),
+    );
 
     try {
       final newClient = await privateUserService.createClient(event.request);
@@ -46,6 +53,9 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
           status: ClientStateStatus.error,
           errorMessage: 'Failed to create client: $e',
           error: e,
+          // A mutation failed (not a load): the panel keeps this a SnackBar
+          // even when the list is empty.
+          isMutationError: true,
         ),
       );
     }
@@ -55,7 +65,14 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     ClientUpdateRequested event,
     Emitter<ClientState> emit,
   ) async {
-    emit(state.copyWith(status: ClientStateStatus.loading));
+    emit(
+      state.copyWith(
+        status: ClientStateStatus.loading,
+        errorMessage: null,
+        error: null,
+        isMutationError: false,
+      ),
+    );
 
     try {
       final updated = await privateUserService.updateClient(
@@ -72,6 +89,9 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
           status: ClientStateStatus.error,
           errorMessage: 'Failed to update client: $e',
           error: e,
+          // A mutation failed (not a load): the panel keeps this a SnackBar
+          // even when the list is empty.
+          isMutationError: true,
         ),
       );
     }
@@ -81,7 +101,14 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     ClientDeactivateRequested event,
     Emitter<ClientState> emit,
   ) async {
-    emit(state.copyWith(status: ClientStateStatus.loading));
+    emit(
+      state.copyWith(
+        status: ClientStateStatus.loading,
+        errorMessage: null,
+        error: null,
+        isMutationError: false,
+      ),
+    );
 
     try {
       await privateUserService.deactivateClient(event.clientId);
@@ -95,6 +122,9 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
           status: ClientStateStatus.error,
           errorMessage: 'Failed to deactivate client: $e',
           error: e,
+          // A mutation failed (not a load): the panel keeps this a SnackBar
+          // even when the list is empty.
+          isMutationError: true,
         ),
       );
     }
