@@ -11,6 +11,13 @@ class ClientState extends Equatable {
 
   /// Typed cause behind an error state, for `friendlyError`. Additive.
   final Object? error;
+
+  /// True when the error state came from a MUTATION (create/update/deactivate)
+  /// rather than a list load. The panel uses this to keep mutation failures as
+  /// a SnackBar even when the list is empty — a failed FIRST create must not
+  /// render the full-screen "Error loading data" view, whose Retry reloads the
+  /// list instead of retrying the creation.
+  final bool isMutationError;
   final String searchQuery;
 
   const ClientState({
@@ -18,6 +25,7 @@ class ClientState extends Equatable {
     this.clients = const [],
     this.errorMessage,
     this.error,
+    this.isMutationError = false,
     this.searchQuery = '',
   });
 
@@ -44,6 +52,7 @@ class ClientState extends Equatable {
     // on any unrelated copyWith. Same pattern as RideState.copyWith.
     Object? errorMessage = _unset,
     Object? error = _unset,
+    bool? isMutationError,
     String? searchQuery,
   }) {
     return ClientState(
@@ -53,6 +62,7 @@ class ClientState extends Equatable {
           ? this.errorMessage
           : errorMessage as String?,
       error: identical(error, _unset) ? this.error : error,
+      isMutationError: isMutationError ?? this.isMutationError,
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
@@ -79,6 +89,7 @@ class ClientState extends Equatable {
     clients,
     errorMessage,
     error is ApiException ? (error as ApiException).kind : error?.runtimeType,
+    isMutationError,
     searchQuery,
   ];
 }
