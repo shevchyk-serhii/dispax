@@ -7045,7 +7045,7 @@ abstract class AppLocalizations {
   /// No description provided for @shiftOverlapSnack.
   ///
   /// In en, this message translates to:
-  /// **'This day already has a shift that overlaps the selected time.'**
+  /// **'The selected time overlaps an existing shift. Multiple shifts per day are allowed — pick a time that doesn\'t overlap.'**
   String get shiftOverlapSnack;
 
   /// No description provided for @shiftTimeOrderError.
