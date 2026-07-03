@@ -280,7 +280,7 @@ patrol-test-android:
 	@echo "✅ Backend ready, running Patrol Android E2E tests..."
 	@cd $(FLUTTER_DIR) && $(PATROL) test \
 	  --target integration_test/login_smoke_test.dart \
-	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
+	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ; \
 	  STATUS=$$? ; \
 	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
@@ -298,7 +298,7 @@ patrol-test-ios:
 	@echo "✅ Backend ready, running Patrol iOS E2E tests..."
 	@cd $(FLUTTER_DIR) && $(PATROL) test \
 	  --target integration_test/login_smoke_test.dart \
-	  --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api ; \
+	  --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ; \
 	  STATUS=$$? ; \
 	  kill $$(cat /tmp/dispax-testserver.pid) 2>/dev/null || true ; \
 	  pkill -f "PORT=$(TEST_PORT).*testServer" 2>/dev/null || true ; \
@@ -341,7 +341,10 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_neg_superadmin_company e2e_neg_emergency_reassign \
               e2e_neg_create_ride_fields e2e_neg_tenant_isolation \
               e2e_neg_tenant_dispatcher e2e_neg_driver_access e2e_neg_secretary_access \
-              e2e_secretary_create_ride e2e_driver_confirm
+              e2e_secretary_create_ride e2e_driver_confirm \
+              e2e_two_dispatchers_assign_race e2e_two_dispatchers_handoff_visibility \
+              e2e_two_dispatchers_reassign e2e_dispatcher_assign_conflict_override \
+              e2e_dispatcher_self_conflict e2e_ws_dispatcher_status_live
 
 # Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
 # over REST. Run with `flutter test` via `make e2e-notif-http`. These are green.
@@ -375,8 +378,8 @@ e2e-backend-up:
 	@docker compose up -d postgres-test
 	@until docker exec dispax-postgres-test-1 pg_isready -U dispax -d dispax_test >/dev/null 2>&1; do sleep 1; done
 	@echo "🚀 Starting full backend on port $(TEST_PORT) (test DB)..."
-	@export $$(grep -v '^#' .env.dev | grep -vE '^(PORT|DATABASE_URL)=' | xargs) && \
-	  DATABASE_URL=$(TEST_DB_URL) PORT=$(TEST_PORT) APP_ENV=development sbt run & \
+	@export $$(grep -v '^#' .env.dev | grep -vE '^(PORT|DATABASE_URL|DB_URL)=' | xargs) && \
+	  DB_URL=$(TEST_DB_URL) DATABASE_URL=$(TEST_DB_URL) PORT=$(TEST_PORT) APP_ENV=development sbt run & \
 	  echo $$! > /tmp/dispax-e2e-backend.pid
 	@echo "⏳ Waiting for backend to be ready..."
 	@until curl -sf http://localhost:$(TEST_PORT)/health > /dev/null; do sleep 1; done
@@ -395,7 +398,7 @@ e2e-android: emulator-up e2e-backend-up
 	  echo "▶ $$t"; \
 	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
 	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || true ; \
+	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
 	done ; \
 	$(MAKE) e2e-backend-down
 
@@ -406,7 +409,7 @@ e2e-ios: e2e-backend-up
 	  echo "▶ $$t"; \
 	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
 	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api || true ; \
+	    --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
 	done ; \
 	$(MAKE) e2e-backend-down
 
@@ -433,7 +436,7 @@ PATROL_EXCLUDES := --exclude integration_test/auth_integration_test.dart \
 e2e-fast: emulator-up e2e-backend-up
 	@echo "🧪 Running ALL Patrol E2E in one bundle (Android, no orchestrator)..."
 	@cd $(FLUTTER_DIR) && $(PATROL) test $(PATROL_EXCLUDES) \
-	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
+	  --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ; \
 	  STATUS=$$? ; \
 	  $(MAKE) -C .. e2e-backend-down ; \
 	  exit $$STATUS
@@ -447,7 +450,7 @@ e2e-notif-http: emulator-up e2e-backend-up
 	  echo "▶ $$t"; \
 	  curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
 	  $(FLUTTER) test $$t \
-	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api ; \
+	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) ; \
 	done ; \
 	STATUS=$$? ; \
 	$(MAKE) e2e-backend-down ; \
@@ -477,7 +480,7 @@ e2e-red: emulator-up e2e-backend-up
 	  echo "▶ $$t"; \
 	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
 	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || true ; \
+	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
 	done ; \
 	$(MAKE) e2e-backend-down
 

@@ -48,8 +48,29 @@ import 'widgets/driver_ratings_panel.dart';
 import '../secretary/widgets/client_list_panel.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/user_service.dart';
+import '../../modules/core/models/websocket_event.dart';
 import '../../modules/ride_management/models/ride.dart';
 import 'dart:async';
+
+/// Maps a live `RideConfirmed` / `RideRejected` WebSocket event to an in-place
+/// [RideStatusReceived] patch for the shared [RideBloc].
+///
+/// The pending reload those events also trigger only refreshes Requested rides
+/// (see `RideBloc._mergePending`), so non-requested rows keep whatever status
+/// their local copy had. Without this patch a driver confirm never flips the
+/// dispatcher board's badge to Confirmed, and a reject leaves a stale Assigned
+/// copy in the list next to the freshly reloaded Requested one.
+RideStatusReceived? liveStatusPatch(WebSocketEvent event) {
+  final rideId = event.rideId;
+  if (rideId == null) return null;
+  if (event.isRideConfirmed) {
+    return RideStatusReceived(rideId: rideId, newStatus: RideStatus.confirmed);
+  }
+  if (event.isRideRejected) {
+    return RideStatusReceived(rideId: rideId, newStatus: RideStatus.requested);
+  }
+  return null;
+}
 
 class DispatcherDashboard extends StatefulWidget {
   const DispatcherDashboard({super.key});
@@ -91,6 +112,13 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
     _wsSubscription = WebSocketService.instance.eventStream.listen((event) {
       if (!mounted) return;
       if (event.isRideConfirmed || event.isRideRejected) {
+        // Patch the ride's status in place FIRST: the pending reload below
+        // only refreshes Requested rides (the bloc's merge keeps non-requested
+        // rows exactly as they were), so without this patch the Assigned-tab
+        // badge never flips to Confirmed live, and a rejected ride would be
+        // kept as a stale Assigned copy next to its fresh Requested twin.
+        final patch = liveStatusPatch(event);
+        if (patch != null) _rideBloc.add(patch);
         // Refresh ride list so the dispatcher sees updated status and frame color.
         _rideBloc.add(const RideLoadPendingRequested());
         if (event.isRideRejected) {

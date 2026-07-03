@@ -20,8 +20,12 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+    // Kotlin 2.3 removed the legacy `kotlinOptions { jvmTarget = ... }` string DSL;
+    // use the typed compilerOptions DSL instead.
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
 
     defaultConfig {
