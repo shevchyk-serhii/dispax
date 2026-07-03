@@ -16,7 +16,12 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.{PersonRepository, InMemoryPersonRepository}
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
+import com.shevchyk.ride.repository.{
+  ExpenseRepository,
+  InMemoryRideRepository,
+  InMemoryRideShareTokenRepository,
+  RideRepository
+}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
@@ -221,7 +226,7 @@ object RideServiceSpec extends ZIOSpecDefault {
       scheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   // Shared by the scheduleDay-validation suite. Schedule-day id used across those tests.
   private val scheduleDayValidationDayId = ScheduleDayId(UUID.fromString("00000099-0000-0000-0000-000000000001"))
@@ -282,6 +287,7 @@ object RideServiceSpec extends ZIOSpecDefault {
           InMemoryExternalDriverRepository.layer,
           InMemoryPartnerCompanyRepository.layer,
           SentConfirmationRequestRepository.inMemory,
+          InMemoryRideShareTokenRepository.layer,
           RideService.layer
         )
       ),
@@ -711,7 +717,7 @@ object RideServiceSpec extends ZIOSpecDefault {
               noopScheduleDayLookup ++
               InMemoryExternalDriverRepository.layer ++
               InMemoryPartnerCompanyRepository.layer ++
-              SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+              SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
           (for {
             service <- ZIO.service[RideService]

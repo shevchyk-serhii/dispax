@@ -848,6 +848,10 @@ object TestApplication extends ZIOAppDefault:
                   .sortBy(_.createdAt)
                   .lastOption
               )
+            def deleteByRideId(rideId: RideId): Task[Int]                                                         = tokensRef.modify { m =>
+              val (dead, alive) = m.partition(_._2.rideId == rideId)
+              (dead.size, alive)
+            }
       }
   )
 

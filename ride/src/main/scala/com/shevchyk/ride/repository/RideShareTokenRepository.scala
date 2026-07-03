@@ -15,6 +15,13 @@ trait RideShareTokenRepository:
    */
   def findActiveByRideId(rideId: RideId): Task[Option[RideShareToken]]
 
+  /**
+   * Revoke EVERY share token of a ride (regardless of expiry). Returns the number of tokens removed. Used when the ride
+   * is reassigned to a different client: the previous client's guest /track link would otherwise stay live for up to
+   * 24h and keep streaming the driver's position and route for a ride that is no longer theirs.
+   */
+  def deleteByRideId(rideId: RideId): Task[Int]
+
 object RideShareTokenRepository:
 
   val layer: ZLayer[Any, Throwable, RideShareTokenRepository] =

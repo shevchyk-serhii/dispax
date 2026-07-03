@@ -46,6 +46,9 @@ final class PostgresRideShareTokenRepository(xa: Transactor[Task]) extends RideS
       .transact(xa)
       .map(_.map(toDomain))
 
+  override def deleteByRideId(rideId: RideId): Task[Int] =
+    sql"DELETE FROM ride_share_tokens WHERE ride_id = ${rideId.value}".update.run.transact(xa)
+
 object PostgresRideShareTokenRepository:
 
   val layer: ZLayer[Transactor[Task], Nothing, RideShareTokenRepository] = ZLayer.fromFunction(

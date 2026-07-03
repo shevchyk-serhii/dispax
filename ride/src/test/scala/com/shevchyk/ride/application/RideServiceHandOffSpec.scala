@@ -18,6 +18,7 @@ import com.shevchyk.ride.repository.{
   ExpenseRepository,
   ExternalDriverRepository,
   InMemoryRideRepository,
+  InMemoryRideShareTokenRepository,
   PartnerCompanyRepository
 }
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
@@ -183,7 +184,7 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       edLayer ++
       pcLayer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
   }
 
   // ── Ride factory ──────────────────────────────────────────────────────────

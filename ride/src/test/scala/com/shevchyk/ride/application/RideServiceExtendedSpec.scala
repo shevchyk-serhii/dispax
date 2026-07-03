@@ -16,7 +16,13 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
+import com.shevchyk.ride.repository.{
+  ExpenseRepository,
+  InMemoryRideRepository,
+  InMemoryRideShareTokenRepository,
+  RideRepository,
+  RideShareTokenRepository
+}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
@@ -180,7 +186,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++
+      InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
@@ -512,6 +519,62 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       // 4. updateRideDetails
       // ────────────────────────────────────────────────────────────────────
       suite("updateRideDetails")(
+        // ── guest /track link revocation on client reassignment (regression) ──
+        // The previous client's share token used to survive a client change: for up to 24h
+        // they kept a live view of the driver's position and route on a ride that is no
+        // longer theirs. Reassigning the client must revoke the ride's share tokens.
+        test("reassigning the ride to another client revokes the previous client's track tokens") {
+          for {
+            service   <- ZIO.service[RideService]
+            tokenRepo <- ZIO.service[RideShareTokenRepository]
+            ride      <- service.createRide(mkRide())
+            now        = java.time.Instant.now()
+            _         <- tokenRepo.create(
+                           RideShareToken(
+                             id = RideShareTokenId.generate(),
+                             token = "old-client-track-token",
+                             rideId = ride.id,
+                             companyId = testCompanyId,
+                             createdAt = now,
+                             expiresAt = now.plusSeconds(24L * 3600)
+                           )
+                         )
+            _         <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+            leftover  <- tokenRepo.findActiveByRideId(ride.id)
+          } yield assertTrue(leftover.isEmpty)
+        }.provide(standardLayers),
+        test("an update that does NOT change the client keeps the track token alive") {
+          for {
+            service   <- ZIO.service[RideService]
+            tokenRepo <- ZIO.service[RideShareTokenRepository]
+            ride      <- service.createRide(mkRide())
+            now        = java.time.Instant.now()
+            _         <- tokenRepo.create(
+                           RideShareToken(
+                             id = RideShareTokenId.generate(),
+                             token = "same-client-track-token",
+                             rideId = ride.id,
+                             companyId = testCompanyId,
+                             createdAt = now,
+                             expiresAt = now.plusSeconds(24L * 3600)
+                           )
+                         )
+            _         <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(notes = Some("no client change")),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+            leftover  <- tokenRepo.findActiveByRideId(ride.id)
+          } yield assertTrue(leftover.nonEmpty)
+        }.provide(standardLayers),
         test("update notes and specialRequirements") {
           for {
             service <- ZIO.service[RideService]
@@ -1016,7 +1079,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopScheduleDayLookup ++
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
-            SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+            SentConfirmationRequestRepository.inMemory ++
+            InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         ),
         test("assignment succeeds when driver is not blacklisted") {
           for {
@@ -1068,7 +1132,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopScheduleDayLookup ++
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
-            SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+            SentConfirmationRequestRepository.inMemory ++
+            InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         )
       ),
 
