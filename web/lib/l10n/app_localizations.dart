@@ -7042,6 +7042,12 @@ abstract class AppLocalizations {
   /// **'Shifts created: {count}'**
   String shiftsCreatedSnack(int count);
 
+  /// No description provided for @shiftOverlapSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'This day already has a shift that overlaps the selected time.'**
+  String get shiftOverlapSnack;
+
   /// No description provided for @shiftTimeOrderError.
   ///
   /// In en, this message translates to:

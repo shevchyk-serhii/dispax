@@ -1,7 +1,7 @@
 package com.shevchyk.schedule.repository
 
 import com.shevchyk.core.domain.{CompanyId, PersonId, ScheduleDayId}
-import com.shevchyk.schedule.domain.{ScheduleDay, ScheduleError}
+import com.shevchyk.schedule.domain.{ScheduleDay, ScheduleDayStatus, ScheduleError}
 import zio.*
 import java.time.LocalDate
 
@@ -11,10 +11,18 @@ class InMemoryScheduleDayRepository extends ScheduleDayRepository:
     Runtime.default.unsafe.run(Ref.Synchronized.make(Map.empty[ScheduleDayId, ScheduleDay])).getOrThrowFiberFailure()
   }
 
+  // Mirrors the DB exclusion constraint excl_schedule_days_shift_overlap: only
+  // time-overlapping non-cancelled shifts of the same driver conflict
+  // (half-open intervals, so back-to-back shifts are allowed).
   override def create(scheduleDay: ScheduleDay): Task[ScheduleDay] = store.get.flatMap { current =>
-    val duplicate = current.values.exists(d => d.driverId == scheduleDay.driverId && d.date == scheduleDay.date)
-    if (duplicate)
-      ZIO.fail(ScheduleError.DuplicateScheduleDay(scheduleDay.driverId, scheduleDay.date))
+    val overlaps =
+      scheduleDay.status != ScheduleDayStatus.Cancelled && current.values.exists(d =>
+        d.driverId == scheduleDay.driverId && d.date == scheduleDay.date &&
+          d.status != ScheduleDayStatus.Cancelled &&
+          scheduleDay.startTime.isBefore(d.endTime) && d.startTime.isBefore(scheduleDay.endTime)
+      )
+    if (overlaps)
+      ZIO.fail(ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date))
     else
       store.update(_.updated(scheduleDay.id, scheduleDay)).as(scheduleDay)
   }

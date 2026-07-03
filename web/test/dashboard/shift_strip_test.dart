@@ -1,5 +1,6 @@
 import 'package:dispax/dashboard/driver/calendar/widgets/shift_strip.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import 'package:dispax/modules/schedule_management/services/schedule_service.dart';
 import 'package:flutter/material.dart';
@@ -113,6 +114,76 @@ void main() {
       expect(onChangedCalls, 1);
     },
   );
+
+  testWidgets(
+    'a 409 conflict on create shows the localized overlap message, not the generic one',
+    (tester) async {
+      when(
+        () => service.createScheduleDay(
+          driverId: any(named: 'driverId'),
+          date: any(named: 'date'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+          notes: any(named: 'notes'),
+        ),
+      ).thenThrow(
+        ApiException(
+          'Failed to create schedule day: Driver 1111 already has an overlapping shift on 2026-07-03',
+          statusCode: 409,
+        ),
+      );
+
+      await tester.pumpWidget(wrap(shifts: []));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'This day already has a shift that overlaps the selected time.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Something went wrong. Please try again.'),
+        findsNothing,
+      );
+      expect(onChangedCalls, 0);
+    },
+  );
+
+  testWidgets('a non-conflict failure on create falls back to friendlyError', (
+    tester,
+  ) async {
+    when(
+      () => service.createScheduleDay(
+        driverId: any(named: 'driverId'),
+        date: any(named: 'date'),
+        startTime: any(named: 'startTime'),
+        endTime: any(named: 'endTime'),
+        notes: any(named: 'notes'),
+      ),
+    ).thenThrow(
+      ApiException(
+        'Failed to create schedule day: Person is not a driver',
+        statusCode: 400,
+      ),
+    );
+
+    await tester.pumpWidget(wrap(shifts: []));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add_circle_outline));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    // friendlyError surfaces the backend's own reason for validation errors.
+    expect(find.text('Person is not a driver'), findsOneWidget);
+  });
 
   testWidgets('tapping a chip cancels the shift after confirmation', (
     tester,

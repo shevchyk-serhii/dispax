@@ -1768,6 +1768,7 @@
   "shiftCreateButton": "Erstellen",
   "shiftsCreatedSnack": "Schichten erstellt: {count}",
   "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftOverlapSnack": "An diesem Tag gibt es bereits eine Schicht, die sich mit der gewählten Zeit überschneidet.",
   "shiftTimeOrderError": "Beginn muss vor dem Ende liegen",
   "shiftCancelTitle": "Diese Schicht stornieren?",
   "shiftCancelButton": "Schicht stornieren",

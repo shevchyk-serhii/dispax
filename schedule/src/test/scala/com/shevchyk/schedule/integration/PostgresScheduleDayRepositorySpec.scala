@@ -2,7 +2,7 @@ package com.shevchyk.schedule.integration
 
 import com.shevchyk.core.database.PostgresTestContainer
 import com.shevchyk.core.domain.*
-import com.shevchyk.schedule.domain.{ScheduleDay, ScheduleDayStatus}
+import com.shevchyk.schedule.domain.{ScheduleDay, ScheduleDayStatus, ScheduleError}
 import com.shevchyk.schedule.repository.PostgresScheduleDayRepository
 import doobie.*
 import doobie.implicits.*
@@ -236,6 +236,74 @@ object PostgresScheduleDayRepositorySpec extends ZIOSpecDefault {
           _     <- repo.delete(day.id, testCompanyId)
           found <- repo.findById(day.id)
         } yield assertTrue(still.isDefined, found.isEmpty)
+      },
+      test("a cancelled shift frees its day: creating a new shift on that date succeeds") {
+        // Regression: cancelScheduleDay soft-deletes (status = Cancelled, row stays). The old
+        // UNIQUE (driver_id, date) constraint still counted that row, so re-creating a shift
+        // on the day always failed with a conflict while the UI showed the day as empty.
+        for {
+          xa       <- ZIO.service[Transactor[Task]]
+          _        <- seedTestData(xa)
+          _        <- cleanScheduleDays(xa)
+          repo      = PostgresScheduleDayRepository(xa)
+          date      = LocalDate.of(2026, 7, 3)
+          first     = makeDay(date = date)
+          _        <- repo.create(first)
+          _        <- repo.update(first.copy(status = ScheduleDayStatus.Cancelled))
+          recreated = makeDay(date = date) // same 08:00–16:00 slot as the cancelled shift
+          _        <- repo.create(recreated)
+          days     <- repo.findShiftsForDriverOnDate(driverId, testCompanyId, date)
+        } yield assertTrue(
+          days.map(_.id).toSet == Set(first.id, recreated.id),
+          days.find(_.id == recreated.id).exists(_.status == ScheduleDayStatus.Scheduled)
+        )
+      },
+      test("back-to-back shifts on the same date are both persisted") {
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <- cleanScheduleDays(xa)
+          repo   = PostgresScheduleDayRepository(xa)
+          date   = LocalDate.of(2026, 7, 4)
+          first  = makeDay(date = date, startTime = LocalTime.of(8, 0), endTime = LocalTime.of(12, 0))
+          second = makeDay(date = date, startTime = LocalTime.of(12, 0), endTime = LocalTime.of(16, 0))
+          _     <- repo.create(first)
+          _     <- repo.create(second)
+          days  <- repo.findShiftsForDriverOnDate(driverId, testCompanyId, date)
+        } yield assertTrue(days.map(_.id).toSet == Set(first.id, second.id))
+      },
+      test("overlapping active shifts on the same date are rejected with OverlapConflict") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanScheduleDays(xa)
+          repo    = PostgresScheduleDayRepository(xa)
+          date    = LocalDate.of(2026, 7, 5)
+          first   = makeDay(date = date, startTime = LocalTime.of(8, 0), endTime = LocalTime.of(16, 0))
+          overlap = makeDay(date = date, startTime = LocalTime.of(15, 0), endTime = LocalTime.of(20, 0))
+          _      <- repo.create(first)
+          result <- repo.create(overlap).exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.OverlapConflict])
+          case _                   => false
+        })
+      },
+      test("rescheduling a shift into an overlap is rejected with OverlapConflict") {
+        for {
+          xa     <- ZIO.service[Transactor[Task]]
+          _      <- seedTestData(xa)
+          _      <- cleanScheduleDays(xa)
+          repo    = PostgresScheduleDayRepository(xa)
+          date    = LocalDate.of(2026, 7, 6)
+          first   = makeDay(date = date, startTime = LocalTime.of(8, 0), endTime = LocalTime.of(12, 0))
+          second  = makeDay(date = date, startTime = LocalTime.of(13, 0), endTime = LocalTime.of(17, 0))
+          _      <- repo.create(first)
+          _      <- repo.create(second)
+          result <- repo.update(second.copy(startTime = LocalTime.of(11, 0))).exit
+        } yield assertTrue(result match {
+          case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.OverlapConflict])
+          case _                   => false
+        })
       }
     ).provide(PostgresTestContainer.layer) @@ TestAspect.sequential @@ TestAspect.withLiveClock @@ TestAspect.tag(
       "integration"

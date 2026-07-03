@@ -1768,6 +1768,7 @@
   "shiftCreateButton": "Створити",
   "shiftsCreatedSnack": "Створено змін: {count}",
   "@shiftsCreatedSnack": {"placeholders": {"count": {"type": "int"}}},
+  "shiftOverlapSnack": "На цей день вже є зміна, що перетинається з обраним часом.",
   "shiftTimeOrderError": "Початок має бути раніше за кінець",
   "shiftCancelTitle": "Скасувати цю зміну?",
   "shiftCancelButton": "Скасувати зміну",

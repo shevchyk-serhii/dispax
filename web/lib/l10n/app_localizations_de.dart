@@ -3799,6 +3799,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get shiftOverlapSnack =>
+      'An diesem Tag gibt es bereits eine Schicht, die sich mit der gewählten Zeit überschneidet.';
+
+  @override
   String get shiftTimeOrderError => 'Beginn muss vor dem Ende liegen';
 
   @override
