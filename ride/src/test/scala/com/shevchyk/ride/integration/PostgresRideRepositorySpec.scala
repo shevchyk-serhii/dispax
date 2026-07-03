@@ -181,6 +181,27 @@ object PostgresRideRepositorySpec extends ZIOSpecDefault {
           found.get.driverId.contains(driverId)
         )
       },
+      // Regression: rideSetClause did not include client_id, so a dispatcher's client
+      // reassignment (PUT /rides/{id} with clientId) was acknowledged in the response
+      // (built from the in-memory object) but silently never persisted — every refetch
+      // showed the old client again.
+      test("update persists a client reassignment") {
+        val secondClientId = PersonId(UUID.fromString("00000002-0000-0000-0000-000000000003"))
+        for {
+          xa    <- ZIO.service[Transactor[Task]]
+          _     <- seedTestData(xa)
+          _     <-
+            sql"""INSERT INTO persons (id, name, email, role, company_id, password_hash)
+                     VALUES (${secondClientId.value}, 'Second Client', 'client2@test.com', 'client'::person_role, ${testCompanyId.value}, 'placeholder')
+                     ON CONFLICT DO NOTHING""".update.run.transact(xa)
+          _     <- cleanRides(xa)
+          repo   = PostgresRideRepository(xa)
+          ride   = makeRide()
+          _     <- repo.create(ride)
+          _     <- repo.update(ride.copy(clientId = secondClientId))
+          found <- repo.findById(ride.id)
+        } yield assertTrue(found.get.clientId == secondClientId)
+      },
       test("tags round-trip and other fields stay intact (Read-tuple position guard)") {
         // A ride carrying non-empty tags must read back with tags AND every neighbouring field
         // (notes, payment method, airport specifics) intact — a mis-placed tags column in the split
