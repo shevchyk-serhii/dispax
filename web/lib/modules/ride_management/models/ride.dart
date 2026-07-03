@@ -478,18 +478,40 @@ class Ride {
         other.to == to &&
         // Included so a live WebSocket checkpoint update yields a != Ride and the
         // BLoC actually re-emits (otherwise the row never refreshes on the card).
-        other.airportCheckpoint == airportCheckpoint;
+        other.airportCheckpoint == airportCheckpoint &&
+        // The live flight enrichment (monitor/WS FlightStatusUpdated) changes
+        // ONLY these fields. Without them two Rides differing in gate/status/
+        // times compare equal, the Equatable RideState stays equal, the BLoC
+        // suppresses the emit and the card never shows the flight data.
+        other.flightNumber == flightNumber &&
+        other.gate == gate &&
+        other.terminal == terminal &&
+        other.flightStatus == flightStatus &&
+        other.flightTime == flightTime &&
+        other.flightScheduledTime == flightScheduledTime &&
+        other.flightDepartureTime == flightDepartureTime &&
+        other.optimalEntryTime == optimalEntryTime;
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        clientId.hashCode ^
-        status.hashCode ^
-        pickupDateTime.hashCode ^
-        from.hashCode ^
-        to.hashCode ^
-        airportCheckpoint.hashCode;
+    return Object.hash(
+      id,
+      clientId,
+      status,
+      pickupDateTime,
+      from,
+      to,
+      airportCheckpoint,
+      flightNumber,
+      gate,
+      terminal,
+      flightStatus,
+      flightTime,
+      flightScheduledTime,
+      flightDepartureTime,
+      optimalEntryTime,
+    );
   }
 
   @override
