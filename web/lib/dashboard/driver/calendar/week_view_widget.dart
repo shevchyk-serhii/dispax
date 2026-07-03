@@ -341,17 +341,25 @@ class WeekViewWidget extends StatelessWidget {
       .toList();
 
   Widget buildRideBlock(BuildContext context, Ride ride) {
-    final startHour = ride.pickupDateTime.hour;
-    final startMinute = ride.pickupDateTime.minute;
-    final duration = 1.5;
-
-    final top = ((startHour - 6) * 40.0) + (startMinute / 60 * 40.0);
-    final height = duration * 40.0;
+    final startHour =
+        ride.pickupDateTime.hour + ride.pickupDateTime.minute / 60.0;
+    const duration = 1.5;
+    // The grid shows 06:00–23:00 (17 rows of 40 px). Clip the block into that
+    // window via the shared helper — a 02:00 ride used to render at
+    // top = −160 above the grid, a 22:30 one below its bottom edge.
+    const gridHeight = 17 * 40.0;
+    final segment = visibleBlockSegment(startHour, startHour + duration);
+    final height = ((segment.end - segment.start) * 40.0).clamp(
+      10.0,
+      gridHeight,
+    );
+    final top = ((segment.start - 6) * 40.0).clamp(0.0, gridHeight - height);
 
     Color color = RideStatusStyles.getStatusColor(ride.status);
 
     final onTap = onRideSelected;
     return Positioned(
+      key: ValueKey('week-ride-${ride.id}'),
       top: top,
       left: 2,
       right: 2,
@@ -368,45 +376,52 @@ class WeekViewWidget extends StatelessWidget {
               border: Border.all(color: color, width: 1),
             ),
             padding: const EdgeInsets.all(4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        DateFormat.Hm().format(ride.pickupDateTime),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+            // A block clipped to the window edge can be shorter than its
+            // one-line content — hide the content instead of overflowing.
+            child: height < 26
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              DateFormat.Hm().format(ride.pickupDateTime),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          RideBadges.blockMarkers(ride),
+                        ],
+                      ),
+                      if (height > 30)
+                        Flexible(
+                          child: Text(
+                            ride.clientName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ),
-                    RideBadges.blockMarkers(ride),
-                  ],
-                ),
-                if (height > 30)
-                  Flexible(
-                    child: Text(
-                      ride.clientName,
-                      style: const TextStyle(color: Colors.white, fontSize: 9),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      if (height > 50)
+                        Flexible(
+                          child: Text(
+                            ride.to.address,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 8,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
                   ),
-                if (height > 50)
-                  Flexible(
-                    child: Text(
-                      ride.to.address,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 8,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-            ),
           ),
         ),
       ),

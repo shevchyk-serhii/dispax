@@ -204,14 +204,29 @@ class DayTimeline extends StatelessWidget {
   }
 
   Widget _buildBlock(TimelineBlock block, double height) {
-    final top = _offsetFor(block.startHour, height);
-    final bottom = _offsetFor(block.endHour, height);
+    // Clip into the visible window via the shared helper: a busy slot crossing
+    // midnight (22:00→00:30) keeps its evening segment instead of collapsing
+    // into a 10 px stub (`bottom < top` after independent clamping), and a
+    // block fully outside the window (a 02:00 ride) pins at the nearest edge.
+    final segment = visibleBlockSegment(
+      block.startHour,
+      block.endHour,
+      windowStart: _startHour,
+      windowEnd: _endHour,
+    );
+    final top = _offsetFor(segment.start, height);
+    final bottom = _offsetFor(segment.end, height);
     // Keep even very short blocks visible.
     final blockHeight = (bottom - top).clamp(10.0, height);
+    // An edge-pinned minimum-height block must still fit inside the grid.
+    final clampedTop = top.clamp(
+      0.0,
+      (height - blockHeight).clamp(0.0, height),
+    );
 
     return Positioned(
       key: ValueKey(block.keyValue),
-      top: top,
+      top: clampedTop,
       left: 6,
       right: 2,
       height: blockHeight,
