@@ -114,6 +114,7 @@ import com.shevchyk.schedule.domain.{
   DriverUnavailability,
   DriverScheduleVisibility,
   ScheduleDay,
+  ScheduleDayStatus,
   ScheduleError
 }
 import com.shevchyk.schedule.repository.{
@@ -848,6 +849,10 @@ object TestApplication extends ZIOAppDefault:
                   .sortBy(_.createdAt)
                   .lastOption
               )
+            def deleteByRideId(rideId: RideId): Task[Int]                                                         = tokensRef.modify { m =>
+              val (dead, alive) = m.partition(_._2.rideId == rideId)
+              (dead.size, alive)
+            }
       }
   )
 
@@ -893,11 +898,21 @@ object TestApplication extends ZIOAppDefault:
     Ref.Synchronized.make(Map.empty[ScheduleDayId, ScheduleDay]).map { store =>
       registerReset(store.set(Map.empty[ScheduleDayId, ScheduleDay]))
       new ScheduleDayRepository:
+        // Mirrors excl_schedule_days_shift_overlap: only overlapping non-cancelled
+        // shifts of the same driver conflict (half-open intervals).
         def create(scheduleDay: ScheduleDay): Task[ScheduleDay]                                                      = store.get.flatMap { current =>
-          if current.values.exists(d => d.driverId == scheduleDay.driverId && d.date == scheduleDay.date)
-          then ZIO.fail(ScheduleError.DuplicateScheduleDay(scheduleDay.driverId, scheduleDay.date))
+          if scheduleDay.status != ScheduleDayStatus.Cancelled && current.values.exists(d =>
+                d.driverId == scheduleDay.driverId && d.date == scheduleDay.date &&
+                  d.status != ScheduleDayStatus.Cancelled &&
+                  scheduleDay.startTime.isBefore(d.endTime) && d.startTime.isBefore(scheduleDay.endTime)
+              )
+          then ZIO.fail(ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date))
           else store.update(_.updated(scheduleDay.id, scheduleDay)).as(scheduleDay)
         }
+        // Atomic batch insert: either all days land or none (mirrors the single-transaction
+        // Postgres impl). The in-memory Ref update is already atomic.
+        def createAll(scheduleDays: List[ScheduleDay]): Task[List[ScheduleDay]]                                      = store
+          .modify(current => (scheduleDays, current ++ scheduleDays.map(d => d.id -> d)))
         def findById(id: ScheduleDayId): Task[Option[ScheduleDay]]                                                   = store.get.map(_.get(id))
         def findByDriverId(driverId: PersonId): Task[List[ScheduleDay]]                                              = store.get
           .map(_.values.filter(_.driverId == driverId).toList.sortBy(_.date))

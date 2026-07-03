@@ -1,3 +1,5 @@
+import '../../core/json_parse.dart';
+
 class PartnerCompany {
   final String id;
   final String name;
@@ -27,8 +29,8 @@ class PartnerCompany {
       phone: json['phone']?.toString(),
       address: json['address']?.toString(),
       taxiCompanyId: json['taxiCompanyId']?.toString() ?? '',
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: JsonParse.requiredDateTime(json, 'createdAt'),
+      updatedAt: JsonParse.requiredDateTime(json, 'updatedAt'),
     );
   }
 

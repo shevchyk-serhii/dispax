@@ -17,13 +17,13 @@ import zio.{Clock, ZIO}
 
 import java.nio.charset.{Charset, CodingErrorAction}
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, YearMonth, ZoneOffset}
+import java.time.{Instant, LocalDate, YearMonth, ZoneOffset}
 
 /**
- * Tapir descriptions and server logic for the DATEV export endpoints. Replaces the zio-http handlers in `ExportRoutes`,
- * keeping the exact paths, status codes, role checks, company isolation and content types. The CSV/ text endpoints
- * respond with `text/csv` plain bodies; the full export responds with the JSON envelope. The pure DATEV CSV generation
- * is copied here so the same byte-for-byte output is produced.
+ * Tapir descriptions and server logic for the DATEV export endpoints (paths, status codes, role checks, company
+ * isolation and content types). The CSV/text endpoints respond with `text/csv` plain bodies; the full export responds
+ * with the JSON envelope. All DATEV CSV generation lives here (the legacy zio-http `ExportRoutes` handler was removed
+ * as dead code).
  */
 object ExportApi:
 
@@ -33,7 +33,7 @@ object ExportApi:
 
   private def internalError: Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
 
-  // --- DATEV helpers (copied verbatim from ExportRoutes) ---
+  // --- DATEV helpers ---
 
   /**
    * Sanitise a free-text value before it is placed into a `;`-delimited DATEV CSV field. Prevents:
@@ -97,8 +97,22 @@ object ExportApi:
     }
     (expenseCsvHeader +: rows).mkString("\n")
 
-  private def generateSummaryCsv(completedRides: List[Ride], expenses: List[Expense]): String =
-    val totalRevenue = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
+  /**
+   * Gross revenue of the given rides, summed in BigDecimal (never Double) so accounting totals keep exact decimal
+   * precision. Convert to Double only at the formatting/JSON boundary.
+   */
+  private[openapi] def totalGross(rides: List[Ride]): BigDecimal =
+    rides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).sum
+
+  /**
+   * Total expense amount, summed in BigDecimal (see [[totalGross]]).
+   */
+  private[openapi] def totalExpenseAmount(expenses: List[Expense]): BigDecimal = expenses.map(_.amount).sum
+
+  private[openapi] def generateSummaryCsv(completedRides: List[Ride], expenses: List[Expense]): String =
+    // Monetary aggregation stays in BigDecimal; %.2f on BigDecimal rounds HALF_UP over the exact
+    // decimal value (a Double sum would round over an inexact binary value).
+    val totalRevenue = totalGross(completedRides)
     val byCategory   = expenses.groupBy(_.category)
 
     val header = "Bezeichnung;Betrag;Waehrung"
@@ -111,10 +125,10 @@ object ExportApi:
         ExpenseCategory.Maintenance -> "Wartung",
         ExpenseCategory.Other       -> "Sonstiges"
       ).map { case (cat, label) =>
-        val amount = byCategory.getOrElse(cat, Nil).map(_.amount.doubleValue).sum
+        val amount = totalExpenseAmount(byCategory.getOrElse(cat, Nil))
         f"$label;$amount%.2f;EUR"
       } ++ {
-        val totalExp = expenses.map(_.amount.doubleValue).sum
+        val totalExp = totalExpenseAmount(expenses)
         val net      = totalRevenue - totalExp
         List(f"Ergebnis;$net%.2f;EUR")
       }
@@ -201,8 +215,16 @@ object ExportApi:
   private val yyyyMMddHHmmssSSSFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")
 
   /**
-   * Assemble the complete EXTF Buchungsstapel byte array. Encoding: Windows-1252 with REPLACE for unmappable
-   * characters. Line separator: CRLF.
+   * A value in the export that cannot be represented in Windows-1252 (the encoding DATEV requires). Carrying the
+   * offending value lets the endpoint name it in the error instead of silently corrupting the export.
+   */
+  final private[openapi] case class ExtfUnencodable(value: String)
+
+  /**
+   * Assemble the complete EXTF Buchungsstapel byte array. Encoding: Windows-1252 with REPORT for unmappable characters
+   * — a client name or expense description outside Windows-1252 (e.g. Cyrillic, emoji) FAILS the export with the
+   * offending value instead of being silently replaced with `?` (which would ship a corrupted name to DATEV). Line
+   * separator: CRLF.
    */
   private[openapi] def buildExtf(
       rides: List[Ride],
@@ -213,10 +235,12 @@ object ExportApi:
       mandantennummer: String,
       sachkontenlaenge: Int,
       now: Instant
-  ): Array[Byte] =
+  ): Either[ExtfUnencodable, Array[Byte]] =
     val zonedNow    = now.atZone(ZoneOffset.UTC)
     val timestamp   = yyyyMMddHHmmssSSSFmt.format(zonedNow)
-    val wjBeginn    = yyyyMMddFmt.format(month.atDay(1).withDayOfYear(1))
+    // Wirtschaftsjahr start: the calendar year is the fiscal year, so this is explicitly January 1
+    // of the export month's year. (A non-calendar fiscal year is not supported.)
+    val wjBeginn    = yyyyMMddFmt.format(LocalDate.of(month.getYear, 1, 1))
     val datumVon    = yyyyMMddFmt.format(month.atDay(1))
     val datumBis    = yyyyMMddFmt.format(month.atEndOfMonth())
     val bezeichnung = s"Buchungsstapel ${month.getMonthValue.toString.padTo(2, ' ').reverse.mkString}/${month.getYear}"
@@ -236,15 +260,24 @@ object ExportApi:
     val allRows     = List(header, datevCsvColumnHeader) ::: revenueRows ::: expenseRows
     val content     = allRows.mkString("\r\n")
 
-    val encoder = win1252
-      .newEncoder()
-      .onMalformedInput(CodingErrorAction.REPLACE)
-      .onUnmappableCharacter(CodingErrorAction.REPLACE)
-    val charBuf = java.nio.CharBuffer.wrap(content)
-    val byteBuf = encoder.encode(charBuf)
-    val result  = new Array[Byte](byteBuf.remaining())
-    byteBuf.get(result)
-    result
+    // CharsetEncoder is stateful — use a fresh instance per check/encode.
+    if win1252.newEncoder().canEncode(content) then
+      val encoder = win1252
+        .newEncoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT)
+      val charBuf = java.nio.CharBuffer.wrap(content)
+      val byteBuf = encoder.encode(charBuf) // cannot throw: canEncode verified above
+      val result  = new Array[Byte](byteBuf.remaining())
+      byteBuf.get(result)
+      Right(result)
+    else
+      // Name the offending INPUT value (client name / expense description) when we can find it,
+      // falling back to the unencodable characters themselves.
+      val offending = (clientNames.values.toList ++ expenses.flatMap(_.description))
+        .find(v => !win1252.newEncoder().canEncode(v))
+        .getOrElse(content.filter(c => !win1252.newEncoder().canEncode(c.toString)).distinct.take(20))
+      Left(ExtfUnencodable(offending))
 
   /**
    * Sanitise a string for safe use as a filename in a Content-Disposition header. Strips characters that are dangerous
@@ -328,17 +361,22 @@ object ExportApi:
       revenueCsv                                 = generateRevenueCsv(completedRides, clientMap)
       expensesCsv                                = generateExpensesCsv(monthExpenses)
       summaryCsv                                 = generateSummaryCsv(completedRides, monthExpenses)
-      totalRevenue                               = completedRides.flatMap(r => r.finalPrice.orElse(r.estimatedPrice)).map(_.doubleValue).sum
-      totalExpenses                              = monthExpenses.map(_.amount.doubleValue).sum
+      // Sum in BigDecimal; convert to Double only for the JSON response fields.
+      totalRevenue                               = totalGross(completedRides)
+      totalExpenses                              = totalExpenseAmount(monthExpenses)
     } yield DatevExportResponse(
       month = month.toString,
-      revenue = DatevCsvSection(csv = revenueCsv, totalRows = completedRides.size, totalAmount = totalRevenue),
-      expenses = DatevCsvSection(csv = expensesCsv, totalRows = monthExpenses.size, totalAmount = totalExpenses),
+      revenue = DatevCsvSection(csv = revenueCsv, totalRows = completedRides.size, totalAmount = totalRevenue.toDouble),
+      expenses = DatevCsvSection(
+        csv = expensesCsv,
+        totalRows = monthExpenses.size,
+        totalAmount = totalExpenses.toDouble
+      ),
       summary = DatevSummarySection(
         csv = summaryCsv,
-        totalRevenue = totalRevenue,
-        totalExpenses = totalExpenses,
-        netIncome = totalRevenue - totalExpenses
+        totalRevenue = totalRevenue.toDouble,
+        totalExpenses = totalExpenses.toDouble,
+        netIncome = (totalRevenue - totalExpenses).toDouble
       )
     )
   }
@@ -383,16 +421,28 @@ object ExportApi:
       mandantennummer                            = settings.datevMandantennummer.getOrElse("")
       sachkontenlaenge                           = settings.datevSachkontenlaenge.getOrElse(4)
       now                                       <- Clock.instant
-      bytes                                      = buildExtf(
-                                                     completedRides,
-                                                     monthExpenses,
-                                                     clientMap,
-                                                     month,
-                                                     beraternummer,
-                                                     mandantennummer,
-                                                     sachkontenlaenge,
-                                                     now
-                                                   )
+      bytes                                     <- ZIO
+                                                     .fromEither(
+                                                       buildExtf(
+                                                         completedRides,
+                                                         monthExpenses,
+                                                         clientMap,
+                                                         month,
+                                                         beraternummer,
+                                                         mandantennummer,
+                                                         sachkontenlaenge,
+                                                         now
+                                                       )
+                                                     )
+                                                     .mapError(e =>
+                                                       (
+                                                         StatusCode.UnprocessableEntity,
+                                                         ApiError(
+                                                           s"DATEV EXTF export failed: value '${e.value}' contains characters " +
+                                                             "that cannot be represented in Windows-1252 (required by DATEV)"
+                                                         )
+                                                       )
+                                                     )
       rawFilename                                = s"EXTF_Buchungsstapel_${companyId.value}_${month}"
       filename                                   = sanitizeFilename(rawFilename) + ".csv"
       disposition                                = s"""attachment; filename="$filename""""

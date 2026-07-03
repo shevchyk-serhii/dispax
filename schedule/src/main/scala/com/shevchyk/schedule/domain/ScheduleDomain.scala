@@ -83,7 +83,6 @@ enum ScheduleError extends Throwable:
   case ScheduleDayNotFound(id: ScheduleDayId)
   case UnavailabilityNotFound(id: DriverUnavailabilityId)
   case DriverNotFound(id: PersonId)
-  case DuplicateScheduleDay(driverId: PersonId, date: LocalDate)
   case OverlapConflict(driverId: PersonId, date: LocalDate)
   case InvalidStatusTransition(from: ScheduleDayStatus, to: ScheduleDayStatus)
   case CompanyMismatch(expected: CompanyId, actual: CompanyId)
@@ -95,16 +94,14 @@ object ScheduleError:
   // HTTP status mapping lives next to the error definition; the Tapir endpoints
   // delegate to this via `ErrorMapper.fromThrowable` instead of repeating the match.
   given ErrorMapper[ScheduleError] = ErrorMapper.instance {
-    case ValidationError(message)             => (StatusCode.BadRequest, ApiError(message))
-    case ScheduleDayNotFound(id)              => (StatusCode.NotFound, ApiError(s"Schedule day not found: ${id.value}"))
-    case UnavailabilityNotFound(id)           => (StatusCode.NotFound, ApiError(s"Unavailability not found: ${id.value}"))
-    case DriverNotFound(id)                   => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
-    case DuplicateScheduleDay(driverId, date) =>
-      (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has a schedule for $date"))
-    case OverlapConflict(driverId, date)      =>
+    case ValidationError(message)          => (StatusCode.BadRequest, ApiError(message))
+    case ScheduleDayNotFound(id)           => (StatusCode.NotFound, ApiError(s"Schedule day not found: ${id.value}"))
+    case UnavailabilityNotFound(id)        => (StatusCode.NotFound, ApiError(s"Unavailability not found: ${id.value}"))
+    case DriverNotFound(id)                => (StatusCode.NotFound, ApiError(s"Driver not found: ${id.value}"))
+    case OverlapConflict(driverId, date)   =>
       (StatusCode.Conflict, ApiError(s"Driver ${driverId.value} already has an overlapping shift on $date"))
-    case InvalidStatusTransition(from, to)    => (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
-    case CompanyMismatch(_, _)                => (StatusCode.Forbidden, ApiError("Schedule day belongs to a different company"))
-    case AccessDenied(message)                => (StatusCode.Forbidden, ApiError(message))
-    case DatabaseError(_)                     => (StatusCode.InternalServerError, ApiError("Internal server error"))
+    case InvalidStatusTransition(from, to) => (StatusCode.Conflict, ApiError(s"Cannot transition from $from to $to"))
+    case CompanyMismatch(_, _)             => (StatusCode.Forbidden, ApiError("Schedule day belongs to a different company"))
+    case AccessDenied(message)             => (StatusCode.Forbidden, ApiError(message))
+    case DatabaseError(_)                  => (StatusCode.InternalServerError, ApiError("Internal server error"))
   }

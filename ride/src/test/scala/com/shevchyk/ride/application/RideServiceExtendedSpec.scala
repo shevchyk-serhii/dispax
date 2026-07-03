@@ -16,7 +16,13 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, RideRepository}
+import com.shevchyk.ride.repository.{
+  ExpenseRepository,
+  InMemoryRideRepository,
+  InMemoryRideShareTokenRepository,
+  RideRepository,
+  RideShareTokenRepository
+}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.test.*
@@ -180,7 +186,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++
+      InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   // ── Helpers ───────────────────────────────────────────────────────────
   private def mkRide(clientId: PersonId = testClientId, companyId: CompanyId = testCompanyId) = CreateRideRequest(
@@ -360,6 +367,25 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       // 2. reassignDriver
       // ────────────────────────────────────────────────────────────────────
       suite("reassignDriver")(
+        test("publishes RideAssigned carrying the displaced driver as previousDriverId") {
+          // Regression: reassignDriver used to publish RideAssigned without the old driver,
+          // so the displaced driver never received a "ride taken away" notification.
+          ZIO.scoped {
+            for {
+              service  <- ZIO.service[RideService]
+              hub      <- ZIO.service[EventHub]
+              assigned <- createAssignedRide(service)
+              queue    <- hub.subscribe
+              _        <- service.reassignDriver(assigned.id, testDriver2Id)
+              events   <- queue.takeAll
+              published = events.collect { case e: WebSocketEvent.RideAssigned => e }
+            } yield assertTrue(
+              published.exists(e =>
+                e.driverId == testDriver2Id.value && e.previousDriverId.contains(testDriverId.value)
+              )
+            )
+          }
+        }.provide(standardLayers),
         test("happy path: reassign from one driver to another") {
           for {
             service    <- ZIO.service[RideService]
@@ -407,6 +433,61 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             _          <- repo.update(assigned.copy(scheduledTime = Some(java.time.Instant.now().plusSeconds(3600))))
             reassigned <- service.reassignDriver(assigned.id, testDriver2Id)
           } yield assertTrue(reassigned.driverId.contains(testDriver2Id))
+        }.provide(standardLayers),
+        // ── ordinary (non-airport) rides: scheduledTime is None, the pickup lives in
+        // pickupDateTime — the past-ride guard must fall back to it (regression: the guard
+        // only looked at scheduledTime, so it was inert for every ordinary ride).
+        test("fails when an ordinary ride's pickupDateTime is already in the past (no scheduledTime)") {
+          for {
+            service  <- ZIO.service[RideService]
+            repo     <- ZIO.service[RideRepository]
+            assigned <- createAssignedRide(service)
+            _        <- repo.update(
+                          assigned.copy(
+                            scheduledTime = None,
+                            pickupDateTime = java.time.Instant.now().minusSeconds(3600)
+                          )
+                        )
+            result   <- service.reassignDriver(assigned.id, testDriver2Id).exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) =>
+              cause.failureOption.exists {
+                case RideError.BusinessRuleViolation("past_ride", _) => true
+                case _                                               => false
+              }
+            case _                   => false
+          })
+        }.provide(standardLayers),
+        test("reassigns an ordinary ride whose pickupDateTime is still in the future (no scheduledTime)") {
+          for {
+            service    <- ZIO.service[RideService]
+            repo       <- ZIO.service[RideRepository]
+            assigned   <- createAssignedRide(service)
+            _          <- repo.update(
+                            assigned.copy(
+                              scheduledTime = None,
+                              pickupDateTime = java.time.Instant.now().plusSeconds(3600)
+                            )
+                          )
+            reassigned <- service.reassignDriver(assigned.id, testDriver2Id)
+          } yield assertTrue(reassigned.driverId.contains(testDriver2Id))
+        }.provide(standardLayers),
+        test("allowPastRide bypasses the past-ride guard for an ordinary ride (emergency flow)") {
+          for {
+            service    <- ZIO.service[RideService]
+            repo       <- ZIO.service[RideRepository]
+            assigned   <- createAssignedRide(service)
+            _          <- repo.update(
+                            assigned.copy(
+                              scheduledTime = None,
+                              pickupDateTime = java.time.Instant.now().minusSeconds(3600)
+                            )
+                          )
+            reassigned <- service.reassignDriver(assigned.id, testDriver2Id, allowPastRide = true)
+          } yield assertTrue(
+            reassigned.driverId.contains(testDriver2Id) &&
+              reassigned.status == RideStatus.Assigned
+          )
         }.provide(standardLayers),
         test("fails when ride not in assignable state (Completed)") {
           for {
@@ -512,6 +593,62 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
       // 4. updateRideDetails
       // ────────────────────────────────────────────────────────────────────
       suite("updateRideDetails")(
+        // ── guest /track link revocation on client reassignment (regression) ──
+        // The previous client's share token used to survive a client change: for up to 24h
+        // they kept a live view of the driver's position and route on a ride that is no
+        // longer theirs. Reassigning the client must revoke the ride's share tokens.
+        test("reassigning the ride to another client revokes the previous client's track tokens") {
+          for {
+            service   <- ZIO.service[RideService]
+            tokenRepo <- ZIO.service[RideShareTokenRepository]
+            ride      <- service.createRide(mkRide())
+            now        = java.time.Instant.now()
+            _         <- tokenRepo.create(
+                           RideShareToken(
+                             id = RideShareTokenId.generate(),
+                             token = "old-client-track-token",
+                             rideId = ride.id,
+                             companyId = testCompanyId,
+                             createdAt = now,
+                             expiresAt = now.plusSeconds(24L * 3600)
+                           )
+                         )
+            _         <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+            leftover  <- tokenRepo.findActiveByRideId(ride.id)
+          } yield assertTrue(leftover.isEmpty)
+        }.provide(standardLayers),
+        test("an update that does NOT change the client keeps the track token alive") {
+          for {
+            service   <- ZIO.service[RideService]
+            tokenRepo <- ZIO.service[RideShareTokenRepository]
+            ride      <- service.createRide(mkRide())
+            now        = java.time.Instant.now()
+            _         <- tokenRepo.create(
+                           RideShareToken(
+                             id = RideShareTokenId.generate(),
+                             token = "same-client-track-token",
+                             rideId = ride.id,
+                             companyId = testCompanyId,
+                             createdAt = now,
+                             expiresAt = now.plusSeconds(24L * 3600)
+                           )
+                         )
+            _         <- service.updateRideDetails(
+                           ride.id,
+                           UpdateRideDetailsRequest(notes = Some("no client change")),
+                           dispatcherId,
+                           PersonRole.Dispatcher,
+                           Some(testCompanyId)
+                         )
+            leftover  <- tokenRepo.findActiveByRideId(ride.id)
+          } yield assertTrue(leftover.nonEmpty)
+        }.provide(standardLayers),
         test("update notes and specialRequirements") {
           for {
             service <- ZIO.service[RideService]
@@ -1016,7 +1153,8 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopScheduleDayLookup ++
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
-            SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+            SentConfirmationRequestRepository.inMemory ++
+            InMemoryRideShareTokenRepository.layer) >+> RideService.layer
         ),
         test("assignment succeeds when driver is not blacklisted") {
           for {
@@ -1068,8 +1206,67 @@ object RideServiceExtendedSpec extends ZIOSpecDefault {
             noopScheduleDayLookup ++
             InMemoryExternalDriverRepository.layer ++
             InMemoryPartnerCompanyRepository.layer ++
-            SentConfirmationRequestRepository.inMemory) >+> RideService.layer
-        )
+            SentConfirmationRequestRepository.inMemory ++
+            InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+        ),
+        // ── updateRideDetails client change: moving a ride onto a client who blacklisted the
+        // ride's current driver must fail, the same rule assignDriver/reassignDriver enforce
+        // (regression: the newClientId branch never consulted the blacklist).
+        test("changing the ride's client fails when the new client blacklisted the assigned driver") {
+          for {
+            blacklistRepo <- ZIO.service[BlacklistRepository]
+            // vipClientId has blacklisted testDriverId — the driver currently on the ride
+            _             <- blacklistRepo.create(
+                               BlacklistEntry(
+                                 id = BlacklistEntryId.generate(),
+                                 companyId = testCompanyId,
+                                 clientId = vipClientId,
+                                 driverId = testDriverId,
+                                 reason = Some("bad experience"),
+                                 createdBy = dispatcherId
+                               )
+                             )
+            service       <- ZIO.service[RideService]
+            assigned      <- createAssignedRide(service) // client = testClientId, driver = testDriverId
+            result        <-
+              service
+                .updateRideDetails(
+                  assigned.id,
+                  UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                  dispatcherId,
+                  PersonRole.Dispatcher,
+                  Some(testCompanyId)
+                )
+                .exit
+            retrieved     <- service.getRideById(assigned.id)
+          } yield assertTrue(
+            (result match {
+              case Exit.Failure(cause) =>
+                cause.failureOption.exists {
+                  case RideError.BusinessRuleViolation("blacklist", _) => true
+                  case _                                               => false
+                }
+              case _                   => false
+            }) &&
+              retrieved.clientId == testClientId // ride left unchanged
+          )
+        }.provide(standardLayers),
+        test("changing the ride's client succeeds when the new client did not blacklist the assigned driver") {
+          for {
+            service  <- ZIO.service[RideService]
+            assigned <- createAssignedRide(service) // client = testClientId, driver = testDriverId
+            updated  <- service.updateRideDetails(
+                          assigned.id,
+                          UpdateRideDetailsRequest(clientId = Some(vipClientId)),
+                          dispatcherId,
+                          PersonRole.Dispatcher,
+                          Some(testCompanyId)
+                        )
+          } yield assertTrue(
+            updated.clientId == vipClientId &&
+              updated.driverId.contains(testDriverId)
+          )
+        }.provide(standardLayers)
       ),
 
       // ────────────────────────────────────────────────────────────────────

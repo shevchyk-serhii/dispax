@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'password_policy.dart';
+
 /// Generates a temporary password that satisfies the backend policy
 /// (AuthService.validatePassword): at least 8 characters with an uppercase
 /// letter, a lowercase letter, and a digit. Ambiguous characters (0/O,
@@ -23,9 +25,5 @@ String generateTempPassword({int length = 10, Random? random}) {
 
 /// Mirrors the backend password policy so the form can reject a manually
 /// edited temporary password before the request is sent.
-bool isValidTempPassword(String password) {
-  return password.length >= 8 &&
-      password.contains(RegExp(r'[A-Z]')) &&
-      password.contains(RegExp(r'[a-z]')) &&
-      password.contains(RegExp(r'[0-9]'));
-}
+bool isValidTempPassword(String password) =>
+    isPolicyCompliantPassword(password);

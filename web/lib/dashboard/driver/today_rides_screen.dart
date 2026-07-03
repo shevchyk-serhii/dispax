@@ -21,6 +21,7 @@ import '../../modules/core/navigation_utils.dart';
 import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
 import '../../screens/ride_map_screen.dart';
+import '../../screens/chat_screen.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -40,13 +41,22 @@ List<Ride> ridesDrivenBy(List<Ride> rides, String driverId) =>
 
 /// Returns a non-null, user-facing message for an error [RideState].
 ///
-/// An error state can reach the UI with a null [RideState.errorMessage] (e.g.
-/// after [RideState.copyWith] scoping), so the error widgets must never `!` it.
-/// Falls back to the localized "Failed to load rides", then to a plain English
-/// literal when no [AppLocalizations] is available.
-String rideErrorMessageOrFallback(String? errorMessage, BuildContext context) =>
-    errorMessage ??
-    (AppLocalizations.of(context)?.failedToLoadRides ?? 'Failed to load rides');
+/// Routes through [friendlyError] (the canonical error-UX pattern, see the
+/// Today tab's own error view): a typed [RideState.error] cause maps to the
+/// localized message, and a raw technical [RideState.errorMessage] collapses
+/// to the generic text instead of leaking 'ApiException: ...' to the UI.
+///
+/// An error state can reach the UI with a null message AND cause (e.g. after
+/// [RideState.copyWith] scoping), so the error widgets must never `!` it —
+/// that case falls back to the localized "Failed to load rides", then to a
+/// plain English literal when no [AppLocalizations] is available.
+String rideErrorMessageOrFallback(RideState rideState, BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  if (l10n == null) return 'Failed to load rides';
+  final cause = rideState.error ?? rideState.errorMessage;
+  if (cause == null) return l10n.failedToLoadRides;
+  return friendlyError(cause, l10n);
+}
 
 /// Rides whose pickup falls on the calendar day of [now] — the driver's "Today"
 /// tab. Completed/cancelled rides are dropped. The window is `[todayStart,
@@ -556,6 +566,7 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
                     onCallClient: () => _handleCallClient(context, ride),
                     onConfirmRide: () => _handleConfirmRide(context, ride),
                     onRejectRide: () => _handleRejectRide(context, ride),
+                    onEditRide: () => _handleEditRide(context, ride),
                     onRefreshFlight: () => _refreshFlightStatus(context, ride),
                     isRefreshingFlight: _refreshingFlightIds.contains(ride.id),
                   ),
@@ -708,6 +719,16 @@ class _TodayRidesScreenState extends State<TodayRidesScreen>
       bloc.add(RideRejectRequested(rideId: ride.id, reason: reason));
       NavigationHelper.showSnackBar(context, l10n.rideRejected);
     });
+  }
+
+  Future<void> _handleEditRide(BuildContext context, Ride ride) async {
+    final updated = await NavigationUtils.navigateToEditRide(context, ride);
+    // On a successful edit the list is refreshed so the card reflects the new
+    // details immediately (the backend also emits a WebSocket update, but the
+    // explicit refresh avoids depending on event delivery timing).
+    if (updated != null && context.mounted) {
+      refreshRides(context);
+    }
   }
 
   List<Ride> getTodayRides(List<Ride> rides) =>
@@ -1003,6 +1024,7 @@ class DriverRideCard extends StatelessWidget {
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
   final VoidCallback? onRefreshFlight;
+  final VoidCallback? onEditRide;
   final bool isRefreshingFlight;
 
   const DriverRideCard({
@@ -1016,8 +1038,23 @@ class DriverRideCard extends StatelessWidget {
     this.onConfirmRide,
     this.onRejectRide,
     this.onRefreshFlight,
+    this.onEditRide,
     this.isRefreshingFlight = false,
   });
+
+  /// A driver may edit a ride only when they created it and it is still in an
+  /// editable state (Requested/Assigned). Mirrors the details-screen gate
+  /// (`ride_details_screen._canEditRide`) minus the dispatcher branch — the
+  /// driver dashboard never runs as a dispatcher. The client-reassignment part
+  /// of the edit dialog stays dispatcher-only regardless.
+  static bool _canDriverEdit(BuildContext context, Ride ride) {
+    final editableStatus =
+        ride.status == RideStatus.requested ||
+        ride.status == RideStatus.assigned;
+    if (!editableStatus) return false;
+    final userId = context.read<AuthBloc>().state.user?.id;
+    return userId != null && ride.creatorId == userId;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1167,6 +1204,21 @@ class DriverRideCard extends StatelessWidget {
                 ).push(RideMapScreen.route(context, ride: ride)),
                 onShareRide: () => NavigationUtils.shareRide(context, ride),
                 onDuplicate: () => NavigationUtils.duplicateRide(context, ride),
+                // Explicit "Details" affordance (the whole card also taps to it).
+                onViewDetails: () =>
+                    NavigationUtils.navigateToRideDetails(context, ride),
+                // Chat is only opened by the row for assigned/inProgress rides
+                // (same gate as the details screen); ChatScreen needs only the
+                // AuthBloc that is already above the driver dashboard.
+                onChat: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ChatScreen(ride: ride),
+                  ),
+                ),
+                // Edit is offered only to the driver who created the ride, and
+                // only while it is still editable (Requested/Assigned). The
+                // client-picker inside the edit dialog stays dispatcher-only.
+                onEditRide: _canDriverEdit(context, ride) ? onEditRide : null,
                 onCallClient: onCallClient,
                 onConfirmRide: onConfirmRide,
                 onRejectRide: onRejectRide,
@@ -2115,6 +2167,9 @@ class DriverRideActionsRow extends StatelessWidget {
   final VoidCallback? onViewMap;
   final VoidCallback? onShareRide;
   final VoidCallback? onDuplicate;
+  final VoidCallback? onViewDetails;
+  final VoidCallback? onChat;
+  final VoidCallback? onEditRide;
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
@@ -2129,6 +2184,9 @@ class DriverRideActionsRow extends StatelessWidget {
     this.onViewMap,
     this.onShareRide,
     this.onDuplicate,
+    this.onViewDetails,
+    this.onChat,
+    this.onEditRide,
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
@@ -2136,19 +2194,54 @@ class DriverRideActionsRow extends StatelessWidget {
     this.onCompleteRide,
   });
 
+  /// Chat is only meaningful once a driver is on the ride — same gate as the
+  /// details screen (`ride_details_screen.dart`): Assigned or InProgress.
+  bool get _chatAvailable =>
+      onChat != null &&
+      (ride.status == RideStatus.assigned ||
+          ride.status == RideStatus.inProgress);
+
+  /// A fixed 40x40 outlined icon button used for every secondary action so the
+  /// wrap row stays visually uniform and never overflows (extra icons flow onto
+  /// a second line instead of being clipped).
+  Widget _iconAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+    Color? color,
+  }) {
+    final resolved =
+        color ??
+        (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary);
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: AppColors.borderSecondary, width: 1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
+            ),
+            padding: EdgeInsets.zero,
+          ),
+          child: Icon(icon, size: 18, color: resolved),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final iconColor = isDark
-        ? AppColors.textSecondaryDark
-        : AppColors.textSecondary;
 
-    // Row 1: Navigate (flexible) + icon-only Call / Share, plus the single
-    // text action for confirmed/inProgress rides. The two-action `assigned`
-    // case gets its own full-width second row below so the German labels
-    // ("Bestätigen", "Ablehnen") never have to share width with Navigate and
-    // therefore never truncate.
-    final firstRow = Row(
+    // Primary row: Navigate (flexible) plus the single status-specific text
+    // action for confirmed/inProgress rides. The two-action `assigned` case
+    // gets its own full-width row below so the German labels ("Bestätigen",
+    // "Ablehnen") never have to share width with Navigate and truncate.
+    final primaryRow = Row(
       children: [
         Expanded(
           child: SizedBox(
@@ -2181,116 +2274,6 @@ class DriverRideActionsRow extends StatelessWidget {
             ),
           ),
         ),
-        if (onViewMap != null) ...[
-          const SizedBox(width: 8),
-          Tooltip(
-            message: l10n.viewRideOnMap,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: OutlinedButton(
-                onPressed: onViewMap,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: AppColors.borderSecondary,
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
-                child: Icon(
-                  Icons.location_on_outlined,
-                  size: 18,
-                  color: iconColor,
-                ),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(width: 8),
-        Tooltip(
-          message: l10n.callClient,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: OutlinedButton(
-              onPressed: onCallClient,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: AppColors.borderSecondary,
-                  width: 1,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.radiusButton,
-                  ),
-                ),
-                padding: EdgeInsets.zero,
-              ),
-              child: Icon(Icons.phone_outlined, size: 18, color: iconColor),
-            ),
-          ),
-        ),
-        if (onShareRide != null) ...[
-          const SizedBox(width: 8),
-          Tooltip(
-            message: l10n.shareRideLink,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: OutlinedButton(
-                onPressed: onShareRide,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: AppColors.borderSecondary,
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
-                child: Icon(
-                  Icons.ios_share_rounded,
-                  size: 18,
-                  color: iconColor,
-                ),
-              ),
-            ),
-          ),
-        ],
-        if (onDuplicate != null) ...[
-          const SizedBox(width: 8),
-          Tooltip(
-            message: l10n.duplicateRideAction,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: OutlinedButton(
-                onPressed: onDuplicate,
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(
-                    color: AppColors.borderSecondary,
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusButton,
-                    ),
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
-                child: Icon(Icons.copy_outlined, size: 18, color: iconColor),
-              ),
-            ),
-          ),
-        ],
         if (ride.status == RideStatus.confirmed && onStartRide != null) ...[
           const SizedBox(width: 8),
           Expanded(
@@ -2362,11 +2345,67 @@ class DriverRideActionsRow extends StatelessWidget {
       ],
     );
 
+    // Secondary actions live in a Wrap so any number of icons flows onto a new
+    // line rather than overflowing the card on a narrow phone. Order mirrors
+    // the dispatcher card's secondary set: map, call, chat, share, duplicate,
+    // details, edit. Each is shown only when its callback is provided (and, for
+    // chat, only for an active ride; edit only when the driver may edit).
+    final iconActions = <Widget>[
+      if (onViewMap != null)
+        _iconAction(
+          icon: Icons.location_on_outlined,
+          tooltip: l10n.viewRideOnMap,
+          onPressed: onViewMap,
+        ),
+      _iconAction(
+        icon: Icons.phone_outlined,
+        tooltip: l10n.callClient,
+        onPressed: onCallClient,
+      ),
+      if (_chatAvailable)
+        _iconAction(
+          icon: Icons.chat_bubble_outline_rounded,
+          tooltip: l10n.openChatButton,
+          onPressed: onChat,
+        ),
+      if (onShareRide != null)
+        _iconAction(
+          icon: Icons.ios_share_rounded,
+          tooltip: l10n.shareRideLink,
+          onPressed: onShareRide,
+        ),
+      if (onDuplicate != null)
+        _iconAction(
+          icon: Icons.copy_outlined,
+          tooltip: l10n.duplicateRideAction,
+          onPressed: onDuplicate,
+        ),
+      if (onViewDetails != null)
+        _iconAction(
+          icon: Icons.info_outline_rounded,
+          tooltip: l10n.viewDetailsMenu,
+          onPressed: onViewDetails,
+        ),
+      if (onEditRide != null)
+        _iconAction(
+          icon: Icons.edit_outlined,
+          tooltip: l10n.editRideDialogTitle,
+          onPressed: onEditRide,
+        ),
+    ];
+
+    final iconWrap = Wrap(spacing: 8, runSpacing: 8, children: iconActions);
+
+    // Non-assigned rides: primary row + icon wrap.
     if (ride.status != RideStatus.assigned) {
-      return firstRow;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [primaryRow, const SizedBox(height: 8), iconWrap],
+      );
     }
 
-    // Row 2 (assigned only): Confirm + Reject across the full card width.
+    // Row (assigned only): Confirm + Reject across the full card width.
     final confirmReject = Row(
       children: [
         Expanded(
@@ -2438,7 +2477,14 @@ class DriverRideActionsRow extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [firstRow, const SizedBox(height: 8), confirmReject],
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        primaryRow,
+        const SizedBox(height: 8),
+        iconWrap,
+        const SizedBox(height: 8),
+        confirmReject,
+      ],
     );
   }
 }

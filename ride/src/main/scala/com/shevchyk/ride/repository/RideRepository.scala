@@ -122,6 +122,10 @@ trait RideRepository {
   // narrow (like updateCheckpoint) so it never touches the rest of the row. `flightTime` is the latest known
   // (estimated) instant; `scheduledTime` is the on-time instant — their difference is the delay. Returns true
   // if a row was updated.
+  //
+  // MERGE semantics: gate, terminal, scheduledTime and departureTime are only overwritten when the new value is
+  // Some — None there means "the scrape could not read the value this tick" and must not erase stored data.
+  // flightStatus and flightTime are the scrape's authoritative payload and are written unconditionally.
   def updateFlightStatus(
       rideId: RideId,
       gate: Option[String],

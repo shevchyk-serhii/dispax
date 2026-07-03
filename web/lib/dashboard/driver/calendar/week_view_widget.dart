@@ -6,6 +6,7 @@ import '../../../modules/ride_management/models/ride.dart';
 import '../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_colors.dart';
+import 'shift_window.dart';
 import 'widgets/ride_badges.dart';
 
 class WeekViewWidget extends StatelessWidget {
@@ -287,22 +288,19 @@ class WeekViewWidget extends StatelessWidget {
     );
   }
 
-  /// The grid shows 06:00–23:00 (17 rows of 40 px). Converts an "HH:mm[:ss]"
-  /// shift time to a vertical offset, clamped into the visible range.
-  static double _timeToOffset(String raw) {
-    final parts = raw.split(':');
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-    final fraction = (hour - 6) + minute / 60.0;
-    return (fraction.clamp(0.0, 17.0)) * 40.0;
-  }
-
   /// Translucent availability band for one shift, rendered behind the rides.
+  /// The grid shows 06:00–23:00 (17 rows of 40 px); the shared
+  /// [visibleShiftSegment] clips the shift into that window and keeps the
+  /// evening segment of a shift crossing midnight (22:00–06:00) — which used
+  /// to vanish entirely (negative height after clamping both ends).
   Widget buildShiftBand(BuildContext context, ScheduleDay shift) {
-    final top = _timeToOffset(shift.startTime);
-    final bottom = _timeToOffset(shift.endTime);
-    final height = bottom - top;
-    if (height <= 0) return const SizedBox.shrink();
+    final segment = visibleShiftSegment(
+      parseShiftHour(shift.startTime),
+      parseShiftHour(shift.endTime),
+    );
+    if (segment == null) return const SizedBox.shrink();
+    final top = (segment.start - 6) * 40.0;
+    final height = (segment.end - segment.start) * 40.0;
 
     return Positioned(
       key: ValueKey('shift-band-${shift.id}'),

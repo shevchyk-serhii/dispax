@@ -31,6 +31,31 @@ object RideDomainSpec extends ZIOSpecDefault {
           )
           assertTrue(ride.status == RideStatus.Requested)
         },
+        test("bookingReferenceOrId returns the reference when allocated") {
+          val ride = Ride(
+            id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+            clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+            creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+            companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+            pickupLocation = Location("Airport Terminal 1"),
+            dropoffLocation = Location("City Center"),
+            pickupDateTime = Instant.now().plusSeconds(3600),
+            bookingReference = Some("R-2026-00123")
+          )
+          assertTrue(ride.bookingReferenceOrId == "R-2026-00123")
+        },
+        test("bookingReferenceOrId falls back to the ride UUID for legacy rides") {
+          val ride = Ride(
+            id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+            clientId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+            creatorId = PersonId(UUID.fromString("00000064-0000-0000-0000-000000000100")),
+            companyId = CompanyId(UUID.fromString("00000001-0000-0000-0000-000000000001")),
+            pickupLocation = Location("Airport Terminal 1"),
+            dropoffLocation = Location("City Center"),
+            pickupDateTime = Instant.now().plusSeconds(3600)
+          )
+          assertTrue(ride.bookingReferenceOrId == "11111111-1111-1111-1111-111111111111")
+        },
         test("should validate business rules") {
           val ride = Ride(
             id = RideId(UUID.fromString("11111111-1111-1111-1111-111111111111")),

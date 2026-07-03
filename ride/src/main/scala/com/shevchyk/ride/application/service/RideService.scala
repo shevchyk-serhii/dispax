@@ -16,6 +16,7 @@ import com.shevchyk.ride.repository.{
   ExternalDriverRepository,
   PartnerCompanyRepository,
   RideRepository,
+  RideShareTokenRepository,
   TimeBucket
 }
 import com.shevchyk.core.repository.PersonRepository
@@ -170,7 +171,8 @@ class RideServiceImpl(
     scheduleDayLookup: ScheduleDayLookup,
     externalDriverRepo: ExternalDriverRepository,
     partnerCompanyRepo: PartnerCompanyRepository,
-    sentConfirmationRequestRepository: SentConfirmationRequestRepository
+    sentConfirmationRequestRepository: SentConfirmationRequestRepository,
+    rideShareTokenRepository: RideShareTokenRepository
 ) extends RideService:
 
   /**
@@ -295,6 +297,7 @@ class RideServiceImpl(
           .sendRideConfirmation(
             RideConfirmationData(
               rideId = persistedRide.id.value.toString,
+              bookingReference = persistedRide.bookingReferenceOrId,
               clientName = "Client",
               pickupAddress = persistedRide.pickupLocation.address,
               dropoffAddress = persistedRide.dropoffLocation.address,
@@ -848,6 +851,26 @@ class RideServiceImpl(
                   )
                   .when(!client.companyId.contains(ride.companyId))
                   .unit
+              // The ride may already carry a driver; the new client must not have blacklisted
+              // them — the same rule assignDriver/reassignDriver enforce. Checked before any
+              // side effect (token revocation below) so a rejected reassignment changes nothing.
+              _         <-
+                ZIO.foreachDiscard(ride.driverId) { driverId =>
+                  blacklistRepository
+                    .isBlacklisted(newClientId, driverId)
+                    .mapDatabaseError
+                    .flatMap(blocked =>
+                      failRule("blacklist", "This driver is blacklisted for the ride's client")
+                        .when(blocked)
+                        .unit
+                    )
+                }
+              // The previous client's guest /track link must die with the reassignment —
+              // otherwise they keep a live view of the driver's position and route for up
+              // to 24h on a ride that is no longer theirs. Revoked BEFORE the ride row is
+              // persisted: if the revoke fails the whole update fails (consistent state);
+              // a revoke that succeeds before a failing persist only costs a re-share.
+              _         <- rideShareTokenRepository.deleteByRideId(rideId).mapDatabaseError
             } yield Some(newClientId)
 
       newPickup  <-
@@ -1008,6 +1031,7 @@ class RideServiceImpl(
           .sendDriverAssignment(
             RideConfirmationData(
               rideId = persistedRide.id.value.toString,
+              bookingReference = persistedRide.bookingReferenceOrId,
               clientName = "Client",
               pickupAddress = persistedRide.pickupLocation.address,
               dropoffAddress = persistedRide.dropoffLocation.address,
@@ -1048,11 +1072,12 @@ class RideServiceImpl(
 
       // A ride whose pickup time has already passed must not be handed to a new driver — reassignment only makes
       // sense for rides still ahead. The emergency-reassignment flow bypasses this (allowPastRide = true): it exists
-      // precisely for a ride going wrong right now, i.e. at/after its pickup time. ASAP rides (no scheduledTime)
-      // stay reassignable.
+      // precisely for a ride going wrong right now, i.e. at/after its pickup time. The effective pickup is
+      // scheduledTime when set (airport transfers) falling back to pickupDateTime (always set) — the same
+      // fallback checkScheduleConflict uses; ordinary rides carry their pickup only in pickupDateTime.
       _    <-
         failRule("past_ride", "A ride scheduled in the past cannot be reassigned")
-          .when(!allowPastRide && ride.scheduledTime.exists(RidePolicy.isInThePast(_)))
+          .when(!allowPastRide && RidePolicy.isInThePast(ride.scheduledTime.getOrElse(ride.pickupDateTime)))
           .unit
 
       driverOpt <- personRepository.findById(newDriverId).mapDatabaseError
@@ -1108,7 +1133,11 @@ class RideServiceImpl(
               driverId = newDriverId.value,
               clientId = persistedRide.clientId.value,
               companyId = persistedRide.companyId.value,
-              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice)
+              price = persistedRide.finalPrice.orElse(persistedRide.estimatedPrice),
+              // The displaced driver (from the pre-update ride) so the notification layer can
+              // tell them the ride is no longer theirs. Omitted when "reassigning" to the same
+              // driver — there is nobody to notify then.
+              previousDriverId = ride.driverId.map(_.value).filter(_ != newDriverId.value)
             )
           )
           .ignore
@@ -1590,7 +1619,7 @@ class RideServiceImpl(
 object RideService:
 
   val layer: ZLayer[
-    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository,
+    RideRepository & PersonRepository & EventHub & EmailSmsService & AuditService & BlacklistRepository & GeocodingService & ExpenseRepository & PickupTimeService & DriverAvailabilityChecker & ScheduleDayLookup & ExternalDriverRepository & PartnerCompanyRepository & SentConfirmationRequestRepository & RideShareTokenRepository,
     Nothing,
     RideService
   ] = ZLayer.fromFunction(

@@ -4,6 +4,7 @@ import 'package:dispax/modules/schedule_management/services/schedule_service.dar
 import 'package:dispax/modules/core/services/user_service.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/auth/services/biometric_service.dart';
+import 'package:dispax/modules/core/services/push_notification_service.dart';
 import 'package:dispax/modules/core/services/websocket_service.dart';
 import 'package:dispax/blocs/auth/auth_bloc.dart';
 import 'package:dispax/blocs/ride/ride_bloc.dart';
@@ -29,3 +30,6 @@ class MockTokenStorage extends Mock implements TokenStorage {}
 class MockHttpClient extends Mock implements http.Client {}
 
 class MockWebSocketService extends Mock implements WebSocketServiceBase {}
+
+class MockPushRegistrationService extends Mock
+    implements PushRegistrationService {}

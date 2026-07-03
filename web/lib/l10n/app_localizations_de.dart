@@ -316,7 +316,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwörter stimmen nicht überein';
 
   @override
-  String get passwordTooShort => 'Passwort muss mindestens 6 Zeichen lang sein';
+  String get passwordPolicyRules =>
+      'Das Passwort muss mindestens 8 Zeichen lang sein und einen Großbuchstaben, einen Kleinbuchstaben und eine Ziffer enthalten';
 
   @override
   String get forcePasswordChangeTitle => 'Neues Passwort festlegen';
@@ -3797,6 +3798,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String shiftsCreatedSnack(int count) {
     return 'Schichten erstellt: $count';
   }
+
+  @override
+  String get shiftOverlapSnack =>
+      'Die gewählte Zeit überschneidet sich mit einer bestehenden Schicht. Mehrere Schichten pro Tag sind erlaubt — wählen Sie eine überschneidungsfreie Zeit.';
 
   @override
   String get shiftTimeOrderError => 'Beginn muss vor dem Ende liegen';

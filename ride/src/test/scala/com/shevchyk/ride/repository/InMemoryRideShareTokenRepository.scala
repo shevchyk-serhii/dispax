@@ -28,5 +28,10 @@ class InMemoryRideShareTokenRepository extends RideShareTokenRepository:
       .lastOption
   )
 
+  override def deleteByRideId(rideId: RideId): Task[Int] = tokens.modify { m =>
+    val (dead, alive) = m.partition(_._2.rideId == rideId)
+    (dead.size, alive)
+  }
+
 object InMemoryRideShareTokenRepository:
   val layer: ULayer[RideShareTokenRepository] = ZLayer.succeed(new InMemoryRideShareTokenRepository)

@@ -14,7 +14,7 @@ import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.{BlacklistRepository, PersonRepository, SentConfirmationRequestRepository}
 import com.shevchyk.ride.application.service.{PickupTimeService, RideService}
 import com.shevchyk.ride.domain.*
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, InMemoryRideShareTokenRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import zio.*
 import zio.test.*
@@ -168,7 +168,7 @@ object RideConfirmationSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

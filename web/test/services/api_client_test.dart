@@ -389,5 +389,28 @@ void main() {
         },
       );
     });
+
+    group('login', () {
+      test('decodes the response as UTF-8 (umlauts and Cyrillic survive)', () async {
+        // The backend replies without an explicit charset; package:http then
+        // decodes `response.body` as Latin-1, mangling non-ASCII names
+        // ("Müller" -> "MÃ¼ller"). login() must decode the raw bytes as UTF-8.
+        final client = MockClient((request) async {
+          return http.Response.bytes(
+            utf8.encode('{"user":{"name":"Müller Сергій"},"token":"t"}'),
+            200,
+            headers: {'content-type': 'application/json'}, // no charset
+          );
+        });
+
+        final apiClient = ApiClient(
+          client: client,
+          baseUrl: 'http://localhost:8080/api',
+        );
+        final result = await apiClient.login('a@b.de', 'Password1');
+
+        expect(result?['user']['name'], 'Müller Сергій');
+      });
+    });
   });
 }

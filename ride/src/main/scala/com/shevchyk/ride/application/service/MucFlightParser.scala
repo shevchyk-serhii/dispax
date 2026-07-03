@@ -63,16 +63,17 @@ object MucFlightParser:
     Option.when(beforeType.nonEmpty)(beforeType)
 
   /**
-   * Parse a single "HH:mm" into an absolute instant on `date` at Europe/Berlin.
+   * Parse a single "HH:mm" cell half into a local wall-clock time (None when blank/unparseable).
    */
-  private def timeOf(hhmm: String, date: LocalDate): Option[java.time.Instant] =
+  private def localTimeOf(hhmm: String): Option[LocalTime] =
     val t = hhmm.trim
     if t.isEmpty then None
-    else
-      scala.util
-        .Try(LocalTime.parse(t))
-        .toOption
-        .map(lt => date.atTime(lt).atZone(BerlinZone).toInstant)
+    else scala.util.Try(LocalTime.parse(t)).toOption
+
+  /**
+   * Anchor a local wall-clock time to `date` at Europe/Berlin.
+   */
+  private def atBerlin(date: LocalDate, lt: LocalTime): java.time.Instant = date.atTime(lt).atZone(BerlinZone).toInstant
 
   /**
    * Parse the first flight row of `html`.
@@ -120,15 +121,43 @@ object MucFlightParser:
     val airline  = cell(row, "fp-flight-airline").filter(_.nonEmpty)
     val other    = cell(row, "fp-flight-airport").flatMap(iataOf)
 
+    // The "other airport" time cell: for an ARRIVAL this is the origin's take-off, for a departure it is the
+    // arrival at the destination. Only the arrival's take-off is meaningful for the en-route progress window.
+    val otherTimeLt = localTimeOf(cell(row, "fp-flight-time-other").getOrElse(""))
+
+    val plannedLt    = localTimeOf(plannedRaw)
+    val expectedLt   = localTimeOf(expectedRaw)
+    // Both halves are bare wall-clock HH:mm on the request date. A late-evening flight slipping past midnight
+    // renders as e.g. "23:50 | 00:15" — the expected half belongs to the NEXT day. Anchoring it to the same
+    // date would put the estimate ~23.5h BEFORE the schedule (a bogus negative delay), so when expected is
+    // earlier than planned by more than 12h of wall clock we roll it to the next day. (The reverse — planned
+    // just after midnight with an expected the previous evening — does not occur on the board.)
+    val expectedDate =
+      (plannedLt, expectedLt) match
+        case (Some(p), Some(e)) if e.isBefore(p) && java.time.Duration.between(e, p).toHours > 12 => date.plusDays(1)
+        case _                                                                                    => date
+
+    // For an arrival, the origin take-off (the start of the en-route window the card animates). The board gives only
+    // wall-clock time, not the origin date: a long-haul that departs the previous evening reads as e.g. "22:55" against
+    // a "05:15" MUC arrival — i.e. the take-off is LATER in the day than the landing, which only makes sense a day
+    // earlier. So when the departure time is after the MUC arrival time, roll it back one day. (Detail-page lookup
+    // refines this with the origin's own date later; this list value is the reliable primary so the plane always shows.)
+    val departureDate =
+      (otherTimeLt, plannedLt) match
+        case (Some(dep), Some(arr)) if dep.isAfter(arr) => date.minusDays(1)
+        case _                                          => date
+    val departureTime = if isArrival then otherTimeLt.map(atBerlin(departureDate, _)) else None
+
     FlightInfo(
       flightNumber = normalizeFlightNumber(rawNumber),
       isArrival = isArrival,
       status = FlightStatus.fromMuc(statusLabel),
-      scheduledTime = timeOf(plannedRaw, date),
-      estimatedTime = timeOf(expectedRaw, date),
+      scheduledTime = plannedLt.map(atBerlin(date, _)),
+      estimatedTime = expectedLt.map(atBerlin(expectedDate, _)),
       terminal = terminal,
       airline = airline,
-      otherAirport = other
+      otherAirport = other,
+      departureTime = departureTime
     )
   }
 

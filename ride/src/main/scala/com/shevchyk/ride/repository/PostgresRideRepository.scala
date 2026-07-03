@@ -112,7 +112,28 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   implicit val tagsListMeta: Meta[List[String]] = Meta[Array[String]].imap(_.toList)(_.toArray)
 
   override def create(ride: Ride): Task[Ride] = {
-    sql"""
+    val year                                                    = ride.requestTime.atZone(java.time.ZoneOffset.UTC).getYear
+    // Per-company counter, same recipe as PostgresInvoiceRepository.nextInvoiceNumber: the row
+    // UPDATE takes a lock, so concurrent allocations serialize within the insert transaction.
+    // A pre-set reference (fixtures/imports) is persisted verbatim.
+    val allocateReference: ConnectionIO[String]                 =
+      ride.bookingReference match {
+        case Some(ref) => FC.pure(ref)
+        case None      =>
+          for {
+            _ <-
+              sql"""INSERT INTO booking_reference_sequences (company_id, last_number)
+                     VALUES (${ride.companyId.value}, 0)
+                     ON CONFLICT (company_id) DO NOTHING""".update.run
+            n <-
+              sql"""UPDATE booking_reference_sequences
+                     SET last_number = last_number + 1
+                     WHERE company_id = ${ride.companyId.value}
+                     RETURNING last_number""".query[Int].unique
+          } yield f"R-$year-$n%05d"
+      }
+    def insertRide(bookingReference: String): ConnectionIO[Int] =
+      sql"""
       INSERT INTO rides (
         id, client_id, creator_id, company_id, driver_id,
         pickup_datetime, scheduled_time, request_time, start_time, end_time,
@@ -128,11 +149,11 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         pool_id, tariff_id, schedule_day_id, invoice_id, vehicle_class,
         external_driver_id, partner_company_id,
         confirmed_at, rejection_reason, rejected_by, rejected_at,
-        tags
+        tags, booking_reference
       ) VALUES (
         ${ride.id.value}, ${ride.clientId.value}, ${ride.creatorId.value}, ${ride.companyId.value}, ${ride.driverId.map(
-        _.value
-      )},
+          _.value
+        )},
         ${ride.pickupDateTime}, ${ride.scheduledTime}, ${ride.requestTime}, ${ride.startTime}, ${ride.endTime},
         ${ride.pickupLocation.address}, ${ride.pickupLocation.latitude}, ${ride.pickupLocation.longitude},
         ${ride.dropoffLocation.address}, ${ride.dropoffLocation.latitude}, ${ride.dropoffLocation.longitude},
@@ -147,11 +168,15 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         ${VehicleClass.toDbString(ride.vehicleClass)},
         ${ride.externalDriverId.map(_.value)}, ${ride.partnerCompanyId.map(_.value)},
         ${ride.confirmedAt}, ${ride.rejectionReason}, ${ride.rejectedBy.map(_.value)}, ${ride.rejectedAt},
-        ${ride.tags}
+        ${ride.tags}, $bookingReference
       )
     """.update.run
+    (for {
+      ref <- allocateReference
+      _   <- insertRide(ref)
+    } yield ride.copy(bookingReference = Some(ref)))
       .transact(xa)
-      .mapBoth(ex => RideError.DatabaseError(ex), _ => ride)
+      .mapError(ex => RideError.DatabaseError(ex))
   }
 
   // Standard column list for all SELECT queries
@@ -172,8 +197,9 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         vehicle_class,
         external_driver_id, partner_company_id,
         confirmed_at, rejection_reason, rejected_by, rejected_at,
-        tags"""
-  // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches rideReadBase/rideReadExtra/rideReadTags
+        tags, booking_reference"""
+  // NOTE: columns are listed explicitly (not SELECT *) to guarantee order matches
+  // rideReadBase/rideReadExtra/rideReadTags/rideReadBookingRef
 
   override def findById(id: RideId): Task[Option[Ride]] = {
     (fr"SELECT" ++ rideColumns ++ fr"FROM rides WHERE id = ${id.value}")
@@ -287,6 +313,7 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   // columns they persist. `updateIfStatus` adds a status guard to the WHERE; otherwise both write
   // the entire ride. (A previous version of `updateIfStatus` only set 4 columns, which silently
   // dropped start_time/cancellation_*/payment_* on the transitions that go through it.)
+  // booking_reference is deliberately absent: it is allocated once at insert and immutable after.
   private def rideSetClause(ride: Ride): Fragment =
     fr"""SET
       client_id = ${ride.clientId.value},
@@ -608,7 +635,10 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   // no headroom. A separate single-column fragment keeps existing positions stable and extensible.
   private val rideReadTags: Read[List[String]] = Read[List[String]]
 
-  implicit val rideRead: Read[Ride] = (rideReadBase, rideReadExtra, rideReadTags).mapN {
+  // Fourth fragment, same rationale as rideReadTags: new trailing columns get their own fragment.
+  private val rideReadBookingRef: Read[Option[String]] = Read[Option[String]]
+
+  implicit val rideRead: Read[Ride] = (rideReadBase, rideReadExtra, rideReadTags, rideReadBookingRef).mapN {
     case (
           (
             id,
@@ -657,7 +687,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
             rejectedBy,
             rejectedAt
           ),
-          tags
+          tags,
+          bookingReference
         ) =>
       Ride(
         id = RideId(id),
@@ -699,7 +730,8 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
         rejectionReason = rejectionReason,
         rejectedBy = rejectedBy.map(PersonId.apply),
         rejectedAt = rejectedAt,
-        tags = tags
+        tags = tags,
+        bookingReference = bookingReference
       )
   }
 
@@ -742,13 +774,17 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
       scheduledTime: Option[Instant],
       departureTime: Option[Instant]
   ): Task[Boolean] =
+    // Merge, don't overwrite: gate/terminal/scheduled/departure are COALESCEd because None there means "the scrape
+    // could not read the value this tick" (e.g. the detail page failed) — it must not erase what an earlier tick
+    // stored. Status and flight_time (the live estimate) ARE the scrape's authoritative payload each tick and are
+    // always written, so a stale estimate never survives a fresher one.
     sql"""UPDATE rides
-          SET flight_gate = $gate,
-              flight_terminal = $terminal,
+          SET flight_gate = COALESCE($gate, flight_gate),
+              flight_terminal = COALESCE($terminal, flight_terminal),
               flight_status = $flightStatus,
               flight_time = $flightTime,
-              flight_scheduled_time = $scheduledTime,
-              flight_departure_time = $departureTime,
+              flight_scheduled_time = COALESCE($scheduledTime, flight_scheduled_time),
+              flight_departure_time = COALESCE($departureTime, flight_departure_time),
               updated_at = NOW()
           WHERE id = ${rideId.value}""".update.run
       .transact(xa)

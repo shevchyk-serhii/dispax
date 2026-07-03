@@ -86,7 +86,30 @@ object RateLimiterSpec extends ZIOSpecDefault {
           // Mutant   : T_rej ~600ms old, inside 1s window → blocked
           result   <- limiter.checkRate("key")
         } yield assertTrue(allowed && !rejected && !rej2 && result)
-      } @@ TestAspect.withLiveClock
+      } @@ TestAspect.withLiveClock,
+      // [Eviction] Keys whose whole window has expired must be removed from the state map on the
+      // next access, otherwise every key ever seen (e.g. every source IP of a login attempt) keeps
+      // a permanent entry and the map grows without bound for the life of the process.
+      //
+      // Mutation to kill: dropping the sweep (`map.filter(...)`) and putting keys back verbatim —
+      // "stale-ip" would then still be tracked after its window expired.
+      test("expired keys are evicted from the state map on the next access") {
+        for {
+          limiter <- RateLimiter.make(maxRequests = 1, windowSeconds = 1)
+          _       <- limiter.checkRate("stale-ip")
+          _       <- ZIO.sleep(1500.millis)        // let the whole "stale-ip" window expire
+          _       <- limiter.checkRate("fresh-ip") // any later call sweeps expired buckets
+          keys    <- limiter.trackedKeys
+        } yield assertTrue(!keys.contains("stale-ip"), keys.contains("fresh-ip"))
+      } @@ TestAspect.withLiveClock,
+      test("a key with live timestamps survives the sweep") {
+        for {
+          limiter <- RateLimiter.make(maxRequests = 5, windowSeconds = 60)
+          _       <- limiter.checkRate("live-ip")
+          _       <- limiter.checkRate("other-ip")
+          keys    <- limiter.trackedKeys
+        } yield assertTrue(keys.contains("live-ip"), keys.contains("other-ip"))
+      }
       // [Mutant 5 — window cutoff off-by-one: windowSeconds → windowSeconds - 1]
       // Pinning the exact boundary requires recording a timestamp at precisely
       // `now.minusSeconds(windowSeconds)` and then checking it, which is not achievable

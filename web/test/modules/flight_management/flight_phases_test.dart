@@ -174,6 +174,40 @@ void main() {
         expect(steep, lessThan(math.pi / 2));
       },
     );
+
+    group('captionLeftPx — the plane time-caption stays inside the bar', () {
+      const bar = 120.0;
+      const caption = 30.0;
+      const icon = 16.0;
+
+      test('mid-bar: caption is centered under the icon (no clamp needed)', () {
+        // travel = 104; icon center at 0.5·104 + 8 = 60; caption left = 60 - 15 = 45.
+        expect(
+          FlightArc.captionLeftPx(0.5, bar, caption, icon),
+          closeTo(45.0, 1e-9),
+        );
+      });
+
+      test('near landing: the caption is clamped so it never spills past the '
+          'right edge', () {
+        // Unclamped at 0.99 would be 0.99·104 + 8 - 15 ≈ 95.96 → right ≈ 125.96 > 120.
+        // Clamped it must sit so left + caption <= bar width.
+        final left = FlightArc.captionLeftPx(0.99, bar, caption, icon);
+        expect(left + caption, lessThanOrEqualTo(bar + 1e-9));
+        // And it is actually clamped (strictly less than the unclamped value).
+        expect(left, lessThan(0.99 * (bar - icon) + icon / 2 - caption / 2));
+      });
+
+      test(
+        'before take-off: caption never goes negative (left edge clamp)',
+        () {
+          expect(
+            FlightArc.captionLeftPx(0.0, bar, caption, icon),
+            greaterThanOrEqualTo(0.0),
+          );
+        },
+      );
+    });
   });
 
   group('FlightPhases.activeOrdinalFor', () {

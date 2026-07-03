@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../modules/core/models/ride_template.dart';
 import '../modules/core/models/person.dart';
 import '../modules/core/services/error_messages.dart';
+import '../utils/parse_amount.dart';
 
 class RideTemplatesScreen extends StatefulWidget {
   const RideTemplatesScreen({super.key});
@@ -300,7 +301,7 @@ class _RideTemplatesScreenState extends State<RideTemplatesScreen> {
                       ? notesController.text
                       : null,
                   price: priceController.text.isNotEmpty
-                      ? double.tryParse(priceController.text)
+                      ? parseAmount(priceController.text)
                       : null,
                 );
 

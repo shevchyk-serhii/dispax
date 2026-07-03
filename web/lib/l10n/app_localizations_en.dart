@@ -315,7 +315,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get passwordTooShort => 'Password must be at least 6 characters';
+  String get passwordPolicyRules =>
+      'Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a digit';
 
   @override
   String get forcePasswordChangeTitle => 'Set a new password';
@@ -3773,6 +3774,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String shiftsCreatedSnack(int count) {
     return 'Shifts created: $count';
   }
+
+  @override
+  String get shiftOverlapSnack =>
+      'The selected time overlaps an existing shift. Multiple shifts per day are allowed — pick a time that doesn\'t overlap.';
 
   @override
   String get shiftTimeOrderError => 'Start time must be before end time';

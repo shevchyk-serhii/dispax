@@ -326,7 +326,7 @@ emulator-up:
 # Ordered list of E2E suites. full_flow runs before the data-mutating feature
 # tests (blacklist/admin) so their writes can't interfere with assignment.
 E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
-              e2e_settings e2e_language_switch e2e_sched_visibility \
+              e2e_settings e2e_language_switch e2e_sched_visibility e2e_shift_create \
               e2e_saved_places e2e_cancel_ride e2e_more_menu e2e_airport_ride \
               e2e_chat e2e_reassign e2e_reassign_conflict e2e_full_flow \
               e2e_admin_users e2e_expense e2e_blacklist e2e_geofence \
@@ -345,7 +345,8 @@ E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
               e2e_two_dispatchers_assign_race e2e_two_dispatchers_handoff_visibility \
               e2e_two_dispatchers_reassign e2e_dispatcher_assign_conflict_override \
               e2e_dispatcher_self_conflict e2e_ws_dispatcher_status_live \
-              e2e_dispatcher_close_ride e2e_duplicate_ride e2e_hand_off_ride
+              e2e_dispatcher_close_ride e2e_duplicate_ride e2e_hand_off_ride \
+              e2e_edit_ride_client
 
 # Notification HTTP checks (flutter_test, no Patrol/UI) — assert the in-app inbox
 # over REST. Run with `flutter test` via `make e2e-notif-http`. These are green.
@@ -395,24 +396,28 @@ e2e-backend-down:
 # Each suite starts from a clean transactional state for isolation.
 e2e-android: emulator-up e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on Android..."
-	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
-	  echo "▶ $$t"; \
-	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
-	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
-	done ; \
-	$(MAKE) e2e-backend-down
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_SUITES); do \
+	    echo "▶ $$t"; \
+	    PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	    $(PATROL) test --target integration_test/$$t\_test.dart \
+	      --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
 
 # Run all E2E suites on an iOS simulator (host reached via localhost).
 e2e-ios: e2e-backend-up
 	@echo "🧪 Running Patrol E2E suites on iOS..."
-	@cd $(FLUTTER_DIR) && for t in $(E2E_SUITES); do \
-	  echo "▶ $$t"; \
-	  PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
-	  $(PATROL) test --target integration_test/$$t\_test.dart \
-	    --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
-	done ; \
-	$(MAKE) e2e-backend-down
+	@cd $(FLUTTER_DIR) && STATUS=0 ; \
+	  for t in $(E2E_SUITES); do \
+	    echo "▶ $$t"; \
+	    PGPASSWORD=dispax psql -h localhost -p 5433 -U dispax -d dispax_test -c "$(E2E_CLEAN_SQL)" >/dev/null 2>&1 || true ; \
+	    $(PATROL) test --target integration_test/$$t\_test.dart \
+	      --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
+	  done ; \
+	  $(MAKE) e2e-backend-down ; \
+	  exit $$STATUS
 
 # Default E2E target: Android.
 e2e-test: e2e-android

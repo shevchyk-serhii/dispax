@@ -674,6 +674,125 @@ void main() {
     });
   });
 
+  // ── didUpdateWidget: no refetch on equal-content rebuilds ──────────────────
+
+  group('parent rebuilds with equal content', () {
+    testWidgets(
+      'does NOT refetch (no spinner flash) when the parent rebuilds with '
+      'equal-content but new-instance lists',
+      (tester) async {
+        tester.view.physicalSize = const Size(1800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        var getCalls = 0;
+        when(() => apiClient.get(any())).thenAnswer((_) async {
+          getCalls++;
+          return http.Response('[]', 200);
+        });
+        final shareService = _MockCalendarShareService();
+        when(
+          () => shareService.getSharedCalendar(
+            any(),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).thenAnswer(
+          (_) async => const SharedCalendar(
+            grantId: 'grant-1',
+            grantorName: 'Anna External',
+            shifts: [],
+            busySlots: [],
+          ),
+        );
+
+        final day = DateTime(2026, 6, 22);
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(id: 'driver-1')],
+            selectedDay: day,
+            externalShares: [_externalGrant()],
+            shareService: shareService,
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final callsAfterFirstBuild = getCalls;
+        expect(callsAfterFirstBuild, greaterThan(0));
+
+        // The parent (calendar_schedule_screen) builds these lists FRESH on
+        // every build, so didUpdateWidget always sees new instances. Rebuild
+        // with equal content: same driver id, same grant id, same day.
+        await tester.pumpWidget(
+          _buildTestWidget(
+            authBloc: authBloc,
+            drivers: [_driver(id: 'driver-1')],
+            selectedDay: day,
+            externalShares: [_externalGrant()],
+            shareService: shareService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          getCalls,
+          callsAfterFirstBuild,
+          reason:
+              'A rebuild with content-equal lists must not refetch the board '
+              '(reference comparison made every parent rebuild flash the '
+              'spinner and refetch everything)',
+        );
+        verify(
+          () => shareService.getSharedCalendar(
+            any(),
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('still refetches when the driver set actually changes', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      var getCalls = 0;
+      when(() => apiClient.get(any())).thenAnswer((_) async {
+        getCalls++;
+        return http.Response('[]', 200);
+      });
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          authBloc: authBloc,
+          drivers: [_driver(id: 'a')],
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+      final callsAfterFirstBuild = getCalls;
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          authBloc: authBloc,
+          drivers: [_driver(id: 'b')],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        getCalls,
+        greaterThan(callsAfterFirstBuild),
+        reason: 'A real driver-set change must still trigger a refetch',
+      );
+    });
+  });
+
   // ── Compact board layout ───────────────────────────────────────────────────
 
   group('_DriverColumn — compact board layout', () {

@@ -373,18 +373,17 @@ class InvoiceServiceImpl(
 
   private def recalculate(invoice: Invoice): UIO[Invoice] = ZIO.succeed {
     // Each ride's price is GROSS (Brutto, incl. MwSt) — see `rideToItem` and `generateRideReceipt`.
-    // So the line totals sum to the gross invoice amount; Netto and MwSt are DERIVED from it
-    // (net = gross / (1 + rate)), matching the receipt path in PdfGenerator. Previously this treated
-    // the sum as Netto and added tax on top, double-charging MwSt and overstating the total.
-    // Round monetary values to 2 decimals (HALF_UP) so stored amounts match the PDF/DATEV output.
-    val gross    = invoice.items.map(_.total).sum.setScale(2, BigDecimal.RoundingMode.HALF_UP)
+    // So the line totals sum to the gross invoice amount; Netto and MwSt are DERIVED from it via the
+    // shared TaxSplit.fromGross (single source of truth with the PDF receipt path in PdfGenerator, so
+    // the stored invoice and the emailed PDF can never round apart). Previously this treated the sum
+    // as Netto and added tax on top, double-charging MwSt and overstating the total.
+    val gross    = invoice.items.map(_.total).sum
     // Defense-in-depth: `createInvoice` rejects an out-of-range taxRate, but a legacy/corrupt row could
     // still reach here. Clamp an invalid rate to 0 (treat gross as net, no tax) rather than divide by
     // zero (taxRate = -100) since this UIO can't fail.
     val safeRate = if invoice.taxRate < 0 || invoice.taxRate > 100 then BigDecimal(0) else invoice.taxRate
-    val net      = (gross / (1 + safeRate / 100)).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    val tax      = (gross - net).setScale(2, BigDecimal.RoundingMode.HALF_UP)
-    invoice.copy(subtotalAmount = net, taxAmount = tax, totalAmount = gross)
+    val split    = TaxSplit.fromGross(gross, safeRate)
+    invoice.copy(subtotalAmount = split.net, taxAmount = split.tax, totalAmount = split.gross)
   }
 
 object InvoiceService:

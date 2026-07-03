@@ -15,7 +15,7 @@ import com.shevchyk.core.repository.BlacklistRepository
 import com.shevchyk.core.repository.PersonRepository
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.application.service.{RideService, PickupTimeService}
-import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository}
+import com.shevchyk.ride.repository.{ExpenseRepository, InMemoryRideRepository, InMemoryRideShareTokenRepository}
 import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, InMemoryPartnerCompanyRepository}
 import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
@@ -150,7 +150,7 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) = service.createRide(
     CreateRideRequest(

@@ -89,6 +89,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   late BiometricService privateBiometricService;
   final TokenStorage _storage;
   final WebSocketServiceBase _webSocketService;
+  final PushRegistrationService _pushService;
 
   static const String privateUserKey = 'current_user';
   static const String privateTokenKey = 'auth_token';
@@ -98,8 +99,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     BiometricService? biometricService,
     TokenStorage? storage,
     WebSocketServiceBase? webSocketService,
+    PushRegistrationService? pushRegistrationService,
   }) : _storage = storage ?? _TokenStorage(),
        _webSocketService = webSocketService ?? WebSocketService.instance,
+       _pushService = pushRegistrationService ?? PushNotificationService.instance,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateApiClient.onUnauthorized = () => add(const AuthSessionExpired());
@@ -117,6 +120,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   ApiClient get apiClient => privateApiClient;
+
+  /// Post-authentication wiring shared by ALL login paths (password login,
+  /// session restore, biometric login): configure the API-client-backed
+  /// services, (re)register the FCM token, and connect the WebSocket.
+  /// Skipping any path leaves services on a stale client and the FCM token
+  /// unregistered.
+  void _configureSessionServices(String token) {
+    AirportTimingService.configure(privateApiClient);
+    ArrivalsBoardService.configure(privateApiClient);
+    LocationClarificationService.configure(privateApiClient);
+    // Fire-and-forget: token registration must not block the login flow.
+    _pushService.registerTokenWithClient(privateApiClient);
+    _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
+  }
 
   Future<void> _onInitializeRequested(
     AuthInitializeRequested event,
@@ -165,16 +182,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           }
         }
 
-        /// Configure services with authenticated API client
-        AirportTimingService.configure(privateApiClient);
-        ArrivalsBoardService.configure(privateApiClient);
-        LocationClarificationService.configure(privateApiClient);
-        PushNotificationService.instance.registerTokenWithClient(
-          privateApiClient,
-        );
-
-        /// Connect WebSocket for real-time updates
-        _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
+        /// Configure services and connect WebSocket for real-time updates
+        _configureSessionServices(token);
 
         // Restore into the forced-change gate too, so a session restored while a
         // temporary password is still pending cannot bypass the change screen.
@@ -235,19 +244,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         privateApiClient.setAuthToken(loginResponse['token']);
 
-        /// Configure services with authenticated API client
-        AirportTimingService.configure(privateApiClient);
-        ArrivalsBoardService.configure(privateApiClient);
-        LocationClarificationService.configure(privateApiClient);
-        PushNotificationService.instance.registerTokenWithClient(
-          privateApiClient,
-        );
-
-        /// Connect WebSocket for real-time updates
-        _webSocketService.connect(
-          loginResponse['token'],
-          wsBaseUrl: ApiClient.wsBaseUrl,
-        );
+        /// Configure services and connect WebSocket for real-time updates
+        _configureSessionServices(loginResponse['token']);
 
         final user = Person.fromJson(loginResponse['person']);
 
@@ -375,6 +373,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   /// Tears down all session state: stored token/user, in-memory token, the
   /// WebSocket connection, and the FCM registration.
   Future<void> _clearSession() async {
+    /// Unregister the FCM token FIRST, while the shared API client still
+    /// carries the auth token — the DELETE requires Authorization. Doing it
+    /// after clearAuthToken 401'd silently and the backend kept pushing this
+    /// user's notifications to the logged-out device.
+    await _pushService.unregisterToken();
+
     await _storage.delete(privateUserKey);
     await _storage.delete(privateTokenKey);
 
@@ -382,15 +386,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     /// Disconnect WebSocket
     _webSocketService.disconnect();
-
-    /// Unregister FCM token
-    await PushNotificationService.instance.unregisterToken();
   }
 
   void _onErrorCleared(AuthErrorCleared event, Emitter<AuthState> emit) {
     if (state.hasError) {
       emit(
-        state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null),
+        state.copyWith(
+          status: AuthStatus.unauthenticated,
+          errorMessage: null,
+          error: null,
+        ),
       );
     }
   }
@@ -400,7 +405,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
-      emit(state.copyWith(status: AuthStatus.loading));
+      emit(
+        state.copyWith(
+          status: AuthStatus.loading,
+          errorMessage: null,
+          error: null,
+        ),
+      );
 
       final biometricAvailable = await privateBiometricService.isAvailable;
       final biometricEnabled = await privateBiometricService.isBiometricEnabled;
@@ -436,7 +447,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final user = Person.fromJson(userJson);
           privateApiClient.setAuthToken(token);
 
-          _webSocketService.connect(token, wsBaseUrl: ApiClient.wsBaseUrl);
+          // Same post-login wiring as the password/restore paths — biometric
+          // login previously connected only the WebSocket, leaving the
+          // API-client-backed services stale and the FCM token unregistered.
+          _configureSessionServices(token);
 
           emit(
             AuthState.authenticated(

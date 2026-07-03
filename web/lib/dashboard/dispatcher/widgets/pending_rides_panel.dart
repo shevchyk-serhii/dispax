@@ -30,19 +30,18 @@ import '../../../widgets/common/cancel_ride_dialog.dart';
 import '../../../widgets/common/notification_bell.dart';
 import '../../../widgets/common/hand_off_ride_dialog.dart';
 import '../../../modules/flight_management/widgets/flight_progress_bar.dart';
+import '../../driver/today_rides_screen.dart' show DriverEntryTimeRow;
 import 'assignment_dialog.dart';
 import 'eta_alert_card.dart';
 
 class PendingRidesPanel extends StatefulWidget {
   final List<EtaAtRiskInfo> etaAlerts;
   final void Function(String rideId)? onDismissEtaAlert;
-  final void Function(String rideId)? onReassignFromEtaAlert;
 
   const PendingRidesPanel({
     super.key,
     this.etaAlerts = const [],
     this.onDismissEtaAlert,
-    this.onReassignFromEtaAlert,
   });
 
   @override
@@ -364,27 +363,53 @@ class _PendingRidesPanelState extends State<PendingRidesPanel> {
     );
   }
 
+  Ride? _rideById(List<Ride> rides, String id) {
+    for (final ride in rides) {
+      if (ride.id == id) return ride;
+    }
+    return null;
+  }
+
   Widget _buildBody() {
     return Column(
       children: [
         _buildHeader(),
         if (widget.etaAlerts.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.paddingMedium,
-              vertical: AppDimensions.paddingSmall,
-            ),
-            child: Column(
-              children: widget.etaAlerts
-                  .map(
-                    (a) => EtaAlertCard(
-                      info: a,
-                      onDismiss: () => widget.onDismissEtaAlert?.call(a.rideId),
-                      onReassign: () =>
-                          widget.onReassignFromEtaAlert?.call(a.rideId),
-                    ),
-                  )
-                  .toList(),
+          // The Reassign button on an at-risk alert opens the same driver
+          // selection sheet as the Assigned tab's row action (previously it
+          // invoked an optional callback nobody wired — a dead button). The
+          // BlocBuilder keeps the guard in sync with the loaded rides.
+          BlocBuilder<RideBloc, RideState>(
+            buildWhen: (prev, curr) => prev.rides != curr.rides,
+            builder: (context, rideState) => Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.paddingMedium,
+                vertical: AppDimensions.paddingSmall,
+              ),
+              child: Column(
+                children: widget.etaAlerts.map((a) {
+                  final ride = _rideById(rideState.rides, a.rideId);
+                  // Same guard as the Assigned tab rows: a handed-off ride has
+                  // no driver to reassign, and the backend rejects reassigning
+                  // a ride whose pickup time already passed (past_ride guard)
+                  // — hide the button instead of offering a doomed action.
+                  final canReassign =
+                      ride != null &&
+                      ride.status != RideStatus.handedOff &&
+                      !ride.isPastPickup;
+                  return EtaAlertCard(
+                    info: a,
+                    onDismiss: () => widget.onDismissEtaAlert?.call(a.rideId),
+                    onReassign: canReassign
+                        ? () => _showDriverSelectionSheet(
+                            context,
+                            ride,
+                            isReassign: ride.driverId != null,
+                          )
+                        : null,
+                  );
+                }).toList(),
+              ),
             ),
           ),
         _buildTabBar(),
@@ -1356,6 +1381,13 @@ class _RideRow extends StatelessWidget {
                     child: bar,
                   );
                 },
+              ),
+              // Recommended terminal-entry time ("Entry at HH:mm") for an
+              // arrival — the dispatcher needs it to judge the pickup, same as
+              // the driver cards. Renders nothing without a computed time.
+              DriverEntryTimeRow(
+                ride: ride,
+                isDark: Theme.of(context).brightness == Brightness.dark,
               ),
             ],
             // Payment method

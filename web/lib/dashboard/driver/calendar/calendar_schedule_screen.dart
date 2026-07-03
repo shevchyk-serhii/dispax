@@ -83,7 +83,11 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
   // tabs) is never disturbed.
   List<Ride>? _driverRides;
   bool _loadingDriverRides = false;
-  String? _driverRidesError;
+
+  /// The caught error object of the last failed colleague-rides load; the
+  /// error view maps it through friendlyError at render time (never render a
+  /// raw exception string).
+  Object? _driverRidesError;
   // Guards against a stale response overwriting a newer selection.
   int _driverRidesRequestSeq = 0;
 
@@ -261,7 +265,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
       setState(() {
         _driverRides = const [];
         _loadingDriverRides = false;
-        _driverRidesError = 'Failed to load driver rides: $e';
+        _driverRidesError = e;
       });
     }
   }
@@ -302,6 +306,15 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
               return PopupMenuButton<CalendarViewType>(
                 icon: const Icon(Icons.view_module),
                 onSelected: (CalendarViewType result) {
+                  // The Board view hides the share dropdown (its only reset
+                  // control), while the body keeps rendering SharedCalendarView
+                  // whenever _selectedShare is set — switching to Board with a
+                  // shared calendar selected would strand the user on the
+                  // share with no way back to the columns. Reset it here.
+                  if (result == CalendarViewType.multiColumn &&
+                      _selectedShare != null) {
+                    setState(() => _selectedShare = null);
+                  }
                   viewTypeNotifier.value = result;
                 },
                 itemBuilder: (BuildContext context) {
@@ -706,7 +719,7 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
             Icon(Icons.error_outline, size: 48, color: colorScheme.error),
             const SizedBox(height: 12),
             Text(
-              _driverRidesError ?? 'Failed to load driver rides',
+              friendlyError(_driverRidesError, AppLocalizations.of(context)!),
               textAlign: TextAlign.center,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),

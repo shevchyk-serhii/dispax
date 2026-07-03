@@ -200,4 +200,22 @@ class FlightArc {
     final dx = travelPx <= 0 ? 1.0 : travelPx;
     return math.atan2(dy, dx);
   }
+
+  /// The left offset (px) of the plane's time caption box, centered under the
+  /// icon but clamped so the (wider-than-icon) box never spills past either end
+  /// of the bar. The icon travels `[0, maxWidth - iconWidth]`; its center is at
+  /// `fraction·travel + iconWidth/2`. Kept pure so the clamp is unit-tested
+  /// directly — a widget test can't see the ~few-px overshoot near landing (it
+  /// hides inside the card's padding).
+  static double captionLeftPx(
+    double fraction,
+    double maxWidth,
+    double captionWidth,
+    double iconWidth,
+  ) {
+    final travel = (maxWidth - iconWidth).clamp(0.0, double.infinity);
+    final iconCenterX = fraction.clamp(0.0, 1.0) * travel + iconWidth / 2;
+    final maxLeft = (maxWidth - captionWidth).clamp(0.0, double.infinity);
+    return (iconCenterX - captionWidth / 2).clamp(0.0, maxLeft);
+  }
 }

@@ -1,6 +1,9 @@
 package com.shevchyk.billing.openapi
 
+import com.shevchyk.auth.middleware.AuthenticatedUser
+import com.shevchyk.auth.service.JwtPayload
 import com.shevchyk.billing.domain.{InvoiceError, InvoiceId, InvoiceStatus}
+import com.shevchyk.core.domain.PersonRole
 import sttp.model.StatusCode
 import zio.test.*
 
@@ -9,10 +12,15 @@ import java.util.UUID
 /**
  * Guards against regressing `fromInvoiceError` into a partial match: every `InvoiceError` case must map to a status
  * code (previously `RideNotBillable` and `NoRecipientEmail` were missing, crashing the request with a MatchError).
+ *
+ * Also regression coverage for the multi-role bug: `checkRole` only looked at the primary `user.role` and ignored the
+ * full `roles` set, so a driver who is also a dispatcher was wrongly rejected (403) on billing endpoints.
  */
 object BillingSecureSpec extends ZIOSpecDefault:
 
   private val invoiceId = InvoiceId(UUID.randomUUID())
+
+  private val userId = UUID.fromString("00000002-0000-0000-0000-000000000002")
 
   private val allErrors: List[InvoiceError] = List(
     InvoiceError.NotFound(invoiceId),
@@ -64,5 +72,46 @@ object BillingSecureSpec extends ZIOSpecDefault:
           BillingSecure.Paging.clampOffset(0) == 0,
           BillingSecure.Paging.clampOffset(20) == 20
         )
-      }
+      },
+      // -- Audit fix: checkRole must honour the full multi-role set ---------------
+      suite("checkRole multi-role")(
+        test("driver-dispatcher passes a DISPATCHER-gated check via the roles set") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DRIVER", roles = Set("DRIVER", "DISPATCHER"))
+          BillingSecure.checkRole(user, "DISPATCHER", "ADMIN").map(_ => assertCompletes)
+        },
+        test("driver-dispatcher still passes a DRIVER-gated check") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DRIVER", roles = Set("DRIVER", "DISPATCHER"))
+          BillingSecure.checkRole(user, "DRIVER").map(_ => assertCompletes)
+        },
+        test("pure driver fails a DISPATCHER-gated check with 403") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DRIVER", roles = Set("DRIVER"))
+          BillingSecure.checkRole(user, "DISPATCHER", "ADMIN").flip.map { case (status, _) =>
+            assertTrue(status == StatusCode.Forbidden)
+          }
+        },
+        test("legacy token (empty roles) falls back to the primary role") {
+          val user = AuthenticatedUser(userId, "e@e.com", "DISPATCHER", roles = Set.empty)
+          BillingSecure.checkRole(user, "DISPATCHER").map(_ => assertCompletes)
+        }
+      ),
+      // -- Audit fix: the secure layer must carry the full roles set in wire form --
+      suite("toAuthenticatedUser")(
+        test("maps the payload's full roles set to wire format") {
+          val payload = JwtPayload(
+            userId = userId,
+            email = "e@e.com",
+            role = PersonRole.Driver,
+            iat = 0L,
+            exp = 0L,
+            roles = Some(List(PersonRole.Driver, PersonRole.Dispatcher))
+          )
+          val user    = BillingSecure.toAuthenticatedUser(payload)
+          assertTrue(user.roles == Set("DRIVER", "DISPATCHER"), user.role == "DRIVER")
+        },
+        test("builds the primary role via toWire (SUPER_ADMIN, not the enum toString)") {
+          val payload = JwtPayload(userId = userId, email = "e@e.com", role = PersonRole.SuperAdmin, iat = 0L, exp = 0L)
+          val user    = BillingSecure.toAuthenticatedUser(payload)
+          assertTrue(user.role == "SUPER_ADMIN", user.roles == Set("SUPER_ADMIN"))
+        }
+      )
     )

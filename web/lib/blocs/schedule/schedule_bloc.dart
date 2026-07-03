@@ -69,7 +69,13 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     ScheduleCreateDay event,
     Emitter<ScheduleState> emit,
   ) async {
-    emit(state.copyWith(status: ScheduleStateStatus.loading));
+    emit(
+      state.copyWith(
+        status: ScheduleStateStatus.loading,
+        errorMessage: null,
+        error: null,
+      ),
+    );
     try {
       final newDay = await _scheduleService.createScheduleDay(
         driverId: event.driverId,
@@ -96,7 +102,13 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     ScheduleCancelDay event,
     Emitter<ScheduleState> emit,
   ) async {
-    emit(state.copyWith(status: ScheduleStateStatus.loading));
+    emit(
+      state.copyWith(
+        status: ScheduleStateStatus.loading,
+        errorMessage: null,
+        error: null,
+      ),
+    );
     try {
       final cancelled = await _scheduleService.cancelScheduleDay(
         event.scheduleDayId,

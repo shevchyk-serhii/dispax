@@ -36,7 +36,9 @@ class InMemoryPersonRepository extends PersonRepository:
   )
 
   override def findByCompanyId(companyId: CompanyId): Task[List[Person]] = people.get.map(
-    _.values.filter(_.companyId == companyId).toList
+    // Person.companyId is Option[CompanyId]; compare against Some(companyId) — a bare `== companyId`
+    // is always false (Some(x) never equals x) and silently returned an empty list.
+    _.values.filter(_.companyId.contains(companyId)).toList
   )
 
   override def findAll(): Task[List[Person]] = people.get.map(_.values.toList)

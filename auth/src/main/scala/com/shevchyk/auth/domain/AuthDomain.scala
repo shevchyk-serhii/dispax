@@ -170,6 +170,7 @@ case class UserAlreadyExists(email: String)                extends AuthError
 case class InvalidToken(token: String)                     extends AuthError
 case class WeakPassword(reason: String)                    extends AuthError
 case class ValidationError(field: String, message: String) extends AuthError
+case class AccessDenied(reason: String)                    extends AuthError
 
 sealed trait JwtError                                  extends AuthError
 case class JwtGenerationError(message: String)         extends JwtError

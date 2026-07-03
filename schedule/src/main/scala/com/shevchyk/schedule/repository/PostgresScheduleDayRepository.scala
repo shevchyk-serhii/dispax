@@ -64,7 +64,7 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
       )
     }
 
-  override def create(scheduleDay: ScheduleDay): Task[ScheduleDay] =
+  private def insertOne(scheduleDay: ScheduleDay): ConnectionIO[Int] =
     sql"""
       INSERT INTO schedule_days (id, driver_id, company_id, date, start_time, end_time, status, notes, created_at, updated_at)
       VALUES (
@@ -73,15 +73,27 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
         ${scheduleDay.status}, ${scheduleDay.notes}, ${scheduleDay.createdAt}, ${scheduleDay.updatedAt}
       )
     """.update.run
-      .transact(xa)
-      .mapBoth(
-        {
-          case ex if ex.getMessage != null && ex.getMessage.contains("uq_driver_date") =>
-            ScheduleError.DuplicateScheduleDay(scheduleDay.driverId, scheduleDay.date)
-          case ex                                                                      => ScheduleError.DatabaseError(ex)
-        },
-        _ => scheduleDay
-      )
+
+  private def mapInsertError(scheduleDay: ScheduleDay): Throwable => ScheduleError = {
+    case ex if ex.getMessage != null && ex.getMessage.contains("excl_schedule_days_shift_overlap") =>
+      ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date)
+    case ex                                                                                        => ScheduleError.DatabaseError(ex)
+  }
+
+  override def create(scheduleDay: ScheduleDay): Task[ScheduleDay] = insertOne(scheduleDay)
+    .transact(xa)
+    .mapBoth(mapInsertError(scheduleDay), _ => scheduleDay)
+
+  override def createAll(scheduleDays: List[ScheduleDay]): Task[List[ScheduleDay]] =
+    scheduleDays match
+      case Nil       => ZIO.succeed(Nil)
+      case head :: _ =>
+        // All inserts are composed into ONE ConnectionIO and run in a single transaction:
+        // any failure (e.g. the shift-overlap exclusion constraint) rolls back the whole batch.
+        scheduleDays
+          .foldLeft(doobie.free.connection.unit)((acc, day) => acc.flatMap(_ => insertOne(day).map(_ => ())))
+          .transact(xa)
+          .mapBoth(mapInsertError(head), _ => scheduleDays)
 
   override def findById(id: ScheduleDayId): Task[Option[ScheduleDay]] =
     sql"""
@@ -168,7 +180,11 @@ final class PostgresScheduleDayRepository(xa: Transactor[Task]) extends Schedule
     """.update.run
       .transact(xa)
       .as(scheduleDay)
-      .mapError(ex => ScheduleError.DatabaseError(ex))
+      .mapError {
+        case ex if ex.getMessage != null && ex.getMessage.contains("excl_schedule_days_shift_overlap") =>
+          ScheduleError.OverlapConflict(scheduleDay.driverId, scheduleDay.date)
+        case ex                                                                                        => ScheduleError.DatabaseError(ex)
+      }
 
   override def delete(id: ScheduleDayId, companyId: CompanyId): Task[Unit] =
     sql"""DELETE FROM schedule_days WHERE id = ${id.value} AND company_id = ${companyId.value}""".update.run

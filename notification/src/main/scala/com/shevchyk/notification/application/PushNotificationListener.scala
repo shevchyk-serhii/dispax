@@ -119,24 +119,44 @@ object PushNotificationListener:
       event: WebSocketEvent
   ): Task[Unit] =
     event match
-      case WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, price) =>
+      case WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, price, previousDriverId) =>
         // Carry the fare in the data map and append it to the body so the apps can
         // show the amount; both are omitted when the ride has no price.
-        val priceData   = priceField(price)
+        val priceData       = priceField(price)
         // Notify the assigned driver…
-        val driverNotif = PushNotification(
+        val driverNotif     = PushNotification(
           title = "New Ride Assigned",
           body = "A new ride has been assigned to you." + priceSuffix(price),
           data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceData
         )
         // …and the client whose ride it is.
-        val clientNotif = PushNotification(
+        val clientNotif     = PushNotification(
           title = "Driver Assigned",
           body = "A driver has been assigned to your ride." + priceSuffix(price),
           data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceData
         )
+        // …and, on a reassignment, the DISPLACED driver — a backgrounded driver would
+        // otherwise keep heading to a pickup that is no longer theirs.
+        val notifyOldDriver =
+          previousDriverId match
+            case Some(oldDriverId) =>
+              val reassignedNotif = PushNotification(
+                title = "Ride Reassigned",
+                body = "A ride previously assigned to you has been reassigned to another driver.",
+                data = Map("type" -> "ride_reassigned", "rideId" -> rideId.toString)
+              )
+              notifyUser(
+                fcmService,
+                notifRepo,
+                PersonId(oldDriverId),
+                CompanyId(companyId),
+                reassignedNotif,
+                "ride_reassigned"
+              )
+            case None              => ZIO.unit
         notifyUser(fcmService, notifRepo, PersonId(driverId), CompanyId(companyId), driverNotif, "ride_assigned") *>
-          notifyUser(fcmService, notifRepo, PersonId(clientId), CompanyId(companyId), clientNotif, "ride_assigned")
+          notifyUser(fcmService, notifRepo, PersonId(clientId), CompanyId(companyId), clientNotif, "ride_assigned") *>
+          notifyOldDriver
 
       case WebSocketEvent.RideStatusChanged(
             rideId,

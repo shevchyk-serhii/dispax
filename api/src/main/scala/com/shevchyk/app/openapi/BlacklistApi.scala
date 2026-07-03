@@ -98,7 +98,7 @@ object BlacklistApi:
       companyId <- requireCompanyId(user.companyId)
       entries   <- repo.findByCompanyId(companyId).mapError(internal)
       names     <- PersonNameLookup
-                     .names(entries.flatMap(e => List(e.clientId, e.driverId)))
+                     .names(entries.flatMap(e => List(e.clientId, e.driverId)), companyId)
                      .mapError(internal)
     } yield entries.map(BlacklistEntryDto.fromDomain(_, names))
   }

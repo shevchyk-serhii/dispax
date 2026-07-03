@@ -7,6 +7,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_dimensions.dart';
 import '../../../constants/app_styles.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../modules/core/services/api_client.dart';
 import '../../../modules/core/services/error_messages.dart';
 
 class SecretaryReportsPanel extends StatefulWidget {
@@ -37,12 +38,24 @@ class _SecretaryReportsPanelState extends State<SecretaryReportsPanel> {
       final apiClient = context.read<AuthBloc>().apiClient;
       final statsResponse = await apiClient.get('/stats/rides');
 
+      // The panel may have been disposed while the request was in flight.
+      if (!mounted) return;
       if (statsResponse.statusCode == 200) {
         _stats = jsonDecode(statsResponse.body);
+        setState(() => _isLoading = false);
+      } else {
+        // A non-200 must surface as an error (with Retry), not as a silent
+        // blank panel — _buildContent renders nothing while _stats is null.
+        setState(() {
+          _isLoading = false;
+          _error = ApiException(
+            'Failed to load stats: HTTP ${statsResponse.statusCode}',
+            statusCode: statsResponse.statusCode,
+          );
+        });
       }
-
-      setState(() => _isLoading = false);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e;

@@ -338,7 +338,10 @@ class Ride {
     String? id,
     String? clientId,
     String? creatorId,
-    String? driverId,
+    // Sentinel-based so a driver reassignment can explicitly CLEAR the stale
+    // driver id/name/location (pass null) while omitting the argument still
+    // keeps the current value — `?? this.x` cannot tell those apart.
+    Object? driverId = _sentinel,
     String? companyId,
     String? scheduleDayId,
     DateTime? pickupDateTime,
@@ -359,10 +362,10 @@ class Ride {
     String? terminal,
     String? flightStatus,
     Object? optimalEntryTime = _sentinel,
-    String? driverName,
+    Object? driverName = _sentinel,
     double? driverRating,
     int? driverRatingCount,
-    Location? driverLocation,
+    Object? driverLocation = _sentinel,
     Location? clientLocation,
     bool? driverApproaching,
     int? driverDistanceMeters,
@@ -393,7 +396,7 @@ class Ride {
       id: id ?? this.id,
       clientId: clientId ?? this.clientId,
       creatorId: creatorId ?? this.creatorId,
-      driverId: driverId ?? this.driverId,
+      driverId: driverId == _sentinel ? this.driverId : driverId as String?,
       companyId: companyId ?? this.companyId,
       scheduleDayId: scheduleDayId ?? this.scheduleDayId,
       pickupDateTime: pickupDateTime ?? this.pickupDateTime,
@@ -422,10 +425,14 @@ class Ride {
       gate: gate ?? this.gate,
       terminal: terminal ?? this.terminal,
       flightStatus: flightStatus ?? this.flightStatus,
-      driverName: driverName ?? this.driverName,
+      driverName: driverName == _sentinel
+          ? this.driverName
+          : driverName as String?,
       driverRating: driverRating ?? this.driverRating,
       driverRatingCount: driverRatingCount ?? this.driverRatingCount,
-      driverLocation: driverLocation ?? this.driverLocation,
+      driverLocation: driverLocation == _sentinel
+          ? this.driverLocation
+          : driverLocation as Location?,
       clientLocation: clientLocation ?? this.clientLocation,
       driverApproaching: driverApproaching ?? this.driverApproaching,
       driverDistanceMeters: driverDistanceMeters ?? this.driverDistanceMeters,
@@ -478,18 +485,40 @@ class Ride {
         other.to == to &&
         // Included so a live WebSocket checkpoint update yields a != Ride and the
         // BLoC actually re-emits (otherwise the row never refreshes on the card).
-        other.airportCheckpoint == airportCheckpoint;
+        other.airportCheckpoint == airportCheckpoint &&
+        // The live flight enrichment (monitor/WS FlightStatusUpdated) changes
+        // ONLY these fields. Without them two Rides differing in gate/status/
+        // times compare equal, the Equatable RideState stays equal, the BLoC
+        // suppresses the emit and the card never shows the flight data.
+        other.flightNumber == flightNumber &&
+        other.gate == gate &&
+        other.terminal == terminal &&
+        other.flightStatus == flightStatus &&
+        other.flightTime == flightTime &&
+        other.flightScheduledTime == flightScheduledTime &&
+        other.flightDepartureTime == flightDepartureTime &&
+        other.optimalEntryTime == optimalEntryTime;
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        clientId.hashCode ^
-        status.hashCode ^
-        pickupDateTime.hashCode ^
-        from.hashCode ^
-        to.hashCode ^
-        airportCheckpoint.hashCode;
+    return Object.hash(
+      id,
+      clientId,
+      status,
+      pickupDateTime,
+      from,
+      to,
+      airportCheckpoint,
+      flightNumber,
+      gate,
+      terminal,
+      flightStatus,
+      flightTime,
+      flightScheduledTime,
+      flightDepartureTime,
+      optimalEntryTime,
+    );
   }
 
   @override

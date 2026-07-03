@@ -26,11 +26,19 @@ object TestJwt:
 
   val serviceLayer: ZLayer[Any, Nothing, JwtService] = config >>> JwtService.live
 
-  def generateToken(role: PersonRole, companyId: CompanyId): ZIO[JwtService, Throwable, String] = ZIO
+  def generateToken(role: PersonRole, companyId: CompanyId): ZIO[JwtService, Throwable, String] = generateToken(
+    role,
+    companyId,
+    PersonId(UUID.randomUUID())
+  )
+
+  // Overload with an explicit user id, for specs that assert ownership/participation checks
+  // (the caller's id in the JWT must match a specific person referenced by the fixture).
+  def generateToken(role: PersonRole, companyId: CompanyId, userId: PersonId): ZIO[JwtService, Throwable, String] = ZIO
     .serviceWithZIO[JwtService](
       _.generateToken(
         Person(
-          id = PersonId(UUID.randomUUID()),
+          id = userId,
           email = s"${role.toString.toLowerCase}@test.de",
           name = s"${role.toString} User",
           role = role,

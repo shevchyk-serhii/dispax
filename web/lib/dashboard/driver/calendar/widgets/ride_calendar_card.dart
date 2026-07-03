@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import '../../../../constants/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../modules/ride_management/models/ride.dart';
+import '../../../../utils/parse_amount.dart';
 import '../../../../utils/ride_status_styles.dart';
 import 'ride_badges.dart';
 
@@ -101,7 +102,7 @@ class RideCalendarCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              final value = double.tryParse(controller.text.trim());
+              final value = parseAmount(controller.text);
               if (value != null && value >= 0) {
                 Navigator.of(ctx).pop();
                 onPriceEdited!(value);

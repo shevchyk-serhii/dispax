@@ -7,6 +7,7 @@ import '../blocs/blocs.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/parse_amount.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 
@@ -99,6 +100,9 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         apiClient.get('/company/settings'),
         apiClient.get('/company/tariff'),
       ]);
+      // The screen may have been closed while the requests were in flight —
+      // touching controllers/setState on a disposed State crashes.
+      if (!mounted) return;
       final settingsResponse = results[0];
       final tariffResponse = results[1];
 
@@ -117,16 +121,19 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
         _cancellationFeeController.text = (settings['cancellationFee'] ?? 0)
             .toString();
         _noShowFeeController.text = (settings['noShowFee'] ?? 0).toString();
+        // num->toInt, not a raw `as int`: a backend value serialized as a
+        // double (e.g. 6.0) would throw on the cast and fail the whole
+        // settings load into the error state.
         if (settings['workStartHour'] != null) {
           _workStart = TimeOfDay(
-            hour: settings['workStartHour'] as int,
-            minute: (settings['workStartMinute'] as int?) ?? 0,
+            hour: (settings['workStartHour'] as num).toInt(),
+            minute: (settings['workStartMinute'] as num?)?.toInt() ?? 0,
           );
         }
         if (settings['workEndHour'] != null) {
           _workEnd = TimeOfDay(
-            hour: settings['workEndHour'] as int,
-            minute: (settings['workEndMinute'] as int?) ?? 0,
+            hour: (settings['workEndHour'] as num).toInt(),
+            minute: (settings['workEndMinute'] as num?)?.toInt() ?? 0,
           );
         }
         _datevBeraternummerController.text =
@@ -149,6 +156,7 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
 
       setState(() => _isLoading = false);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e;
@@ -156,8 +164,44 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
     }
   }
 
+  /// Reads a money/rate field accepting both "12.50" and the German "12,50".
+  /// An empty field means 0; garbage returns null so the save can abort
+  /// instead of silently zeroing the value.
+  double? _amountOf(TextEditingController controller) {
+    final text = controller.text.trim();
+    if (text.isEmpty) return 0;
+    return parseAmount(text);
+  }
+
   Future<void> _saveSettings() async {
     final l10n = AppLocalizations.of(context)!;
+
+    final commissionRate = _amountOf(_commissionController);
+    final cancellationFee = _amountOf(_cancellationFeeController);
+    final noShowFee = _amountOf(_noShowFeeController);
+    final basePrice = _amountOf(_basePriceController);
+    final pricePerKm = _amountOf(_pricePerKmController);
+    final airportSurcharge = _amountOf(_airportSurchargeController);
+    final nightSurcharge = _amountOf(_nightSurchargeController);
+    final amounts = [
+      commissionRate,
+      cancellationFee,
+      noShowFee,
+      basePrice,
+      pricePerKm,
+      airportSurcharge,
+      nightSurcharge,
+    ];
+    if (amounts.contains(null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.invalidAmountError),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
@@ -169,11 +213,10 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
           : null;
 
       final settingsPayload = <String, dynamic>{
-        'commissionRate': double.tryParse(_commissionController.text) ?? 0,
+        'commissionRate': commissionRate,
         'defaultCurrency': _defaultCurrencyController.text,
-        'cancellationFee':
-            double.tryParse(_cancellationFeeController.text) ?? 0,
-        'noShowFee': double.tryParse(_noShowFeeController.text) ?? 0,
+        'cancellationFee': cancellationFee,
+        'noShowFee': noShowFee,
         'workStartHour': _workStart.hour,
         'workStartMinute': _workStart.minute,
         'workEndHour': _workEnd.hour,
@@ -201,11 +244,10 @@ class _CompanySettingsScreenState extends State<CompanySettingsScreen> {
       await apiClient.put('/company/settings', settingsPayload);
 
       await apiClient.put('/company/tariff', {
-        'basePrice': double.tryParse(_basePriceController.text) ?? 0,
-        'pricePerKm': double.tryParse(_pricePerKmController.text) ?? 0,
-        'airportSurcharge':
-            double.tryParse(_airportSurchargeController.text) ?? 0,
-        'nightSurcharge': double.tryParse(_nightSurchargeController.text) ?? 0,
+        'basePrice': basePrice,
+        'pricePerKm': pricePerKm,
+        'airportSurcharge': airportSurcharge,
+        'nightSurcharge': nightSurcharge,
       });
 
       if (mounted) {

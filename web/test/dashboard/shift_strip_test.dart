@@ -1,5 +1,6 @@
 import 'package:dispax/dashboard/driver/calendar/widgets/shift_strip.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/schedule_management/models/schedule_day.dart';
 import 'package:dispax/modules/schedule_management/services/schedule_service.dart';
 import 'package:flutter/material.dart';
@@ -81,7 +82,7 @@ void main() {
   });
 
   testWidgets(
-    'creating a shift with the dialog defaults calls the service and onChanged',
+    'on an empty day the dialog defaults to 08:00–16:00 and creates the shift',
     (tester) async {
       when(
         () => service.createScheduleDay(
@@ -93,7 +94,7 @@ void main() {
         ),
       ).thenAnswer((_) async => shift());
 
-      await tester.pumpWidget(wrap());
+      await tester.pumpWidget(wrap(shifts: []));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.add_circle_outline));
@@ -113,6 +114,157 @@ void main() {
       expect(onChangedCalls, 1);
     },
   );
+
+  testWidgets(
+    'a second shift on a day that already has one defaults to a non-overlapping window',
+    (tester) async {
+      when(
+        () => service.createScheduleDay(
+          driverId: any(named: 'driverId'),
+          date: any(named: 'date'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+          notes: any(named: 'notes'),
+        ),
+      ).thenAnswer((_) async => shift(id: 'shift-2'));
+
+      // Existing shift 08:00–16:00: the free gap before it is 00:00–08:00, so
+      // the dialog must seed that window (an 8h slot fits), NOT the fixed
+      // 08:00–16:00 default that would overlap.
+      await tester.pumpWidget(
+        wrap(
+          shifts: [shift(start: '08:00', end: '16:00')],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => service.createScheduleDay(
+          driverId: 'driver-1',
+          date: '2026-07-03',
+          startTime: '00:00',
+          endTime: '08:00',
+          notes: null,
+        ),
+      ).called(1);
+      expect(onChangedCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'with an early existing shift the second shift defaults to the window after it',
+    (tester) async {
+      when(
+        () => service.createScheduleDay(
+          driverId: any(named: 'driverId'),
+          date: any(named: 'date'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+          notes: any(named: 'notes'),
+        ),
+      ).thenAnswer((_) async => shift(id: 'shift-2'));
+
+      // Existing 00:00–06:00 leaves only a 6h gap before nothing, so the first
+      // free window is after it: 06:00 + 8h = 14:00.
+      await tester.pumpWidget(
+        wrap(
+          shifts: [shift(start: '00:00', end: '06:00')],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => service.createScheduleDay(
+          driverId: 'driver-1',
+          date: '2026-07-03',
+          startTime: '06:00',
+          endTime: '14:00',
+          notes: null,
+        ),
+      ).called(1);
+      expect(onChangedCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'a 409 conflict on create shows the localized overlap message, not the generic one',
+    (tester) async {
+      when(
+        () => service.createScheduleDay(
+          driverId: any(named: 'driverId'),
+          date: any(named: 'date'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+          notes: any(named: 'notes'),
+        ),
+      ).thenThrow(
+        ApiException(
+          'Failed to create schedule day: Driver 1111 already has an overlapping shift on 2026-07-03',
+          statusCode: 409,
+        ),
+      );
+
+      await tester.pumpWidget(wrap(shifts: []));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_circle_outline));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          "The selected time overlaps an existing shift. Multiple shifts per day are allowed — pick a time that doesn't overlap.",
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Something went wrong. Please try again.'),
+        findsNothing,
+      );
+      expect(onChangedCalls, 0);
+    },
+  );
+
+  testWidgets('a non-conflict failure on create falls back to friendlyError', (
+    tester,
+  ) async {
+    when(
+      () => service.createScheduleDay(
+        driverId: any(named: 'driverId'),
+        date: any(named: 'date'),
+        startTime: any(named: 'startTime'),
+        endTime: any(named: 'endTime'),
+        notes: any(named: 'notes'),
+      ),
+    ).thenThrow(
+      ApiException(
+        'Failed to create schedule day: Person is not a driver',
+        statusCode: 400,
+      ),
+    );
+
+    await tester.pumpWidget(wrap(shifts: []));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add_circle_outline));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    // friendlyError surfaces the backend's own reason for validation errors.
+    expect(find.text('Person is not a driver'), findsOneWidget);
+  });
 
   testWidgets('tapping a chip cancels the shift after confirmation', (
     tester,

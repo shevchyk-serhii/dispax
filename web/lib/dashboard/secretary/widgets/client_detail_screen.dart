@@ -16,6 +16,7 @@ import '../../../constants/app_dimensions.dart';
 import '../../../utils/ride_status_styles.dart';
 import '../../../constants/app_styles.dart';
 import '../../../modules/core/services/error_messages.dart';
+import '../../superadmin/widgets/billing_widgets.dart' show fmtEur;
 
 class ClientDetailScreen extends StatefulWidget {
   final Person client;
@@ -50,11 +51,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       final rideService = RideService(apiClient: apiClient);
       final rides = await rideService.getClientRides(_client.id);
       rides.sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+      // The screen may have been popped while the request was in flight —
+      // calling setState on a disposed State crashes.
+      if (!mounted) return;
       setState(() {
         _rides = rides;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e;
@@ -393,7 +398,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       ),
                     if (price != null)
                       Text(
-                        '€${price.toStringAsFixed(2)}',
+                        fmtEur(price),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,

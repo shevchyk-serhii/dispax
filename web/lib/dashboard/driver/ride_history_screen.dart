@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
+import '../../l10n/app_localizations.dart';
+import '../../modules/core/services/error_messages.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../widgets/widgets.dart';
 import '../../modules/core/date_utils.dart';
@@ -11,7 +13,58 @@ import '../../constants/app_styles.dart';
 import '../../constants/app_dimensions.dart';
 import '../../utils/ride_status_styles.dart';
 
-enum _PeriodFilter { today, week, month, all }
+/// Period filter for the driver's ride history. Public so the pure filter
+/// function below is unit-testable.
+enum RideHistoryPeriod { today, week, month, all }
+
+/// Pure filter for the driver's history list: completed/cancelled rides of
+/// [driverId] within [period] (relative to [now]).
+///
+/// Week/month windows are boundary-INCLUSIVE: a ride exactly at Monday
+/// 00:00:00 (week) or the 1st 00:00:00 (month) belongs to the period —
+/// `isAfter(start)` silently dropped it (equality is not "after").
+List<Ride> completedRidesFor(
+  List<Ride> rides,
+  String? driverId,
+  RideHistoryPeriod period,
+  DateTime now,
+) {
+  var filtered = rides
+      .where(
+        (ride) =>
+            ride.driverId?.toString() == driverId &&
+            (ride.status == RideStatus.completed ||
+                ride.status == RideStatus.cancelled),
+      )
+      .toList();
+
+  switch (period) {
+    case RideHistoryPeriod.today:
+      filtered = filtered
+          .where(
+            (r) =>
+                r.pickupDateTime.year == now.year &&
+                r.pickupDateTime.month == now.month &&
+                r.pickupDateTime.day == now.day,
+          )
+          .toList();
+    case RideHistoryPeriod.week:
+      final weekStart = now.subtract(Duration(days: now.weekday - 1));
+      final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+      filtered = filtered
+          .where((r) => !r.pickupDateTime.isBefore(start))
+          .toList();
+    case RideHistoryPeriod.month:
+      final start = DateTime(now.year, now.month, 1);
+      filtered = filtered
+          .where((r) => !r.pickupDateTime.isBefore(start))
+          .toList();
+    case RideHistoryPeriod.all:
+      break;
+  }
+
+  return filtered..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+}
 
 class RideHistoryScreen extends StatefulWidget {
   const RideHistoryScreen({super.key});
@@ -21,7 +74,7 @@ class RideHistoryScreen extends StatefulWidget {
 }
 
 class _RideHistoryScreenState extends State<RideHistoryScreen> {
-  _PeriodFilter _period = _PeriodFilter.all;
+  RideHistoryPeriod _period = RideHistoryPeriod.all;
 
   void loadRides(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -31,45 +84,8 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
     }
   }
 
-  List<Ride> getCompletedRides(List<Ride> rides, String? driverId) {
-    var filtered = rides
-        .where(
-          (ride) =>
-              ride.driverId?.toString() == driverId &&
-              (ride.status == RideStatus.completed ||
-                  ride.status == RideStatus.cancelled),
-        )
-        .toList();
-
-    final now = DateTime.now();
-    switch (_period) {
-      case _PeriodFilter.today:
-        filtered = filtered
-            .where(
-              (r) =>
-                  r.pickupDateTime.year == now.year &&
-                  r.pickupDateTime.month == now.month &&
-                  r.pickupDateTime.day == now.day,
-            )
-            .toList();
-      case _PeriodFilter.week:
-        final weekStart = now.subtract(Duration(days: now.weekday - 1));
-        final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
-        filtered = filtered
-            .where((r) => r.pickupDateTime.isAfter(start))
-            .toList();
-      case _PeriodFilter.month:
-        final start = DateTime(now.year, now.month, 1);
-        filtered = filtered
-            .where((r) => r.pickupDateTime.isAfter(start))
-            .toList();
-      case _PeriodFilter.all:
-        break;
-    }
-
-    return filtered
-      ..sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
-  }
+  List<Ride> getCompletedRides(List<Ride> rides, String? driverId) =>
+      completedRidesFor(rides, driverId, _period, DateTime.now());
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +111,12 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                 if (rideState.hasError && rideState.rides.isEmpty) {
                   return ErrorDisplayWidget(
                     title: 'Failed to load ride history',
-                    message: rideState.errorMessage ?? '',
+                    // friendlyError, not the raw errorMessage: never leak
+                    // 'ApiException: ...' to the UI.
+                    message: friendlyError(
+                      rideState.error ?? rideState.errorMessage,
+                      AppLocalizations.of(context)!,
+                    ),
                     onRetry: () => loadRides(context),
                   );
                 }
@@ -105,7 +126,8 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
                     ? getCompletedRides(rideState.rides, user.id.toString())
                     : <Ride>[];
 
-                if (completedRides.isEmpty && _period == _PeriodFilter.all) {
+                if (completedRides.isEmpty &&
+                    _period == RideHistoryPeriod.all) {
                   return _buildEmptyState(context);
                 }
 
@@ -160,13 +182,13 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
 
   String _periodSubtitle() {
     switch (_period) {
-      case _PeriodFilter.today:
+      case RideHistoryPeriod.today:
         return 'Today';
-      case _PeriodFilter.week:
+      case RideHistoryPeriod.week:
         return 'This week';
-      case _PeriodFilter.month:
+      case RideHistoryPeriod.month:
         return 'This month';
-      case _PeriodFilter.all:
+      case RideHistoryPeriod.all:
         return 'All time';
     }
   }
@@ -219,19 +241,19 @@ class _RideHistoryScreenState extends State<RideHistoryScreen> {
       ),
       child: Row(
         children: [
-          _periodChip('Today', _PeriodFilter.today),
+          _periodChip('Today', RideHistoryPeriod.today),
           const SizedBox(width: 8),
-          _periodChip('Week', _PeriodFilter.week),
+          _periodChip('Week', RideHistoryPeriod.week),
           const SizedBox(width: 8),
-          _periodChip('Month', _PeriodFilter.month),
+          _periodChip('Month', RideHistoryPeriod.month),
           const SizedBox(width: 8),
-          _periodChip('All', _PeriodFilter.all),
+          _periodChip('All', RideHistoryPeriod.all),
         ],
       ),
     );
   }
 
-  Widget _periodChip(String label, _PeriodFilter filter) {
+  Widget _periodChip(String label, RideHistoryPeriod filter) {
     final selected = _period == filter;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(

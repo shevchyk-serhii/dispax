@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../modules/core/services/api_client.dart';
 import '../../../../modules/core/services/error_messages.dart';
 import '../../../../modules/schedule_management/models/schedule_day.dart';
 import '../../../../modules/schedule_management/services/schedule_service.dart';
@@ -75,7 +76,10 @@ class _ShiftStripState extends State<ShiftStrip> {
     final l10n = AppLocalizations.of(context)!;
     final request = await showDialog<_CreateShiftRequest>(
       context: context,
-      builder: (_) => _CreateShiftDialog(initialDate: widget.selectedDay),
+      builder: (_) => _CreateShiftDialog(
+        initialDate: widget.selectedDay,
+        existingShifts: _dayShifts,
+      ),
     );
     if (request == null || !mounted) return;
 
@@ -112,11 +116,14 @@ class _ShiftStripState extends State<ShiftStrip> {
       await widget.onChanged();
     } catch (e) {
       if (!mounted) return;
+      // A 409 means the requested time overlaps an existing (non-cancelled)
+      // shift — say so in the user's language instead of the raw backend text
+      // (which carries the driver UUID).
+      final message = (e is ApiException && e.kind == AppErrorKind.conflict)
+          ? l10n.shiftOverlapSnack
+          : friendlyError(e, l10n);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(friendlyError(e, l10n)),
-          backgroundColor: AppColors.error,
-        ),
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
       );
     }
   }
@@ -249,10 +256,23 @@ class _CreateShiftRequest {
 /// Dialog collecting date, start/end time, optional daily repeat-until date
 /// and an optional note. Validates start < end client-side; duplicate/overlap
 /// conflicts surface from the backend as a 409.
+///
+/// Several shifts per day are allowed as long as they don't overlap in time, so
+/// the dialog seeds start/end with the first free (non-overlapping) window that
+/// fits around [existingShifts] — otherwise the fixed 08:00–16:00 default would
+/// collide with an existing shift and trip the backend's overlap check on the
+/// very first attempt.
 class _CreateShiftDialog extends StatefulWidget {
   final DateTime initialDate;
 
-  const _CreateShiftDialog({required this.initialDate});
+  /// The selected day's active/scheduled shifts, used to pick a non-overlapping
+  /// default time window. Empty when the day has no shifts yet.
+  final List<ScheduleDay> existingShifts;
+
+  const _CreateShiftDialog({
+    required this.initialDate,
+    this.existingShifts = const [],
+  });
 
   @override
   State<_CreateShiftDialog> createState() => _CreateShiftDialogState();
@@ -260,16 +280,71 @@ class _CreateShiftDialog extends StatefulWidget {
 
 class _CreateShiftDialogState extends State<_CreateShiftDialog> {
   late DateTime _date;
-  TimeOfDay _start = const TimeOfDay(hour: 8, minute: 0);
-  TimeOfDay _end = const TimeOfDay(hour: 16, minute: 0);
+  late TimeOfDay _start;
+  late TimeOfDay _end;
   DateTime? _repeatUntil;
   final _noteController = TextEditingController();
   String? _error;
+
+  /// Default shift length (minutes) when the day is empty, or the width of a
+  /// gap can accommodate it.
+  static const int _defaultShiftMinutes = 8 * 60;
 
   @override
   void initState() {
     super.initState();
     _date = widget.initialDate;
+    final (startMin, endMin) = _firstFreeWindow(widget.existingShifts);
+    _start = TimeOfDay(hour: startMin ~/ 60, minute: startMin % 60);
+    _end = TimeOfDay(hour: endMin ~/ 60, minute: endMin % 60);
+  }
+
+  /// Parse "HH:mm[:ss]" into minutes-since-midnight.
+  static int _minutesOf(String raw) {
+    final parts = raw.split(':');
+    final h = int.tryParse(parts.isNotEmpty ? parts[0] : '') ?? 0;
+    final m = int.tryParse(parts.length > 1 ? parts[1] : '') ?? 0;
+    return h * 60 + m;
+  }
+
+  /// Pick the first (start, end) window in minutes that doesn't overlap any of
+  /// [shifts]: prefer an 8h window, but shrink to fit the first gap large enough
+  /// to hold a shift; fall back to the day's default when nothing fits.
+  static (int, int) _firstFreeWindow(List<ScheduleDay> shifts) {
+    const dayEnd = 24 * 60;
+    const minShift = 30; // don't seed an unusably tiny window
+    if (shifts.isEmpty) return (8 * 60, 8 * 60 + _defaultShiftMinutes);
+
+    // Non-overlapping busy intervals, sorted by start (parent already filtered
+    // out cancelled shifts).
+    final busy =
+        shifts
+            .map((s) => (_minutesOf(s.startTime), _minutesOf(s.endTime)))
+            .toList()
+          ..sort((a, b) => a.$1.compareTo(b.$1));
+
+    var cursor = 0;
+    for (final (bStart, bEnd) in busy) {
+      final gap = bStart - cursor;
+      if (gap >= minShift) {
+        final end =
+            cursor + (gap >= _defaultShiftMinutes ? _defaultShiftMinutes : gap);
+        return (cursor, end);
+      }
+      if (bEnd > cursor) cursor = bEnd;
+    }
+    // After the last shift, until end of day.
+    if (dayEnd - cursor >= minShift) {
+      final end =
+          cursor +
+          ((dayEnd - cursor) >= _defaultShiftMinutes
+              ? _defaultShiftMinutes
+              : (dayEnd - cursor));
+      return (cursor, end == dayEnd ? dayEnd - 1 : end);
+    }
+    // Day is packed — fall back to the plain default; the backend will reject
+    // the overlap with a clear message.
+    return (8 * 60, 8 * 60 + _defaultShiftMinutes);
   }
 
   @override

@@ -6,7 +6,7 @@ import com.shevchyk.core.openapi.ApiError
 import com.shevchyk.ride.domain.*
 import com.shevchyk.ride.openapi.RideSchemas.given
 import com.shevchyk.ride.openapi.RideSecure.*
-import com.shevchyk.ride.repository.ExpenseRepository
+import com.shevchyk.ride.repository.{ExpenseRepository, RideRepository}
 import sttp.model.StatusCode
 import sttp.tapir.json.zio.*
 import sttp.tapir.ztapir.*
@@ -21,7 +21,7 @@ object ExpenseApi:
 
   private val expenseTag = "Expenses"
 
-  type ExpenseEnv = ExpenseRepository & JwtService
+  type ExpenseEnv = ExpenseRepository & RideRepository & JwtService
 
   private def internalError: Err = (StatusCode.InternalServerError, ApiError("Internal server error"))
 
@@ -59,6 +59,23 @@ object ExpenseApi:
       repo      <- ZIO.service[ExpenseRepository]
       rideIdOpt <- ZIO.foreach(req.rideId)(parseRideId)
       companyId <- requireCompanyId(user.companyId)
+      // An expense may reference a ride. Validate the binding so a driver cannot attach an expense
+      // to another company's ride (cross-tenant → 404, no existence leak) or to a colleague's ride
+      // (a DRIVER may only expense a ride they are assigned to → 403). Staff (DISPATCHER/ADMIN) may
+      // reference any ride in their own company.
+      _         <-
+        ZIO.foreach(rideIdOpt) { rid =>
+          for {
+            rideRepo <- ZIO.service[RideRepository]
+            rideOpt  <- rideRepo.findById(rid).mapError(_ => internalError)
+            ride     <- ZIO
+                          .fromOption(rideOpt.filter(_.companyId == companyId))
+                          .orElseFail((StatusCode.NotFound, ApiError("Ride not found")))
+            _        <- ZIO
+                          .fail((StatusCode.Forbidden, ApiError("You are not assigned to this ride")))
+                          .when(user.role == "DRIVER" && !ride.driverId.contains(PersonId(user.userId)))
+          } yield ()
+        }
       expense    = Expense(
                      id = ExpenseId.generate(),
                      rideId = rideIdOpt,

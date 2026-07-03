@@ -61,6 +61,16 @@ object RideSecure:
     if user.hasAnyRole(roles*) || user.userId == resourceOwnerId then ZIO.unit
     else ZIO.fail((StatusCode.Forbidden, ApiError("Access denied")))
 
+  /**
+   * Participation guard for per-ride resources (e.g. the ride chat): only the ride's client, its assigned driver, or
+   * company staff (dispatcher/secretary/admin) may access them. Any other user of the same company gets 403 — the same
+   * mapping `RideError.UnauthorizedAccess` uses. Callers must have verified company isolation first.
+   */
+  def checkRideParticipant(user: AuthenticatedUser, ride: com.shevchyk.ride.domain.Ride): ZIO[Any, Err, Unit] =
+    val isParticipant = ride.clientId.value == user.userId || ride.driverId.exists(_.value == user.userId)
+    if isParticipant || user.hasAnyRole("DISPATCHER", "SECRETARY", "ADMIN") then ZIO.unit
+    else ZIO.fail((StatusCode.Forbidden, ApiError("Access denied")))
+
   // -- UUID parsing (mirrors UuidParser, which fails with 400) -------------
 
   def parseUuid(value: String): ZIO[Any, Err, UUID] = ZIO
@@ -117,3 +127,17 @@ object RideSecure:
         (StatusCode.NotFound, ApiError(s"Partner company not found: ${id.value}"))
       case RideError.DatabaseError(_)                                            => (StatusCode.InternalServerError, ApiError("Internal server error"))
       case _                                                                     => (StatusCode.InternalServerError, ApiError("Internal server error"))
+
+  /**
+   * Map a `ChatError` to HTTP, following the same conventions as [[fromRideError]] (404 for a missing ride, 400 for
+   * validation/business-rule failures, 500 for storage failures — never leaking internals).
+   */
+  def fromChatError(error: com.shevchyk.ride.domain.ChatError): Err =
+    import com.shevchyk.ride.domain.ChatError
+    error match
+      case ChatError.RideNotFound(id)    => (StatusCode.NotFound, ApiError(s"Ride not found: ${id.value}"))
+      case ChatError.ChatNotAvailable(_) => (StatusCode.BadRequest, ApiError("Chat is only available for active rides"))
+      case ChatError.EmptyMessage        => (StatusCode.BadRequest, ApiError("Chat message must not be empty"))
+      case ChatError.MessageTooLong(max) =>
+        (StatusCode.BadRequest, ApiError(s"Chat message must be at most $max characters"))
+      case ChatError.StorageError(_)     => (StatusCode.InternalServerError, ApiError("Internal server error"))
