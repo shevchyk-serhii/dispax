@@ -63,6 +63,25 @@ object ExportApiSpec extends ZIOSpecDefault {
     paymentMethod = paymentMethod
   )
 
+  /**
+   * Unwrap the Right of buildExtf for tests whose data is fully Windows-1252-encodable. A Left here fails the test via
+   * `.toOption.get`.
+   */
+  private def buildExtfOk(
+      rides: List[Ride],
+      expenses: List[Expense],
+      clientNames: Map[PersonId, String],
+      month: YearMonth,
+      beraternummer: String,
+      mandantennummer: String,
+      sachkontenlaenge: Int,
+      now: Instant
+  ): Array[Byte] =
+    ExportApi
+      .buildExtf(rides, expenses, clientNames, month, beraternummer, mandantennummer, sachkontenlaenge, now)
+      .toOption
+      .get
+
   // ── Spec ─────────────────────────────────────────────────────────────────
 
   def spec =
@@ -167,7 +186,7 @@ object ExportApiSpec extends ZIOSpecDefault {
       ),
       suite("buildExtf file structure")(
         test("first line starts with EXTF header, second line is column header") {
-          val bytes  = ExportApi.buildExtf(
+          val bytes  = buildExtfOk(
             rides = Nil,
             expenses = Nil,
             clientNames = Map.empty,
@@ -187,7 +206,7 @@ object ExportApiSpec extends ZIOSpecDefault {
           )
         },
         test("lines are separated by CRLF (not bare LF)") {
-          val bytes       = ExportApi.buildExtf(
+          val bytes       = buildExtfOk(
             rides = Nil,
             expenses = Nil,
             clientNames = Map.empty,
@@ -204,7 +223,7 @@ object ExportApiSpec extends ZIOSpecDefault {
           assertTrue(hasCrlf && !bareNewline)
         },
         test("empty month produces exactly 2 lines: header + column header") {
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = Nil,
             expenses = Nil,
             clientNames = Map.empty,
@@ -221,7 +240,7 @@ object ExportApiSpec extends ZIOSpecDefault {
         test("booking rows appear after the column header for rides with data") {
           val ride      = makeCompletedRide(estimatedPrice = Some(BigDecimal("75.00")))
           val clientMap = Map(clientA1 -> "Test Client")
-          val bytes     = ExportApi.buildExtf(
+          val bytes     = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = clientMap,
@@ -245,7 +264,7 @@ object ExportApiSpec extends ZIOSpecDefault {
             estimatedPrice = Some(BigDecimal("60.00")),
             paymentMethod = Some(PaymentMethod.Payment)
           )
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = Map(clientA1 -> "Test Client"),
@@ -266,7 +285,7 @@ object ExportApiSpec extends ZIOSpecDefault {
             estimatedPrice = Some(BigDecimal("60.00")),
             paymentMethod = Some(PaymentMethod.Cash)
           )
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = Map(clientA1 -> "Test Client"),
@@ -282,7 +301,7 @@ object ExportApiSpec extends ZIOSpecDefault {
         },
         test("booking row amounts use German comma not dot") {
           val ride     = makeCompletedRide(estimatedPrice = Some(BigDecimal("99.50")))
-          val bytes    = ExportApi.buildExtf(
+          val bytes    = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = Map(clientA1 -> "Müller"),
@@ -299,7 +318,7 @@ object ExportApiSpec extends ZIOSpecDefault {
           assertTrue(bookLine.startsWith("99,50"))
         },
         test("sachkontenlaenge default=4 used when provided as 4") {
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = Nil,
             expenses = Nil,
             clientNames = Map.empty,
@@ -313,7 +332,7 @@ object ExportApiSpec extends ZIOSpecDefault {
           assertTrue(text.contains(";4;"))
         },
         test("sachkontenlaenge=6 used when provided as 6") {
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = Nil,
             expenses = Nil,
             clientNames = Map.empty,
@@ -330,7 +349,7 @@ object ExportApiSpec extends ZIOSpecDefault {
       suite("buildExtf Windows-1252 encoding")(
         test("umlaut round-trip: Müller encodes and decodes correctly under Cp1252") {
           val ride  = makeCompletedRide(estimatedPrice = Some(BigDecimal("10.00")))
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = Map(clientA1 -> "Müller"),
@@ -346,7 +365,7 @@ object ExportApiSpec extends ZIOSpecDefault {
         test("ü is single byte 0xFC in windows-1252 (not multi-byte UTF-8)") {
           // In UTF-8, ü is 0xC3 0xBC (2 bytes). In windows-1252 it is 0xFC (1 byte).
           val ride  = makeCompletedRide(estimatedPrice = Some(BigDecimal("10.00")))
-          val bytes = ExportApi.buildExtf(
+          val bytes = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = Map(clientA1 -> "ü"),
@@ -367,7 +386,7 @@ object ExportApiSpec extends ZIOSpecDefault {
         },
         test("bytes are NOT valid UTF-8 when umlauts are present (encoding is windows-1252)") {
           val ride      = makeCompletedRide(estimatedPrice = Some(BigDecimal("10.00")))
-          val bytes     = ExportApi.buildExtf(
+          val bytes     = buildExtfOk(
             rides = List(ride),
             expenses = Nil,
             clientNames = Map(clientA1 -> "Müller"),
@@ -382,6 +401,57 @@ object ExportApiSpec extends ZIOSpecDefault {
           val asUtf8    = new String(bytes, "UTF-8")
           val asWin1252 = new String(bytes, "windows-1252")
           assertTrue(asUtf8 != asWin1252)
+        },
+        // -- Audit fix: unmappable characters must FAIL the export (REPORT), not silently become '?' (REPLACE) --
+        test("Cyrillic client name fails the export naming the offending value (not silent ? replacement)") {
+          val ride   = makeCompletedRide(estimatedPrice = Some(BigDecimal("10.00")))
+          val result = ExportApi.buildExtf(
+            rides = List(ride),
+            expenses = Nil,
+            clientNames = Map(clientA1 -> "ООО Транспорт"),
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          assertTrue(result == Left(ExportApi.ExtfUnencodable("ООО Транспорт")))
+        },
+        test("emoji in an expense description fails the export naming the offending value") {
+          val expense = Expense(
+            id = ExpenseId.generate(),
+            driverId = driverA,
+            companyId = companyA,
+            category = ExpenseCategory.Fuel,
+            amount = BigDecimal("42.00"),
+            description = Some("Tanken \u26FD"),
+            createdAt = Instant.parse("2025-05-10T12:00:00Z")
+          )
+          val result  = ExportApi.buildExtf(
+            rides = Nil,
+            expenses = List(expense),
+            clientNames = Map.empty,
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          assertTrue(result == Left(ExportApi.ExtfUnencodable("Tanken \u26FD")))
+        },
+        test("fully Windows-1252 data (umlauts included) still exports successfully") {
+          val ride   = makeCompletedRide(estimatedPrice = Some(BigDecimal("10.00")))
+          val result = ExportApi.buildExtf(
+            rides = List(ride),
+            expenses = Nil,
+            clientNames = Map(clientA1 -> "Müller & Söhne GmbH"),
+            month = may2025,
+            beraternummer = "",
+            mandantennummer = "",
+            sachkontenlaenge = 4,
+            now = fixedNow
+          )
+          assertTrue(result.isRight)
         }
       ),
       suite("old generateRevenueCsv still uses dot (backward-compat)")(
@@ -429,7 +499,7 @@ object ExportApiSpec extends ZIOSpecDefault {
           val _     = makeCompletedRide(companyId = companyB, estimatedPrice = Some(BigDecimal("999.99")))
 
           // Simulate correct service behaviour: only companyA rides passed to buildExtf
-          val bytesA = ExportApi.buildExtf(
+          val bytesA = buildExtfOk(
             rides = List(rideA),
             expenses = Nil,
             clientNames = Map(clientA1 -> "Client A"),
@@ -447,7 +517,7 @@ object ExportApiSpec extends ZIOSpecDefault {
           )
         },
         test("company A settings (beraternummer) appear in header, not company B settings") {
-          val bytesA = ExportApi.buildExtf(
+          val bytesA = buildExtfOk(
             rides = Nil,
             expenses = Nil,
             clientNames = Map.empty,

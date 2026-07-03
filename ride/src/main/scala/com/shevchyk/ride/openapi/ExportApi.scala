@@ -201,8 +201,16 @@ object ExportApi:
   private val yyyyMMddHHmmssSSSFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")
 
   /**
-   * Assemble the complete EXTF Buchungsstapel byte array. Encoding: Windows-1252 with REPLACE for unmappable
-   * characters. Line separator: CRLF.
+   * A value in the export that cannot be represented in Windows-1252 (the encoding DATEV requires). Carrying the
+   * offending value lets the endpoint name it in the error instead of silently corrupting the export.
+   */
+  final private[openapi] case class ExtfUnencodable(value: String)
+
+  /**
+   * Assemble the complete EXTF Buchungsstapel byte array. Encoding: Windows-1252 with REPORT for unmappable characters
+   * — a client name or expense description outside Windows-1252 (e.g. Cyrillic, emoji) FAILS the export with the
+   * offending value instead of being silently replaced with `?` (which would ship a corrupted name to DATEV). Line
+   * separator: CRLF.
    */
   private[openapi] def buildExtf(
       rides: List[Ride],
@@ -213,7 +221,7 @@ object ExportApi:
       mandantennummer: String,
       sachkontenlaenge: Int,
       now: Instant
-  ): Array[Byte] =
+  ): Either[ExtfUnencodable, Array[Byte]] =
     val zonedNow    = now.atZone(ZoneOffset.UTC)
     val timestamp   = yyyyMMddHHmmssSSSFmt.format(zonedNow)
     val wjBeginn    = yyyyMMddFmt.format(month.atDay(1).withDayOfYear(1))
@@ -236,15 +244,24 @@ object ExportApi:
     val allRows     = List(header, datevCsvColumnHeader) ::: revenueRows ::: expenseRows
     val content     = allRows.mkString("\r\n")
 
-    val encoder = win1252
-      .newEncoder()
-      .onMalformedInput(CodingErrorAction.REPLACE)
-      .onUnmappableCharacter(CodingErrorAction.REPLACE)
-    val charBuf = java.nio.CharBuffer.wrap(content)
-    val byteBuf = encoder.encode(charBuf)
-    val result  = new Array[Byte](byteBuf.remaining())
-    byteBuf.get(result)
-    result
+    // CharsetEncoder is stateful — use a fresh instance per check/encode.
+    if win1252.newEncoder().canEncode(content) then
+      val encoder = win1252
+        .newEncoder()
+        .onMalformedInput(CodingErrorAction.REPORT)
+        .onUnmappableCharacter(CodingErrorAction.REPORT)
+      val charBuf = java.nio.CharBuffer.wrap(content)
+      val byteBuf = encoder.encode(charBuf) // cannot throw: canEncode verified above
+      val result  = new Array[Byte](byteBuf.remaining())
+      byteBuf.get(result)
+      Right(result)
+    else
+      // Name the offending INPUT value (client name / expense description) when we can find it,
+      // falling back to the unencodable characters themselves.
+      val offending = (clientNames.values.toList ++ expenses.flatMap(_.description))
+        .find(v => !win1252.newEncoder().canEncode(v))
+        .getOrElse(content.filter(c => !win1252.newEncoder().canEncode(c.toString)).distinct.take(20))
+      Left(ExtfUnencodable(offending))
 
   /**
    * Sanitise a string for safe use as a filename in a Content-Disposition header. Strips characters that are dangerous
@@ -383,16 +400,28 @@ object ExportApi:
       mandantennummer                            = settings.datevMandantennummer.getOrElse("")
       sachkontenlaenge                           = settings.datevSachkontenlaenge.getOrElse(4)
       now                                       <- Clock.instant
-      bytes                                      = buildExtf(
-                                                     completedRides,
-                                                     monthExpenses,
-                                                     clientMap,
-                                                     month,
-                                                     beraternummer,
-                                                     mandantennummer,
-                                                     sachkontenlaenge,
-                                                     now
-                                                   )
+      bytes                                     <- ZIO
+                                                     .fromEither(
+                                                       buildExtf(
+                                                         completedRides,
+                                                         monthExpenses,
+                                                         clientMap,
+                                                         month,
+                                                         beraternummer,
+                                                         mandantennummer,
+                                                         sachkontenlaenge,
+                                                         now
+                                                       )
+                                                     )
+                                                     .mapError(e =>
+                                                       (
+                                                         StatusCode.UnprocessableEntity,
+                                                         ApiError(
+                                                           s"DATEV EXTF export failed: value '${e.value}' contains characters " +
+                                                             "that cannot be represented in Windows-1252 (required by DATEV)"
+                                                         )
+                                                       )
+                                                     )
       rawFilename                                = s"EXTF_Buchungsstapel_${companyId.value}_${month}"
       filename                                   = sanitizeFilename(rawFilename) + ".csv"
       disposition                                = s"""attachment; filename="$filename""""
