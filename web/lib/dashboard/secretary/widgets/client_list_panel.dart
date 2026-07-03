@@ -64,6 +64,7 @@ class _ClientListPanelState extends State<ClientListPanel> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'manage_clients_add_client',
         // No backgroundColor override: the hardcoded graphite secretaryColor
         // was invisible on the dark background. The theme's FAB colors
         // (colorScheme.primary/onPrimary) stay legible in both modes.

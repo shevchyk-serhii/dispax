@@ -792,6 +792,7 @@ class _BillingScreenState extends State<BillingScreen>
           bottom: 16,
           right: 16,
           child: FloatingActionButton(
+            heroTag: 'billing_add_company',
             onPressed: _showAddCompanyDialog,
             backgroundColor: Theme.of(context).colorScheme.primary,
             child: Icon(

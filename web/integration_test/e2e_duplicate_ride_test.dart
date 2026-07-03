@@ -68,7 +68,8 @@ void main() {
 
     // Submit the prefilled form as-is.
     await $('Create Ride').scrollTo().tap();
-    await $.pumpAndSettle(timeout: const Duration(seconds: 20));
+    await $.pump(const Duration(milliseconds: 300));
+    await $.pump(const Duration(milliseconds: 300));
     await $.pump(const Duration(seconds: 3));
 
     // Backend-level assertion: a second Requested ride now exists alongside

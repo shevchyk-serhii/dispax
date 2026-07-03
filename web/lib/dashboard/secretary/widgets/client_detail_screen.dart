@@ -83,6 +83,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'client_detail_action',
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         // Override the global theme's CircleBorder: an extended FAB is a pill,
