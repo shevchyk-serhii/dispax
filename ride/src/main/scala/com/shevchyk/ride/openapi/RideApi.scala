@@ -318,6 +318,16 @@ object RideApi:
       _               <- checkRole(user, "DISPATCHER", "SECRETARY", "CLIENT", "DRIVER", "CLIENT_SECRETARY")
       companyId       <- requireCompanyId(user.companyId)
       validRequest    <- apiRequest.validate.mapError(fromRideError)
+      // provisionalClient is a staff affordance (driver/dispatcher/secretary booking a walk-in
+      // passenger). A CLIENT/CLIENT_SECRETARY must always book as an identified client — honouring
+      // the flag for them would let a client fabricate phantom Person rows and book rides under an
+      // arbitrary name/phone instead of their own identity.
+      _               <- ZIO
+                           .fail((StatusCode.Forbidden, ApiError("provisionalClient is not available to client roles")))
+                           .when(
+                             validRequest.provisionalClient &&
+                               Set("CLIENT", "CLIENT_SECRETARY").contains(user.role.toUpperCase)
+                           )
       personRepo      <- ZIO.service[PersonRepository]
       // Provisional ("from-chat") ride: no real client is known. Create a lightweight provisional
       // client carrying the typed clientName/clientPhone (which were previously discarded), stamped
