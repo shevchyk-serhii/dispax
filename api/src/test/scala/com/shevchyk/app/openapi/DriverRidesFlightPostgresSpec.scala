@@ -289,10 +289,10 @@ object DriverRidesFlightPostgresSpec extends ZIOSpecDefault:
 
   private val stubChatService: ZLayer[Any, Nothing, ChatService] = ZLayer.succeed(
     new ChatService:
-      def sendMessage(rideId: RideId, senderId: PersonId, message: String): Task[ChatMessage] = ZIO.die(
+      def sendMessage(rideId: RideId, senderId: PersonId, message: String): IO[ChatError, ChatMessage] = ZIO.die(
         new NotImplementedError("stub")
       )
-      def getMessages(rideId: RideId): Task[List[ChatMessage]]                                = ZIO.succeed(Nil)
+      def getMessages(rideId: RideId): IO[ChatError, List[ChatMessage]]                                = ZIO.succeed(Nil)
   )
 
   private val stubTariffRepo: ZLayer[Any, Nothing, TariffRepository] = ZLayer.succeed(new InMemoryTariffRepository())

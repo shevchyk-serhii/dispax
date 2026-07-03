@@ -368,10 +368,10 @@ object RideAssignIsolationSpec extends ZIOSpecDefault:
 
   private val stubChatService: ZLayer[Any, Nothing, ChatService] = ZLayer.succeed(
     new ChatService:
-      def sendMessage(rideId: RideId, senderId: PersonId, message: String): Task[ChatMessage] = ZIO.die(
+      def sendMessage(rideId: RideId, senderId: PersonId, message: String): IO[ChatError, ChatMessage] = ZIO.die(
         new NotImplementedError("stub")
       )
-      def getMessages(rideId: RideId): Task[List[ChatMessage]]                                = ZIO.succeed(Nil)
+      def getMessages(rideId: RideId): IO[ChatError, List[ChatMessage]]                                = ZIO.succeed(Nil)
   )
 
   private val stubRideRatingRepo: ZLayer[Any, Nothing, RideRatingRepository] = RideRatingRepository.inMemory

@@ -19,6 +19,10 @@ object AuthApi:
 
   private val authTag = "Authentication"
 
+  // Sentinel message that tags a rate-limit failure so the Tapir error `oneOf` can route it to 429
+  // (see loginEndpoint.errorOut). Also the body a throttled client receives.
+  private[openapi] val RateLimitError = "Too many requests. Please try again later."
+
   // -- Endpoint descriptions (schema only) ---------------------------------
 
   val loginEndpoint = endpoint.post
@@ -27,10 +31,18 @@ object AuthApi:
     .in(clientIp)
     .in(header[Option[String]]("User-Agent"))
     .out(jsonBody[LoginResponse])
+    // All three variants carry a bare `ApiError` body, so Tapir cannot pick the variant by TYPE — it
+    // matched the FIRST (Unauthorized) for every failure, making the 429 unreachable (throttling
+    // surfaced as 401). Discriminate the rate-limit case by VALUE: the login server fails with the
+    // sentinel `RateLimitError` message, matched here to the 429 variant; everything else stays 401
+    // or the default.
     .errorOut(
       oneOf[ApiError](
+        oneOfVariantValueMatcher(
+          StatusCode.TooManyRequests,
+          jsonBody[ApiError].description("Rate limit exceeded")
+        ) { case ApiError(RateLimitError, _) => true },
         oneOfVariant(StatusCode.Unauthorized, jsonBody[ApiError].description("Invalid credentials")),
-        oneOfVariant(StatusCode.TooManyRequests, jsonBody[ApiError].description("Rate limit exceeded")),
         oneOfDefaultVariant(jsonBody[ApiError].description("Error"))
       )
     )
@@ -85,10 +97,15 @@ object AuthApi:
   type AuthEnv = AuthService & RateLimiter & JwtService
 
   private val loginServer = loginEndpoint.zServerLogic[AuthEnv] { case (req, ip, userAgent) =>
-    val ipKey = ip.getOrElse("unknown")
+    // Throttle by BOTH source IP and normalized email: a single IP hammering one login is caught by
+    // the ip bucket, and distributed password-spraying on one account (one attempt per IP) is caught
+    // by the per-email bucket. Both must pass. The email is lowercased so case variants share a bucket.
+    val ipKey    = s"ip:${ip.getOrElse("unknown")}"
+    val emailKey = s"email:${req.email.trim.toLowerCase}"
     for {
-      allowed  <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(ipKey))
-      _        <- ZIO.unless(allowed)(ZIO.fail(ApiError("Too many requests. Please try again later.")))
+      ipOk     <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(ipKey))
+      emailOk  <- ZIO.serviceWithZIO[RateLimiter](_.checkRate(emailKey))
+      _        <- ZIO.unless(ipOk && emailOk)(ZIO.fail(ApiError(RateLimitError)))
       response <- ZIO
                     .serviceWithZIO[AuthService](_.login(req.email, req.password, userAgent, ip))
                     .mapError {

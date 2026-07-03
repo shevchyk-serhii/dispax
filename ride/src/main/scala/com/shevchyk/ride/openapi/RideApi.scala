@@ -952,8 +952,10 @@ object RideApi:
         ride         <- rideService.getRideById(parsedRideId).mapError(fromRideError)
         // Company isolation: hide cross-tenant rides as not found.
         _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId).mapError(fromRideError)
+        // Participation: only the ride's client, its assigned driver or staff may write to its chat.
+        _            <- checkRideParticipant(user, ride)
         service      <- ZIO.service[ChatService]
-        msg          <- service.sendMessage(parsedRideId, PersonId(user.userId), chatReq.message).mapError(fromRideError)
+        msg          <- service.sendMessage(parsedRideId, PersonId(user.userId), chatReq.message).mapError(fromChatError)
       } yield msg
   }
 
@@ -967,8 +969,10 @@ object RideApi:
         ride         <- rideService.getRideById(parsedRideId).mapError(fromRideError)
         // Company isolation: hide cross-tenant rides as not found.
         _            <- ZIO.fail(RideError.RideNotFound(parsedRideId)).when(ride.companyId != companyId).mapError(fromRideError)
+        // Participation: only the ride's client, its assigned driver or staff may read its chat.
+        _            <- checkRideParticipant(user, ride)
         service      <- ZIO.service[ChatService]
-        messages     <- service.getMessages(parsedRideId).mapError(fromRideError)
+        messages     <- service.getMessages(parsedRideId).mapError(fromChatError)
       } yield messages
   }
 
