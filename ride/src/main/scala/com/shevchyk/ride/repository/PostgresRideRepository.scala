@@ -320,6 +320,13 @@ final class PostgresRideRepository(xa: Transactor[Task]) extends RideRepository 
   // the entire ride. (A previous version of `updateIfStatus` only set 4 columns, which silently
   // dropped start_time/cancellation_*/payment_* on the transitions that go through it.)
   // booking_reference is deliberately absent: it is allocated once at insert and immutable after.
+  // Also deliberately absent:
+  //   - airport_checkpoint and the flight_* columns: they have their own atomic writers
+  //     (updateCheckpoint / updateFlightStatus); including them here would let a stale ride
+  //     object clobber data those writers just persisted.
+  //   - vehicle_class: set at insert, no update path (UpdateRideDetailsApiRequest does not carry it).
+  // InMemoryRideRepository.update/updateIfStatus mirror these exclusions (alignWithSetClause) so a
+  // unit test cannot go green on a field this SET silently drops — keep the two in sync.
   private def rideSetClause(ride: Ride): Fragment =
     fr"""SET
       client_id = ${ride.clientId.value},
