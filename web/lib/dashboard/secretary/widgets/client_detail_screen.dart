@@ -50,11 +50,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       final rideService = RideService(apiClient: apiClient);
       final rides = await rideService.getClientRides(_client.id);
       rides.sort((a, b) => b.pickupDateTime.compareTo(a.pickupDateTime));
+      // The screen may have been popped while the request was in flight —
+      // calling setState on a disposed State crashes.
+      if (!mounted) return;
       setState(() {
         _rides = rides;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e;
