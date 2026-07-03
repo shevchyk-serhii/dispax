@@ -326,7 +326,7 @@ emulator-up:
 # Ordered list of E2E suites. full_flow runs before the data-mutating feature
 # tests (blacklist/admin) so their writes can't interfere with assignment.
 E2E_SUITES := e2e_client e2e_driver e2e_secretary e2e_dispatcher e2e_admin \
-              e2e_settings e2e_language_switch e2e_sched_visibility \
+              e2e_settings e2e_language_switch e2e_sched_visibility e2e_shift_create \
               e2e_saved_places e2e_cancel_ride e2e_more_menu e2e_airport_ride \
               e2e_chat e2e_reassign e2e_reassign_conflict e2e_full_flow \
               e2e_admin_users e2e_expense e2e_blacklist e2e_geofence \
