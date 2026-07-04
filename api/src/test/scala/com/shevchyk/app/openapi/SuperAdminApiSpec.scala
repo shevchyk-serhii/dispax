@@ -120,11 +120,6 @@ object SuperAdminApiSpec extends ZIOSpecDefault:
           items: List[com.shevchyk.billing.domain.InvoiceItem]
       ): Task[Unit] = ZIO.unit
       def unlinkRides(invoiceId: com.shevchyk.billing.domain.InvoiceId, taxiCompanyId: CompanyId): Task[Unit]    = ZIO.unit
-      def findUnbilledRides(
-          clientCompanyId: ClientCompanyId,
-          from: java.time.LocalDate,
-          to: java.time.LocalDate
-      ): Task[List[com.shevchyk.billing.repository.UnbilledRide]] = ZIO.succeed(Nil)
       def findBillableRides(
           taxiCompanyId: CompanyId,
           clientCompanyId: ClientCompanyId,
