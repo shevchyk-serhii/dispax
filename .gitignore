@@ -4,11 +4,10 @@ target/
 !**/src/test/**/target/
 
 ### IntelliJ IDEA ###
+# Never track .idea/ — the shared Flutter run configs carried a hardcoded
+# Mapbox token (pk...) that tripped GitHub secret scanning. Keep all IDE
+# files out of git; put run-args in an untracked config instead.
 .idea/
-# Keep shared Flutter run configurations in git
-!web/.idea/
-!web/.idea/runConfigurations/
-!web/.idea/runConfigurations/*.xml
 *.iws
 *.iml
 *.ipr
