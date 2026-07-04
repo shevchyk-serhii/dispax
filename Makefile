@@ -413,7 +413,7 @@ e2e-android: emulator-up e2e-backend-up
 	    $(PATROL) test --target integration_test/$$t\_test.dart \
 	      --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
 	  done ; \
-	  $(MAKE) e2e-backend-down ; \
+	  $(MAKE) -C .. e2e-backend-down ; \
 	  exit $$STATUS
 
 # Run all E2E suites on an iOS simulator (host reached via localhost).
@@ -426,7 +426,7 @@ e2e-ios: e2e-backend-up
 	    $(PATROL) test --target integration_test/$$t\_test.dart \
 	      --dart-define=API_BASE_URL=http://localhost:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
 	  done ; \
-	  $(MAKE) e2e-backend-down ; \
+	  $(MAKE) -C .. e2e-backend-down ; \
 	  exit $$STATUS
 
 # Default E2E target: Android.
@@ -469,7 +469,7 @@ e2e-notif-http: emulator-up e2e-backend-up
 	    $(FLUTTER) test $$t \
 	      --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || STATUS=1 ; \
 	  done ; \
-	  $(MAKE) e2e-backend-down ; \
+	  $(MAKE) -C .. e2e-backend-down ; \
 	  exit $$STATUS
 
 # Negative / edge-case ride-rule HTTP checks. Green: each asserts the backend
@@ -483,7 +483,7 @@ e2e-ride-rules: emulator-up e2e-backend-up
 	    curl -sf -X POST http://localhost:$(TEST_PORT)/api/dev/reset >/dev/null 2>&1 || true ; \
 	    $(FLUTTER) test $$t --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api || STATUS=1 ; \
 	  done ; \
-	  $(MAKE) e2e-backend-down ; \
+	  $(MAKE) -C .. e2e-backend-down ; \
 	  exit $$STATUS
 
 # Run the "red" suites that document expected backend gaps. These are EXPECTED
@@ -498,7 +498,7 @@ e2e-red: emulator-up e2e-backend-up
 	  $(PATROL) test --target integration_test/$$t\_test.dart \
 	    --dart-define=API_BASE_URL=http://10.0.2.2:$(TEST_PORT)/api --dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN) || true ; \
 	done ; \
-	$(MAKE) e2e-backend-down
+	$(MAKE) -C .. e2e-backend-down
 
 # Run all tests: unit + integration + Cucumber BDD
 test-all:
