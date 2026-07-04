@@ -171,6 +171,16 @@ object MucFlightParserSpec extends ZIOSpecDefault:
           MucFlightParser.normalizeFlightNumber("  lh 123 ") == "LH123"
         )
       },
+      // Audit regression: the normalized number is interpolated into the outgoing MUC query URL,
+      // so URL metacharacters (&, #, =, %) from user input could inject/replace query parameters.
+      // Only [A-Z0-9] may survive normalization.
+      test("normalizeFlightNumber drops URL metacharacters and anything outside A-Z0-9") {
+        assertTrue(
+          MucFlightParser.normalizeFlightNumber("LH&x=1#") == "LHX1",
+          MucFlightParser.normalizeFlightNumber("lh%20123?page=9") == "LH20123PAGE9",
+          MucFlightParser.normalizeFlightNumber("LH-123") == "LH123"
+        )
+      },
       test("detailHref extracts the flight's detail-page link from the list row") {
         val href = MucFlightParser.detailHref(fixture("departure_single.html"))
         assertTrue(href.exists(h => h.startsWith("/flugdetailseite-") && h.contains("flight_id=")))

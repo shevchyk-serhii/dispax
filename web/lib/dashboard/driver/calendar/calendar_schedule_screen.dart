@@ -306,6 +306,15 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
               return PopupMenuButton<CalendarViewType>(
                 icon: const Icon(Icons.view_module),
                 onSelected: (CalendarViewType result) {
+                  // The Board view hides the share dropdown (its only reset
+                  // control), while the body keeps rendering SharedCalendarView
+                  // whenever _selectedShare is set — switching to Board with a
+                  // shared calendar selected would strand the user on the
+                  // share with no way back to the columns. Reset it here.
+                  if (result == CalendarViewType.multiColumn &&
+                      _selectedShare != null) {
+                    setState(() => _selectedShare = null);
+                  }
                   viewTypeNotifier.value = result;
                 },
                 itemBuilder: (BuildContext context) {

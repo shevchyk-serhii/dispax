@@ -7,6 +7,7 @@ import '../models/partner_company.dart';
 import '../models/external_driver.dart';
 import '../../core/models/person.dart';
 import '../../core/services/api_client.dart';
+import '../../core/services/query_string.dart';
 
 class RideService {
   final ApiClient privateApiClient;
@@ -76,7 +77,7 @@ class RideService {
           '${date.month.toString().padLeft(2, '0')}-'
           '${date.day.toString().padLeft(2, '0')}';
       final response = await privateApiClient.get(
-        '/drivers/$driverId/earnings?period=$period&date=$d',
+        withQuery('/drivers/$driverId/earnings', {'period': period, 'date': d}),
       );
 
       if (response.statusCode == 200) {
@@ -465,7 +466,11 @@ class RideService {
           '${date.day.toString().padLeft(2, '0')}';
       final ids = driverIds.join(',');
       final response = await privateApiClient.get(
-        '/rides/by-drivers?driverIds=$ids&from=$dateStr&to=$dateStr',
+        withQuery('/rides/by-drivers', {
+          'driverIds': ids,
+          'from': dateStr,
+          'to': dateStr,
+        }),
       );
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);

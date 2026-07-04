@@ -51,9 +51,14 @@ object MucFlightParser:
     .map(_.group(1))
 
   /**
-   * Normalize a flight number for comparison/output: drop all whitespace, upper-case ("4Y 1410" -> "4Y1410").
+   * Normalize a flight number for comparison/output: upper-case and keep ONLY [A-Z0-9] ("4Y 1410" -> "4Y1410").
+   *
+   * The whitelist is deliberate: the normalized value is interpolated into the outgoing MUC query URL
+   * (MucFlightStatusProvider), so URL metacharacters ('&', '#', '=', '%') from user-supplied input must never survive —
+   * they would inject/replace query parameters of the outgoing request. Real flight numbers are alphanumeric, so
+   * nothing legitimate is lost.
    */
-  def normalizeFlightNumber(s: String): String = s.replaceAll("\\s+", "").toUpperCase
+  def normalizeFlightNumber(s: String): String = s.toUpperCase.replaceAll("[^A-Z0-9]", "")
 
   /**
    * The number cell reads like "4Y 1410 (A320)" — take everything before the aircraft-type parenthesis.

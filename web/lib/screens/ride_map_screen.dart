@@ -16,6 +16,7 @@ import '../modules/core/services/websocket_service.dart';
 import '../modules/ride_management/models/ride.dart';
 import '../modules/ride_management/services/ride_service.dart';
 import '../utils/ride_status_styles.dart';
+import '../utils/serial_task_queue.dart';
 
 /// Full-screen map bound to a single [Ride] — the driver's and dispatcher's
 /// counterpart to the client's [ClientMapScreen]. Shows the pickup/dropoff
@@ -179,6 +180,12 @@ class _RideMapScreenState extends State<RideMapScreen> {
   Timer? _pulseTimer;
   bool _pulseState = false;
 
+  /// Serializes every driver-marker mutation (delete→create replacement,
+  /// pulse-tick radius update, clearing on reassign): the replacement is not
+  /// atomic, so a concurrent update or pulse tick could otherwise touch an
+  /// already-deleted annotation or leave a duplicate dot.
+  final SerialTaskQueue _markerQueue = SerialTaskQueue();
+
   late Ride _ride;
   // Route endpoints with coordinates resolved (geocoded when the ride only
   // carries addresses) — the markers and camera are built from these.
@@ -217,11 +224,17 @@ class _RideMapScreenState extends State<RideMapScreen> {
     _pulseTimer = Timer.periodic(const Duration(milliseconds: 700), (_) {
       if (!mounted) return;
       _pulseState = !_pulseState;
-      final driverCircle = _driverCircle;
-      if (driverCircle != null) {
-        driverCircle.circleRadius = _pulseState ? 15.0 : 12.0;
-        _driverCircleManager?.update(driverCircle);
-      }
+      // Queued so a tick can never update an annotation that an in-flight
+      // delete→create replacement has just removed.
+      unawaited(
+        _markerQueue.run(() async {
+          final driverCircle = _driverCircle;
+          if (driverCircle != null) {
+            driverCircle.circleRadius = _pulseState ? 15.0 : 12.0;
+            await _driverCircleManager?.update(driverCircle);
+          }
+        }),
+      );
     });
   }
 
@@ -351,8 +364,11 @@ class _RideMapScreenState extends State<RideMapScreen> {
   }
 
   /// Removes the driver dot and name label from the map (used when the ride
-  /// is reassigned or the driver is unassigned).
-  Future<void> _clearDriverMarker() async {
+  /// is reassigned or the driver is unassigned). Serialized with the other
+  /// marker mutations.
+  Future<void> _clearDriverMarker() => _markerQueue.run(_clearDriverMarkerNow);
+
+  Future<void> _clearDriverMarkerNow() async {
     final driverCircle = _driverCircle;
     if (driverCircle != null) {
       _driverCircle = null;
@@ -393,7 +409,14 @@ class _RideMapScreenState extends State<RideMapScreen> {
     );
   }
 
-  Future<void> _updateDriverMarker(double latitude, double longitude) async {
+  /// Replaces the driver dot/label. The delete→await→create pair below is not
+  /// atomic, so it is enqueued: a burst of updates (REST fetch racing the
+  /// first WS ping, reconnect replay) can no longer interleave and delete an
+  /// already-deleted annotation or leave a duplicate marker.
+  Future<void> _updateDriverMarker(double latitude, double longitude) =>
+      _markerQueue.run(() => _updateDriverMarkerNow(latitude, longitude));
+
+  Future<void> _updateDriverMarkerNow(double latitude, double longitude) async {
     if (_driverCircleManager == null) return;
     final color = RideStatusStyles.getStatusColorValue(_ride.status);
 

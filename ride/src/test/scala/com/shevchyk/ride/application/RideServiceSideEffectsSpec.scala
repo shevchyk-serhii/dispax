@@ -22,6 +22,7 @@ import zio.test.*
 import zio.*
 import java.time.Instant
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 /**
  * Verifies the side-effects createRide fires after persistence — the WebSocket RideCreated event, the audit-log entry,
@@ -80,7 +81,7 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       override def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                                    = ZIO.unit
       override def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(Nil)
       override def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-      override def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+      override def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
       override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       override def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
@@ -150,7 +151,8 @@ object RideServiceSideEffectsSpec extends ZIOSpecDefault {
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
       SentConfirmationRequestRepository.inMemory ++
-      InMemoryRideShareTokenRepository.layer
+      InMemoryRideShareTokenRepository.layer ++
+      CompanySettingsRepository.inMemory
 
   private val fullLayers = baseLayers >+> RideService.layer
 

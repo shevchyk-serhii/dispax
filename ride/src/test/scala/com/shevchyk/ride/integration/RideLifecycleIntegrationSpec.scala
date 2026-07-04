@@ -21,6 +21,7 @@ import com.shevchyk.core.repository.SentConfirmationRequestRepository
 import zio.*
 import zio.test.*
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
 
@@ -93,7 +94,7 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       persons.values.filter(_.status == status).toList
     )
     override def searchByQuery(query: String): Task[List[Person]]                              = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                     = ZIO.unit
+    override def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]       = ZIO.unit
 
     override def findByClientCompany(clientCompanyId: com.shevchyk.core.domain.ClientCompanyId): Task[List[Person]] =
       ZIO.succeed(Nil)
@@ -150,7 +151,7 @@ object RideLifecycleIntegrationSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
   def createTestRide(service: RideService, clientId: PersonId = testClientId) = service.createRide(
     CreateRideRequest(

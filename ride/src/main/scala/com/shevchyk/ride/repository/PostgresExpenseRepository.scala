@@ -40,10 +40,21 @@ final class PostgresExpenseRepository(xa: Transactor[Task]) extends ExpenseRepos
       .option
       .transact(xa)
 
+  // NOTE: un-scoped (no company filter) — for cross-tenant maintenance/tests only. A
+  // request-driven caller must use findByDriverIdAndCompany or it breaks tenant isolation.
   override def findByDriverId(driverId: PersonId): Task[List[Expense]] =
     sql"""
       SELECT id, ride_id, driver_id, company_id, category, amount, currency, description, receipt_url, created_at, updated_at
       FROM expenses WHERE driver_id = ${driverId.value} ORDER BY created_at
+    """
+      .query[Expense]
+      .to[List]
+      .transact(xa)
+
+  override def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Expense]] =
+    sql"""
+      SELECT id, ride_id, driver_id, company_id, category, amount, currency, description, receipt_url, created_at, updated_at
+      FROM expenses WHERE driver_id = ${driverId.value} AND company_id = ${companyId.value} ORDER BY created_at
     """
       .query[Expense]
       .to[List]

@@ -10,7 +10,11 @@ import scala.jdk.CollectionConverters.*
 trait ExpenseRepository:
   def create(expense: Expense): Task[Expense]
   def findById(id: ExpenseId): Task[Option[Expense]]
+  // NOTE: un-scoped (no company filter) — for cross-tenant maintenance/tests only. A
+  // request-driven caller must use findByDriverIdAndCompany or it breaks tenant isolation.
   def findByDriverId(driverId: PersonId): Task[List[Expense]]
+  // Tenant-scoped variant: only the driver's expenses within `companyId`.
+  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Expense]]
   def findByRideId(rideId: RideId): Task[List[Expense]]
   def findByCompanyId(companyId: CompanyId): Task[List[Expense]]
   // Tenant-scoped delete: only removes the expense when it belongs to `companyId`.
@@ -33,6 +37,15 @@ class InMemoryExpenseRepository extends ExpenseRepository:
 
   def findByDriverId(driverId: PersonId): Task[List[Expense]] = ZIO.succeed {
     store.values().asScala.filter(_.driverId == driverId).toList.sortBy(_.createdAt)
+  }
+
+  def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Expense]] = ZIO.succeed {
+    store
+      .values()
+      .asScala
+      .filter(e => e.driverId == driverId && e.companyId == companyId)
+      .toList
+      .sortBy(_.createdAt)
   }
 
   def findByRideId(rideId: RideId): Task[List[Expense]] = ZIO.succeed {

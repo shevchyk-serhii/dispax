@@ -210,6 +210,7 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
       def create(expense: Expense): Task[Expense]                                                             = ZIO.succeed(expense)
       def findById(id: ExpenseId): Task[Option[Expense]]                                                      = ZIO.none
       def findByDriverId(driverId: PersonId): Task[List[Expense]]                                             = ZIO.succeed(Nil)
+      def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Expense]]             = ZIO.succeed(Nil)
       def findByRideId(rideId: RideId): Task[List[Expense]]                                                   = ZIO.succeed(Nil)
       def findByCompanyId(companyId: CompanyId): Task[List[Expense]]                                          = ZIO.succeed(Nil)
       def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean]                                          = ZIO.succeed(false)
@@ -236,7 +237,7 @@ object ExportApiIsolationSpec extends ZIOSpecDefault:
       def deleteInCompany(id: PersonId, companyId: com.shevchyk.core.domain.CompanyId): Task[Unit]           = ZIO.unit
       def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(Nil)
       def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-      def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none

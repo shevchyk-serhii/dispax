@@ -121,4 +121,34 @@ void main() {
     verifyNever(() => apiClient.put(any(), any()));
     expect(find.text(loc.invalidAmountError), findsOneWidget);
   });
+
+  // Regression: work-hour fields serialized as doubles (e.g. 6.0) used to hit a
+  // raw `as int` cast and throw, dropping the whole settings load into the error
+  // state. num->toInt tolerates both int and double serialization.
+  testWidgets('work hours serialized as doubles load without crashing', (
+    tester,
+  ) async {
+    when(() => apiClient.get('/company/settings')).thenAnswer(
+      (_) async => http.Response(
+        '{"workStartHour":6.0,"workStartMinute":30.0,'
+        '"workEndHour":18.0,"workEndMinute":0.0}',
+        200,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(buildSubject());
+    await tester.pumpAndSettle();
+
+    // A raw `as int` on 6.0 would throw, land in the catch and render the
+    // full-screen error state (error icon + Retry). num->toInt parses cleanly,
+    // so the settings form shows and the error state does not.
+    expect(tester.takeException(), isNull);
+    expect(find.byIcon(Icons.error_outline), findsNothing);
+    final loc = await l10n();
+    expect(find.widgetWithText(ElevatedButton, loc.retry), findsNothing);
+  });
 }

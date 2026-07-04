@@ -11,7 +11,7 @@ import zio.test.*
 import com.shevchyk.core.application.GeocodingService
 import com.shevchyk.core.domain.*
 import com.shevchyk.core.repository.PersonRepository
-import com.shevchyk.driver.application.{DriverLocationService, HereRoutingService}
+import com.shevchyk.driver.application.{DriverLocationService, EtaService, HereRoutingService}
 import com.shevchyk.driver.domain.DriverLocation
 import com.shevchyk.driver.openapi.DriverApi
 import com.shevchyk.ride.domain.*
@@ -89,7 +89,7 @@ object DriverProximityAccessSpec extends ZIOSpecDefault:
       def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                                    = ZIO.unit
       def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(Nil)
       def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-      def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
@@ -97,13 +97,17 @@ object DriverProximityAccessSpec extends ZIOSpecDefault:
       def deleteAvatar(id: PersonId, companyId: CompanyId): Task[Unit]                                       = ZIO.unit
   )
 
+  // Real EtaServiceImpl over the stubs, so the endpoint's delegated ETA behaves
+  // exactly as the old inline assembly did (HERE stub answers with a fixed ETA).
+  private val etaServiceLayer: ZLayer[Any, Nothing, EtaService] =
+    (stubLocationService ++ stubHereRouting ++ GeocodingService.noop ++ stubClientLocationRepo) >>> EtaService.layer
+
   private def buildLayers(repo: CheckpointRideRepository): ZLayer[Any, Throwable, DriverApi.DriverEnv] =
     TestJwt.serviceLayer ++
       RideServiceFromRepo.layer(repo) ++
       stubLocationService ++
-      stubHereRouting ++
+      etaServiceLayer ++
       GeocodingService.noop ++
-      stubClientLocationRepo ++
       stubPersonRepo
 
   private def run(req: Request, layers: ZLayer[Any, Throwable, DriverApi.DriverEnv]): ZIO[Any, Throwable, Response] =

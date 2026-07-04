@@ -101,7 +101,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
     def deleteInCompany(id: PersonId, cid: CompanyId): Task[Unit]                             = ZIO.unit
     def findByStatus(s: UserStatus): Task[List[Person]]                                       = ZIO.succeed(Nil)
     def searchByQuery(q: String): Task[List[Person]]                                          = ZIO.succeed(Nil)
-    def updateLastLogin(id: PersonId): Task[Unit]                                             = ZIO.unit
+    def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]               = ZIO.unit
     def findByClientCompany(ccId: ClientCompanyId): Task[List[Person]]                        = ZIO.succeed(Nil)
     def upsertDriverRow(id: PersonId): Task[Unit]                                             = ZIO.unit
     def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = ZIO.none
@@ -182,7 +182,7 @@ object RideServicePickupTimeSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> service.RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> service.RideService.layer
 
   // ── Flight departure time used in all departure tests ───────────────────
   // 2030-06-15T12:00:00Z → with global defaults (buffer=15, checkIn=60) and travel=30:

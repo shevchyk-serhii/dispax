@@ -20,6 +20,7 @@ import com.shevchyk.ride.repository.helpers.{InMemoryExternalDriverRepository, I
 import zio.test.*
 import zio.*
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 /**
  * Unit tests for RideService.setRidePrice, getDriverRides (company-isolation), and getRidesByDrivers.
@@ -108,7 +109,7 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       persons.values.filter(_.status == status).toList
     )
     override def searchByQuery(query: String): Task[List[Person]]                          = ZIO.succeed(Nil)
-    override def updateLastLogin(id: PersonId): Task[Unit]                                 = ZIO.unit
+    override def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]   = ZIO.unit
     override def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]] = ZIO.succeed(Nil)
     override def upsertDriverRow(personId: PersonId): Task[Unit]                           = ZIO.unit
     override def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]              = ZIO.none
@@ -163,7 +164,7 @@ object RideServicePriceSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       InMemoryExternalDriverRepository.layer ++
       InMemoryPartnerCompanyRepository.layer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

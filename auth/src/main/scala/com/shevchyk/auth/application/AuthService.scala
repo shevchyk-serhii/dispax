@@ -184,7 +184,7 @@ class AuthServiceImpl(
             )
           )
           .ignore
-      _         <- personRepository.updateLastLogin(person.id).ignore
+      _         <- personRepository.updateLastLogin(person.id, person.companyId).ignore
     yield LoginResponse(UserDto.fromPerson(person), token)
 
   private def parseRoles(rawRoles: List[String]): Either[String, Set[PersonRole]] =

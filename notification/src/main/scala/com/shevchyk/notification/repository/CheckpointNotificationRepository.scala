@@ -16,6 +16,13 @@ trait CheckpointNotificationRepository:
   def isAlreadySent(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Boolean]
   def markSent(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Unit]
 
+  /**
+   * Atomically records a checkpoint notification for (ride, driver, checkpoint), returning `true` only if this call
+   * inserted a *new* record. Lets callers deduplicate without a check-then-act race: two concurrent checkpoint events
+   * (or two app instances) cannot both observe `true`. Mirrors `EtaAlertRepository.markAlertedIfNew`.
+   */
+  def markSentIfNew(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Boolean]
+
 object CheckpointNotificationRepository:
 
   val postgresLayer: ZLayer[Transactor[Task], Nothing, CheckpointNotificationRepository] = ZLayer.fromFunction(
@@ -26,7 +33,10 @@ object CheckpointNotificationRepository:
     DatabaseConfig.liveTransactorWithMigrations >>> postgresLayer
 
 class InMemoryCheckpointNotificationRepository extends CheckpointNotificationRepository:
-  private val sent = new java.util.concurrent.ConcurrentHashMap[(java.util.UUID, java.util.UUID, String), Boolean]()
+
+  // java.lang.Boolean (not scala.Boolean) so putIfAbsent can signal "no previous mapping" with null.
+  private val sent =
+    new java.util.concurrent.ConcurrentHashMap[(java.util.UUID, java.util.UUID, String), java.lang.Boolean]()
 
   override def isAlreadySent(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Boolean] = ZIO.succeed(
     sent.containsKey((rideId.value, driverId.value, checkpointType))
@@ -34,6 +44,10 @@ class InMemoryCheckpointNotificationRepository extends CheckpointNotificationRep
 
   override def markSent(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Unit] =
     ZIO.succeed(sent.put((rideId.value, driverId.value, checkpointType), true)).unit
+
+  override def markSentIfNew(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Boolean] =
+    // putIfAbsent returns null only when no mapping existed — i.e. this call inserted the record.
+    ZIO.succeed(sent.putIfAbsent((rideId.value, driverId.value, checkpointType), java.lang.Boolean.TRUE) == null)
 
 object InMemoryCheckpointNotificationRepository:
 
@@ -60,3 +74,10 @@ final class PostgresCheckpointNotificationRepository(xa: Transactor[Task]) exten
           ON CONFLICT DO NOTHING""".update.run
       .transact(xa)
       .unit
+
+  override def markSentIfNew(rideId: RideId, driverId: PersonId, checkpointType: String): Task[Boolean] =
+    sql"""INSERT INTO sent_checkpoint_notifications (ride_id, driver_id, checkpoint_type)
+          VALUES (${rideId.value}, ${driverId.value}, $checkpointType)
+          ON CONFLICT DO NOTHING""".update.run
+      .transact(xa)
+      .map(_ > 0)

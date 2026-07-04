@@ -26,6 +26,7 @@ import zio.test.*
 import zio.*
 import java.time.Instant
 import java.util.UUID
+import com.shevchyk.core.repository.CompanySettingsRepository
 
 /**
  * Unit tests for `handOffToExternal` (AC-B1..B6) and the Stage-A `cancelRideWithReason` cross-company tenant-isolation
@@ -100,7 +101,7 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
     def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                           = ZIO.unit
     def findByStatus(s: UserStatus): Task[List[Person]]                                           = ZIO.succeed(Nil)
     def searchByQuery(q: String): Task[List[Person]]                                              = ZIO.succeed(Nil)
-    def updateLastLogin(id: PersonId): Task[Unit]                                                 = ZIO.unit
+    def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                   = ZIO.unit
     def findByClientCompany(cid: ClientCompanyId): Task[List[Person]]                             = ZIO.succeed(Nil)
     def upsertDriverRow(personId: PersonId): Task[Unit]                                           = ZIO.unit
     def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                              = ZIO.none
@@ -184,7 +185,7 @@ object RideServiceHandOffSpec extends ZIOSpecDefault {
       noopScheduleDayLookup ++
       edLayer ++
       pcLayer ++
-      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer) >+> RideService.layer
+      SentConfirmationRequestRepository.inMemory ++ InMemoryRideShareTokenRepository.layer ++ CompanySettingsRepository.inMemory) >+> RideService.layer
   }
 
   // ── Ride factory ──────────────────────────────────────────────────────────

@@ -118,7 +118,7 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
       def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                                    = ZIO.unit
       def findByStatus(status: UserStatus): Task[List[Person]]                                               = ZIO.succeed(Nil)
       def searchByQuery(query: String): Task[List[Person]]                                                   = ZIO.succeed(Nil)
-      def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+      def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
       def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
       def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
       def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
@@ -459,7 +459,7 @@ object ProvisionalRideCreateSpec extends ZIOSpecDefault:
             def deleteInCompany(id: PersonId, companyId: CompanyId): Task[Unit]                       = boom
             def findByStatus(s: UserStatus): Task[List[Person]]                                       = boom
             def searchByQuery(q: String): Task[List[Person]]                                          = boom
-            def updateLastLogin(id: PersonId): Task[Unit]                                             = boom
+            def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]               = boom
             def findByClientCompany(ccid: ClientCompanyId): Task[List[Person]]                        = boom
             def upsertDriverRow(pid: PersonId): Task[Unit]                                            = boom
             def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                          = boom

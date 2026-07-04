@@ -85,11 +85,17 @@ extension RideFlightStatusL10n on AppLocalizations {
         : airportLandingAt(time);
   }
 
-  /// "Scheduled HH:mm → HH:mm" line shown above the arrival line when the flight actually
-  /// deviated from its plan. Null when there's no scheduled time (source didn't publish one)
-  /// or the flight is exactly on time to the minute (nothing useful to show — comparing the
-  /// formatted minute, not the raw DateTime, so a sub-minute difference doesn't render a
-  /// misleading "14:00 → 14:00" line).
+  /// "Scheduled HH:mm → Landed at/Landing at HH:mm" line replacing the arrival line when the
+  /// flight actually deviated from its plan. Null when there's no scheduled time (source didn't
+  /// publish one) or the flight is exactly on time to the minute (nothing useful to show —
+  /// comparing the formatted minute, not the raw DateTime, so a sub-minute difference doesn't
+  /// render a misleading "14:00 → 14:00" line).
+  ///
+  /// The actual side keeps [airportArrivalText]'s fact/forecast marker: once the flight has
+  /// landed the time IS the landing fact ("Gelandet um HH:mm"), while airborne it is still an
+  /// estimate ("Landung um HH:mm"). The bare "Planmäßig HH:mm → HH:mm" variant used to drop
+  /// that marker exactly on the delayed flights where the driver most needs to know whether
+  /// the plane is already down.
   String? airportScheduledLine(Ride ride) {
     final scheduled = ride.flightScheduledTime;
     final actual = ride.flightTime;
@@ -97,6 +103,6 @@ extension RideFlightStatusL10n on AppLocalizations {
     final scheduledText = DateFormat.Hm().format(scheduled);
     final actualText = DateFormat.Hm().format(actual);
     if (scheduledText == actualText) return null;
-    return airportScheduledVsActual(scheduledText, actualText);
+    return airportScheduledVsActual(scheduledText, airportArrivalText(ride));
   }
 }

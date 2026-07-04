@@ -320,6 +320,39 @@ object ScheduleServiceUnavailabilitySpec extends ZIOSpecDefault {
                          requesterRole = "DRIVER"
                        )
           } yield assertTrue(result.nonEmpty)
+        }.provide(layers),
+        // Regression: the old permissive else-branch let any non-DRIVER role (incl. CLIENT /
+        // CLIENT_SECRETARY) read ANY driver's unavailability windows within the tenant. Now only staff
+        // roles are allowed; CLIENT is AccessDenied. Reverting to the permissive else turns this red.
+        test("CLIENT reading a driver's unavailability → AccessDenied (regression)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            result  <-
+              service
+                .getDriverUnavailability(
+                  driverId = driverAId,
+                  companyId = companyA,
+                  requesterId = driverBId,
+                  requesterRole = "CLIENT"
+                )
+                .exit
+          } yield assertTrue(result match {
+            case Exit.Failure(cause) => cause.failureOption.exists(_.isInstanceOf[ScheduleError.AccessDenied])
+            case _                   => false
+          })
+        }.provide(layers),
+        test("SECRETARY reading a driver's unavailability — allowed (staff)") {
+          for {
+            service <- ZIO.service[ScheduleService]
+            _       <- service.createUnavailability(makeReq(), requesterId = driverAId, requesterRole = "DRIVER")
+            result  <- service.getDriverUnavailability(
+                         driverId = driverAId,
+                         companyId = companyA,
+                         requesterId = driverBId,
+                         requesterRole = "SECRETARY"
+                       )
+          } yield assertTrue(result.nonEmpty)
         }.provide(layers)
       ),
 

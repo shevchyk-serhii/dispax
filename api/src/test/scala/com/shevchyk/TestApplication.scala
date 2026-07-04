@@ -273,7 +273,7 @@ object TestApplication extends ZIOAppDefault:
               )
               .toList
           )
-          def updateLastLogin(id: PersonId): Task[Unit]                                                          = ZIO.unit
+          def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit]                            = ZIO.unit
           def findByClientCompany(clientCompanyId: ClientCompanyId): Task[List[Person]]                          = ZIO.succeed(Nil)
           def upsertDriverRow(personId: PersonId): Task[Unit]                                                    = ZIO.unit
           def getAvatar(id: PersonId): Task[Option[(Array[Byte], String)]]                                       = ZIO.none
@@ -1271,6 +1271,8 @@ object TestApplication extends ZIOAppDefault:
           .map(_.values.filter(_.rideId.contains(rideId)).toList)
         def findByDriverId(driverId: PersonId): Task[List[Expense]]                                             = store.get
           .map(_.values.filter(_.driverId == driverId).toList)
+        def findByDriverIdAndCompany(driverId: PersonId, companyId: CompanyId): Task[List[Expense]]             = store.get
+          .map(_.values.filter(e => e.driverId == driverId && e.companyId == companyId).toList)
         def findByCompanyId(companyId: CompanyId): Task[List[Expense]]                                          = store.get
           .map(_.values.filter(_.companyId == companyId).toList)
         def delete(id: ExpenseId, companyId: CompanyId): Task[Boolean]                                          = store.modify { m =>

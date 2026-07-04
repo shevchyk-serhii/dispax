@@ -986,7 +986,7 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
       .transact(xa)
       .unit
 
-  // Link the seeded client person to the client company so findUnbilledRides' JOIN matches.
+  // Link the seeded client person to the client company so findBillableRides' JOIN matches.
   private def linkClientToCompany(xa: Transactor[Task]): Task[Unit] =
     sql"""UPDATE persons SET client_company_id = ${clientCompanyId.value}
           WHERE id = ${clientPersonId.value}""".update.run.transact(xa).unit

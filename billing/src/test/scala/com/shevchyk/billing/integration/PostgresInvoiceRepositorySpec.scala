@@ -55,6 +55,34 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
              'Marienplatz', 'Flughafen', $pickup, 'Completed'::ride_status, $estimated, $finalPrice)
           ON CONFLICT DO NOTHING""".update.run.transact(xa).unit
 
+  /**
+   * Insert a provisional client (linked to the seeded client company) plus a priced, Completed ride for it. Models the
+   * reachable case where a provisional client carries a clientCompanyId but keeps provisional = true — such rides must
+   * stay out of the billable set (NOT p.provisional).
+   */
+  private def seedProvisionalClientWithRide(
+      xa: Transactor[Task],
+      provClientId: UUID,
+      rideId: UUID,
+      price: BigDecimal
+  ): Task[Unit] =
+    (for {
+      _ <-
+        sql"""INSERT INTO persons (id, name, email, role, company_id, client_company_id, password_hash, provisional)
+                 VALUES ($provClientId, 'Walk-in', ${s"prov+$provClientId@test.local"}, 'client'::person_role,
+                         ${testCompanyId.value}, ${clientCompanyId.value}, 'placeholder', true)
+                 ON CONFLICT DO NOTHING""".update.run
+      _ <-
+        sql"""INSERT INTO rides
+                (id, client_id, creator_id, company_id, from_address, to_address, pickup_datetime, status,
+                 estimated_price_amount, final_price_amount)
+              VALUES
+                ($rideId, $provClientId, $provClientId, ${testCompanyId.value},
+                 'Marienplatz', 'Flughafen', ${Instant.parse("2026-01-16T10:00:00Z")}, 'Completed'::ride_status,
+                 $price, NULL)
+              ON CONFLICT DO NOTHING""".update.run
+    } yield ()).transact(xa)
+
   private def cleanRides(xa: Transactor[Task]): Task[Unit] =
     sql"DELETE FROM rides WHERE company_id = ${testCompanyId.value}".update.run.transact(xa).unit
 
@@ -461,21 +489,25 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
           counts.getOrElse(company2Id.value, 0) == 1
         )
       },
-      // ── price-less rides excluded from invoicing (regression for the €0.00 finding) ──
-      test("findUnbilledRides skips a ride with no price instead of billing it as €0.00") {
+      // ── provisional-client rides excluded from the billable set (regression for the auto-fill/manual
+      //    divergence: period auto-fill now shares findBillableRides, so a provisional client that happens to
+      //    carry a clientCompanyId must NOT be billed) ──
+      test("findBillableRides excludes a provisional client's ride even with a clientCompanyId") {
         for {
-          xa       <- ZIO.service[Transactor[Task]]
-          _        <- seedTestData(xa)
-          _        <- cleanRides(xa)
-          repo      = PostgresInvoiceRepository(xa)
-          priced    = UUID.randomUUID()
-          priceless = UUID.randomUUID()
-          _        <- seedRide(xa, priced, estimated = Some(BigDecimal("42.00")), finalPrice = None)
-          _        <- seedRide(xa, priceless, estimated = None, finalPrice = None)
-          rides    <- repo.findUnbilledRides(clientCompanyId, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31))
+          xa          <- ZIO.service[Transactor[Task]]
+          _           <- seedTestData(xa)
+          _           <- cleanRides(xa)
+          repo         = PostgresInvoiceRepository(xa)
+          normalRide   = UUID.randomUUID()
+          provRide     = UUID.randomUUID()
+          provClient   = UUID.randomUUID()
+          _           <- seedRide(xa, normalRide, estimated = Some(BigDecimal("42.00")), finalPrice = None)
+          // A provisional client linked to the SAME client company, with a priced completed ride.
+          _           <- seedProvisionalClientWithRide(xa, provClient, provRide, price = BigDecimal("77.00"))
+          rides       <- repo.findBillableRides(testCompanyId, clientCompanyId, None, None)
         } yield assertTrue(
-          rides.map(_.rideId).toSet == Set(priced),
-          rides.forall(_.price == BigDecimal("42.00"))
+          // Only the normal client's ride is billable; the provisional one is excluded by NOT p.provisional.
+          rides.map(_.rideId).toSet == Set(normalRide)
         )
       },
       test("findBillableRides also skips price-less rides") {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import '../models/schedule_day.dart';
 import '../models/driver_unavailability.dart';
 import '../../core/services/api_client.dart';
+import '../../core/services/query_string.dart';
 
 class ScheduleService {
   final ApiClient _apiClient;
@@ -110,7 +111,9 @@ class ScheduleService {
     String to,
   ) async {
     try {
-      final response = await _apiClient.get('/schedules?from=$from&to=$to');
+      final response = await _apiClient.get(
+        withQuery('/schedules', {'from': from, 'to': to}),
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
@@ -300,7 +303,7 @@ class ScheduleService {
       final fromStr = from.toUtc().toIso8601String();
       final toStr = to.toUtc().toIso8601String();
       final response = await _apiClient.get(
-        '/schedules/unavailability?from=$fromStr&to=$toStr',
+        withQuery('/schedules/unavailability', {'from': fromStr, 'to': toStr}),
       );
 
       if (response.statusCode == 200) {

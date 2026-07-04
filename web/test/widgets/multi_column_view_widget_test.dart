@@ -297,8 +297,11 @@ void main() {
       (p) => p.contains('driverIds='),
       orElse: () => '',
     );
-    expect(ridesPath, contains('driverIds=abc,xyz'));
-    expect(ridesPath, contains('from=2026-06-22'));
+    // Query values are now encoded via withQuery (the comma is sent as %2C),
+    // so assert the decoded parameters rather than the raw substring.
+    final ridesQuery = Uri.parse(ridesPath).queryParameters;
+    expect(ridesQuery['driverIds'], 'abc,xyz');
+    expect(ridesQuery['from'], '2026-06-22');
     // The company shifts for the day are fetched in the same pass.
     expect(
       capturedPaths.any((p) => p.contains('/schedules/day/2026-06-22')),

@@ -111,6 +111,15 @@ object PushNotificationListener:
   private def priceField(price: Option[BigDecimal]): Map[String, String] =
     price.fold(Map.empty[String, String])(p => Map("price" -> formatPrice(p)))
 
+  /**
+   * The recipient's push language: `Person.preferredLanguage` when supported (en/de/uk), English otherwise. A lookup
+   * failure must not block the push — it falls back to English.
+   */
+  private def languageOf(personRepo: PersonRepository, personId: PersonId): UIO[String] = personRepo
+    .findById(personId)
+    .map(person => PushMessages.resolveLanguage(person.flatMap(_.preferredLanguage)))
+    .catchAll(_ => ZIO.succeed(PushMessages.DefaultLanguage))
+
   private def handleEvent(
       fcmService: FcmService,
       notifRepo: NotificationRepository,
@@ -118,44 +127,52 @@ object PushNotificationListener:
       checkpointRepo: CheckpointNotificationRepository,
       event: WebSocketEvent
   ): Task[Unit] =
+    // Sends a push in the recipient's preferred language and persists it to their inbox.
+    // NOTE: only the ride-lifecycle notifications below are localized so far; dispatcher
+    // alerts and the remaining kinds still go out in English (see PushMessages).
+    def notifyLocalized(
+        personId: PersonId,
+        companyId: CompanyId,
+        notifType: String,
+        data: Map[String, String]
+    )(text: String => PushMessages.Text): Task[Unit] =
+      for
+        lang     <- languageOf(personRepo, personId)
+        localized = text(lang)
+        _        <- notifyUser(
+                      fcmService,
+                      notifRepo,
+                      personId,
+                      companyId,
+                      PushNotification(title = localized.title, body = localized.body, data = data),
+                      notifType
+                    )
+      yield ()
+
     event match
       case WebSocketEvent.RideAssigned(rideId, driverId, clientId, companyId, price, previousDriverId) =>
         // Carry the fare in the data map and append it to the body so the apps can
         // show the amount; both are omitted when the ride has no price.
-        val priceData       = priceField(price)
-        // Notify the assigned driver…
-        val driverNotif     = PushNotification(
-          title = "New Ride Assigned",
-          body = "A new ride has been assigned to you." + priceSuffix(price),
-          data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceData
-        )
-        // …and the client whose ride it is.
-        val clientNotif     = PushNotification(
-          title = "Driver Assigned",
-          body = "A driver has been assigned to your ride." + priceSuffix(price),
-          data = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceData
-        )
+        val assignedData    = Map("type" -> "ride_assigned", "rideId" -> rideId.toString) ++ priceField(price)
         // …and, on a reassignment, the DISPLACED driver — a backgrounded driver would
         // otherwise keep heading to a pickup that is no longer theirs.
         val notifyOldDriver =
           previousDriverId match
             case Some(oldDriverId) =>
-              val reassignedNotif = PushNotification(
-                title = "Ride Reassigned",
-                body = "A ride previously assigned to you has been reassigned to another driver.",
-                data = Map("type" -> "ride_reassigned", "rideId" -> rideId.toString)
-              )
-              notifyUser(
-                fcmService,
-                notifRepo,
+              notifyLocalized(
                 PersonId(oldDriverId),
                 CompanyId(companyId),
-                reassignedNotif,
-                "ride_reassigned"
-              )
+                "ride_reassigned",
+                Map("type" -> "ride_reassigned", "rideId" -> rideId.toString)
+              )(PushMessages.rideReassignedOldDriver)
             case None              => ZIO.unit
-        notifyUser(fcmService, notifRepo, PersonId(driverId), CompanyId(companyId), driverNotif, "ride_assigned") *>
-          notifyUser(fcmService, notifRepo, PersonId(clientId), CompanyId(companyId), clientNotif, "ride_assigned") *>
+        // Notify the assigned driver, the client whose ride it is, and the displaced driver.
+        notifyLocalized(PersonId(driverId), CompanyId(companyId), "ride_assigned", assignedData)(
+          PushMessages.rideAssignedDriver(_, priceSuffix(price))
+        ) *>
+          notifyLocalized(PersonId(clientId), CompanyId(companyId), "ride_assigned", assignedData)(
+            PushMessages.rideAssignedClient(_, priceSuffix(price))
+          ) *>
           notifyOldDriver
 
       case WebSocketEvent.RideStatusChanged(
@@ -166,63 +183,23 @@ object PushNotificationListener:
             companyId,
             cancellationReasonOpt
           ) =>
-        // (driverNotif, clientNotif) per status; None means no notification.
-        val notifications: Option[(PushNotification, PushNotification)] =
+        val statusData                                                                = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
+        // Localized (driver, client) texts per status; None means no notification.
+        val texts: Option[(String => PushMessages.Text, String => PushMessages.Text)] =
           newStatus match
-            case "InProgress" =>
-              Some(
-                PushNotification(
-                  title = "Ride Started",
-                  body = "Your ride is now in progress.",
-                  data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
-                ),
-                PushNotification(
-                  title = "Ride Started",
-                  body = "Your driver has started the ride.",
-                  data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
-                )
-              )
-            case "Completed"  =>
-              Some(
-                PushNotification(
-                  title = "Ride Completed",
-                  body = "Your ride has been completed.",
-                  data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
-                ),
-                PushNotification(
-                  title = "Ride Completed",
-                  body = "Your ride has been completed.",
-                  data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
-                )
-              )
-            case "Cancelled"  =>
-              Some(
-                PushNotification(
-                  title = "Ride Cancelled",
-                  body = "A ride assigned to you has been cancelled.",
-                  data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
-                ),
-                PushNotification(
-                  title = "Ride Cancelled",
-                  body = "Your ride has been cancelled.",
-                  data = Map("type" -> "ride_status_changed", "rideId" -> rideId.toString, "status" -> newStatus)
-                )
-              )
+            case "InProgress" => Some((PushMessages.rideStartedDriver, PushMessages.rideStartedClient))
+            case "Completed"  => Some((PushMessages.rideCompleted, PushMessages.rideCompleted))
+            case "Cancelled"  => Some((PushMessages.rideCancelledDriver, PushMessages.rideCancelledClient))
             case _            => None
 
-        notifications match
-          case Some((driverNotif, clientNotif)) =>
+        texts match
+          case Some((driverText, clientText)) =>
             // Driver only when one is assigned; the client is always notified.
             val notifyDriver =
               driverIdOpt match
                 case Some(driverId) =>
-                  notifyUser(
-                    fcmService,
-                    notifRepo,
-                    PersonId(driverId),
-                    CompanyId(companyId),
-                    driverNotif,
-                    "ride_status_changed"
+                  notifyLocalized(PersonId(driverId), CompanyId(companyId), "ride_status_changed", statusData)(
+                    driverText
                   )
                 case None           => ZIO.unit
 
@@ -260,15 +237,10 @@ object PushNotificationListener:
                 case _                         => ZIO.unit
 
             notifyDriver *>
-              notifyUser(
-                fcmService,
-                notifRepo,
-                PersonId(clientId),
-                CompanyId(companyId),
-                clientNotif,
-                "ride_status_changed"
+              notifyLocalized(PersonId(clientId), CompanyId(companyId), "ride_status_changed", statusData)(
+                clientText
               ) *> notifyDispatchers
-          case None                             => ZIO.unit
+          case None                           => ZIO.unit
 
       case WebSocketEvent.RideDetailsUpdated(rideId, driverIdOpt, clientId, companyId, _) =>
         val updatedNotif      = PushNotification(
@@ -405,9 +377,13 @@ object PushNotificationListener:
             companyId
           ) =>
         for
-          alreadySent <- checkpointRepo.isAlreadySent(RideId(rideId), PersonId(driverId), checkpointType)
-          _           <-
-            ZIO.unless(alreadySent) {
+          // Atomic claim-then-send: `markSentIfNew` inserts the dedup record and reports whether
+          // THIS call created it, so two concurrent checkpoint events (or two app instances)
+          // cannot both push. The old isAlreadySent → notify → markSent sequence let both pass
+          // the check before either recorded the send.
+          inserted <- checkpointRepo.markSentIfNew(RideId(rideId), PersonId(driverId), checkpointType)
+          _        <-
+            ZIO.when(inserted) {
               val notification = PushNotification(
                 title = s"Client at $checkpointName",
                 body = s"Your client has reached $checkpointName.",
@@ -425,8 +401,7 @@ object PushNotificationListener:
                 CompanyId(companyId),
                 notification,
                 "airport_checkpoint"
-              ) *>
-                checkpointRepo.markSent(RideId(rideId), PersonId(driverId), checkpointType)
+              )
             }
         yield ()
 

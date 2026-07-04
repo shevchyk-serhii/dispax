@@ -214,10 +214,12 @@ final class PostgresPersonRepository(xa: Transactor[Task]) extends PersonReposit
       .transact(xa)
   }
 
-  override def updateLastLogin(id: PersonId): Task[Unit] = {
-    sql"""
-      UPDATE persons SET last_login_at = NOW() WHERE id = ${id.value}
-    """.update.run
+  override def updateLastLogin(id: PersonId, companyId: Option[CompanyId]): Task[Unit] = {
+    // AND company_id like the setAvatar/deleteAvatar neighbours (defense-in-depth); a person
+    // without a company (SuperAdmin) is updated unscoped.
+    val base   = fr"UPDATE persons SET last_login_at = NOW() WHERE id = ${id.value}"
+    val scoped = companyId.fold(base)(c => base ++ fr"AND company_id = ${c.value}")
+    scoped.update.run
       .transact(xa)
       .unit
   }
