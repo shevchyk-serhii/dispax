@@ -160,6 +160,40 @@ class RideCheckpointReceived extends RideEvent {
   List<Object> get props => [rideId, checkpoint];
 }
 
+/// Locally applies a live MUC flight-board update received via WebSocket
+/// (FlightStatusUpdated) — no HTTP call. Patches the matching ride's flight
+/// fields (gate/terminal/status/estimated arrival/departure) so every screen
+/// backed by the shared RideBloc — the driver's Today/Upcoming cards included —
+/// reflects gate/terminal/status changes without a manual refresh.
+/// The time fields are the raw ISO-8601 wire strings; the bloc parses them.
+class RideFlightStatusReceived extends RideEvent {
+  final String rideId;
+  final String? gate;
+  final String? terminal;
+  final String? flightStatus;
+  final String? estimatedTime;
+  final String? departureTime;
+
+  const RideFlightStatusReceived({
+    required this.rideId,
+    this.gate,
+    this.terminal,
+    this.flightStatus,
+    this.estimatedTime,
+    this.departureTime,
+  });
+
+  @override
+  List<Object?> get props => [
+    rideId,
+    gate,
+    terminal,
+    flightStatus,
+    estimatedTime,
+    departureTime,
+  ];
+}
+
 /// Asks the bloc to cancel a ride with the given [reason].
 /// Used by the dispatcher "Close" action on unassigned (Requested) rides.
 class RideCancelRequested extends RideEvent {

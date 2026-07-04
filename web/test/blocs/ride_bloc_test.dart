@@ -709,6 +709,105 @@ void main() {
       );
     });
 
+    group('RideFlightStatusReceived (live MUC flight board via WS)', () {
+      blocTest<RideBloc, RideState>(
+        'patches gate/terminal/status of the matching ride without an HTTP call',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(
+            id: 'ride-1',
+            isAirportTransfer: true,
+            gate: 'G12',
+            terminal: 'T1',
+            flightStatus: 'Scheduled',
+          ),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideFlightStatusReceived(
+            rideId: 'ride-1',
+            gate: 'H18',
+            terminal: 'T2',
+            flightStatus: 'Landed',
+          ),
+        ),
+        expect: () => [
+          isA<RideState>()
+              .having(
+                (s) => s.rides.firstWhere((r) => r.id == 'ride-1').gate,
+                'ride-1 gate',
+                'H18',
+              )
+              .having(
+                (s) => s.rides.firstWhere((r) => r.id == 'ride-1').terminal,
+                'ride-1 terminal',
+                'T2',
+              )
+              .having(
+                (s) => s.rides.firstWhere((r) => r.id == 'ride-1').flightStatus,
+                'ride-1 flightStatus',
+                'Landed',
+              ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockRideService.getRidesForUser(any()));
+        },
+      );
+
+      blocTest<RideBloc, RideState>(
+        'parses estimatedTime into flightTime (local)',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', isAirportTransfer: true),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideFlightStatusReceived(
+            rideId: 'ride-1',
+            estimatedTime: '2026-07-04T14:30:00Z',
+          ),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) => s.rides
+                .firstWhere((r) => r.id == 'ride-1')
+                .flightTime
+                ?.toUtc()
+                .toIso8601String(),
+            'ride-1 flightTime',
+            '2026-07-04T14:30:00.000Z',
+          ),
+        ],
+      );
+
+      blocTest<RideBloc, RideState>(
+        'does not affect other rides',
+        build: buildBloc,
+        seed: () => RideState.loaded([
+          TestFixtures.ride(id: 'ride-1', isAirportTransfer: true, gate: 'A1'),
+          TestFixtures.ride(id: 'ride-2', isAirportTransfer: true, gate: 'B2'),
+        ]),
+        act: (bloc) => bloc.add(
+          const RideFlightStatusReceived(rideId: 'ride-1', gate: 'Z9'),
+        ),
+        expect: () => [
+          isA<RideState>().having(
+            (s) => s.rides.firstWhere((r) => r.id == 'ride-2').gate,
+            'ride-2 gate unchanged',
+            'B2',
+          ),
+        ],
+      );
+
+      blocTest<RideBloc, RideState>(
+        'unknown rideId emits nothing',
+        build: buildBloc,
+        seed: () => RideState.loaded([TestFixtures.ride(id: 'ride-1')]),
+        act: (bloc) => bloc.add(
+          const RideFlightStatusReceived(rideId: 'unknown', gate: 'H1'),
+        ),
+        expect: () => [],
+      );
+    });
+
     group('RideAdded deduplication', () {
       // Regression: onRideAdded blindly appended, so a WS RideCreated that
       // raced a getRides() reload produced the same ride twice in the list.

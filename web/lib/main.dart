@@ -337,6 +337,22 @@ class _AppWithWebSocketState extends State<_AppWithWebSocket> {
         }
         return;
       }
+      if (event.isFlightStatusUpdated && statusRideId != null) {
+        // Live MUC flight-board update (gate/terminal/status/estimated time).
+        // Patch the shared RideBloc so every screen — including the driver's
+        // Today/Upcoming cards — reflects it without a manual refresh.
+        context.read<RideBloc>().add(
+          RideFlightStatusReceived(
+            rideId: statusRideId,
+            gate: event.flightGate,
+            terminal: event.flightTerminal,
+            flightStatus: event.flightStatus,
+            estimatedTime: event.flightEstimatedTime,
+            departureTime: event.flightDepartureTime,
+          ),
+        );
+        return;
+      }
       if (event.isRideAssigned || event.isRideCreated) {
         _refreshRides();
       }

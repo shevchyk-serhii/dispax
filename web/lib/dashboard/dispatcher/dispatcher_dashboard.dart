@@ -132,36 +132,10 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           );
         }
       }
-      final flightStatusRideId = event.rideId;
-      if (event.isFlightStatusUpdated && flightStatusRideId != null) {
-        // Live MUC flight board update (gate/terminal/status/estimated time) for an
-        // airport ride. Patch the matching ride in the shared RideBloc so the
-        // dispatcher's "My Rides" card reflects it without a manual refresh.
-        final existing = _rideBloc.state.rides
-            .where((r) => r.id == flightStatusRideId)
-            .firstOrNull;
-        if (existing != null) {
-          final flightEstimatedTime = event.flightEstimatedTime;
-          final estimated = flightEstimatedTime != null
-              ? DateTime.tryParse(flightEstimatedTime)?.toLocal()
-              : null;
-          final flightDepartureTime = event.flightDepartureTime;
-          final departure = flightDepartureTime != null
-              ? DateTime.tryParse(flightDepartureTime)?.toLocal()
-              : null;
-          _rideBloc.add(
-            RideUpdated(
-              ride: existing.copyWith(
-                gate: event.flightGate,
-                terminal: event.flightTerminal,
-                flightStatus: event.flightStatus,
-                flightTime: estimated ?? existing.flightTime,
-                flightDepartureTime: departure ?? existing.flightDepartureTime,
-              ),
-            ),
-          );
-        }
-      }
+      // Live MUC flight-board updates (FlightStatusUpdated) are patched into the
+      // shared RideBloc by the global WebSocket listener in main.dart via
+      // RideFlightStatusReceived, so every screen (dispatcher, driver, client)
+      // reflects gate/terminal/status changes without a per-screen handler.
       if (event.isEtaAtRisk) {
         final rideId = event.rideId ?? '';
         final driverId = event.etaRiskDriverId ?? '';
