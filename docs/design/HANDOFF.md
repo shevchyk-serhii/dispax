@@ -172,7 +172,7 @@ Headings use **negative tracking** (`letterSpacing: -0.3…-0.5`) — already in
 | **Client — Live tracking** | `screens/client_map_screen.dart` + `client_dashboard.dart`                   | `GoogleMap` full-bleed, floating back + status pill, `DraggableScrollableSheet` driver card with ETA, Call/Message. Airport entry timer card stays                   |
 | **Ride lifecycle**         | `screens/ride_details_screen.dart` (`RideStatusCard`)                        | vertical stepper for `Requested→Assigned→InProgress→Completed`; current step animated; slack/ETA chip                                                                |
 | **Dispatcher board**       | `dashboard/dispatcher/dispatcher_dashboard.dart` (`PendingRidesPanel`)       | **≥800 = `NavigationRail` + split**, <800 = bottom nav. Stats row, pending-requests list with Assign, live-fleet panel                                               |
-| **Predictive ETA alert**   | `feature-predictive-eta-monitoring.md` → consumes `WebSocketEvent.EtaAtRisk` | red-left card: Driver ETA vs Pickup-in vs **Slack (negative)**; Reassign / View. Shown on `eta_at_risk` push + WS event for the company's dispatchers                |
+| **Predictive ETA alert**   | `archive/feature-predictive-eta-monitoring.md` → consumes `WebSocketEvent.EtaAtRisk` | red-left card: Driver ETA vs Pickup-in vs **Slack (negative)**; Reassign / View. Shown on `eta_at_risk` push + WS event for the company's dispatchers                |
 | **Billing**                | `screens/billing_screen.dart` + `datev_export_screen.dart`                   | stats, invoice `DataTable`/list, status pills, **Export DATEV** (GoBD CSV). EUR formatting via `intl`                                                                |
 
 ---

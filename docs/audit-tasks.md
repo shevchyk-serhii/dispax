@@ -33,7 +33,7 @@
 ## Найденные баги — 2026-06-19
 
 > Проверено по коду (компиляция OK, 1147 тестов зелёные). Severity: HIGH / MEDIUM / LOW.
-> Полный отчёт с обоснованиями: `docs/audit-report-2026-06-19.md`.
+> Полный отчёт с обоснованиями: `docs/archive/audit-report-2026-06-19.md`.
 
 - [x] **[HIGH] ChatService на `Task` + `RuntimeException`** — `ride/src/main/scala/com/shevchyk/ride/application/service/ChatService.scala:10-12` — нарушает «ZIO typed, no throw»: `sendMessage/getMessages: Task[...]`, ошибки кидаются как `new RuntimeException(...)`. Нужен `sealed trait ChatError` + `IO[ChatError, _]`. _Категория: SOLID._ — **ИСПРАВЛЕНО** (audit2 2026-07-03, ChatService на IO[ChatError,_] (empty/too-long/not-available/not-found→400/404); ChatServiceSpec)
 - [x] **[MEDIUM] Ошибки уведомлений/аудита глушатся при назначении** — `ride/src/main/scala/com/shevchyk/ride/application/service/RideService.scala` (assignDriver) — `eventHub.publish(...).ignore` (без tapError), `emailSmsService.send...().ignore`, `auditService.log(...).ignore`: водитель может не узнать о назначении, нет алерта. Добавить единообразный `.tapError(logWarning)`. _Категория: Functional._ — **ИСПРАВЛЕНО** (audit3 2026-07-04, 9 publish.ignore→warnUnlessPublished + clearConfirmationDedup с tapError; RideServiceBestEffortLoggingSpec (ZTestLogger), mutation RED)

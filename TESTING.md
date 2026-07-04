@@ -63,7 +63,7 @@ Flutter analyze+test). Деплой делается вручную: `make deplo
 > `root/testOnly *Spec` (glob `*Spec` берёт ZIO-специи, но НЕ JUnit
 > `CucumberRunner`).
 
-**BDD:** ~170 `.feature`-файлов, ~1280 Cucumber-сценариев (`make test-bdd`).
+**BDD:** 45 `.feature`-файлов, 346 Cucumber-сценариев (`make test-bdd`).
 
 **Flutter:** ~28 unit/widget тестов в `web/test/`; ~43 e2e в `web/integration_test/`
 (против живого backend).
@@ -128,7 +128,7 @@ boot-lock и server-socket. Поэтому параллельные цели з�
 
 ### `make test-bdd-parallel` — BDD в 3 шарда
 
-Бьёт 343 BDD-сценария на 3 сбалансированные трети (`CucumberShard1/2/3Runner`) и
+Бьёт 346 BDD-сценариев на 3 сбалансированные трети (`CucumberShard1/2/3Runner`) и
 гоняет их в 3 worktree на портах 8101–8103. `CucumberShardCoverageSpec`
 гарантирует, что шарды вместе покрывают все `.feature` (новый файл, не попавший в
 шард, → красный тест). `make test-bdd-parallel-clean` удаляет worktree.
