@@ -494,17 +494,17 @@ object PostgresInvoiceRepositorySpec extends ZIOSpecDefault {
       //    carry a clientCompanyId must NOT be billed) ──
       test("findBillableRides excludes a provisional client's ride even with a clientCompanyId") {
         for {
-          xa          <- ZIO.service[Transactor[Task]]
-          _           <- seedTestData(xa)
-          _           <- cleanRides(xa)
-          repo         = PostgresInvoiceRepository(xa)
-          normalRide   = UUID.randomUUID()
-          provRide     = UUID.randomUUID()
-          provClient   = UUID.randomUUID()
-          _           <- seedRide(xa, normalRide, estimated = Some(BigDecimal("42.00")), finalPrice = None)
+          xa        <- ZIO.service[Transactor[Task]]
+          _         <- seedTestData(xa)
+          _         <- cleanRides(xa)
+          repo       = PostgresInvoiceRepository(xa)
+          normalRide = UUID.randomUUID()
+          provRide   = UUID.randomUUID()
+          provClient = UUID.randomUUID()
+          _         <- seedRide(xa, normalRide, estimated = Some(BigDecimal("42.00")), finalPrice = None)
           // A provisional client linked to the SAME client company, with a priced completed ride.
-          _           <- seedProvisionalClientWithRide(xa, provClient, provRide, price = BigDecimal("77.00"))
-          rides       <- repo.findBillableRides(testCompanyId, clientCompanyId, None, None)
+          _         <- seedProvisionalClientWithRide(xa, provClient, provRide, price = BigDecimal("77.00"))
+          rides     <- repo.findBillableRides(testCompanyId, clientCompanyId, None, None)
         } yield assertTrue(
           // Only the normal client's ride is billable; the provisional one is excluded by NOT p.provisional.
           rides.map(_.rideId).toSet == Set(normalRide)
