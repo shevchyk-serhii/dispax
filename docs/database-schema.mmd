@@ -1,4 +1,6 @@
 erDiagram
+    %% Source of truth for the ER diagram. Regenerate database-schema.png / .svg from this file
+    %% (e.g. `mmdc -i database-schema.mmd -o database-schema.svg`) after changing it.
     %% ===== Core / multitenancy =====
     companies {
         UUID id PK
@@ -230,6 +232,118 @@ erDiagram
         TEXT address
     }
 
+    %% ===== Airports (global, cross-tenant) =====
+    airports {
+        VARCHAR code PK
+        VARCHAR name
+        VARCHAR country
+        DOUBLE landing_lat
+        DOUBLE landing_lon
+        INT landing_radius
+        BOOLEAN is_active
+    }
+    airport_checkpoint_zones {
+        UUID id PK
+        VARCHAR airport_code FK
+        VARCHAR terminal_code
+        VARCHAR checkpoint_type
+        VARCHAR display_name
+        DOUBLE lat
+        DOUBLE lon
+        INT radius_meters
+    }
+
+    %% ===== Schedule (visibility / unavailability) =====
+    driver_schedule_visibility {
+        UUID driver_id PK
+        UUID company_id FK
+        BOOLEAN can_view_other_schedules
+    }
+    driver_unavailability {
+        UUID id PK
+        UUID driver_id FK
+        UUID company_id FK
+        TIMESTAMPTZ from_time
+        TIMESTAMPTZ to_time
+        enum reason
+        TEXT note
+    }
+
+    %% ===== Partner / external hand-off =====
+    partner_companies {
+        UUID id PK
+        VARCHAR name
+        VARCHAR email
+        VARCHAR phone
+        UUID taxi_company_id FK
+    }
+    external_drivers {
+        UUID id PK
+        VARCHAR name
+        VARCHAR phone
+        UUID partner_company_id FK
+        UUID taxi_company_id FK
+    }
+
+    %% ===== Guest tracking =====
+    ride_share_tokens {
+        UUID id PK
+        VARCHAR token UK
+        UUID ride_id FK
+        UUID company_id
+        TIMESTAMPTZ expires_at
+    }
+
+    %% ===== Billing profile / booking reference =====
+    company_billing_profile {
+        UUID company_id PK
+        VARCHAR legal_name
+        VARCHAR vat_id
+        VARCHAR iban
+        INT payment_terms_days
+    }
+    booking_reference_sequences {
+        UUID company_id PK
+        INT last_number
+    }
+
+    %% ===== Calendar sharing =====
+    calendar_share_invites {
+        UUID id PK
+        VARCHAR token UK
+        UUID grantor_person_id FK
+        UUID grantor_company_id FK
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ revoked_at
+    }
+    calendar_share_grants {
+        UUID id PK
+        UUID invite_id FK
+        UUID grantor_person_id FK
+        UUID grantor_company_id FK
+        UUID grantee_person_id FK
+        UUID grantee_company_id FK
+        TIMESTAMPTZ revoked_at
+    }
+
+    %% ===== Notification idempotency =====
+    sent_checkpoint_notifications {
+        UUID ride_id PK
+        UUID driver_id PK
+        VARCHAR checkpoint_type PK
+        TIMESTAMPTZ sent_at
+    }
+    eta_alerts {
+        UUID ride_id PK
+        UUID driver_id PK
+        TIMESTAMPTZ alerted_at
+    }
+    sent_confirmation_requests {
+        UUID ride_id PK
+        UUID person_id PK
+        TIMESTAMPTZ sent_at
+    }
+
     %% ===== Relations =====
     companies ||--o{ client_companies : "obsluzhivaet"
     companies ||--o{ persons : "rabotniki"
@@ -286,3 +400,34 @@ erDiagram
     companies ||--o{ blacklist_entries : ""
     persons ||--o{ blacklist_entries : "client"
     persons ||--o{ client_addresses : ""
+
+    airports ||--o{ airport_checkpoint_zones : ""
+
+    persons ||--o| driver_schedule_visibility : ""
+    companies ||--o{ driver_schedule_visibility : ""
+    persons ||--o{ driver_unavailability : "driver"
+    companies ||--o{ driver_unavailability : ""
+
+    companies ||--o{ partner_companies : "taxi_company"
+    partner_companies ||--o{ external_drivers : ""
+    companies ||--o{ external_drivers : "taxi_company"
+
+    rides ||--o{ ride_share_tokens : ""
+
+    companies ||--|| company_billing_profile : ""
+    companies ||--|| booking_reference_sequences : ""
+
+    persons ||--o{ calendar_share_invites : "grantor"
+    companies ||--o{ calendar_share_invites : "grantor"
+    calendar_share_invites ||--o{ calendar_share_grants : ""
+    persons ||--o{ calendar_share_grants : "grantor"
+    persons ||--o{ calendar_share_grants : "grantee"
+    companies ||--o{ calendar_share_grants : "grantor"
+    companies ||--o{ calendar_share_grants : "grantee"
+
+    rides ||--o{ sent_checkpoint_notifications : ""
+    persons ||--o{ sent_checkpoint_notifications : "driver"
+    rides ||--o{ eta_alerts : ""
+    persons ||--o{ eta_alerts : "driver"
+    rides ||--o{ sent_confirmation_requests : ""
+    persons ||--o{ sent_confirmation_requests : ""
