@@ -102,7 +102,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     PushRegistrationService? pushRegistrationService,
   }) : _storage = storage ?? _TokenStorage(),
        _webSocketService = webSocketService ?? WebSocketService.instance,
-       _pushService = pushRegistrationService ?? PushNotificationService.instance,
+       _pushService =
+           pushRegistrationService ?? PushNotificationService.instance,
        super(AuthState.initial()) {
     privateApiClient = apiClient ?? ApiClient();
     privateApiClient.onUnauthorized = () => add(const AuthSessionExpired());
