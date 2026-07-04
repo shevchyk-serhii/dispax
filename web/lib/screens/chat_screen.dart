@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../modules/core/services/api_client.dart' show ApiException;
 import '../modules/core/services/error_messages.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -26,6 +27,10 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollCtrl = ScrollController();
   List<_ChatMsg> _messages = [];
   bool _isLoading = true;
+  // Set when loading failed (network error OR a non-200 such as the backend's
+  // 403 participation refusal) — renders an error state with Retry instead of
+  // an infinite spinner (ApiClient returns non-2xx responses, it doesn't throw).
+  bool _loadFailed = false;
   StreamSubscription? _wsSubscription;
 
   @override
@@ -58,16 +63,30 @@ class _ChatScreenState extends State<ChatScreen> {
       final apiClient = context.read<AuthBloc>().apiClient;
       final response = await apiClient.get('/rides/${widget.ride.id}/chat');
 
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
         setState(() {
           _messages = jsonList.map((j) => _ChatMsg.fromJson(j)).toList();
           _isLoading = false;
+          _loadFailed = false;
         });
         _scrollToBottom();
+      } else {
+        // e.g. 403 from the backend participation guard — without this branch
+        // the screen spun forever, since ApiClient returns non-2xx instead of
+        // throwing.
+        setState(() {
+          _isLoading = false;
+          _loadFailed = true;
+        });
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadFailed = true;
+      });
     }
   }
 
@@ -75,22 +94,36 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _messageCtrl.text.trim();
     if (text.isEmpty) return;
 
-    _messageCtrl.clear();
-
     try {
       final apiClient = context.read<AuthBloc>().apiClient;
-      await apiClient.post('/rides/${widget.ride.id}/chat', {'message': text});
-      await _loadMessages();
-    } catch (e) {
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.failedToSendMessage(friendlyError(e, l10n))),
-          ),
-        );
+      final response = await apiClient.post('/rides/${widget.ride.id}/chat', {
+        'message': text,
+      });
+      if (!mounted) return;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Clear only once the backend accepted the message — clearing before
+        // the POST lost the typed text on a rejection.
+        _messageCtrl.clear();
+        await _loadMessages();
+      } else {
+        // Rejected (400 validation / 403 not a party): ApiClient does not
+        // throw on non-2xx, so without this branch the message vanished with
+        // no feedback. Keep the typed text and tell the user.
+        _showSendFailure(ApiException.fromResponse(response, 'send message'));
       }
+    } catch (e) {
+      _showSendFailure(e);
     }
+  }
+
+  void _showSendFailure(Object error) {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.failedToSendMessage(friendlyError(error, l10n))),
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -194,6 +227,8 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator.adaptive())
+                : _loadFailed
+                ? _buildLoadError(l10n)
                 : _messages.isEmpty
                 ? _buildEmptyState(context, l10n)
                 : ListView.builder(
@@ -270,6 +305,37 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // ── Empty state ───────────────────────────────────────────────────────────
+
+  Widget _buildLoadError(AppLocalizations l10n) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: 40,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.errorLoadingData,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+                _loadFailed = false;
+              });
+              _loadMessages();
+            },
+            child: Text(l10n.retry),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Center(

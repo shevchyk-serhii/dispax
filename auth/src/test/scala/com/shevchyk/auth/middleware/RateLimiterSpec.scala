@@ -109,6 +109,24 @@ object RateLimiterSpec extends ZIOSpecDefault {
           _       <- limiter.checkRate("other-ip")
           keys    <- limiter.trackedKeys
         } yield assertTrue(keys.contains("live-ip"), keys.contains("other-ip"))
+      },
+      // isLimited/record split the check from the consumption so a caller can count only the
+      // attempts that should count (the login email bucket counts failures, not every request).
+      test("isLimited peeks without consuming a slot") {
+        for {
+          limiter <- RateLimiter.make(maxRequests = 2, windowSeconds = 60)
+          peeks   <- ZIO.foreach(1 to 10)(_ => limiter.isLimited("peeked"))
+          allowed <- limiter.checkRate("peeked") // still a full bucket: peeking consumed nothing
+        } yield assertTrue(peeks.forall(_ == false), allowed)
+      },
+      test("record consumes slots until isLimited flips") {
+        for {
+          limiter <- RateLimiter.make(maxRequests = 2, windowSeconds = 60)
+          _       <- limiter.record("victim")
+          under   <- limiter.isLimited("victim")
+          _       <- limiter.record("victim")
+          at      <- limiter.isLimited("victim")
+        } yield assertTrue(!under, at)
       }
       // [Mutant 5 — window cutoff off-by-one: windowSeconds → windowSeconds - 1]
       // Pinning the exact boundary requires recording a timestamp at precisely

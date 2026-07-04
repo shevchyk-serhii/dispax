@@ -62,6 +62,8 @@ object LoginRateLimitSpec extends ZIOSpecDefault:
   private def limiter(f: String => Boolean): ZLayer[Any, Nothing, RateLimiter] = ZLayer.succeed(
     new RateLimiter:
       def checkRate(key: String): UIO[Boolean] = ZIO.succeed(f(key))
+      def isLimited(key: String): UIO[Boolean] = ZIO.succeed(!f(key))
+      def record(key: String): UIO[Unit]       = ZIO.unit
   )
 
   private val denyAll: ZLayer[Any, Nothing, RateLimiter]  = limiter(_ => false)
@@ -73,10 +75,13 @@ object LoginRateLimitSpec extends ZIOSpecDefault:
   private def denyKey(key: String): ZLayer[Any, Nothing, RateLimiter] = limiter(_ != key)
 
   /**
-   * Allows everything and records the keys it was asked about.
+   * Allows everything and records which keys were consulted (checkRate/isLimited) and which were consumed via record().
    */
-  final private class RecordingLimiter(val keys: Ref[List[String]]) extends RateLimiter:
+  final private class RecordingLimiter(val keys: Ref[List[String]], val recorded: Ref[List[String]])
+      extends RateLimiter:
     def checkRate(key: String): UIO[Boolean] = keys.update(_ :+ key).as(true)
+    def isLimited(key: String): UIO[Boolean] = keys.update(_ :+ key).as(false)
+    def record(key: String): UIO[Unit]       = recorded.update(_ :+ key)
 
   // -- Request plumbing ------------------------------------------------------
   private def run(
@@ -142,7 +147,8 @@ object LoginRateLimitSpec extends ZIOSpecDefault:
       test("the limiter is consulted with both the ip- and the normalized email-key") {
         for {
           keys    <- Ref.make(List.empty[String])
-          recorder = new RecordingLimiter(keys)
+          rec     <- Ref.make(List.empty[String])
+          recorder = new RecordingLimiter(keys, rec)
           layers   = authService(loginOk) ++ ZLayer.succeed(recorder: RateLimiter) ++ TestJwt.serviceLayer
           resp    <- run(loginReq(email = "Client@Test.DE"), layers)
           seen    <- keys.get
@@ -151,6 +157,35 @@ object LoginRateLimitSpec extends ZIOSpecDefault:
           // no client address is attached to the stub request → the ip bucket key falls back to "unknown"
           seen.exists(_.startsWith("ip:")),
           seen.contains("email:client@test.de")
+        )
+      },
+      // Regression: the email bucket used to consume a slot on EVERY attempt (checkRate), handing an
+      // attacker a targeted lockout — ~10 requests per window with the victim's email (any IPs, wrong
+      // password) 429'd the victim's own correct-password login. It must count FAILED attempts only.
+      test("a successful login does not consume the email bucket") {
+        for {
+          keys     <- Ref.make(List.empty[String])
+          rec      <- Ref.make(List.empty[String])
+          recorder  = new RecordingLimiter(keys, rec)
+          layers    = authService(loginOk) ++ ZLayer.succeed(recorder: RateLimiter) ++ TestJwt.serviceLayer
+          resp     <- run(loginReq(), layers)
+          consumed <- rec.get
+        } yield assertTrue(
+          resp.status == Status.Ok,
+          !consumed.exists(_.startsWith("email:")) // nothing recorded into the email bucket
+        )
+      },
+      test("a failed login records exactly one slot into the email bucket") {
+        for {
+          keys     <- Ref.make(List.empty[String])
+          rec      <- Ref.make(List.empty[String])
+          recorder  = new RecordingLimiter(keys, rec)
+          layers    = authService(loginWrong) ++ ZLayer.succeed(recorder: RateLimiter) ++ TestJwt.serviceLayer
+          resp     <- run(loginReq(), layers)
+          consumed <- rec.get
+        } yield assertTrue(
+          resp.status == Status.Unauthorized,
+          consumed == List("email:client@test.de")
         )
       }
     ) @@ TestAspect.sequential

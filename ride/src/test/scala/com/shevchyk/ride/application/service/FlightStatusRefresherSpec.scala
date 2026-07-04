@@ -88,6 +88,54 @@ object FlightStatusRefresherSpec extends ZIOSpecDefault:
           ev.size == 1 // only the first (Updated) published
         )
       },
+      // Regression: the dedup used to compare the RAW scrape row against the stored one, while the
+      // repository COALESCEs gate/terminal/scheduled/departure. A tick whose detail scrape dropped the
+      // gate (None) then differed from the stored row FOREVER — re-persisting and re-publishing an
+      // identical visible state every 5 minutes (WS event storm, false "Updated" on manual refresh).
+      test("Unchanged: a scrape that drops the gate/terminal but changes nothing else dedups") {
+        val ride     = airportRide(Some("LH123"))
+        val gateless = sampleInfo.copy(gate = None, terminal = None)
+        for
+          repo     <- ZIO.succeed(new InMemoryRideRepository)
+          created  <- repo.create(ride)
+          provider <- InMemoryFlightStatusProvider.make
+          _        <- provider.seed(sampleInfo)
+          events   <- Ref.make(List.empty[WebSocketEvent])
+          hub       = recordingHub(events)
+          _        <- FlightStatusRefresher.refresh(created, repo, provider, hub)
+          _        <- provider.seed(gateless) // detail page failed this tick — same status/times, no gate
+          second   <- FlightStatusRefresher.refresh(created, repo, provider, hub)
+          stored   <- repo.findFlightStatus(created.id)
+          ev       <- events.get
+        yield assertTrue(
+          second == RefreshResult.Unchanged,
+          ev.size == 1, // only the first (Updated) published
+          stored.exists(_.gate.contains("H14")) // the stored gate survived the gateless tick
+        )
+      },
+      test("Updated: a real status change with a gateless scrape publishes the STORED gate (effective row)") {
+        val ride           = airportRide(Some("LH123"))
+        val landedGateless = sampleInfo.copy(status = FlightStatus.Landed, gate = None, terminal = None)
+        for
+          repo     <- ZIO.succeed(new InMemoryRideRepository)
+          created  <- repo.create(ride)
+          provider <- InMemoryFlightStatusProvider.make
+          _        <- provider.seed(sampleInfo.copy(status = FlightStatus.EnRoute))
+          events   <- Ref.make(List.empty[WebSocketEvent])
+          hub       = recordingHub(events)
+          _        <- FlightStatusRefresher.refresh(created, repo, provider, hub)
+          _        <- provider.seed(landedGateless) // landed, but the gate detail failed this tick
+          second   <- FlightStatusRefresher.refresh(created, repo, provider, hub)
+          ev       <- events.get
+        yield assertTrue(
+          second match { case RefreshResult.Updated(row) => row.gate.contains("H14"); case _ => false },
+          ev.size == 2,
+          ev.lastOption.exists {
+            case e: WebSocketEvent.FlightStatusUpdated => e.status == "landed" && e.gate.contains("H14")
+            case _                                     => false
+          }
+        )
+      },
       test("NotFound: flight not on the board → no event, status untouched (the DE1811 case)") {
         val ride = airportRide(Some("DE1811"))
         for
