@@ -5,7 +5,7 @@ entitlement, fastlane, Makefile targets) is already wired; the steps below are
 the account-side work only you can do, plus the commands to build and upload.
 
 - **Bundle ID:** `de.dispax.app`
-- **Apple Team ID:** `D74H38HXXR`
+- **Apple Team ID:** `WPM9G259A4`
 - **Firebase project:** `taxi-app-98671` (iOS app already registered)
 
 > **Two ways to release, both wired:**
@@ -33,7 +33,7 @@ automatically when the archive is exported for the App Store.
 ### 2. APNs key for Firebase (so FCM push actually delivers)
 At **Certificates, Identifiers & Profiles → Keys**:
 1. **+** → enable **Apple Push Notifications service (APNs)** → download the `.p8` (offered once).
-2. Note the **Key ID** and your **Team ID** (`D74H38HXXR`).
+2. Note the **Key ID** and your **Team ID** (`WPM9G259A4`).
 3. Firebase Console → project `taxi-app-98671` → **Project Settings → Cloud Messaging →
    Apple app configuration** → upload that `.p8` with the Key ID + Team ID.
 
