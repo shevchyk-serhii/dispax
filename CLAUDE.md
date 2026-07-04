@@ -75,8 +75,9 @@ Trait at the module root → PostgreSQL implementation in `infrastructure/reposi
 
 ### Ride Status Machine
 ```
-Requested → Assigned → InProgress → Completed
-                     ↘ Cancelled
+Requested → Assigned → Confirmed → InProgress → Completed
+                    ↘ Cancelled
+Assigned/Confirmed → HandedOff   (delegated to an external driver)
 ```
 Only rides with the `Requested` status can be assigned to a driver.
 
