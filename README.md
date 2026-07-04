@@ -48,7 +48,7 @@ owner-operated fleets of a few to a few dozen drivers serving time-critical busi
 ## Overview
 
 - **Domain:** ride dispatching for taxis and corporate transfers (MVP scoped to Munich and surroundings, up to 100 km).
-- **Roles:** Driver, Client, Secretary, Dispatcher, Admin.
+- **Roles:** Driver, Client, Secretary, Dispatcher, Admin, ClientSecretary, SuperAdmin.
 - **Multi-tenancy:** strict isolation — every request is filtered by `CompanyId` from JWT claims.
 - **Ride lifecycle:** a typed status machine governs every transition (see below).
 
@@ -122,11 +122,11 @@ Further reading: [`docs/architecture.md`](docs/architecture.md) ·
 - **Pure functional core** — ZIO effects throughout; opaque types for IDs; time-ordered UUID v7.
 - **Repository pattern** — a trait per module with a PostgreSQL implementation in
   `infrastructure/repository/` and in-memory implementations for unit tests.
-- **Extensive test coverage** — ~790 backend tests and 246 BDD scenarios, all green, across a
-  layered strategy:
+- **Extensive test coverage** — 181 backend test specs and 346 BDD scenarios (45 `.feature` files),
+  all green, across a layered strategy:
   - **Unit** — in-memory repositories (e.g. `InMemoryRideRepository`).
   - **Integration** — Testcontainers against a real PostgreSQL (the DB is never mocked).
-  - **BDD** — 246 Cucumber scenarios covering business rules end-to-end.
+  - **BDD** — 346 Cucumber scenarios covering business rules end-to-end.
   - **Flutter** — `bloc_test` + `mocktail`.
 
 ---

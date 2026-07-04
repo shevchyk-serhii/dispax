@@ -39,25 +39,26 @@ application/      Services, business logic, validators
   ├── XxxService.scala
   ├── validation/
 
-infrastructure/   HTTP routes, DB repositories, external integrations
-  ├── http/
-  │   ├── XxxRoutes.scala
-  │   └── dto/
+infrastructure/   DB repositories, external integrations, DTOs
+  ├── http/dto/
   └── repository/
+
+openapi/          Tapir endpoint descriptions (HTTP layer)
+  ├── XxxApi.scala
 ```
 
 **Domain** — Pure case classes & enums, no framework dependencies. Defines entities (`Ride`, `ScheduleDay`), value objects (`Location`, `PersonId`), status enums, and domain errors.
 
 **Application** — ZIO services that implement business rules. Each service is provided as a `ZLayer` for DI. Validators use typeclass-based validation.
 
-**Infrastructure** — ZIO-HTTP route handlers, Doobie-based PostgreSQL repositories, DTO conversions. Routes are split into public and authenticated (JWT middleware).
+**Infrastructure** — Doobie-based PostgreSQL repositories and DTO conversions. The HTTP layer is described declaratively with **Tapir** endpoints in `openapi/XxxApi.scala` (one per resource, ~32 in total) — the single source of truth for routing and the `/docs` OpenAPI/Swagger document. Endpoints derive from a shared `secureBase` that validates the bearer token; public endpoints are described separately (no `securityIn`). A few infrastructure-only routes remain as ZIO-HTTP handlers under `api/.../app/routes/` (health, WebSocket, dev, guest-tracking page).
 
 ## Key Patterns
 
 - **Repository pattern** — trait in module root, PostgreSQL implementation in infrastructure
 - **ZIO Layers for DI** — all services/repos wired via `ZLayer.provide` in `Application.scala`
 - **Company isolation (multi-tenancy)** — most queries are scoped by `CompanyId`; enforced at service and route level
-- **Authenticated vs public routes** — `AuthMiddleware` extracts JWT claims; `authenticatedHandler` / `authenticatedJsonHandler` helpers
+- **Authenticated vs public endpoints** — a shared Tapir `secureBase` validates the bearer token via `zServerSecurityLogic` and yields an `AuthenticatedUser` (incl. `companyId` from the JWT payload); public endpoints are described without `securityIn`
 - **Typeclass validation** — `Validator` typeclass with `given` instances per request DTO
 
 ## Directory Structure
@@ -66,7 +67,8 @@ infrastructure/   HTTP routes, DB repositories, external integrations
 dispax/
 ├── api/src/main/scala/com/shevchyk/    # Root module (entry point)
 │   ├── Application.scala               # Main, route aggregation, DI wiring
-│   ├── app/routes/UserRoutes.scala
+│   ├── app/routes/                     # Infra routes: health, WebSocket, dev, track page
+│   ├── app/openapi/OpenApiServer.scala # Tapir → OpenAPI/Swagger at /docs
 │   ├── config/, database/, repository/
 │   └── resources/db/migration/          # Flyway migrations
 ├── core/src/main/scala/.../core/domain/ # CoreDomain.scala

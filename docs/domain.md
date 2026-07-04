@@ -237,7 +237,9 @@ All IDs are UUID-based wrappers using time-ordered epoch UUIDs (`UuidCreator.get
 ## Enums
 
 ### PersonRole
-`Driver` | `Client` | `Secretary` | `Dispatcher` | `Admin`
+`Driver` | `Client` | `Secretary` | `Dispatcher` | `Admin` | `ClientSecretary` | `SuperAdmin`
+
+Wire format is SCREAMING_SNAKE_CASE via `PersonRole.toWire` (`ClientSecretary` → `CLIENT_SECRETARY`, `SuperAdmin` → `SUPER_ADMIN`).
 
 ### RideStatus
 `Requested` | `Assigned` | `InProgress` | `Completed` | `Cancelled`
@@ -252,7 +254,7 @@ All IDs are UUID-based wrappers using time-ordered epoch UUIDs (`UuidCreator.get
 `Unpaid` | `Pending` | `Paid`
 
 ### PaymentMethod
-`Cash` | `Card` | `Invoice` | `Bank` | `Receivable`
+`Cash` | `Card` | `Invoice` | `Bank` | `Receivable` | `Payment`
 
 ## RideSpecifics
 
