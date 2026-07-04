@@ -1,5 +1,5 @@
 .PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-watch test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything test-everything-parallel test-all-parallel-clean clean rebuild \
-        flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
+        flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios flutter-prod-iphone \
         ios-beta ios-testflight-upload \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
@@ -732,6 +732,22 @@ ios-testflight-upload:
 # Build the IPA and upload it to TestFlight in one step.
 ios-beta: flutter-prod-ios ios-testflight-upload
 	@echo "✅ Uploaded to TestFlight"
+
+# Install the PRODUCTION app on a physical iPhone and detach — the installed
+# release build keeps running on its own after this command exits, so stopping
+# the installer does NOT kill the app (unlike `flutter run`, which holds a live
+# session). Targets the prod backend ($(PROD_URL)). Requires a configured
+# signing identity in Xcode. Override the device with DEVICE=<id> (default: the
+# first attached iOS device); pass the same Mapbox token as the dev targets.
+#   make flutter-prod-iphone                 # install on the only/first iPhone
+#   make flutter-prod-iphone DEVICE=00008150-000978860ED8401C
+DEVICE ?=
+flutter-prod-iphone:
+	cd $(FLUTTER_DIR) && $(FLUTTER) build ios --release \
+		--dart-define=API_BASE_URL=$(PROD_URL)/api \
+		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
+	cd $(FLUTTER_DIR) && $(FLUTTER) install --release $(if $(DEVICE),-d $(DEVICE),)
+	@echo "✅ Prod app installed on the iPhone — it now runs standalone; stopping this command does not close it."
 
 # Run Flutter on Sergii's iPhone (wireless) against local backend
 flutter-dev-iphone-sergii:
