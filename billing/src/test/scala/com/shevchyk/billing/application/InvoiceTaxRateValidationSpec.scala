@@ -41,7 +41,6 @@ object InvoiceTaxRateValidationSpec extends ZIOSpecDefault:
       def deleteItems(invoiceId: InvoiceId): Task[Unit]                                                 = ZIO.die(boom)
       def replaceItems(i: InvoiceId, t: CompanyId, items: List[InvoiceItem]): Task[Unit]                = ZIO.die(boom)
       def unlinkRides(invoiceId: InvoiceId, t: CompanyId): Task[Unit]                                   = ZIO.die(boom)
-      def findUnbilledRides(c: ClientCompanyId, f: LocalDate, to: LocalDate): Task[List[UnbilledRide]]  = ZIO.die(boom)
       def findBillableRides(
           t: CompanyId,
           c: ClientCompanyId,

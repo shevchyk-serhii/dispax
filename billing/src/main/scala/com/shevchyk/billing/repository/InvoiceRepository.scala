@@ -33,11 +33,11 @@ trait InvoiceRepository:
   // Detach all rides currently billed to this invoice (so a re-run of auto-fill sees them again),
   // restricted to the owning company.
   def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]
-  // Returns unbilled completed rides for a client company in a period
-  def findUnbilledRides(clientCompanyId: ClientCompanyId, from: LocalDate, to: LocalDate): Task[List[UnbilledRide]]
 
   // Returns unbilled completed rides for a client company, taxi-company scoped,
   // optionally bounded by a pickup-date range (the billable-rides listing).
+  // Single source of truth for "what is billable": used by both period auto-fill
+  // and the manual billable-rides listing so the two never diverge.
   def findBillableRides(
       taxiCompanyId: CompanyId,
       clientCompanyId: ClientCompanyId,

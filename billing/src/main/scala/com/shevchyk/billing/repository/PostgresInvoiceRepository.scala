@@ -352,30 +352,6 @@ final class PostgresInvoiceRepository(xa: Transactor[Task]) extends InvoiceRepos
     val (rideId, clientId, clientCompanyId, from, to, dt, price) = row
     UnbilledRide(rideId, clientId, clientCompanyId, from, to, dt, price)
 
-  override def findUnbilledRides(
-      clientCompanyId: ClientCompanyId,
-      from: LocalDate,
-      to: LocalDate
-  ): Task[List[UnbilledRide]] =
-    sql"""
-      SELECT r.id, r.client_id, p.client_company_id, r.from_address, r.to_address,
-             r.pickup_datetime,
-             COALESCE(r.final_price_amount, r.estimated_price_amount, 0)
-      FROM rides r
-      JOIN persons p ON r.client_id = p.id
-      WHERE p.client_company_id = ${clientCompanyId.value}
-        AND r.status = 'Completed'
-        AND r.invoice_id IS NULL
-        AND (r.final_price_amount IS NOT NULL OR r.estimated_price_amount IS NOT NULL)
-        AND r.pickup_datetime::date >= $from
-        AND r.pickup_datetime::date <= $to
-      ORDER BY r.pickup_datetime
-    """
-      .query[(UUID, UUID, UUID, String, String, Instant, BigDecimal)]
-      .to[List]
-      .transact(xa)
-      .map(_.map(toUnbilledRide))
-
   override def findBillableRides(
       taxiCompanyId: CompanyId,
       clientCompanyId: ClientCompanyId,

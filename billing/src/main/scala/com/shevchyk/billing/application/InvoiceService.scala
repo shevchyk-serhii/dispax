@@ -131,8 +131,16 @@ class InvoiceServiceImpl(
       // Detach this invoice's own rides first, so re-running auto-fill rebuilds from the same set
       // instead of emptying the invoice (its rides would otherwise no longer count as unbilled).
       _       <- invoiceRepo.unlinkRides(id, taxiCompanyId).mapError(InvoiceError.DatabaseError(_))
+      // Same query as the manual billable-rides listing (findBillableRides) so period auto-fill and per-ride
+      // filling agree on "billable": taxi-company scoped and excluding provisional clients. Previously this used
+      // findUnbilledRides, which omitted both filters and could bill rides the manual path excludes.
       rides   <- invoiceRepo
-                   .findUnbilledRides(invoice.clientCompanyId, invoice.periodFrom, invoice.periodTo)
+                   .findBillableRides(
+                     taxiCompanyId,
+                     invoice.clientCompanyId,
+                     Some(invoice.periodFrom),
+                     Some(invoice.periodTo)
+                   )
                    .mapError(InvoiceError.DatabaseError(_))
       items    = rides.map(rideToItem(id, _))
       _       <- invoiceRepo.replaceItems(id, taxiCompanyId, items).mapError(InvoiceError.DatabaseError(_))

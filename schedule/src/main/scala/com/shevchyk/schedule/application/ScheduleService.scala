@@ -451,7 +451,12 @@ class ScheduleServiceImpl(
           )
         result  <- unavailabilityRepository.findByDriver(driverId, companyId).mapDatabaseError
       } yield result
-    else unavailabilityRepository.findByDriver(driverId, companyId).mapDatabaseError
+    else if staffScheduleRoles.contains(roleUpper) then
+      unavailabilityRepository.findByDriver(driverId, companyId).mapDatabaseError
+    else
+      // Same whitelist as getDriverScheduleAs: the old permissive else let CLIENT / CLIENT_SECRETARY read any
+      // driver's unavailability windows (reason + free-text note) within the tenant. Staff roles only.
+      ZIO.fail(ScheduleError.AccessDenied("Driver unavailability is visible to staff roles only"))
 
   def getCompanyUnavailability(
       companyId: CompanyId,
