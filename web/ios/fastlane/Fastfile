@@ -35,7 +35,7 @@ def first_existing_ipa
 end
 
 APP_IDENTIFIER = "de.dispax.app"
-TEAM_ID = "D74H38HXXR"
+TEAM_ID = "WPM9G259A4"
 MATCH_PROFILE_NAME = "match AppStore #{APP_IDENTIFIER}"
 
 # Build an App Store Connect API key object from env vars (no Apple ID / 2FA).
