@@ -195,6 +195,9 @@ object RidePoolApi:
           for {
             parsedRideId <- parseRideId(rideIdStr)
             ride         <- service.getRideById(parsedRideId).mapError(e => internal(new RuntimeException(e.toString)))
+            // Tenant isolation: getRideById is not company-scoped, so reject a ride of another company
+            // as NotFound (don't leak existence) before pulling its client into this company's pool.
+            _            <- ZIO.fail((StatusCode.NotFound, ApiError("Ride not found")): Err).when(ride.companyId != companyId)
             member        = RidePoolMember(
                               id = RidePoolMemberId.generate(),
                               poolId = created.id,
@@ -284,6 +287,9 @@ object RidePoolApi:
         service      <- ZIO.service[RideService]
         parsedRideId <- parseRideId(req.rideId)
         ride         <- service.getRideById(parsedRideId).mapError(e => internal(new RuntimeException(e.toString)))
+        // Tenant isolation: getRideById is not company-scoped, so reject a ride of another company
+        // as NotFound (don't leak existence) before pulling its client into this company's pool.
+        _            <- ZIO.fail((StatusCode.NotFound, ApiError("Ride not found")): Err).when(ride.companyId != companyId)
         members      <- repo.findMembersByPoolId(pool.id).mapError(internal)
         member        = RidePoolMember(
                           id = RidePoolMemberId.generate(),
