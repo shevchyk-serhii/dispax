@@ -1,0 +1,78 @@
+name: iOS TestFlight
+
+# Build a signed IPA and upload it to TestFlight. Kept separate from ci.yml
+# because it needs an (expensive) macOS runner and real signing material — it
+# must not run on every push. Triggers:
+#   - manually from the Actions tab (workflow_dispatch)
+#   - on pushing a version tag (v1.0.1, v1.2.0, ...) so a release is deliberate
+#
+# One-time prerequisites (done by a human — see docs/ios-release.md):
+#   1. Seed the match bucket once locally: `cd web/ios && bundle exec fastlane match appstore`
+#   2. Add these repository secrets:
+#        MATCH_PASSWORD        passphrase that encrypts the match certs
+#        MATCH_GCS_BUCKET      GCS bucket name (e.g. dispax-ios-certs)
+#        GCS_SA_KEY            service-account JSON with read access to that bucket
+#        ASC_KEY_ID            App Store Connect API key id
+#        ASC_ISSUER_ID         App Store Connect API issuer id
+#        ASC_KEY_CONTENT       full .p8 PEM contents of the ASC API key
+#        MAPBOX_ACCESS_TOKEN   Mapbox token compiled into the app
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-testflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    name: Build & upload to TestFlight
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          channel: stable
+          cache: true
+
+      - name: Set up Ruby (fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          working-directory: web/ios
+          bundler-cache: true
+
+      - name: Flutter pub get
+        working-directory: web
+        run: flutter pub get
+
+      # match authenticates to the GCS bucket via a service-account key file.
+      # Write the secret to a temp file and point fastlane at it.
+      - name: Write GCS service-account key
+        run: |
+          echo "$GCS_SA_KEY" > "$RUNNER_TEMP/gcs-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcs-sa.json" >> "$GITHUB_ENV"
+        env:
+          GCS_SA_KEY: ${{ secrets.GCS_SA_KEY }}
+
+      - name: Build & upload to TestFlight
+        working-directory: web/ios
+        run: bundle exec fastlane ci_beta
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GCS_BUCKET: ${{ secrets.MATCH_GCS_BUCKET }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
