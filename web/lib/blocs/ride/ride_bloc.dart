@@ -26,6 +26,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     on<RideRejectRequested>(onRejectRequested);
     on<RideStatusReceived>(onStatusReceived);
     on<RideCheckpointReceived>(onCheckpointReceived);
+    on<RideFlightStatusReceived>(onFlightStatusReceived);
     on<RideCancelRequested>(onCancelRequested);
     on<RideHandOffRequested>(onHandOffRequested);
   }
@@ -409,6 +410,35 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     final updatedRides = List<Ride>.from(state.rides);
     updatedRides[idx] = updatedRides[idx].copyWith(
       airportCheckpoint: event.checkpoint,
+    );
+    emit(RideState.loaded(updatedRides));
+  }
+
+  /// Applies a live MUC flight-board update to the matching ride in the shared
+  /// list. Mirrors the dispatcher dashboard's inline patch so any screen backed
+  /// by this bloc (driver Today/Upcoming, client) reflects gate/terminal/status
+  /// changes live. Estimated/departure times are kept when the event omits them.
+  void onFlightStatusReceived(
+    RideFlightStatusReceived event,
+    Emitter<RideState> emit,
+  ) {
+    if (state.rides.isEmpty) return;
+    final idx = state.rides.indexWhere((r) => r.id == event.rideId);
+    if (idx == -1) return;
+    final current = state.rides[idx];
+    final estimated = event.estimatedTime != null
+        ? DateTime.tryParse(event.estimatedTime!)?.toLocal()
+        : null;
+    final departure = event.departureTime != null
+        ? DateTime.tryParse(event.departureTime!)?.toLocal()
+        : null;
+    final updatedRides = List<Ride>.from(state.rides);
+    updatedRides[idx] = current.copyWith(
+      gate: event.gate,
+      terminal: event.terminal,
+      flightStatus: event.flightStatus,
+      flightTime: estimated ?? current.flightTime,
+      flightDepartureTime: departure ?? current.flightDepartureTime,
     );
     emit(RideState.loaded(updatedRides));
   }
