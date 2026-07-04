@@ -83,10 +83,17 @@ class InvoiceServiceImpl(
       _      <- ZIO.when(req.taxRate < 0 || req.taxRate > 100)(ZIO.fail(InvoiceError.InvalidTaxRate(req.taxRate)))
       year   <- ZIO.succeed(req.periodFrom.getYear)
       number <- invoiceRepo.nextInvoiceNumber(taxiCompanyId, year).mapError(InvoiceError.DatabaseError(_))
-      _      <- clientCompanyRepo
+      // Tenant isolation: the requested client company must belong to the caller's taxi company.
+      // `findById` is not tenant-scoped, so a foreign client company would otherwise be linked into
+      // this invoice and later leak its name/address/VAT/email into the PDF/email. A cross-tenant id
+      // resolves to ClientCompanyNotFound (404) — same as a missing one, so existence is not leaked.
+      cc     <- clientCompanyRepo
                   .findById(com.shevchyk.core.domain.ClientCompanyId(req.clientCompanyId))
                   .mapError(InvoiceError.DatabaseError(_))
                   .flatMap(ZIO.fromOption(_).orElseFail(InvoiceError.ClientCompanyNotFound(req.clientCompanyId)))
+      _      <- ZIO
+                  .fail(InvoiceError.ClientCompanyNotFound(req.clientCompanyId))
+                  .when(cc.taxiCompanyId != taxiCompanyId)
       invoice = Invoice(
                   id = InvoiceId.generate(),
                   number = number,
