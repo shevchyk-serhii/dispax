@@ -107,6 +107,39 @@ object InvoiceServiceSpec extends ZIOSpecDefault {
           case _                                                     => false
         )
       },
+      // Tenant isolation (real Postgres): `ClientCompanyRepository.findById` is not tenant-scoped, so a client
+      // company owned by ANOTHER taxi company would resolve and — without the createInvoice guard — be linked into
+      // this company's invoice (leaking the foreign company's name/address/VAT/email into the PDF/email). The guard
+      // must reject it as ClientCompanyNotFound (404, indistinguishable from a missing one) and create no invoice.
+      test("createInvoice rejects a client company owned by another taxi company and creates no invoice") {
+        val otherCompanyId       = CompanyId(UUID.randomUUID())
+        val otherClientCompanyId = ClientCompanyId(UUID.randomUUID())
+        for {
+          xa        <- ZIO.service[Transactor[Task]]
+          _         <- seedTestData(xa)
+          _         <- cleanData(xa)
+          _         <-
+            (for {
+              _ <-
+                sql"""INSERT INTO companies (id, name, email)
+                        VALUES (${otherCompanyId.value}, 'Other Taxi GmbH', 'other@test.com')
+                        ON CONFLICT DO NOTHING""".update.run
+              _ <-
+                sql"""INSERT INTO client_companies (id, name, taxi_company_id, email)
+                        VALUES (${otherClientCompanyId.value}, 'Foreign Client GmbH', ${otherCompanyId.value}, 'foreign@test.com')
+                        ON CONFLICT DO NOTHING""".update.run
+            } yield ()).transact(xa)
+          svc        = makeService(xa)
+          res       <- svc.createInvoice(testCompanyId, makeRequest(clientId = otherClientCompanyId.value)).either
+          // No invoice must have been persisted for the caller's company.
+          persisted <- svc.listInvoices(testCompanyId, None, 100, 0)
+        } yield assertTrue(
+          res match
+            case Left(InvoiceError.ClientCompanyNotFound(id)) => id == otherClientCompanyId.value
+            case _                                            => false,
+          persisted.isEmpty
+        )
+      },
       test("getInvoice returns NotFound for unknown id") {
         for {
           xa  <- ZIO.service[Transactor[Task]]
