@@ -1,5 +1,6 @@
 .PHONY: fmt fmt-watch dev run-test prod test test-unit test-unit-all flutter-test-unit test-fast test-watch test-integration test-bdd test-bdd-port test-bdd-parallel test-bdd-parallel-clean test-all test-everything test-everything-parallel test-all-parallel-clean clean rebuild \
         flutter-dev flutter-dev-device flutter-prod flutter-dev-android flutter-dev-ios flutter-prod-android flutter-prod-ios \
+        ios-beta ios-testflight-upload \
         flutter-test-integration \
         patrol-test-android patrol-test-ios \
         emulator-up e2e-backend-up e2e-backend-down e2e-android e2e-ios e2e-test e2e-fast e2e-red e2e-notif-http e2e-ride-rules e2e-validation \
@@ -722,6 +723,15 @@ flutter-prod-ios:
 		--dart-define=API_BASE_URL=$(PROD_URL)/api \
 		--dart-define=MAPBOX_ACCESS_TOKEN=$(MAPBOX_ACCESS_TOKEN)
 	@echo "✅ IPA: $(FLUTTER_DIR)/build/ios/ipa/"
+
+# Upload the already-built IPA to TestFlight via fastlane.
+# Requires App Store Connect API key env vars (see web/ios/fastlane/.env.example).
+ios-testflight-upload:
+	cd $(FLUTTER_DIR)/ios && bundle exec fastlane beta
+
+# Build the IPA and upload it to TestFlight in one step.
+ios-beta: flutter-prod-ios ios-testflight-upload
+	@echo "✅ Uploaded to TestFlight"
 
 # Run Flutter on Sergii's iPhone (wireless) against local backend
 flutter-dev-iphone-sergii:
