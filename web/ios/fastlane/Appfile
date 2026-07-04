@@ -1,0 +1,5 @@
+app_identifier("de.dispax.app")
+team_id("D74H38HXXR")
+
+# apple_id and itc_team_id are not needed when authenticating via an
+# App Store Connect API key (see fastlane/Fastfile -> api_key).
