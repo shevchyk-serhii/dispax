@@ -1048,11 +1048,6 @@ object TestApplication extends ZIOAppDefault:
           ()
         }
       def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]                            = ZIO.unit
-      def findUnbilledRides(
-          clientCompanyId: ClientCompanyId,
-          from: java.time.LocalDate,
-          to: java.time.LocalDate
-      ): Task[List[UnbilledRide]] = ZIO.succeed(Nil)
       def findBillableRides(
           taxiCompanyId: CompanyId,
           clientCompanyId: ClientCompanyId,
