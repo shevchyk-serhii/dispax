@@ -1,0 +1,27 @@
+# fastlane match — code signing storage in Google Cloud Storage.
+#
+# match keeps ONE shared distribution certificate + provisioning profile,
+# encrypted with MATCH_PASSWORD, in a GCS bucket. Every machine (your Mac, a
+# teammate's Mac, the CI runner) fetches the same signing material instead of
+# generating its own — no certificate sprawl, no Apple limit churn.
+#
+# Storage: Google Cloud Storage (you already run on GCP). Set the bucket name
+# below and authenticate via a service-account JSON key:
+#   - locally:  export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
+#   - CI:       the workflow writes the GCS_SA_KEY secret to a file and points
+#               google_cloud_keys_file at it.
+#
+# FIRST-TIME SEED (done once, by a human with an Apple login + bucket write):
+#   cd web/ios && bundle exec fastlane match appstore
+# That creates the cert + profile and uploads them encrypted. CI then only ever
+# runs match in readonly mode (see the ci_beta lane), so it never mutates the
+# Apple account.
+
+google_cloud_bucket_name(ENV["MATCH_GCS_BUCKET"] || "dispax-ios-certs")
+
+# App Store distribution signing (TestFlight + App Store).
+type("appstore")
+app_identifier(["de.dispax.app"])
+
+# readonly is overridden per-invocation: the seed run is read-write, CI is readonly.
+readonly(true)

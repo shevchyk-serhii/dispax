@@ -121,11 +121,6 @@ object InvoiceReminderSchedulerSpec extends ZIOSpecDefault:
         "replaceItems"
       )
       def unlinkRides(invoiceId: InvoiceId, taxiCompanyId: CompanyId): Task[Unit]                            = nope("unlinkRides")
-      def findUnbilledRides(
-          clientCompanyId: ClientCompanyId,
-          from: LocalDate,
-          to: LocalDate
-      ): Task[List[UnbilledRide]] = nope("findUnbilledRides")
       def findBillableRides(
           taxiCompanyId: CompanyId,
           clientCompanyId: ClientCompanyId,

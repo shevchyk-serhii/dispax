@@ -13,6 +13,7 @@
 | **billing**      | Invoices, client companies, PDF generation, DATEV export                                                                                                                |
 | **api**          | HTTP entry point, route aggregation, config, DB migrations                                                                                                              |
 | **web**          | Flutter/Dart mobile client (iOS, Android, macOS)                                                                                                                        |
+| **landing**      | Next.js marketing/landing site (`landing/`, deployed separately on Vercel; not an sbt module)                                                                           |
 
 ## Module Dependencies
 
@@ -45,6 +46,11 @@ infrastructure/   DB repositories, external integrations, DTOs
 
 openapi/          Tapir endpoint descriptions (HTTP layer)
   ├── XxxApi.scala
+
+middleware/       Cross-cutting HTTP concerns (auth module only)
+  ├── AuthMiddleware.scala   JWT extraction / bearer validation
+  ├── RateLimiter.scala      per-IP / per-email token-bucket limiting
+  └── UuidParser.scala
 ```
 
 **Domain** — Pure case classes & enums, no framework dependencies. Defines entities (`Ride`, `ScheduleDay`), value objects (`Location`, `PersonId`), status enums, and domain errors.
@@ -60,6 +66,7 @@ openapi/          Tapir endpoint descriptions (HTTP layer)
 - **Company isolation (multi-tenancy)** — most queries are scoped by `CompanyId`; enforced at service and route level
 - **Authenticated vs public endpoints** — a shared Tapir `secureBase` validates the bearer token via `zServerSecurityLogic` and yields an `AuthenticatedUser` (incl. `companyId` from the JWT payload); public endpoints are described without `securityIn`
 - **Typeclass validation** — `Validator` typeclass with `given` instances per request DTO
+- **Rate limiting** — token-bucket `RateLimiter` (`auth/.../middleware/`) throttles login by IP and by email, and password-change per user
 
 ## Directory Structure
 

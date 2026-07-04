@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Export options for the CI TestFlight build. Used by `flutter build ipa
+  --export-options-plist ios/ExportOptions.plist` on the CI runner, where
+  signing is manual (driven by fastlane match). Locally, developers keep
+  automatic signing and do not use this file.
+
+  The provisioning profile name "match AppStore de.dispax.app" is the exact
+  name fastlane match assigns to the App Store profile it manages — keep it in
+  sync with the app_identifier in fastlane/Matchfile.
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store</string>
+	<key>teamID</key>
+	<string>D74H38HXXR</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>de.dispax.app</key>
+		<string>match AppStore de.dispax.app</string>
+	</dict>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>uploadBitcode</key>
+	<false/>
+</dict>
+</plist>

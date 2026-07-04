@@ -8,13 +8,14 @@ the account-side work only you can do, plus the commands to build and upload.
 - **Apple Team ID:** `D74H38HXXR`
 - **Firebase project:** `taxi-app-98671` (iOS app already registered)
 
-> **CI status — read this.** The current pipeline is a **local build + automated
-> upload**: `flutter build ipa` runs on your Mac with `CODE_SIGN_STYLE = Automatic`,
-> and fastlane uploads the result to TestFlight without an Apple ID password (API
-> key). This is *not* yet a fully headless CI pipeline: automatic signing does not
-> work on a GitHub Actions runner without `fastlane match` (shared signing certs) or
-> an exported provisioning profile, plus a macOS runner. Wiring that is a separate,
-> not-yet-done step. For now, run the upload from your Mac.
+> **Two ways to release, both wired:**
+> - **Local** (simplest, no shared certs needed): `make ios-beta` on your Mac —
+>   `flutter build ipa` with automatic signing, then fastlane uploads. Good for
+>   the first release and solo work. See [Build & upload](#build--upload-every-release).
+> - **CI** (headless, GitHub Actions macOS runner): a version tag or a manual
+>   dispatch triggers a build signed via `fastlane match` and uploads to
+>   TestFlight. Needs a one-time match seed + repository secrets. See
+>   [CI via GitHub Actions](#ci-via-github-actions-fastlane-match).
 
 ---
 
@@ -89,19 +90,85 @@ After upload:
 
 ---
 
+## CI via GitHub Actions (fastlane match)
+
+The `.github/workflows/ios-testflight.yml` workflow builds a signed IPA on a
+macOS runner and uploads it to TestFlight, with **no Mac and no Apple login**
+involved. Signing material is shared through `fastlane match`.
+
+### How signing works here
+- **`fastlane match`** keeps one App Store distribution certificate + provisioning
+  profile, encrypted with `MATCH_PASSWORD`, in a **Google Cloud Storage bucket**
+  (config: `web/ios/fastlane/Matchfile`). Every machine fetches the same material
+  instead of minting its own.
+- The committed Xcode project stays on **automatic signing** (so `make ios-beta`
+  keeps working locally). The CI lane (`ci_beta`) flips *its checkout only* to
+  manual signing via `update_code_signing_settings`, so the headless archive step
+  finds the match profile.
+- **Push on release builds:** the Release config uses `Runner.Release.entitlements`
+  with `aps-environment = production` (Debug/Profile use `Runner.entitlements` =
+  `development`). This is required because manual signing does **not** auto-promote
+  `development → production` the way Xcode's automatic signing does — without it,
+  TestFlight push would silently fail.
+
+### One-time setup
+
+1. **Seed the match bucket** (done once, on your Mac — needs Apple login + bucket
+   write access). Create the GCS bucket first (e.g. `dispax-ios-certs`), then:
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcs-sa.json
+   export MATCH_GCS_BUCKET=dispax-ios-certs
+   export MATCH_PASSWORD='choose-a-strong-passphrase'
+   cd web/ios && bundle exec fastlane match appstore
+   ```
+   This generates the cert + profile and uploads them encrypted. CI afterwards
+   only runs match `readonly`, so it never touches the Apple account.
+
+2. **Add repository secrets** (GitHub → Settings → Secrets and variables → Actions):
+
+   | Secret | What it is |
+   |--------|-----------|
+   | `MATCH_PASSWORD` | the passphrase you chose above |
+   | `MATCH_GCS_BUCKET` | the bucket name (e.g. `dispax-ios-certs`) |
+   | `GCS_SA_KEY` | a service-account JSON key with **read** access to the bucket |
+   | `ASC_KEY_ID` | App Store Connect API key id |
+   | `ASC_ISSUER_ID` | App Store Connect API issuer id |
+   | `ASC_KEY_CONTENT` | full `.p8` PEM contents of the ASC API key |
+   | `MAPBOX_ACCESS_TOKEN` | Mapbox token compiled into the app (maps break if empty) |
+
+### Triggering a release
+- **On a version tag** — bump `version:` in `web/pubspec.yaml`, commit, then:
+  ```bash
+  git tag v1.0.1 && git push origin v1.0.1
+  ```
+- **Manually** — GitHub → Actions → *iOS TestFlight* → **Run workflow**.
+
+---
+
 ## Verification
 
-This flow was **not** exercised end-to-end in the repository (an archive + upload
-needs your signing identity and Apple credentials, which aren't available in the
-dev environment). What *was* verified here: `Info.plist`, `Runner.entitlements`,
-and `project.pbxproj` pass `plutil -lint`; the `CODE_SIGN_ENTITLEMENTS` setting is
-present in all three Runner build configs; the Fastfile passes `ruby -c`; and
-`make ios-beta` expands to the correct build → upload chain.
+Neither the local nor the CI flow could be exercised end-to-end in the dev
+environment (archive + upload needs your signing identity, the match bucket, and
+Apple credentials). What *was* verified statically: `Info.plist`, both
+entitlements files, `ExportOptions.plist`, and `project.pbxproj` pass
+`plutil -lint`; Release maps to `Runner.Release.entitlements` (production) while
+Debug/Profile map to `Runner.entitlements` (development); `Fastfile` and
+`Matchfile` pass `ruby -c`; the workflow YAML parses; and `make ios-beta` expands
+to the correct build → upload chain.
 
 **Run the first archive through Xcode manually** (Product → Archive → Distribute App →
 App Store Connect) so any signing/provisioning problems surface with Xcode's
-diagnostics before you rely on `make ios-beta`. Once one archive succeeds, the
-Makefile path is the repeatable route.
+diagnostics before relying on `make ios-beta`. For CI, the **first `Run workflow`
+dispatch is the real end-to-end test** — watch it once; the likely first-run
+snags are: the match profile name must be exactly `match AppStore de.dispax.app`
+(as in `ExportOptions.plist`), and the GCS service account must have read access
+to the bucket. After a green run, confirm the shipped IPA carries the production
+push entitlement:
+```bash
+unzip -p build/ios/ipa/dispax.ipa 'Payload/*.app/embedded.mobileprovision' \
+  | security cms -D 2>/dev/null | plutil -extract Entitlements.aps-environment raw -
+# expected: production
+```
 
 To confirm push after the first TestFlight install: send a test message from
 Firebase Console → Cloud Messaging to the device token and verify it arrives in
