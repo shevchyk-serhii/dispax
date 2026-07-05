@@ -694,6 +694,10 @@
   "moreTab": "More",
   "billingTab": "Billing",
   "moreScreenTitle": "More",
+  "pickupSignMenuItem": "Pickup Sign",
+  "pickupSignTitle": "Pickup Sign",
+  "pickupSignHint": "Enter name or text…",
+  "pickupSignShowButton": "Show",
 
   "dispatchBoardTitle": "Dispatch board",
   "dispatcherSubtitle": "{weekday}, {date} · {count} active rides",

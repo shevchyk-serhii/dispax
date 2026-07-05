@@ -1418,6 +1418,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get moreScreenTitle => 'Mehr';
 
   @override
+  String get pickupSignMenuItem => 'Abholschild';
+
+  @override
+  String get pickupSignTitle => 'Abholschild';
+
+  @override
+  String get pickupSignHint => 'Name oder Text eingeben…';
+
+  @override
+  String get pickupSignShowButton => 'Anzeigen';
+
+  @override
   String get dispatchBoardTitle => 'Dispositionsbrett';
 
   @override

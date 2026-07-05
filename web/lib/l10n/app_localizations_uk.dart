@@ -1409,6 +1409,18 @@ class AppLocalizationsUk extends AppLocalizations {
   String get moreScreenTitle => 'Ще';
 
   @override
+  String get pickupSignMenuItem => 'Табличка зустрічі';
+
+  @override
+  String get pickupSignTitle => 'Табличка зустрічі';
+
+  @override
+  String get pickupSignHint => 'Введіть імʼя або текст…';
+
+  @override
+  String get pickupSignShowButton => 'Показати';
+
+  @override
   String get dispatchBoardTitle => 'Дошка диспетчера';
 
   @override
