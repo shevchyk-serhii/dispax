@@ -48,6 +48,8 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.1
   bloc_test: ^9.1.7
   mocktail: ^1.0.4
+  # Test-only: fake the wakelock platform to assert the sign board's keep-awake.
+  wakelock_plus_platform_interface: ^1.5.1
   fake_async: ^1.3.1
 
   test_api: any
