@@ -146,7 +146,12 @@ class _SignBoardState extends State<_SignBoard> {
                   onTap: () => Navigator.of(context).maybePop(),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Center(
+                    // SizedBox.expand gives the FittedBox TIGHT constraints so it
+                    // scales the text UP to fill the area. A plain Center would
+                    // pass loose constraints, leaving the text at its natural
+                    // (~14px) size — the "tiny text" bug. FittedBox centers its
+                    // own scaled child, so no extra Center is needed.
+                    child: SizedBox.expand(
                       child: FittedBox(
                         fit: BoxFit.contain,
                         child: Text(

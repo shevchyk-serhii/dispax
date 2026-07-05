@@ -117,6 +117,37 @@ void main() {
     },
   );
 
+  testWidgets('the sign text is scaled up to fill the board width', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    // A fixed, wide viewport so the expected width is deterministic.
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(wrap());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Müller');
+    await tester.tap(find.text('Show'));
+    await tester.pumpAndSettle();
+
+    // The FittedBox must fill the available board area (tight constraints), so
+    // it scales the text up. A plain Center passes loose constraints and the
+    // FittedBox collapses to the text's natural ~85px width — the "tiny text"
+    // bug. Measuring the FittedBox box (not the Text, whose getSize is the
+    // pre-Transform natural size) is what encodes "fills the area": the earlier
+    // tests only checked the text existed, so the bug rendered green.
+    final fittedBox = tester.getSize(find.byType(FittedBox));
+    // Board width is the 800px viewport minus the 24px padding on each side.
+    expect(fittedBox.width, greaterThan(800 * 0.7));
+
+    // Close the board so its wakelock disable() doesn't bleed into the next
+    // test's fresh fake (the board's dispose runs during the next pumpWidget).
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets(
     'keeps the screen awake only while the board is shown (enable on show, disable on pop)',
     (tester) async {
