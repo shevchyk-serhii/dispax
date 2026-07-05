@@ -385,7 +385,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get language => 'Sprache';
 
   @override
-  String get english => 'English';
+  String get english => 'Englisch';
 
   @override
   String get german => 'Deutsch';
@@ -548,7 +548,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String airportFlightDelay(int minutes) {
-    return '+$minutes Min Verspätung';
+    return '+$minutes Min. Verspätung';
   }
 
   @override
@@ -674,12 +674,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String addressOutOfServiceArea(int distanceKm, int radiusKm) {
-    return 'Adresse liegt außerhalb des Liefergebiets (etwa $distanceKm km von München, max. $radiusKm km).';
+    return 'Adresse liegt außerhalb des Servicegebiets (etwa $distanceKm km von München, max. $radiusKm km).';
   }
 
   @override
   String addressOutOfServiceAreaShort(int radiusKm) {
-    return 'Adresse liegt außerhalb des Liefergebiets (max. $radiusKm km von München).';
+    return 'Adresse liegt außerhalb des Servicegebiets (max. $radiusKm km von München).';
   }
 
   @override
@@ -945,7 +945,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get languageGerman => 'Deutsch';
 
   @override
-  String get languageEnglish => 'English';
+  String get languageEnglish => 'Englisch';
 
   @override
   String get languageUkrainian => 'Ukrainisch';
@@ -1015,10 +1015,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get invoicesRailLabel => 'Invoices';
+  String get invoicesRailLabel => 'Rechnungen';
 
   @override
-  String get clientsRailLabel => 'Clients';
+  String get clientsRailLabel => 'Kunden';
 
   @override
   String get datevRailLabel => 'DATEV';
@@ -1093,7 +1093,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noRidesSelected => 'Keine Fahrten ausgewählt';
 
   @override
-  String get vatPercentLabel => 'MwSt %';
+  String get vatPercentLabel => 'MwSt. %';
 
   @override
   String get invoiceCreatedTitle => 'Rechnung erstellt';
@@ -1110,7 +1110,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String receiptDownloadError(String error) {
-    return 'Quittung-Fehler: $error';
+    return 'Quittungsfehler: $error';
   }
 
   @override
@@ -1590,7 +1590,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String driverDelayedMessage(String driverName, String slack) {
-    return '$driverName hat Verspätung — Puffer $slack min';
+    return '$driverName hat Verspätung — Puffer $slack Min.';
   }
 
   @override
@@ -1638,7 +1638,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noRidesCurrentlyAssigned =>
-      'Derzeit keine Fahrten den Fahrern zugewiesen';
+      'Derzeit sind keine Fahrten Fahrern zugewiesen';
 
   @override
   String get pendingRequestsHeader => 'Ausstehende Anfragen';
@@ -1688,7 +1688,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get loadPayrollButton => 'Lohnabrechnung laden';
 
   @override
-  String get payrollCsvCopiedMessage => 'Gehalts-CSV in Zwischenablage kopiert';
+  String get payrollCsvCopiedMessage =>
+      'Gehalts-CSV in die Zwischenablage kopiert';
 
   @override
   String get commissionLabel => 'Provision: ';
@@ -1791,7 +1792,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get confirmationRequestBody =>
-      'Bitte bestätigen oder ablehnen Sie Ihre zugewiesene Fahrt';
+      'Bitte bestätigen Sie Ihre zugewiesene Fahrt oder lehnen Sie sie ab';
 
   @override
   String get statusConfirmed => 'Bestätigt';
@@ -1837,7 +1838,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchClientsHint => 'Kunden suchen...';
 
   @override
-  String get noClientsMatchSearch => 'Keine Kunden gefunden';
+  String get noClientsMatchSearch => 'Keine Kunden entsprechen Ihrer Suche';
 
   @override
   String get noClientsYet => 'Noch keine Kunden';
@@ -1900,10 +1901,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noRidesYet => 'Noch keine Fahrten';
 
   @override
-  String get clientCompanyFieldLabel => 'Firma';
+  String get clientCompanyFieldLabel => 'Unternehmen';
 
   @override
-  String get clientCompanyNone => 'Keine Firma';
+  String get clientCompanyNone => 'Kein Unternehmen';
 
   @override
   String get vipClientLabel => 'VIP-Kunde';
@@ -1947,7 +1948,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noActiveRides => 'Sie haben keine aktiven Fahrten';
 
   @override
-  String get useBookTabHint => 'Verwenden Sie den Tab \"Buchen\"';
+  String get useBookTabHint =>
+      'Verwenden Sie den Tab \"Buchen\", um eine zu erstellen';
 
   @override
   String get trackDriver => 'Fahrer verfolgen';
@@ -2214,7 +2216,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get openInGoogleMapsButton => 'In Google Maps öffnen';
 
   @override
-  String get rideStatusLabel => 'Fahrtsstatus';
+  String get rideStatusLabel => 'Fahrtstatus';
 
   @override
   String get rideHasBeenCancelledLabel => 'Diese Fahrt wurde storniert';
@@ -2236,7 +2238,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Sie sind dieser Fahrt zugewiesen';
 
   @override
-  String get rideStatusInProgressClientLabel => 'Fahrt in Gange';
+  String get rideStatusInProgressClientLabel => 'Fahrt läuft';
 
   @override
   String get rideStatusInProgressDriverLabel => 'Gute Fahrt';
@@ -2584,12 +2586,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String driverEnteredGeofence(String geofenceName) {
-    return 'Fahrer in $geofenceName eingefahren';
+    return 'Fahrer hat $geofenceName betreten';
   }
 
   @override
   String driverLeftGeofence(String geofenceName) {
-    return 'Fahrer aus $geofenceName ausgefahren';
+    return 'Fahrer hat $geofenceName verlassen';
   }
 
   @override
@@ -2641,7 +2643,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notifTabSettings => 'Einstellungen';
 
   @override
-  String get markAllReadButton => 'Alle gelesen';
+  String get markAllReadButton => 'Alle als gelesen markieren';
 
   @override
   String get clearAllNotificationsMenuLabel => 'Alle löschen';
@@ -2713,7 +2715,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notifPrefDriverApproachingSubtitle =>
-      'Wenn Fahrer in der Nähe ist';
+      'Wenn der Fahrer in der Nähe der Abholung ist';
 
   @override
   String get notifPrefGeofenceAlertsLabel => 'Geofence-Alarme';
@@ -2938,7 +2940,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get colHeaderDrivers => 'FAHRER';
 
   @override
-  String get colHeaderRidesPerMonth => 'FAHRTEN / MO';
+  String get colHeaderRidesPerMonth => 'FAHRTEN / MON.';
 
   @override
   String get colHeaderStatus => 'STATUS';
@@ -3000,7 +3002,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get emergencyReasonVehicleBreakdown => 'Fahrzeugpanne';
 
   @override
-  String get emergencyReasonDriverNoShow => 'Fahrer erschienen nicht';
+  String get emergencyReasonDriverNoShow => 'Fahrer nicht erschienen';
 
   @override
   String get emergencyReasonAccident => 'Unfall';
@@ -3237,7 +3239,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get consentAnalyticsLabel => 'Analyse';
 
   @override
-  String get consentAnalyticsSubtitle => 'Helfen Sie uns mit Nutzungsanalysen';
+  String get consentAnalyticsSubtitle =>
+      'Helfen Sie uns, die App mit Nutzungsanalysen zu verbessern';
 
   @override
   String get consentThirdPartySharingLabel => 'Weitergabe an Dritte';
@@ -3287,7 +3290,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get requestDeletionButton => 'Löschung beantragen';
 
   @override
-  String get dataExportCopied => 'Datenexport in Zwischenablage kopiert';
+  String get dataExportCopied => 'Datenexport in die Zwischenablage kopiert';
 
   @override
   String exportFailed(String error) {
@@ -3393,8 +3396,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get openChatButton => 'Chat öffnen';
 
   @override
-  String get rideStatusUpdatedSuccess =>
-      'Fahrtsstatus erfolgreich aktualisiert';
+  String get rideStatusUpdatedSuccess => 'Fahrtstatus erfolgreich aktualisiert';
 
   @override
   String failedToUpdateRideStatus(String error) {
@@ -3430,12 +3432,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String conflictDialogContent(String message) {
-    return '$message\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?';
+    return '$message\n\nDie Fahrt wurde erstellt und befindet sich im Disponenten-Pool. Trotzdem zuweisen?';
   }
 
   @override
   String get conflictDialogContentDefault =>
-      'Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?';
+      'Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Disponenten-Pool. Trotzdem zuweisen?';
 
   @override
   String conflictDialogContentRich(String from, String to, String time) {
@@ -3471,7 +3473,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String csvCopiedSnackbar(int count) {
-    return 'CSV-Daten in Zwischenablage ($count Fahrten)';
+    return 'CSV-Daten in die Zwischenablage kopiert ($count Fahrten)';
   }
 
   @override
@@ -3635,7 +3637,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ridesByTenantTitle => 'Fahrten nach Mandant';
 
   @override
-  String get rideStatusBreakdownTitle => 'Fahrtsstatus-Übersicht';
+  String get rideStatusBreakdownTitle => 'Fahrtstatus-Übersicht';
 
   @override
   String get platformActiveSessionsLabel => 'Aktive Plattformsitzungen';
@@ -3660,13 +3662,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tracking-Link in die Zwischenablage kopiert';
 
   @override
-  String get bookWithoutClient => 'Ohne Kunde (aus Chat)';
+  String get bookWithoutClient => 'Ohne Kunden (aus Chat)';
 
   @override
   String get fromChatRide => 'Aus Chat';
 
   @override
-  String get linkClient => 'Kunde ergänzen';
+  String get linkClient => 'Kunden ergänzen';
 
   @override
   String get calendarSharingTitle => 'Kalenderfreigabe';
@@ -3694,7 +3696,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareInviteCreatedHint =>
-      'Senden Sie diesen Code an einen Fahrer oder Disponenten einer anderen Firma. Er wird in deren App unter Kalenderfreigabe eingegeben.';
+      'Senden Sie diesen Code an einen Fahrer oder Disponenten eines anderen Unternehmens. Er wird in deren App unter Kalenderfreigabe eingegeben.';
 
   @override
   String get shareCopyCode => 'Code kopieren';
@@ -3780,7 +3782,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sharedWithMeGroupLabel => 'Für mich freigegeben';
 
   @override
-  String get myCompanyGroupLabel => 'Meine Firma';
+  String get myCompanyGroupLabel => 'Mein Unternehmen';
 
   @override
   String get addShiftTooltip => 'Schicht hinzufügen';

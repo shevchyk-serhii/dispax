@@ -133,7 +133,7 @@
   "systemTheme": "System",
 
   "language": "Sprache",
-  "english": "English",
+  "english": "Englisch",
   "german": "Deutsch",
   "ukrainian": "Ukrainisch",
 
@@ -204,7 +204,7 @@
       "time": {"type": "String"}
     }
   },
-  "airportFlightDelay": "+{minutes} Min Verspätung",
+  "airportFlightDelay": "+{minutes} Min. Verspätung",
   "@airportFlightDelay": {
     "placeholders": {
       "minutes": {"type": "int"}
@@ -283,14 +283,14 @@
   },
   "pickupTimeComputedAuto": "Automatisch basierend auf dem Abflugzeitpunkt berechnet",
   "addressNotFound": "Adresse konnte nicht gefunden werden — bitte Schreibweise prüfen.",
-  "addressOutOfServiceArea": "Adresse liegt außerhalb des Liefergebiets (etwa {distanceKm} km von München, max. {radiusKm} km).",
+  "addressOutOfServiceArea": "Adresse liegt außerhalb des Servicegebiets (etwa {distanceKm} km von München, max. {radiusKm} km).",
   "@addressOutOfServiceArea": {
     "placeholders": {
       "distanceKm": {"type": "int"},
       "radiusKm": {"type": "int"}
     }
   },
-  "addressOutOfServiceAreaShort": "Adresse liegt außerhalb des Liefergebiets (max. {radiusKm} km von München).",
+  "addressOutOfServiceAreaShort": "Adresse liegt außerhalb des Servicegebiets (max. {radiusKm} km von München).",
   "@addressOutOfServiceAreaShort": {
     "placeholders": {
       "radiusKm": {"type": "int"}
@@ -397,7 +397,7 @@
   "invoiceLanguageLabel": "Rechnungssprache",
   "languageStandard": "Standard",
   "languageGerman": "Deutsch",
-  "languageEnglish": "English",
+  "languageEnglish": "Englisch",
   "languageUkrainian": "Ukrainisch",
   "addCompanyButton": "Hinzufügen",
   "deleteCompanyConfirmTitle": "Unternehmen löschen?",
@@ -442,8 +442,8 @@
       "date": {"type": "String"}
     }
   },
-  "invoicesRailLabel": "Invoices",
-  "clientsRailLabel": "Clients",
+  "invoicesRailLabel": "Rechnungen",
+  "clientsRailLabel": "Kunden",
   "datevRailLabel": "DATEV",
   "genericError": "Fehler: {error}",
   "errorNetwork": "Server nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
@@ -484,7 +484,7 @@
     }
   },
   "noRidesSelected": "Keine Fahrten ausgewählt",
-  "vatPercentLabel": "MwSt %",
+  "vatPercentLabel": "MwSt. %",
   "invoiceCreatedTitle": "Rechnung erstellt",
   "invoiceCreatedMsg": "{number} · {count} Fahrten · €{amount}",
   "@invoiceCreatedMsg": {
@@ -500,7 +500,7 @@
       "error": {"type": "String"}
     }
   },
-  "receiptDownloadError": "Quittung-Fehler: {error}",
+  "receiptDownloadError": "Quittungsfehler: {error}",
   "@receiptDownloadError": {
     "placeholders": {
       "error": {"type": "String"}
@@ -719,7 +719,7 @@
   "nearestAvailableDriversLabel": "NÄCHSTE VERFÜGBARE FAHRER · NACH ETA SORTIERT",
   "noDriversAvailableForReassignment": "Keine anderen Fahrer für die Neuzuweisung verfügbar.",
   "reassignNRides": "{count} Fahrt(en) neu zuweisen",
-  "driverDelayedMessage": "{driverName} hat Verspätung — Puffer {slack} min",
+  "driverDelayedMessage": "{driverName} hat Verspätung — Puffer {slack} Min.",
   "ridesToReassignLabel": "Fahrten zur Neuzuweisung ({selected}/{total})",
   "deselectAllButton": "Alle abwählen",
   "selectAllButton": "Alle auswählen",
@@ -734,7 +734,7 @@
   "assignedTab": "Zugewiesen",
   "sortTooltip": "Sortieren",
   "noAssignedRides": "Keine zugewiesenen Fahrten",
-  "noRidesCurrentlyAssigned": "Derzeit keine Fahrten den Fahrern zugewiesen",
+  "noRidesCurrentlyAssigned": "Derzeit sind keine Fahrten Fahrern zugewiesen",
   "pendingRequestsHeader": "Ausstehende Anfragen",
   "unassignedRidesBadge": "{count} nicht zugewiesen",
 
@@ -753,7 +753,7 @@
   "driverPayrollTitle": "Fahrerlohnabrechnung",
   "payrollSummaryTitle": "Gehaltsübersicht",
   "loadPayrollButton": "Lohnabrechnung laden",
-  "payrollCsvCopiedMessage": "Gehalts-CSV in Zwischenablage kopiert",
+  "payrollCsvCopiedMessage": "Gehalts-CSV in die Zwischenablage kopiert",
   "commissionLabel": "Provision: ",
 
   "rideStatusHandedOff": "Übergeben",
@@ -787,7 +787,7 @@
   "rideConfirmed": "Fahrt bestätigt",
   "rideRejected": "Fahrt abgelehnt",
   "confirmationRequestTitle": "Fahrtbestätigung erforderlich",
-  "confirmationRequestBody": "Bitte bestätigen oder ablehnen Sie Ihre zugewiesene Fahrt",
+  "confirmationRequestBody": "Bitte bestätigen Sie Ihre zugewiesene Fahrt oder lehnen Sie sie ab",
   "statusConfirmed": "Bestätigt",
 
   "ridesTab": "Fahrten",
@@ -804,7 +804,7 @@
 
   "manageClientsTitle": "Kunden verwalten",
   "searchClientsHint": "Kunden suchen...",
-  "noClientsMatchSearch": "Keine Kunden gefunden",
+  "noClientsMatchSearch": "Keine Kunden entsprechen Ihrer Suche",
   "noClientsYet": "Noch keine Kunden",
   "addClientTitle": "Kunde hinzufügen",
   "phoneOptional": "Telefon (optional)",
@@ -830,8 +830,8 @@
   "ridesCountLabel": "Fahrten",
   "preferredDriverAssigned": "Bevorzugter Fahrer zugewiesen",
   "noRidesYet": "Noch keine Fahrten",
-  "clientCompanyFieldLabel": "Firma",
-  "clientCompanyNone": "Keine Firma",
+  "clientCompanyFieldLabel": "Unternehmen",
+  "clientCompanyNone": "Kein Unternehmen",
   "vipClientLabel": "VIP-Kunde",
   "vipClientHelpText": "Prioritätsservice und bevorzugter Fahrer",
   "driverLabel": "Fahrer: {name}",
@@ -852,7 +852,7 @@
   "noRideDataYet": "Noch keine Fahrtdaten",
 
   "noActiveRides": "Sie haben keine aktiven Fahrten",
-  "useBookTabHint": "Verwenden Sie den Tab \"Buchen\"",
+  "useBookTabHint": "Verwenden Sie den Tab \"Buchen\", um eine zu erstellen",
   "trackDriver": "Fahrer verfolgen",
   "departureTimeReachedFlight": "Abflugzeit für Flug {flightInfo} erreicht",
   "@departureTimeReachedFlight": {
@@ -974,14 +974,14 @@
   "etaToClientLabel": "ETA zum Kunden",
   "openInGoogleMapsButton": "In Google Maps öffnen",
 
-  "rideStatusLabel": "Fahrtsstatus",
+  "rideStatusLabel": "Fahrtstatus",
   "rideHasBeenCancelledLabel": "Diese Fahrt wurde storniert",
   "rideStatusRequestedClientLabel": "Warte auf Fahrerzuweisung",
   "rideStatusRequestedStaffLabel": "Warte auf Zuweisung",
   "rideStatusAssignedEnRouteLabel": "Fahrer ist unterwegs",
   "rideStatusAssignedLabel": "Fahrer zugewiesen",
   "rideStatusAssignedDriverLabel": "Sie sind dieser Fahrt zugewiesen",
-  "rideStatusInProgressClientLabel": "Fahrt in Gange",
+  "rideStatusInProgressClientLabel": "Fahrt läuft",
   "rideStatusInProgressDriverLabel": "Gute Fahrt",
   "rideStatusCompletedLabel": "Erfolgreich abgeschlossen",
   "rideStatusCancelledLabel": "Fahrt storniert",
@@ -1142,13 +1142,13 @@
   "geofenceCreatedSuccess": "Geofence erstellt",
   "fillRequiredFieldsError": "Bitte alle Pflichtfelder ausfüllen",
   "noAlertsFound": "Keine Alarme gefunden",
-  "driverEnteredGeofence": "Fahrer in {geofenceName} eingefahren",
+  "driverEnteredGeofence": "Fahrer hat {geofenceName} betreten",
   "@driverEnteredGeofence": {
     "placeholders": {
       "geofenceName": {"type": "String"}
     }
   },
-  "driverLeftGeofence": "Fahrer aus {geofenceName} ausgefahren",
+  "driverLeftGeofence": "Fahrer hat {geofenceName} verlassen",
   "@driverLeftGeofence": {
     "placeholders": {
       "geofenceName": {"type": "String"}
@@ -1197,7 +1197,7 @@
 
   "notifTabNotifications": "Benachrichtigungen",
   "notifTabSettings": "Einstellungen",
-  "markAllReadButton": "Alle gelesen",
+  "markAllReadButton": "Alle als gelesen markieren",
   "clearAllNotificationsMenuLabel": "Alle löschen",
   "clearAllConfirmTitle": "Alle Benachrichtigungen löschen",
   "clearAllConfirmContent": "Möchten Sie wirklich alle Benachrichtigungen löschen?",
@@ -1233,7 +1233,7 @@
   "notifPrefRideUpdatesSubtitle": "Statusänderungen, Zuweisungen",
   "notifPrefChatMessagesSubtitle": "Neue Nachrichten von Fahrer/Kunde",
   "notifPrefDriverApproachingLabel": "Fahrer nähert sich",
-  "notifPrefDriverApproachingSubtitle": "Wenn Fahrer in der Nähe ist",
+  "notifPrefDriverApproachingSubtitle": "Wenn der Fahrer in der Nähe der Abholung ist",
   "notifPrefGeofenceAlertsLabel": "Geofence-Alarme",
   "notifPrefGeofenceAlertsSubtitle": "Ein-/Ausfahrtalarme",
   "notifPrefPoolUpdatesLabel": "Pool-Updates",
@@ -1349,7 +1349,7 @@
   "colHeaderCompany": "UNTERNEHMEN",
   "colHeaderPlan": "PLAN",
   "colHeaderDrivers": "FAHRER",
-  "colHeaderRidesPerMonth": "FAHRTEN / MO",
+  "colHeaderRidesPerMonth": "FAHRTEN / MON.",
   "colHeaderStatus": "STATUS",
   "deactivateCompanyDialogTitle": "Unternehmen deaktivieren?",
   "deactivateCompanyDialogContent": "Möchten Sie \"{name}\" wirklich deaktivieren?\n\nDas Unternehmen wird als Inaktiv markiert, alle Daten (Fahrten, Rechnungen, Benutzer) bleiben erhalten.",
@@ -1375,7 +1375,7 @@
   "noEmergencyReassignments": "Keine Notfall-Umbesetzungen",
   "emergencyReasonDriverIllness": "Fahrerkrankheit",
   "emergencyReasonVehicleBreakdown": "Fahrzeugpanne",
-  "emergencyReasonDriverNoShow": "Fahrer erschienen nicht",
+  "emergencyReasonDriverNoShow": "Fahrer nicht erschienen",
   "emergencyReasonAccident": "Unfall",
   "emergencyReasonPersonalEmergency": "Persönlicher Notfall",
   "emergencyReasonOther": "Sonstiges",
@@ -1481,7 +1481,7 @@
   "consentMarketingLabel": "Marketing",
   "consentMarketingSubtitle": "Werbe-E-Mails und Angebote erhalten",
   "consentAnalyticsLabel": "Analyse",
-  "consentAnalyticsSubtitle": "Helfen Sie uns mit Nutzungsanalysen",
+  "consentAnalyticsSubtitle": "Helfen Sie uns, die App mit Nutzungsanalysen zu verbessern",
   "consentThirdPartySharingLabel": "Weitergabe an Dritte",
   "consentThirdPartySharingSubtitle": "Daten mit Partnerdiensten teilen",
   "yourDataSectionTitle": "Ihre Daten",
@@ -1496,7 +1496,7 @@
   "requestDeletionDialogTitle": "Datenlöschung beantragen",
   "requestDeletionDialogContent": "Dies sendet eine Anfrage zur Löschung aller Ihrer persönlichen Daten. Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto wird nach Bearbeitung der Anfrage deaktiviert.\n\nMöchten Sie wirklich fortfahren?",
   "requestDeletionButton": "Löschung beantragen",
-  "dataExportCopied": "Datenexport in Zwischenablage kopiert",
+  "dataExportCopied": "Datenexport in die Zwischenablage kopiert",
   "exportFailed": "Export fehlgeschlagen: {error}",
   "@exportFailed": {
     "placeholders": {
@@ -1569,7 +1569,7 @@
   "ratingTitle": "Bewertung",
   "notesTitle": "Notizen",
   "openChatButton": "Chat öffnen",
-  "rideStatusUpdatedSuccess": "Fahrtsstatus erfolgreich aktualisiert",
+  "rideStatusUpdatedSuccess": "Fahrtstatus erfolgreich aktualisiert",
   "failedToUpdateRideStatus": "Fehler beim Aktualisieren des Fahrtstatus: {error}",
   "@failedToUpdateRideStatus": {
     "placeholders": {
@@ -1603,13 +1603,13 @@
   "rideCreatedSuccess": "Fahrt erfolgreich erstellt!",
   "failedToCreateRide": "Fehler beim Erstellen der Fahrt",
   "conflictDialogTitle": "Terminkonflikt",
-  "conflictDialogContent": "{message}\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?",
+  "conflictDialogContent": "{message}\n\nDie Fahrt wurde erstellt und befindet sich im Disponenten-Pool. Trotzdem zuweisen?",
   "@conflictDialogContent": {
     "placeholders": {
       "message": {"type": "String"}
     }
   },
-  "conflictDialogContentDefault": "Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Pool. Trotzdem zuweisen?",
+  "conflictDialogContentDefault": "Sie haben bereits eine Fahrt zu dieser Zeit. Die Fahrt wurde erstellt und befindet sich im Disponenten-Pool. Trotzdem zuweisen?",
   "conflictDialogContentRich": "Der Fahrer ist bereits gebucht: {from} → {to} um {time}.\n\nDie Fahrt wurde erstellt und befindet sich im Dispatcher-Pool. Trotzdem zuweisen?",
   "@conflictDialogContentRich": {
     "placeholders": {
@@ -1628,7 +1628,7 @@
   "exportSummaryTotal": "Gesamt",
   "exportSummaryCompleted": "Abgeschlossen",
   "exportSummaryRevenue": "Umsatz",
-  "csvCopiedSnackbar": "CSV-Daten in Zwischenablage ({count} Fahrten)",
+  "csvCopiedSnackbar": "CSV-Daten in die Zwischenablage kopiert ({count} Fahrten)",
   "@csvCopiedSnackbar": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1709,7 +1709,7 @@
   "avgSlackStatLabel": "Ø Puffer",
   "gmvStatLabel": "GMV",
   "ridesByTenantTitle": "Fahrten nach Mandant",
-  "rideStatusBreakdownTitle": "Fahrtsstatus-Übersicht",
+  "rideStatusBreakdownTitle": "Fahrtstatus-Übersicht",
   "platformActiveSessionsLabel": "Aktive Plattformsitzungen",
 
   "clientPaymentTitle": "Zahlung",
@@ -1720,9 +1720,9 @@
   "shareRideLink": "Tracking-Link teilen",
   "trackingLinkCopied": "Tracking-Link in die Zwischenablage kopiert",
 
-  "bookWithoutClient": "Ohne Kunde (aus Chat)",
+  "bookWithoutClient": "Ohne Kunden (aus Chat)",
   "fromChatRide": "Aus Chat",
-  "linkClient": "Kunde ergänzen",
+  "linkClient": "Kunden ergänzen",
 "calendarSharingTitle": "Kalenderfreigabe",
   "calendarSharingMenuItem": "Kalenderfreigabe",
   "shareInvitesSection": "Meine Einladungscodes",
@@ -1731,7 +1731,7 @@
   "shareInviteExpiry7Days": "7 Tage",
   "shareInviteExpiry30Days": "30 Tage",
   "shareInviteCreatedTitle": "Einladungscode erstellt",
-  "shareInviteCreatedHint": "Senden Sie diesen Code an einen Fahrer oder Disponenten einer anderen Firma. Er wird in deren App unter Kalenderfreigabe eingegeben.",
+  "shareInviteCreatedHint": "Senden Sie diesen Code an einen Fahrer oder Disponenten eines anderen Unternehmens. Er wird in deren App unter Kalenderfreigabe eingegeben.",
   "shareCopyCode": "Code kopieren",
   "shareCodeCopied": "Code in die Zwischenablage kopiert",
   "shareRevoke": "Widerrufen",
@@ -1761,7 +1761,7 @@
   "sharedCalendarTimesHint": "Schichtzeiten wie von {company} angegeben",
   "@sharedCalendarTimesHint": {"placeholders": {"company": {"type": "String"}}},
   "sharedWithMeGroupLabel": "Für mich freigegeben",
-  "myCompanyGroupLabel": "Meine Firma",
+  "myCompanyGroupLabel": "Mein Unternehmen",
 "addShiftTooltip": "Schicht hinzufügen",
   "addShiftTitle": "Neue Schicht",
   "shiftDateLabel": "Datum",
