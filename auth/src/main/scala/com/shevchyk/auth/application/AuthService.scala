@@ -117,9 +117,13 @@ class AuthServiceImpl(
   private def validateEmail(email: String): Boolean = emailRegex.matches(email)
   private def validatePhone(phone: String): Boolean = phoneRegex.matches(phone.trim)
 
-  private def parseRole(s: String): Either[Throwable, PersonRole] =
-    val normalized = s.trim.toLowerCase.capitalize
-    scala.util.Try(PersonRole.valueOf(normalized)).toEither
+  // Parse a wire-format role via PersonRole.fromWire, which recognises both the SCREAMING_SNAKE_CASE
+  // form the API emits (SUPER_ADMIN / CLIENT_SECRETARY) and the raw enum name. The previous
+  // `.capitalize + valueOf` only upper-cased the first char, so compound names ("SUPER_ADMIN" →
+  // "Super_admin") never matched the enum constants and those two roles could never be assigned.
+  private def parseRole(s: String): Either[Throwable, PersonRole] = PersonRole
+    .fromWire(s.trim)
+    .toRight(new IllegalArgumentException(s"Invalid role: $s"))
 
   /**
    * Resolves the requested client-company patch value to the final link to store. `None` keeps the current link, an

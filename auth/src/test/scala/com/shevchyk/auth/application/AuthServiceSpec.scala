@@ -280,6 +280,37 @@ object AuthServiceSpec extends ZIOSpecDefault {
             case _                   => false
           })
         }.provide(layers),
+        // Regression: the wire roles SUPER_ADMIN and CLIENT_SECRETARY must be assignable. The old
+        // `.capitalize + valueOf` parse turned "SUPER_ADMIN" into "Super_admin", which never matched
+        // the SuperAdmin enum constant, so these two roles could never be created.
+        test("creates a user with role SUPER_ADMIN") {
+          for {
+            service <- ZIO.service[AuthService]
+            user    <- service.createUser(
+                         CreateUserRequest(
+                           email = "superadmin@example.com",
+                           name = "Super Admin",
+                           role = "SUPER_ADMIN",
+                           password = "Secure123"
+                         ),
+                         testCompanyA
+                       )
+          } yield assertTrue(user.role == "SUPER_ADMIN")
+        }.provide(layers),
+        test("creates a user with role CLIENT_SECRETARY") {
+          for {
+            service <- ZIO.service[AuthService]
+            user    <- service.createUser(
+                         CreateUserRequest(
+                           email = "clientsec@example.com",
+                           name = "Client Secretary",
+                           role = "CLIENT_SECRETARY",
+                           password = "Secure123"
+                         ),
+                         testCompanyA
+                       )
+          } yield assertTrue(user.role == "CLIENT_SECRETARY")
+        }.provide(layers),
         test("creates user with phone number") {
           for {
             service <- ZIO.service[AuthService]
