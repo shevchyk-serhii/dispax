@@ -586,7 +586,7 @@ void main() {
         );
         expect(
           de.driverDelayedMessage('Hans', '-3'),
-          equals('Hans hat Verspätung — Puffer -3 min'),
+          equals('Hans hat Verspätung — Puffer -3 Min.'),
         );
         expect(
           uk.driverDelayedMessage('Іван', '+2'),
