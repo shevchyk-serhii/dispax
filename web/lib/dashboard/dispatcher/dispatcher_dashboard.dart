@@ -8,6 +8,7 @@ import '../../constants/app_dimensions.dart';
 import '../../constants/app_styles.dart';
 import '../../constants/lucide_compat.dart';
 import '../../l10n/app_localizations.dart';
+import '../../screens/abholschild_screen.dart';
 import '../../screens/create_ride_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/expense_screen.dart';
@@ -566,6 +567,17 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
         _arrivalsBoardScreenIndex,
         color,
       ),
+      // Abholschild (pickup sign) — a full-screen route, not a tab, so it carries
+      // a custom onTap instead of a screen index.
+      _MoreMenuItem(
+        Icons.airport_shuttle,
+        l10n.pickupSignMenuItem,
+        -1,
+        color,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const AbholschildScreen()),
+        ),
+      ),
       // DriverSchedulePanel — removed from nav when canDrive, accessible here.
       if (canDrive)
         _MoreMenuItem(
@@ -659,7 +671,9 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
             itemBuilder: (context, index) {
               final item = items[index];
               return InkWell(
-                onTap: () => setState(() => _mobileTabIndex = item.screenIndex),
+                onTap:
+                    item.onTap ??
+                    () => setState(() => _mobileTabIndex = item.screenIndex),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   decoration: BoxDecoration(
@@ -699,7 +713,18 @@ class _MoreMenuItem {
   final int screenIndex;
   final Color color;
 
-  const _MoreMenuItem(this.icon, this.label, this.screenIndex, this.color);
+  /// Optional custom tap handler. When set (e.g. to push a full-screen route),
+  /// it runs instead of switching to [screenIndex]. Items that just switch tabs
+  /// leave this null and pass a real [screenIndex].
+  final VoidCallback? onTap;
+
+  const _MoreMenuItem(
+    this.icon,
+    this.label,
+    this.screenIndex,
+    this.color, {
+    this.onTap,
+  });
 }
 
 // ─── Desktop split-view private widgets ─────────────────────────────────────

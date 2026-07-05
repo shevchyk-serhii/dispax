@@ -2686,6 +2686,30 @@ abstract class AppLocalizations {
   /// **'More'**
   String get moreScreenTitle;
 
+  /// No description provided for @pickupSignMenuItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Sign'**
+  String get pickupSignMenuItem;
+
+  /// No description provided for @pickupSignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Sign'**
+  String get pickupSignTitle;
+
+  /// No description provided for @pickupSignHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter name or text…'**
+  String get pickupSignHint;
+
+  /// No description provided for @pickupSignShowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get pickupSignShowButton;
+
   /// No description provided for @dispatchBoardTitle.
   ///
   /// In en, this message translates to:

@@ -18,6 +18,7 @@ import '../l10n/app_localizations.dart';
 import 'gdpr_screen.dart';
 import 'session_management_screen.dart';
 import '../dashboard/driver/earnings_screen.dart';
+import 'abholschild_screen.dart';
 import 'calendar_sharing_screen.dart';
 import '../dashboard/client/client_addresses_screen.dart';
 import '../modules/core/services/error_messages.dart';
@@ -140,6 +141,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildEarningsSection(),
                   const SizedBox(height: 8),
                   _buildCalendarSharingSection(),
+                  const SizedBox(height: 8),
+                  _buildPickupSignSection(),
                 ],
                 if (user?.role == PersonRole.client) ...[
                   const SizedBox(height: 8),
@@ -516,6 +519,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
               MaterialPageRoute(
                 builder: (_) => const CalendarSharingScreen(withAppBar: true),
               ),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ─── Abholschild / pickup sign section (driver only) ──────────────────────
+  Widget _buildPickupSignSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(l10n.pickupSignTitle),
+        _buildSettingsCard([
+          _buildNavRow(
+            icon: Icons.airport_shuttle,
+            label: l10n.pickupSignMenuItem,
+            trailing: Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AbholschildScreen()),
             ),
           ),
         ]),

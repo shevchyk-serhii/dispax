@@ -661,6 +661,10 @@
   "moreTab": "Mehr",
   "billingTab": "Abrechnung",
   "moreScreenTitle": "Mehr",
+  "pickupSignMenuItem": "Abholschild",
+  "pickupSignTitle": "Abholschild",
+  "pickupSignHint": "Name oder Text eingeben…",
+  "pickupSignShowButton": "Anzeigen",
 
   "dispatchBoardTitle": "Dispositionsbrett",
   "dispatcherSubtitle": "{weekday}, {date} · {count} aktive Fahrten",

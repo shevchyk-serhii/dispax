@@ -1410,6 +1410,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreScreenTitle => 'More';
 
   @override
+  String get pickupSignMenuItem => 'Pickup Sign';
+
+  @override
+  String get pickupSignTitle => 'Pickup Sign';
+
+  @override
+  String get pickupSignHint => 'Enter name or text…';
+
+  @override
+  String get pickupSignShowButton => 'Show';
+
+  @override
   String get dispatchBoardTitle => 'Dispatch board';
 
   @override

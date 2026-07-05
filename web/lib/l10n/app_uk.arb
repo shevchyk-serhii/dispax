@@ -661,6 +661,10 @@
   "moreTab": "Ще",
   "billingTab": "Виставлення рахунків",
   "moreScreenTitle": "Ще",
+  "pickupSignMenuItem": "Табличка зустрічі",
+  "pickupSignTitle": "Табличка зустрічі",
+  "pickupSignHint": "Введіть імʼя або текст…",
+  "pickupSignShowButton": "Показати",
 
   "dispatchBoardTitle": "Дошка диспетчера",
   "dispatcherSubtitle": "{weekday}, {date} · {count} активних поїздок",
