@@ -458,7 +458,7 @@
     "back": "Back to home",
     "imprint": {
       "title": "Legal Notice (Impressum)",
-      "intro": "Information pursuant to § 5 TMG",
+      "intro": "Information pursuant to § 5 DDG",
       "providerLabel": "Service provider",
       "provider": "Vitaliia Shevchyk",
       "legalForm": "Sole proprietorship",
@@ -470,7 +470,7 @@
       "responsibleLabel": "Responsible for content pursuant to § 18 (2) MStV",
       "responsible": "Vitaliia Shevchyk, address as above",
       "disputeLabel": "Dispute resolution",
-      "dispute": "The European Commission provides a platform for online dispute resolution (ODR): https://ec.europa.eu/consumers/odr. We are neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
+      "dispute": "We are neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
       "liabilityLabel": "Liability for content",
       "liability": "The contents of these pages were created with the greatest care. However, we cannot guarantee the accuracy, completeness, or timeliness of the content."
     },
