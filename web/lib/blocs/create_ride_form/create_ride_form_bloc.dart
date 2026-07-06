@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../modules/ride_management/helpers/airport_catalog.dart';
 import '../../modules/ride_management/helpers/tag_helpers.dart';
 import '../../modules/ride_management/models/vehicle_class.dart';
 import 'create_ride_form_event.dart';
@@ -253,8 +254,10 @@ class CreateRideFormBloc
     Emitter<CreateRideFormState> emit,
   ) {
     if (!event.isAirportTransfer) {
+      // Clear the auto-filled airport address too, but keep an address the
+      // operator typed by hand (only the canonical catalog address is removed).
       emit(
-        state.copyWith(
+        _clearAirportAddresses(state).copyWith(
           isAirportTransfer: false,
           flightNumber: '',
           selectedGate: null,
@@ -262,8 +265,19 @@ class CreateRideFormBloc
           isArrival: false,
         ),
       );
-    } else {
-      emit(state.copyWith(isAirportTransfer: true));
+    } else if (!state.isAirportTransfer) {
+      // Transition off → on: a new airport transfer defaults to an arrival (the
+      // client is picked up AT the airport), so the airport address goes into
+      // the "From" field. When the flag was already on (e.g. auto-enabled by an
+      // airport address the operator typed), keep the existing direction and
+      // addresses — re-toggling must not flip arrival/departure.
+      const arrival = true;
+      emit(
+        _applyAirportField(
+          state.copyWith(isAirportTransfer: true, isArrival: arrival),
+          isArrival: arrival,
+        ),
+      );
     }
   }
 
@@ -271,7 +285,52 @@ class CreateRideFormBloc
     ArrivalToggled event,
     Emitter<CreateRideFormState> emit,
   ) {
-    emit(state.copyWith(isArrival: event.isArrival));
+    if (!state.isAirportTransfer || event.isArrival == state.isArrival) {
+      emit(state.copyWith(isArrival: event.isArrival));
+      return;
+    }
+    // The transfer is active and the direction actually flipped: swap From/To so
+    // the airport moves to the field the new direction implies (arrival → From,
+    // departure → To) while the operator-entered address moves to the other
+    // field instead of being lost.
+    emit(
+      state.copyWith(
+        isArrival: event.isArrival,
+        fromAddress: state.toAddress,
+        toAddress: state.fromAddress,
+      ),
+    );
+  }
+
+  /// Places the default airport address into the field implied by [isArrival]
+  /// (arrival → From, departure → To) and clears any previously auto-filled
+  /// airport address from the opposite field. Used only when the transfer is
+  /// first enabled; an address the operator typed by hand in the opposite field
+  /// is preserved.
+  CreateRideFormState _applyAirportField(
+    CreateRideFormState s, {
+    required bool isArrival,
+  }) {
+    final airport = defaultAirport.address;
+    if (isArrival) {
+      return s.copyWith(
+        fromAddress: airport,
+        toAddress: isCatalogAirportAddress(s.toAddress) ? '' : s.toAddress,
+      );
+    }
+    return s.copyWith(
+      toAddress: airport,
+      fromAddress: isCatalogAirportAddress(s.fromAddress) ? '' : s.fromAddress,
+    );
+  }
+
+  /// Removes an auto-filled airport address from either endpoint, leaving an
+  /// operator-typed address untouched.
+  CreateRideFormState _clearAirportAddresses(CreateRideFormState s) {
+    return s.copyWith(
+      fromAddress: isCatalogAirportAddress(s.fromAddress) ? '' : s.fromAddress,
+      toAddress: isCatalogAirportAddress(s.toAddress) ? '' : s.toAddress,
+    );
   }
 
   void _onGateSelected(GateSelected event, Emitter<CreateRideFormState> emit) {

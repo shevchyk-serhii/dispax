@@ -310,4 +310,58 @@ void main() {
     await tester.pump();
     expect(formBloc.state.fromAddress, 'Berlin');
   });
+
+  // Airport transfer replaces the airport endpoint with a read-only chip so the
+  // operator does not pick the airport address by hand, and hides the swap
+  // button (direction is controlled by the arrival/departure radio, not swap).
+  testWidgets('arrival transfer shows a read-only airport chip for From and '
+      'hides the swap button', (tester) async {
+    final (authBloc, formBloc) = _blocs();
+    addTearDown(formBloc.close);
+
+    await tester.pumpWidget(_harness(authBloc, formBloc));
+    await tester.pump();
+
+    // Enable the transfer → arrival, From is auto-filled with MUC.
+    formBloc.add(const AirportTransferToggled(true));
+    await tester.pump(); // process the event
+    await tester.pump(); // rebuild from the emitted state
+
+    expect(formBloc.state.isAirportTransfer, isTrue);
+    // The canonical MUC label is shown, and From is no longer an editable field.
+    expect(find.text('Flughafen München (MUC)'), findsOneWidget);
+    expect(_fieldByLabel('From'), findsNothing);
+    // To remains an editable address field.
+    expect(_fieldByLabel('To'), findsOneWidget);
+    // Swap is hidden during an airport transfer.
+    expect(find.byTooltip('Swap From / To'), findsNothing);
+  });
+
+  testWidgets('departure transfer shows the airport chip for To', (
+    tester,
+  ) async {
+    final (authBloc, formBloc) = _blocs();
+    addTearDown(formBloc.close);
+
+    await tester.pumpWidget(_harness(authBloc, formBloc));
+    await tester.pump();
+
+    formBloc.add(const AirportTransferToggled(true)); // arrival, From=MUC
+    await tester.pump();
+    await tester.pump();
+    // Operator types the drop-off while it's an arrival (To is editable).
+    await tester.enterText(_fieldByLabel('To'), 'Leopoldstrasse 42, München');
+    await tester.pump();
+
+    formBloc.add(const ArrivalToggled(false)); // → departure: swap
+    await tester.pump(); // process the event
+    await tester.pump(); // rebuild from the emitted state
+
+    expect(find.text('Flughafen München (MUC)'), findsOneWidget);
+    expect(_fieldByLabel('To'), findsNothing);
+    // From becomes the editable pick-up field and shows the moved address —
+    // guards against the stale controller-text footgun the swap button hit.
+    expect(_fieldByLabel('From'), findsOneWidget);
+    expect(_textOf(tester, 'From'), 'Leopoldstrasse 42, München');
+  });
 }
