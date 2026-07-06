@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
-import '../../../../modules/core/models/person.dart';
 import '../../helpers/tag_helpers.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_dimensions.dart';
@@ -22,8 +21,10 @@ class CreateRideFormSections extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDriver =
-        context.read<AuthBloc>().state.user?.role == PersonRole.driver;
+    // Show the self-assign toggle to anyone who can drive — a pure driver, or a
+    // dispatcher who also holds the driver role (multirole). A pure dispatcher
+    // must not see it: the backend rejects assigning a ride to a non-driver.
+    final canDrive = context.read<AuthBloc>().state.user?.canDrive ?? false;
 
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       builder: (context, state) {
@@ -33,7 +34,7 @@ class CreateRideFormSections extends StatelessWidget {
             const CreateRideBasicInfoSection(),
             const SizedBox(height: AppDimensions.formSectionGap),
             const CreateRideLocationSection(),
-            if (isDriver) ...[
+            if (canDrive) ...[
               const SizedBox(height: AppDimensions.formSectionGap),
               const CreateRideDriverSection(),
             ],
