@@ -2686,6 +2686,36 @@ abstract class AppLocalizations {
   /// **'More'**
   String get moreScreenTitle;
 
+  /// No description provided for @moreCategoryInsights.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get moreCategoryInsights;
+
+  /// No description provided for @moreCategoryOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get moreCategoryOperations;
+
+  /// No description provided for @moreCategoryFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get moreCategoryFinance;
+
+  /// No description provided for @moreCategoryAdministration.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration'**
+  String get moreCategoryAdministration;
+
+  /// No description provided for @moreCategoryGovernance.
+  ///
+  /// In en, this message translates to:
+  /// **'Governance'**
+  String get moreCategoryGovernance;
+
   /// No description provided for @pickupSignMenuItem.
   ///
   /// In en, this message translates to:

@@ -310,13 +310,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    // The More-menu grid is lazy (GridView.builder): only items visible in the
-    // viewport are built. 'Analytics' is near the end of a 27-item grid, so
-    // we scroll the GridView until the Analytics label becomes visible.
+    // The More menu is an outer ListView of titled sections; scroll it (by key)
+    // until the 'Analytics' tile becomes visible.
     await tester.scrollUntilVisible(
       find.text('Analytics'),
       200.0,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const Key('more-menu-list')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
 
     // After scrolling, the 'Analytics' grid entry must be present.
@@ -496,7 +500,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final grid = find.byType(Scrollable).last;
+      // The More menu is now an outer ListView of titled sections (each with a
+      // non-scrolling inner grid), so target the outer scrollable explicitly by
+      // key rather than the last Scrollable (which would be an inner grid).
+      final grid = find
+          .descendant(
+            of: find.byKey(const Key('more-menu-list')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
 
       // Billing now appears as a More-grid tile.
       await tester.scrollUntilVisible(
@@ -580,7 +592,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final grid = find.byType(Scrollable).last;
+      final grid = find
+          .descendant(
+            of: find.byKey(const Key('more-menu-list')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
 
       // The localized label is present...
       await tester.scrollUntilVisible(
@@ -651,7 +668,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
-        final grid = find.byType(Scrollable).last;
+        final grid = find
+            .descendant(
+              of: find.byKey(const Key('more-menu-list')),
+              matching: find.byType(Scrollable),
+            )
+            .first;
         await tester.scrollUntilVisible(
           find.text('Manage Clients'),
           200.0,
@@ -694,7 +716,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final grid = find.byType(Scrollable).last;
+      final grid = find
+          .descendant(
+            of: find.byKey(const Key('more-menu-list')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
       await tester.scrollUntilVisible(
         find.text('Manage Clients'),
         200.0,

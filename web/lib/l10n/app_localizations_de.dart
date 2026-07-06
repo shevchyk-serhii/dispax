@@ -1418,6 +1418,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get moreScreenTitle => 'Mehr';
 
   @override
+  String get moreCategoryInsights => 'Auswertungen';
+
+  @override
+  String get moreCategoryOperations => 'Betrieb';
+
+  @override
+  String get moreCategoryFinance => 'Finanzen';
+
+  @override
+  String get moreCategoryAdministration => 'Verwaltung';
+
+  @override
+  String get moreCategoryGovernance => 'Governance';
+
+  @override
   String get pickupSignMenuItem => 'Abholschild';
 
   @override
