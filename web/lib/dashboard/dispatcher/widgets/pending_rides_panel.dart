@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/blocs.dart';
 import '../../../modules/core/models/person.dart';
+import '../../../modules/core/widgets/copy_icon_button.dart';
 import '../../../modules/core/services/user_service.dart';
 import '../../../modules/core/services/api_client.dart'
     show ScheduleConflictInfo;
@@ -1264,6 +1265,7 @@ class _RideRow extends StatelessWidget {
               icon: Icons.trip_origin,
               iconColor: colorScheme.onSurfaceVariant,
               address: ride.from.address,
+              label: AppLocalizations.of(context)!.fromLabel,
             ),
             Padding(
               padding: const EdgeInsets.only(left: 8.5),
@@ -1283,6 +1285,7 @@ class _RideRow extends StatelessWidget {
               icon: Icons.location_on,
               iconColor: colorScheme.primary,
               address: ride.to.address,
+              label: AppLocalizations.of(context)!.toLabel,
             ),
             const SizedBox(height: 12),
             // Meta: client avatar + (time · client [· driver] [· ETA])
@@ -1341,6 +1344,13 @@ class _RideRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // Copy the bare flight number (not the composite status line,
+                  // which carries a status emoji that pastes as noise).
+                  if (ride.flightNumber != null)
+                    CopyIconButton(
+                      value: ride.flightNumber!,
+                      label: AppLocalizations.of(context)!.flightNumber,
+                    ),
                   if (onRefreshFlight != null && ride.flightNumber != null)
                     SizedBox(
                       width: 30,
@@ -1479,6 +1489,7 @@ class _RideRow extends StatelessWidget {
     required IconData icon,
     required Color iconColor,
     required String address,
+    required String label,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1496,6 +1507,7 @@ class _RideRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+        CopyIconButton(value: address, label: label),
       ],
     );
   }

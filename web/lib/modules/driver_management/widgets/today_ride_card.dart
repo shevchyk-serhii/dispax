@@ -313,18 +313,21 @@ class TodayRideCard extends StatelessWidget {
             icon: Icons.person,
             text: ride.clientName,
             label: 'Client',
+            copyable: true,
           ),
           const SizedBox(height: 12),
           RideInfoRow(
             icon: Icons.location_on,
             text: ride.from.address,
             label: 'Pickup',
+            copyable: true,
           ),
           const SizedBox(height: 12),
           RideInfoRow(
             icon: Icons.flag,
             text: ride.to.address,
             label: 'Destination',
+            copyable: true,
           ),
           if (ride.isAirportTransfer && ride.fullFlightInfo.isNotEmpty) ...[
             const SizedBox(height: 12),
