@@ -175,4 +175,82 @@ void main() {
     expect(s.selectedClientId, isNull);
     expect(s.isModified, isFalse);
   });
+
+  testWidgets(
+    'success SnackBar survives the dashboard tab-switch that onCreated triggers',
+    (tester) async {
+      // Reproduce the dispatcher dashboard shape: an IndexedStack keeps a dummy
+      // "Home" tab and the CreateRideScreen alive, and onCreated switches the
+      // visible tab to Home (setState) — exactly like
+      // dispatcher_dashboard.dart:262-267. The success SnackBar is shown by the
+      // RideBloc listener BEFORE onCreated fires; this asserts it still appears
+      // after the tab-switch (i.e. it is NOT swallowed by the navigation), so
+      // the operator gets visible confirmation the ride was created.
+      formBloc.emit(
+        formBloc.state.copyWith(status: CreateRideFormStatus.submitting),
+      );
+
+      whenListen(
+        rideBloc,
+        Stream<RideState>.fromIterable([
+          RideState(status: RideStateStatus.created, rides: const []),
+        ]),
+        initialState: RideState.loading(),
+      );
+
+      // A tiny stateful host owning the IndexedStack + tab index, mirroring the
+      // real dashboard. onCreated flips the index to the Home tab.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BlocProvider<AuthBloc>.value(
+            value: authBloc,
+            child: _DashboardHost(rideBloc: rideBloc, formBloc: formBloc),
+          ),
+        ),
+      );
+      // Let the created event flow through the listener, show the SnackBar and
+      // run the tab-switch, then let the SnackBar animate in.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 750));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.rideCreatedSuccess), findsOneWidget);
+    },
+  );
+}
+
+/// Minimal stand-in for the dispatcher dashboard: an IndexedStack with a Home
+/// tab and the real CreateRideScreen. onCreated switches to Home via setState,
+/// reproducing dispatcher_dashboard.dart's tab-switch after a successful create.
+class _DashboardHost extends StatefulWidget {
+  final RideBloc rideBloc;
+  final CreateRideFormBloc formBloc;
+
+  const _DashboardHost({required this.rideBloc, required this.formBloc});
+
+  @override
+  State<_DashboardHost> createState() => _DashboardHostState();
+}
+
+class _DashboardHostState extends State<_DashboardHost> {
+  int _tab = 1; // start on the New Ride tab
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _tab,
+        children: [
+          const Center(child: Text('Home')),
+          CreateRideScreen(
+            rideBloc: widget.rideBloc,
+            formBloc: widget.formBloc,
+            onCreated: () => setState(() => _tab = 0),
+          ),
+        ],
+      ),
+    );
+  }
 }
