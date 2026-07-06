@@ -15,6 +15,8 @@ class MockRideService extends Mock implements RideService {}
 
 class MockRideBloc extends Mock implements RideBloc {}
 
+class MockAuthBloc extends Mock implements AuthBloc {}
+
 class MockScheduleService extends Mock implements ScheduleService {}
 
 class MockUserService extends Mock implements UserService {}

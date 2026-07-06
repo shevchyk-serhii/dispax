@@ -57,25 +57,19 @@ class _CreateRideBasicInfoSectionState
     // Client — hidden, they always select themselves
     if (role == PersonRole.client) return const SizedBox.shrink();
 
-    // Driver and dispatcher/secretary both get the provisional toggle +
-    // the appropriate client search/create fields.
-    return _ClientSectionWithProvisionalToggle(
-      userService: _userService,
-      role: role,
-    );
+    // Every other booking role (driver, dispatcher, secretary) gets the same
+    // provisional toggle + client search/create fields.
+    return _ClientSectionWithProvisionalToggle(userService: _userService);
   }
 }
 
-/// Wraps the client-selection UI for driver and dispatcher/secretary roles,
-/// adding a "Without client (from chat)" provisional-mode toggle at the top.
+/// Wraps the client-selection UI for every booking role (driver, dispatcher,
+/// secretary), adding a "Without client (from chat)" provisional-mode toggle at
+/// the top.
 class _ClientSectionWithProvisionalToggle extends StatelessWidget {
   final UserService userService;
-  final PersonRole? role;
 
-  const _ClientSectionWithProvisionalToggle({
-    required this.userService,
-    required this.role,
-  });
+  const _ClientSectionWithProvisionalToggle({required this.userService});
 
   @override
   Widget build(BuildContext context) {
@@ -107,10 +101,12 @@ class _ClientSectionWithProvisionalToggle extends StatelessWidget {
             // When provisional mode is ON, hide the client search/create section.
             if (!state.isProvisionalClient) ...[
               const SizedBox(height: AppDimensions.formSectionGap),
-              if (role == PersonRole.driver)
-                _DriverClientSection(userService: userService)
-              else
-                ClientSearchField(userService: userService),
+              // Every booking role (driver, dispatcher, secretary) gets the same
+              // client section: search an existing client OR create a new one
+              // inline via the "New client" toggle. Previously the inline-create
+              // path was driver-only; it is now shared so a dispatcher/secretary
+              // can add a walk-in client without leaving the form.
+              _ClientSection(userService: userService),
             ],
           ],
         );
@@ -119,10 +115,12 @@ class _ClientSectionWithProvisionalToggle extends StatelessWidget {
   }
 }
 
-class _DriverClientSection extends StatelessWidget {
+/// Client selection: search an existing client, or flip the "New client" toggle
+/// to create one inline (name + phone). Shared by every booking role.
+class _ClientSection extends StatelessWidget {
   final UserService userService;
 
-  const _DriverClientSection({required this.userService});
+  const _ClientSection({required this.userService});
 
   @override
   Widget build(BuildContext context) {
