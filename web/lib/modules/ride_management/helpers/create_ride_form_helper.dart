@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../../../blocs/blocs.dart';
-import '../../../modules/core/models/location.dart';
 import '../models/create_ride_request.dart';
 import '../../../constants/app_colors.dart';
+import 'airport_catalog.dart';
 
 class CreateRideFormHelper {
   // Note: Gates and terminals are kept in UI for future backend support
@@ -134,8 +134,8 @@ class CreateRideFormHelper {
       // it carries the operator-selected pickup time.
       manualPickupDateTime: formState.manualPickupDateTime,
       flightDepartureTime: formState.flightDepartureTime,
-      from: Location(address: formState.fromAddress.trim()),
-      to: Location(address: formState.toAddress.trim()),
+      from: locationForAddress(formState.fromAddress),
+      to: locationForAddress(formState.toAddress),
       clientName: formState.clientName.trim(),
       newClientPhone:
           (formState.isNewClient || formState.isProvisionalClient) &&

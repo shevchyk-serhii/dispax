@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/blocs.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import '../address_autocomplete_field.dart';
+import '../../helpers/airport_catalog.dart';
 import '../../models/client_address.dart';
 import '../../services/client_address_service.dart';
 import '../../../core/services/mapbox_service.dart';
@@ -253,10 +254,17 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
     return BlocBuilder<CreateRideFormBloc, CreateRideFormState>(
       buildWhen: (prev, curr) =>
           prev.fromAddress != curr.fromAddress ||
-          prev.toAddress != curr.toAddress,
+          prev.toAddress != curr.toAddress ||
+          prev.isAirportTransfer != curr.isAirportTransfer ||
+          prev.isArrival != curr.isArrival,
       builder: (context, state) {
         final fromWarning = _warningFor(_fromReachability, l10n);
         final toWarning = _warningFor(_toReachability, l10n);
+        // When the airport transfer is active, the airport endpoint is
+        // auto-filled and shown as a read-only chip (arrival → From, departure
+        // → To); the operator only edits the other endpoint.
+        final fromIsAirport = state.isAirportTransfer && state.isArrival;
+        final toIsAirport = state.isAirportTransfer && !state.isArrival;
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
@@ -292,85 +300,106 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                   ],
                 ),
                 const SizedBox(height: AppDimensions.formSectionGap),
-                AddressAutocompleteField(
-                  labelText: 'From',
-                  hintText: 'Pick-up location',
-                  prefixIconData: Icons.trip_origin,
-                  initialValue: state.fromAddress,
-                  suggestions: _fromSuggestions.isEmpty
-                      ? _savedAddresses
-                      : _fromSuggestions,
-                  excludeAddress: state.toAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Pick-up location is required';
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    context.read<CreateRideFormBloc>().add(
-                      FromAddressChanged(value),
-                    );
-                    _scheduleFromCheck(value);
-                  },
-                ),
-                if (fromWarning != null) _AddressWarning(message: fromWarning),
-                const SizedBox(height: AppDimensions.paddingSmall),
-                Center(
-                  child: IconButton(
-                    onPressed: () {
-                      // Drop focus first so both address fields re-sync their
-                      // text from the swapped state. AddressAutocompleteField
-                      // skips the controller sync while focused, so without
-                      // this the focused field would keep its stale text and
-                      // the swap would look like it did nothing.
-                      FocusScope.of(context).unfocus();
-                      context.read<CreateRideFormBloc>().add(
-                        const AddressesSwapped(),
-                      );
-                      // Re-evaluate both fields against the swapped values.
-                      _scheduleFromCheck(
-                        _formBloc.state.toAddress,
-                        immediate: true,
-                      );
-                      _scheduleToCheck(
-                        _formBloc.state.fromAddress,
-                        immediate: true,
-                      );
+                if (fromIsAirport)
+                  _AirportLocationChip(
+                    labelText: 'From',
+                    airportLabel: state.fromAddress,
+                  )
+                else ...[
+                  AddressAutocompleteField(
+                    labelText: 'From',
+                    hintText: 'Pick-up location',
+                    prefixIconData: Icons.trip_origin,
+                    initialValue: state.fromAddress,
+                    suggestions: _fromSuggestions.isEmpty
+                        ? _savedAddresses
+                        : _fromSuggestions,
+                    excludeAddress: state.toAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Pick-up location is required';
+                      }
+                      return null;
                     },
-                    icon: const Icon(Icons.swap_vert),
-                    tooltip: 'Swap From / To',
-                    style: IconButton.styleFrom(
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant,
+                    onChanged: (value) {
+                      context.read<CreateRideFormBloc>().add(
+                        FromAddressChanged(value),
+                      );
+                      _scheduleFromCheck(value);
+                    },
+                  ),
+                  if (fromWarning != null)
+                    _AddressWarning(message: fromWarning),
+                ],
+                const SizedBox(height: AppDimensions.paddingSmall),
+                // The swap button is hidden during an airport transfer: the
+                // airport endpoint is fixed by the arrival/departure direction,
+                // which is changed via the arrival/departure radio, not by
+                // swapping From/To.
+                if (!state.isAirportTransfer)
+                  Center(
+                    child: IconButton(
+                      onPressed: () {
+                        // Drop focus first so both address fields re-sync their
+                        // text from the swapped state. AddressAutocompleteField
+                        // skips the controller sync while focused, so without
+                        // this the focused field would keep its stale text and
+                        // the swap would look like it did nothing.
+                        FocusScope.of(context).unfocus();
+                        context.read<CreateRideFormBloc>().add(
+                          const AddressesSwapped(),
+                        );
+                        // Re-evaluate both fields against the swapped values.
+                        _scheduleFromCheck(
+                          _formBloc.state.toAddress,
+                          immediate: true,
+                        );
+                        _scheduleToCheck(
+                          _formBloc.state.fromAddress,
+                          immediate: true,
+                        );
+                      },
+                      icon: const Icon(Icons.swap_vert),
+                      tooltip: 'Swap From / To',
+                      style: IconButton.styleFrom(
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppDimensions.paddingSmall),
-                AddressAutocompleteField(
-                  labelText: 'To',
-                  hintText: 'Drop-off location',
-                  prefixIconData: Icons.location_on,
-                  initialValue: state.toAddress,
-                  suggestions: _toSuggestions.isEmpty
-                      ? _savedAddresses
-                      : _toSuggestions,
-                  excludeAddress: state.fromAddress,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Drop-off location is required';
-                    }
-                    return null;
-                  },
-                  onChanged: (value) {
-                    context.read<CreateRideFormBloc>().add(
-                      ToAddressChanged(value),
-                    );
-                    _scheduleToCheck(value);
-                  },
-                ),
-                if (toWarning != null) _AddressWarning(message: toWarning),
+                if (!state.isAirportTransfer)
+                  const SizedBox(height: AppDimensions.paddingSmall),
+                if (toIsAirport)
+                  _AirportLocationChip(
+                    labelText: 'To',
+                    airportLabel: state.toAddress,
+                  )
+                else ...[
+                  AddressAutocompleteField(
+                    labelText: 'To',
+                    hintText: 'Drop-off location',
+                    prefixIconData: Icons.location_on,
+                    initialValue: state.toAddress,
+                    suggestions: _toSuggestions.isEmpty
+                        ? _savedAddresses
+                        : _toSuggestions,
+                    excludeAddress: state.fromAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Drop-off location is required';
+                      }
+                      return null;
+                    },
+                    onChanged: (value) {
+                      context.read<CreateRideFormBloc>().add(
+                        ToAddressChanged(value),
+                      );
+                      _scheduleToCheck(value);
+                    },
+                  ),
+                  if (toWarning != null) _AddressWarning(message: toWarning),
+                ],
                 if (state.fromAddress.trim().isNotEmpty &&
                     state.toAddress.trim().isNotEmpty &&
                     state.fromAddress.trim().toLowerCase() ==
@@ -423,6 +452,47 @@ class _AddressWarning extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Read-only chip shown in place of an address field when an airport transfer
+/// fixes that endpoint to the airport. The operator cannot edit it; it only
+/// signals that the airport address was auto-filled. For a known catalog
+/// airport it shows the short label (e.g. "Flughafen München (MUC)"); for a
+/// legacy ride with a differently-worded saved address it falls back to that
+/// saved text.
+class _AirportLocationChip extends StatelessWidget {
+  final String labelText;
+  final String airportLabel;
+
+  const _AirportLocationChip({
+    required this.labelText,
+    required this.airportLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final display = isCatalogAirportAddress(airportLabel)
+        ? defaultAirport.label
+        : airportLabel;
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: labelText,
+        prefixIcon: Icon(Icons.flight, color: scheme.primary),
+        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: scheme.surfaceContainerHighest,
+      ),
+      child: Text(
+        display,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: scheme.onSurface,
+        ),
       ),
     );
   }
