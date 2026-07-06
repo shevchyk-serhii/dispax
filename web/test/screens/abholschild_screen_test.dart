@@ -7,6 +7,18 @@ import 'package:wakelock_plus/wakelock_plus.dart'
     show wakelockPlusPlatformInstance;
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
 
+/// Records `didPop` events so a test can assert the board route was actually
+/// popped (not just that some other widget disappeared).
+class _RecordingObserver extends NavigatorObserver {
+  int pops = 0;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pops++;
+    super.didPop(route, previousRoute);
+  }
+}
+
 /// Records wakelock toggles so the sign board's "keep the screen awake only
 /// while shown" behaviour can be asserted. `extends` (not `implements`) so it
 /// passes the platform-interface token verification.
@@ -39,12 +51,20 @@ void main() {
     wakelockPlusPlatformInstance = fakeWakelock;
   });
 
-  Widget wrap() => MaterialApp(
+  Widget wrap({List<NavigatorObserver> observers = const []}) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('en'),
+    navigatorObservers: observers,
     home: const AbholschildScreen(),
   );
+
+  // Enters text and taps "Show" to push the sign board. Leaves the board shown.
+  Future<void> showBoard(WidgetTester tester, String text) async {
+    await tester.enterText(find.byType(TextField), text);
+    await tester.tap(find.text('Show'));
+    await tester.pumpAndSettle();
+  }
 
   testWidgets('editor pre-fills the last shown text from SharedPreferences', (
     tester,
@@ -175,4 +195,69 @@ void main() {
       expect(fakeWakelock.toggles, [true, false]);
     },
   );
+
+  testWidgets('the visible close button pops the board back to the editor', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final observer = _RecordingObserver();
+
+    await tester.pumpWidget(wrap(observers: [observer]));
+    await tester.pumpAndSettle();
+    await showBoard(tester, 'Herr Klein');
+
+    // Board is up (its FittedBox text is present).
+    expect(
+      find.descendant(
+        of: find.byType(FittedBox),
+        matching: find.text('Herr Klein'),
+      ),
+      findsOneWidget,
+    );
+
+    // Press the explicit close button (not the tap-anywhere handler): the
+    // route pops and we are back on the editor.
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(observer.pops, 1);
+    expect(find.text('Pickup Sign'), findsOneWidget);
+    expect(find.byType(FittedBox), findsNothing);
+  });
+
+  testWidgets('swiping down on the board pops back to the editor', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final observer = _RecordingObserver();
+
+    await tester.pumpWidget(wrap(observers: [observer]));
+    await tester.pumpAndSettle();
+    await showBoard(tester, 'Frau Gross');
+
+    final board = find.descendant(
+      of: find.byType(FittedBox),
+      matching: find.text('Frau Gross'),
+    );
+    expect(board, findsOneWidget);
+
+    // A downward fling dismisses the board (the exit gesture the user expects).
+    await tester.fling(board, const Offset(0, 400), 1000);
+    await tester.pumpAndSettle();
+
+    expect(observer.pops, 1);
+    expect(find.text('Pickup Sign'), findsOneWidget);
+    expect(find.byType(FittedBox), findsNothing);
+  });
+
+  testWidgets('the board shows a hint on how to close it', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(wrap());
+    await tester.pumpAndSettle();
+    await showBoard(tester, 'Gate C3');
+
+    // The dismissal hint is localized (English locale in wrap()).
+    expect(find.text('Tap or swipe down to close'), findsOneWidget);
+  });
 }

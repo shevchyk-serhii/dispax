@@ -703,6 +703,7 @@
   "pickupSignTitle": "Pickup Sign",
   "pickupSignHint": "Enter name or text…",
   "pickupSignShowButton": "Show",
+  "pickupSignCloseHint": "Tap or swipe down to close",
 
   "dispatchBoardTitle": "Dispatch board",
   "dispatcherSubtitle": "{weekday}, {date} · {count} active rides",

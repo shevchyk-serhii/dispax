@@ -670,6 +670,7 @@
   "pickupSignTitle": "Табличка зустрічі",
   "pickupSignHint": "Введіть імʼя або текст…",
   "pickupSignShowButton": "Показати",
+  "pickupSignCloseHint": "Торкніться або проведіть униз, щоб закрити",
 
   "dispatchBoardTitle": "Дошка диспетчера",
   "dispatcherSubtitle": "{weekday}, {date} · {count} активних поїздок",

@@ -670,6 +670,7 @@
   "pickupSignTitle": "Abholschild",
   "pickupSignHint": "Name oder Text eingeben…",
   "pickupSignShowButton": "Anzeigen",
+  "pickupSignCloseHint": "Tippen oder nach unten wischen zum Schließen",
 
   "dispatchBoardTitle": "Dispositionsbrett",
   "dispatcherSubtitle": "{weekday}, {date} · {count} aktive Fahrten",
