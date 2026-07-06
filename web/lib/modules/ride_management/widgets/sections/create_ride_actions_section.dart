@@ -60,8 +60,12 @@ class CreateRideActionsSection extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.formCardPadding),
       child: CreateRideActionButtons(
         onCreateRide: () {
-          // Run the text-field validators (from/to addresses) first.
-          if (!(formKey.currentState?.validate() ?? false)) return;
+          // Run the text-field validators (from/to addresses) so their inline
+          // "... is required" errors render under the fields. Do NOT early-return
+          // on failure: that used to bail before the SnackBar below, so tapping
+          // Create with empty From/To showed the red field labels but gave no
+          // toast — the user saw "nothing happened".
+          final formValid = formKey.currentState?.validate() ?? false;
           // The Create button stays tappable even when non-text controls (client,
           // pickup time, flight number) are unset, and the submit handler no-ops
           // when !isValid — which used to swallow the tap with no feedback. Surface
@@ -70,14 +74,22 @@ class CreateRideActionsSection extends StatelessWidget {
               .read<CreateRideFormBloc>()
               .state
               .firstMissingRequirement;
-          if (missing != null) {
+          if (missing != null || !formValid) {
             final l10n = AppLocalizations.of(context)!;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(missingRequirementMessage(missing, l10n)),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            // A failed text validator always has a matching firstMissingRequirement
+            // (from/to/addressesEqual), so `missing` is normally non-null here; the
+            // generic fallback only guards a hypothetical validator without a mirror.
+            final message = missing != null
+                ? missingRequirementMessage(missing, l10n)
+                : l10n.fillRequiredFieldsError;
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  backgroundColor: AppColors.error,
+                ),
+              );
             return;
           }
           context.read<CreateRideFormBloc>().add(const FormSubmitted());
