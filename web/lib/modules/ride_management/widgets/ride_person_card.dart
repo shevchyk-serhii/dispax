@@ -12,6 +12,16 @@ class RidePersonCard extends StatelessWidget {
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
 
+  /// When set, tapping the avatar lets the operator attach/replace this person's
+  /// photo. The caller is responsible for gating this by role/target (a driver
+  /// may photograph a client, not another driver), so the card simply shows a
+  /// small camera badge and forwards the tap when the callback is present.
+  final VoidCallback? onAvatarTap;
+
+  /// Bumped by the caller after a successful photo upload so the avatar re-fetches
+  /// even on a replace (where hasAvatar stays true).
+  final Object? avatarReloadToken;
+
   /// Passed in (not read from context) because this card is shown inside a
   /// pushed route (RideDetailsScreen) that may sit outside the AuthBloc provider.
   final ApiClient apiClient;
@@ -23,6 +33,8 @@ class RidePersonCard extends StatelessWidget {
     this.isDriver = false,
     this.onCall,
     this.onMessage,
+    this.onAvatarTap,
+    this.avatarReloadToken,
   });
 
   @override
@@ -38,7 +50,8 @@ class RidePersonCard extends StatelessWidget {
             Row(
               children: [
                 // Profile photo when set, initials fallback otherwise.
-                AvatarCircle(user: person, apiClient: apiClient, radius: 24),
+                // Tappable (with a camera badge) when photo editing is allowed.
+                _buildAvatar(context),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -130,6 +143,46 @@ class RidePersonCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(BuildContext context) {
+    final avatar = AvatarCircle(
+      user: person,
+      apiClient: apiClient,
+      radius: 24,
+      reloadToken: avatarReloadToken,
+    );
+    if (onAvatarTap == null) return avatar;
+
+    return GestureDetector(
+      onTap: onAvatarTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          avatar,
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                Icons.photo_camera,
+                size: 12,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

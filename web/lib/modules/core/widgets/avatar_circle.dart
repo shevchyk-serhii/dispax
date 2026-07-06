@@ -20,11 +20,17 @@ class AvatarCircle extends StatefulWidget {
   final double radius;
   final ApiClient apiClient;
 
+  /// Bump this to force a re-fetch even when [user.id] / [user.hasAvatar] are
+  /// unchanged — needed when a photo is *replaced* (hasAvatar stays true, so the
+  /// identity signals alone would keep the stale bytes cached in this widget).
+  final Object? reloadToken;
+
   const AvatarCircle({
     super.key,
     required this.user,
     required this.apiClient,
     this.radius = 20,
+    this.reloadToken,
   });
 
   @override
@@ -43,9 +49,11 @@ class _AvatarCircleState extends State<AvatarCircle> {
   @override
   void didUpdateWidget(AvatarCircle oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-fetch only when the user identity or avatar presence changes.
+    // Re-fetch when the user identity / avatar presence changes, or when the
+    // caller bumps reloadToken (photo replaced in place — hasAvatar stays true).
     if (oldWidget.user.id != widget.user.id ||
-        oldWidget.user.hasAvatar != widget.user.hasAvatar) {
+        oldWidget.user.hasAvatar != widget.user.hasAvatar ||
+        oldWidget.reloadToken != widget.reloadToken) {
       setState(() {
         _avatarFuture = _fetchAvatar();
       });

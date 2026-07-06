@@ -8,7 +8,9 @@ import '../../blocs/blocs.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../../modules/ride_management/models/payment_method.dart';
 import '../../modules/ride_management/services/ride_service.dart';
+import '../../modules/core/models/person.dart';
 import '../../modules/core/services/api_client.dart';
+import '../../modules/core/services/client_photo_service.dart';
 import '../../modules/core/services/error_messages.dart';
 import '../../modules/core/widgets/avatar_circle.dart';
 import '../../modules/flight_management/flight_tracker.dart';
@@ -1267,6 +1269,92 @@ class DriverClientPriceRow extends StatelessWidget {
         : price.toString();
   }
 
+  /// Staff (driver / dispatcher / secretary / admin) may attach a photo to a
+  /// named (non-provisional) client. Mirrors the backend authorization.
+  bool _canEditClientPhoto(BuildContext context) {
+    if (ride.clientProvisional) return false;
+    // Read the current user defensively: this row is also pumped in isolation
+    // (widget tests, some embeds) without an ambient AuthBloc.
+    final Person? me;
+    try {
+      me = context.read<AuthBloc>().state.user;
+    } on ProviderNotFoundException {
+      return false;
+    }
+    if (me == null) return false;
+    return me.hasRole(PersonRole.driver) ||
+        me.hasRole(PersonRole.dispatcher) ||
+        me.hasRole(PersonRole.secretary) ||
+        me.hasRole(PersonRole.admin);
+  }
+
+  Widget _buildClientAvatar(BuildContext context) {
+    final avatar = AvatarCircle(
+      user: ride.client,
+      apiClient: apiClient,
+      radius: 14,
+    );
+    if (!_canEditClientPhoto(context)) return avatar;
+
+    return GestureDetector(
+      onTap: () => _uploadClientPhoto(context),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          avatar,
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.photo_camera,
+                size: 9,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _uploadClientPhoto(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final rideBloc = context.read<RideBloc>();
+    final user = context.read<AuthBloc>().state.user;
+    final result = await pickAndUploadClientPhoto(apiClient, ride.clientId);
+    switch (result.outcome) {
+      case ClientPhotoUploadOutcome.cancelled:
+        break;
+      case ClientPhotoUploadOutcome.success:
+        // Reload rides so the list re-fetches clientHasAvatar; AvatarCircle then
+        // re-reads the bytes on the refreshed flag.
+        if (user != null) rideBloc.add(RideRefreshRequested(user: user));
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.photoUploadedSuccessfully)),
+        );
+      case ClientPhotoUploadOutcome.failure:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              '${l10n.failedToUploadPhoto}: '
+              '${friendlyError(result.error ?? Exception('upload'), l10n)}',
+            ),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1334,8 +1422,9 @@ class DriverClientPriceRow extends StatelessWidget {
     return Row(
       children: [
         if (hasName) ...[
-          // Client photo (falls back to initials when none is set).
-          AvatarCircle(user: ride.client, apiClient: apiClient, radius: 14),
+          // Client photo (falls back to initials when none is set). Tappable to
+          // attach/replace the photo when the viewer is allowed to.
+          _buildClientAvatar(context),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

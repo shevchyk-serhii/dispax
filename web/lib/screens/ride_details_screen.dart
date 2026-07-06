@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/blocs.dart';
 import '../modules/core/models/person.dart';
+import '../modules/core/services/client_photo_service.dart';
 import '../../modules/ride_management/models/ride.dart';
 import '../constants/app_colors.dart';
 import '../modules/ride_management/models/payment_method.dart';
@@ -38,6 +39,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   late RideService _rideService;
   bool _isLoading = false;
   bool _isRefreshingFlight = false;
+  // Bumped after each successful client-photo upload so the avatar re-fetches
+  // even when replacing an existing photo (clientHasAvatar stays true).
+  int _clientPhotoVersion = 0;
 
   @override
   void initState() {
@@ -61,6 +65,50 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       setState(() {
         _currentRide = _currentRide.copyWith(etaMinutes: eta);
       });
+    }
+  }
+
+  /// A staff member (driver / dispatcher / secretary / admin) viewing this ride
+  /// may attach a photo to the client. Mirrors the backend authorization
+  /// (driver/secretary on a client, dispatcher/admin on anyone).
+  bool get _canEditClientPhoto {
+    if (widget.isClientView) return false;
+    final me = context.read<AuthBloc>().state.user;
+    if (me == null) return false;
+    return me.hasRole(PersonRole.driver) ||
+        me.hasRole(PersonRole.dispatcher) ||
+        me.hasRole(PersonRole.secretary) ||
+        me.hasRole(PersonRole.admin);
+  }
+
+  Future<void> _uploadClientPhoto() async {
+    final l10n = AppLocalizations.of(context)!;
+    final apiClient = context.read<AuthBloc>().apiClient;
+    final result = await pickAndUploadClientPhoto(
+      apiClient,
+      _currentRide.clientId,
+    );
+    if (!mounted) return;
+    switch (result.outcome) {
+      case ClientPhotoUploadOutcome.cancelled:
+        break;
+      case ClientPhotoUploadOutcome.success:
+        setState(() {
+          _currentRide = _currentRide.copyWith(clientHasAvatar: true);
+          _clientPhotoVersion++;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.photoUploadedSuccessfully)));
+      case ClientPhotoUploadOutcome.failure:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${l10n.failedToUploadPhoto}: '
+              '${friendlyError(result.error ?? Exception('upload'), l10n)}',
+            ),
+          ),
+        );
     }
   }
 
@@ -472,6 +520,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               _makePhoneCall(_currentRide.client.phone),
                           onMessage: () =>
                               _sendMessage(_currentRide.client.phone),
+                          onAvatarTap: _canEditClientPhoto
+                              ? _uploadClientPhoto
+                              : null,
+                          avatarReloadToken: _clientPhotoVersion,
                         ),
                       const SizedBox(height: 16),
 
