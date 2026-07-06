@@ -5,6 +5,7 @@ import '../blocs/blocs.dart';
 import '../modules/ride_management/widgets/widgets.dart';
 import '../modules/ride_management/helpers/create_ride_form_helper.dart';
 import '../modules/ride_management/helpers/conflict_dialog_text.dart';
+import '../modules/ride_management/services/recent_addresses_store.dart';
 import '../modules/core/services/api_client.dart' show ScheduleConflictInfo;
 import '../modules/core/services/error_messages.dart';
 import '../constants/app_colors.dart';
@@ -118,6 +119,15 @@ class _CreateRideScreenContentState extends State<CreateRideScreenContent> {
             final conflictRideId = state.conflictRideId;
             final conflictDriverId = state.conflictDriverId;
             if (state.status == RideStateStatus.created) {
+              // Remember the addresses just used so they surface as instant,
+              // offline recent suggestions on the next ride. One read-modify-
+              // write for both endpoints (no last-writer-wins race). Read before
+              // FormCleared() below wipes them; fire-and-forget.
+              final form = context.read<CreateRideFormBloc>().state;
+              const RecentAddressesStore().recordAll([
+                form.fromAddress,
+                form.toAddress,
+              ]);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(listenerL10n.rideCreatedSuccess),

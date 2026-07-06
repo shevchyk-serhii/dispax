@@ -9,7 +9,9 @@ import 'package:dispax/constants/app_dimensions.dart';
 import 'package:dispax/l10n/app_localizations.dart';
 import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
+import 'package:dispax/modules/core/services/mapbox_service.dart';
 import 'package:dispax/modules/core/utils/service_zone.dart';
+import 'package:dispax/modules/ride_management/models/client_address.dart';
 import 'package:dispax/modules/ride_management/widgets/sections/create_ride_location_section.dart';
 import 'package:dispax/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +53,12 @@ Future<ReachabilityResult> _alwaysReachable(String _) async =>
     const ReachabilityResult(Reachability.reachable, distanceKm: 1.0);
 
 // No Mapbox suggestions by default — keeps the non-autocomplete tests quiet.
-Future<List<String>> _noSuggestions(String _) async => const [];
+// With no suggestion carrying coordinates, the section falls back to the
+// injected reachabilityResolver, which the reachability tests rely on.
+Future<List<AddressSuggestion>> _noSuggestions(String _) async => const [];
+
+// No locally-cached recents by default.
+Future<List<ClientAddress>> _noRecents() async => const [];
 
 Widget _harness(
   AuthBloc authBloc,
@@ -59,6 +66,7 @@ Widget _harness(
   ThemeData? theme,
   ReachabilityResolver resolver = _alwaysReachable,
   AddressSuggester suggester = _noSuggestions,
+  RecentAddressesLoader recents = _noRecents,
 }) {
   return MaterialApp(
     theme: theme,
@@ -73,6 +81,7 @@ Widget _harness(
         child: CreateRideLocationSection(
           reachabilityResolver: resolver,
           addressSuggester: suggester,
+          recentAddressesLoader: recents,
         ),
       ),
     ),
@@ -262,7 +271,10 @@ void main() {
         formBloc,
         suggester: (q) async {
           lastQuery = q;
-          return ['Marienplatz 1, München', 'Marienhof 3, München'];
+          return const [
+            AddressSuggestion('Marienplatz 1, München'),
+            AddressSuggestion('Marienhof 3, München'),
+          ];
         },
       ),
     );
@@ -309,5 +321,133 @@ void main() {
     formBloc.add(const FromAddressChanged('Berlin'));
     await tester.pump();
     expect(formBloc.state.fromAddress, 'Berlin');
+  });
+
+  // 2→1 network collapse: when a suggestion carries coordinates, reachability is
+  // classified from that same response — the separate geocode fallback
+  // (reachabilityResolver) must NOT fire. Munich center coords stay in-zone, so
+  // no warning appears either.
+  testWidgets('suggestion coordinates close the reachability check without '
+      'calling the resolver', (tester) async {
+    final (authBloc, formBloc) = _blocs();
+    addTearDown(formBloc.close);
+
+    var resolverCalls = 0;
+    await tester.pumpWidget(
+      _harness(
+        authBloc,
+        formBloc,
+        resolver: (_) async {
+          resolverCalls++;
+          return const ReachabilityResult(Reachability.notFound);
+        },
+        // Suggestion carries Munich-center coordinates → in service zone.
+        suggester: (q) async => const [
+          AddressSuggestion(
+            'Marienplatz, München',
+            latitude: 48.1374,
+            longitude: 11.5755,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(_fieldByLabel('From'), 'Marienplatz, München');
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // The geocode fallback was never needed.
+    expect(resolverCalls, 0);
+    // In-zone coordinates → no warning of any kind.
+    expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+  });
+
+  // Locally-cached recent addresses must surface as suggestions even for a short
+  // query the live suggester ignores (< 3 chars → no network). This is the
+  // instant/offline history the dispatcher asked for.
+  testWidgets(
+    'recent addresses surface on a short query (no live suggestions)',
+    (tester) async {
+      final (authBloc, formBloc) = _blocs();
+      addTearDown(formBloc.close);
+
+      final recent = ClientAddress(
+        id: '',
+        clientId: '',
+        label: '',
+        address: 'Leopoldstraße 42, München',
+        useCount: 3,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      );
+
+      await tester.pumpWidget(
+        _harness(authBloc, formBloc, recents: () async => [recent]),
+      );
+      await tester.pump();
+      // Let the async recents load settle into the widget.
+      await tester.pumpAndSettle();
+
+      // A single character stays under the 3-char live-suggest threshold, so the
+      // dropdown is fed purely by the local recents fallback.
+      await tester.enterText(_fieldByLabel('From'), 'L');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Leopoldstraße 42, München'), findsOneWidget);
+    },
+  );
+
+  // A frequently-used recent must stay in the dropdown once live Mapbox results
+  // arrive — the user's most-used address must not vanish just because Mapbox's
+  // top-5 for the query didn't include it. This is the "нет истории" fix and is
+  // invisible to the short-query test above (which never reaches the live path).
+  testWidgets('recent address stays visible alongside live Mapbox suggestions', (
+    tester,
+  ) async {
+    final (authBloc, formBloc) = _blocs();
+    addTearDown(formBloc.close);
+
+    final recent = ClientAddress(
+      id: '',
+      clientId: '',
+      label: '',
+      address: 'Leopoldstraße 42, München',
+      useCount: 5,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+
+    await tester.pumpWidget(
+      _harness(
+        authBloc,
+        formBloc,
+        recents: () async => [recent],
+        // Live results that do NOT contain the recent address, but share the
+        // 'Leop' prefix so they pass the same substring filter.
+        suggester: (q) async => const [
+          AddressSuggestion('Leopoldpark 1, München'),
+          AddressSuggestion('Leopoldhof 3, München'),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // A >=3-char query triggers the live suggester. First type 'Leo' (fetches
+    // the live list into _fromSuggestions), then a further keystroke to 'Leop'
+    // so Autocomplete rebuilds its options from that live list (it re-runs
+    // optionsBuilder on text change). 'Leop' is a substring of BOTH the recent
+    // ('Leopoldstraße') and the live 'Leopoldpark', so both must render if the
+    // merge kept the recent.
+    await tester.enterText(_fieldByLabel('From'), 'Leo');
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await tester.enterText(_fieldByLabel('From'), 'Leop');
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // The live suggestion is shown — proves we are on the live path, not the
+    // short-query fallback.
+    expect(find.text('Leopoldpark 1, München'), findsOneWidget);
+    // ...and the recent must still be there alongside it (the merge kept it).
+    expect(find.text('Leopoldstraße 42, München'), findsOneWidget);
   });
 }

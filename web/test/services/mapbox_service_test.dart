@@ -199,6 +199,62 @@ void main() {
     });
   });
 
+  group('MapboxService.parseGeocodeSuggestionsDetailed', () {
+    test('extracts place_name AND center coordinates (lng,lat → lat,lng)', () {
+      // Mapbox returns center as [longitude, latitude]; the suggestion must
+      // expose latitude/longitude in the right order. This is the pin that
+      // catches a swapped lng/lat (which would place Munich in the ocean).
+      final data = {
+        'features': [
+          {
+            'place_name': 'Marienplatz, 80331 München',
+            'center': [11.5755, 48.1374],
+          },
+        ],
+      };
+
+      final result = MapboxService.parseGeocodeSuggestionsDetailed(data);
+      expect(result, hasLength(1));
+      expect(result.first.address, 'Marienplatz, 80331 München');
+      expect(result.first.latitude, 48.1374);
+      expect(result.first.longitude, 11.5755);
+    });
+
+    test('keeps a feature without a usable center (null coordinates)', () {
+      final data = {
+        'features': [
+          {'place_name': 'No coords, München'},
+          {
+            'place_name': 'Bad center, München',
+            'center': [11.5],
+          },
+        ],
+      };
+
+      final result = MapboxService.parseGeocodeSuggestionsDetailed(data);
+      expect(result.map((s) => s.address), [
+        'No coords, München',
+        'Bad center, München',
+      ]);
+      expect(
+        result.every((s) => s.latitude == null && s.longitude == null),
+        isTrue,
+      );
+    });
+
+    test('returns [] instead of throwing on malformed shapes', () {
+      expect(MapboxService.parseGeocodeSuggestionsDetailed(null), isEmpty);
+      expect(
+        MapboxService.parseGeocodeSuggestionsDetailed('nonsense'),
+        isEmpty,
+      );
+      expect(
+        MapboxService.parseGeocodeSuggestionsDetailed({'features': 'nope'}),
+        isEmpty,
+      );
+    });
+  });
+
   group('MapboxService marker colours', () {
     test('createDriverMarker uses the provided status colour', () {
       final marker = MapboxService.createDriverMarker(
