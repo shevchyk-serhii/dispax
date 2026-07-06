@@ -13,6 +13,24 @@ import '../models/location.dart' as app_location;
 /// exists so the underlying reason can be logged and diagnosed on-device.
 enum GeocodeFailureReason { noToken, httpError, malformedResponse, exception }
 
+/// A single autocomplete suggestion carrying both the human-readable address
+/// (Mapbox `place_name`) and, when present, its resolved coordinates.
+///
+/// Coordinates come free with the suggestion response (`feature.center`), so
+/// the create-ride form can classify service-zone reachability from the same
+/// request instead of firing a second forward-geocode for the same query.
+class AddressSuggestion {
+  final String address;
+
+  /// Latitude, or `null` when the feature had no usable `center`.
+  final double? latitude;
+
+  /// Longitude, or `null` when the feature had no usable `center`.
+  final double? longitude;
+
+  const AddressSuggestion(this.address, {this.latitude, this.longitude});
+}
+
 /// Builds a human-readable, cause-specific message for a failed geocode
 /// request. Pure (no I/O) so it is unit-testable without mocking HTTP.
 String describeGeocodeFailure({
@@ -183,6 +201,19 @@ class MapboxService {
   /// short, the request fails, or the response is malformed — the picker falls
   /// back to manual entry / saved places in that case.
   static Future<List<String>> suggestAddresses(String query) async {
+    final detailed = await suggestAddressesDetailed(query);
+    return detailed.map((s) => s.address).toList();
+  }
+
+  /// Like [suggestAddresses] but keeps each suggestion's coordinates (from the
+  /// same Mapbox response) so the caller can classify service-zone reachability
+  /// without a second forward-geocode of the same query.
+  ///
+  /// Returns `[]` (never throws) when the token is missing, the query is too
+  /// short, the request fails, or the response is malformed.
+  static Future<List<AddressSuggestion>> suggestAddressesDetailed(
+    String query,
+  ) async {
     final trimmed = query.trim();
     if (_accessToken.isEmpty || trimmed.length < 3) return const [];
 
@@ -199,7 +230,7 @@ class MapboxService {
       final response = await http.get(url).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        return parseGeocodeSuggestions(jsonDecode(response.body));
+        return parseGeocodeSuggestionsDetailed(jsonDecode(response.body));
       }
       debugPrint(
         'MapboxService: Suggest failed with status ${response.statusCode}',
@@ -215,16 +246,34 @@ class MapboxService {
   /// response, skipping any feature without a non-empty string name. Returns an
   /// empty list (never throws) for any malformed shape — missing/non-list
   /// `features`, non-Map features, missing/non-string `place_name`.
-  static List<String> parseGeocodeSuggestions(dynamic data) {
+  static List<String> parseGeocodeSuggestions(dynamic data) =>
+      parseGeocodeSuggestionsDetailed(data).map((s) => s.address).toList();
+
+  /// Like [parseGeocodeSuggestions] but also extracts each feature's `center`
+  /// coordinates. Mapbox returns `center` as `[longitude, latitude]`; the
+  /// suggestion exposes them as `latitude` / `longitude`. A feature without a
+  /// usable `center` still yields a suggestion (with null coordinates) as long
+  /// as it has a valid `place_name`. Never throws on a malformed shape.
+  static List<AddressSuggestion> parseGeocodeSuggestionsDetailed(dynamic data) {
     final features = data is Map ? data['features'] : null;
     if (features is! List) return const [];
 
-    final result = <String>[];
+    final result = <AddressSuggestion>[];
     for (final feature in features) {
       final name = feature is Map ? feature['place_name'] : null;
-      if (name is String && name.trim().isNotEmpty) {
-        result.add(name);
+      if (name is! String || name.trim().isEmpty) continue;
+
+      final center = feature['center'];
+      double? lat;
+      double? lng;
+      if (center is List &&
+          center.length >= 2 &&
+          center[0] is num &&
+          center[1] is num) {
+        lng = (center[0] as num).toDouble();
+        lat = (center[1] as num).toDouble();
       }
+      result.add(AddressSuggestion(name, latitude: lat, longitude: lng));
     }
     return result;
   }

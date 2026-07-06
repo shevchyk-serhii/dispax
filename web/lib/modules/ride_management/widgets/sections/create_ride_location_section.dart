@@ -7,6 +7,7 @@ import '../address_autocomplete_field.dart';
 import '../../helpers/airport_catalog.dart';
 import '../../models/client_address.dart';
 import '../../services/client_address_service.dart';
+import '../../services/recent_addresses_store.dart';
 import '../../../core/services/mapbox_service.dart';
 import '../../../core/utils/service_zone.dart';
 import '../../../../constants/app_colors.dart';
@@ -14,12 +15,21 @@ import '../../../../constants/app_dimensions.dart';
 
 /// Resolves how reachable an address is (geocode + service-zone check). Injected
 /// so widget tests can supply a deterministic result without hitting Mapbox.
+///
+/// Used only as a fallback now: the live suggester already carries coordinates,
+/// so reachability is normally classified from the suggestion response without a
+/// second geocode. This still runs when no suggestion carried coordinates.
 typedef ReachabilityResolver =
     Future<ReachabilityResult> Function(String address);
 
-/// Returns address suggestions for a typed query. Injected so widget tests can
-/// supply deterministic suggestions without hitting Mapbox.
-typedef AddressSuggester = Future<List<String>> Function(String query);
+/// Returns address suggestions (with coordinates) for a typed query. Injected so
+/// widget tests can supply deterministic suggestions without hitting Mapbox.
+typedef AddressSuggester =
+    Future<List<AddressSuggestion>> Function(String query);
+
+/// Loads locally-cached recent addresses. Injected so widget tests can supply
+/// deterministic recents without touching SharedPreferences.
+typedef RecentAddressesLoader = Future<List<ClientAddress>> Function();
 
 class CreateRideLocationSection extends StatefulWidget {
   /// Defaults to the real Mapbox-backed check; overridden in tests.
@@ -28,11 +38,18 @@ class CreateRideLocationSection extends StatefulWidget {
   /// Defaults to the real Mapbox-backed suggester; overridden in tests.
   final AddressSuggester addressSuggester;
 
+  /// Defaults to the SharedPreferences-backed recent store; overridden in tests.
+  final RecentAddressesLoader recentAddressesLoader;
+
   const CreateRideLocationSection({
     super.key,
     this.reachabilityResolver = ServiceZone.reachabilityOf,
-    this.addressSuggester = MapboxService.suggestAddresses,
+    this.addressSuggester = MapboxService.suggestAddressesDetailed,
+    this.recentAddressesLoader = _loadRecentAddresses,
   });
+
+  static Future<List<ClientAddress>> _loadRecentAddresses() =>
+      const RecentAddressesStore().load();
 
   @override
   State<CreateRideLocationSection> createState() =>
@@ -45,6 +62,10 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
   late final StreamSubscription<CreateRideFormState> _subscription;
   List<ClientAddress> _savedAddresses = [];
   String? _loadedForClientId;
+  // Locally-cached recent/frequent addresses (device-only, offline). Merged
+  // after saved places and before live Mapbox results so the dispatcher sees
+  // instant suggestions even for a short query the live suggester ignores.
+  List<ClientAddress> _recentAddresses = [];
 
   // Soft, advisory reachability of the current from/to addresses. Never blocks
   // submission — it only drives an inline warning under each field.
@@ -79,6 +100,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
     if (currentClientId != null) {
       _loadAddresses(currentClientId);
     }
+    _loadRecent();
 
     // Check whatever the form already holds (e.g. prefilled from a duplicated
     // ride) on first build.
@@ -97,6 +119,15 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
         _loadAddresses(clientId);
       }
     });
+  }
+
+  Future<void> _loadRecent() async {
+    try {
+      final recent = await widget.recentAddressesLoader();
+      if (mounted) setState(() => _recentAddresses = recent);
+    } catch (_) {
+      // Recents are best-effort; a load failure just means no local suggestions.
+    }
   }
 
   @override
@@ -131,10 +162,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
       return;
     }
     if (trimmed == _fromCheckedAddress) return;
-    void run() {
-      _runCheck(trimmed, isFrom: true);
-      _fetchSuggestions(trimmed, isFrom: true);
-    }
+    void run() => _fetchSuggestionsAndCheck(trimmed, isFrom: true);
 
     if (immediate) {
       run();
@@ -154,10 +182,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
       return;
     }
     if (trimmed == _toCheckedAddress) return;
-    void run() {
-      _runCheck(trimmed, isFrom: false);
-      _fetchSuggestions(trimmed, isFrom: false);
-    }
+    void run() => _fetchSuggestionsAndCheck(trimmed, isFrom: false);
 
     if (immediate) {
       run();
@@ -166,15 +191,24 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
     }
   }
 
-  /// Fetches Mapbox suggestions for [query] and merges them (saved places first,
-  /// then Mapbox, deduped by normalized address) into the field's suggestion
-  /// list. Stale responses for an address the user has since edited are dropped.
-  Future<void> _fetchSuggestions(String query, {required bool isFrom}) async {
-    final List<String> mapbox;
+  /// Single network round-trip per input pause: fetches Mapbox suggestions (with
+  /// coordinates) for [query], merges them into the field's suggestion list AND
+  /// classifies service-zone reachability from the same response — no second
+  /// forward-geocode. Falls back to [reachabilityResolver] only when no
+  /// suggestion carried coordinates. Stale responses (the user has since edited
+  /// the field) are dropped.
+  Future<void> _fetchSuggestionsAndCheck(
+    String query, {
+    required bool isFrom,
+  }) async {
+    final List<AddressSuggestion> suggestions;
     try {
-      mapbox = await widget.addressSuggester(query);
+      suggestions = await widget.addressSuggester(query);
     } catch (_) {
-      return; // suggestions are best-effort; ignore failures
+      // Suggestions are best-effort. Still try the fallback reachability check
+      // so an out-of-area warning isn't lost when the suggester fails.
+      await _runCheck(query, isFrom: isFrom);
+      return;
     }
     if (!mounted) return;
     final current = isFrom
@@ -182,19 +216,26 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
         : _formBloc.state.toAddress.trim();
     if (current != query) return;
 
+    // Merge order: saved places first, then locally-cached recents, then live
+    // Mapbox results — deduped by normalized address. Recents stay in the list
+    // once live results arrive (the field's own substring filter picks the ones
+    // matching the query), so a frequently-used address isn't dropped just
+    // because Mapbox's top-5 didn't include it.
     final seen = <String>{};
     final merged = <ClientAddress>[];
-    for (final saved in _savedAddresses) {
-      if (seen.add(saved.address.trim().toLowerCase())) merged.add(saved);
+    for (final a in [..._savedAddresses, ..._recentAddresses]) {
+      if (seen.add(a.address.trim().toLowerCase())) merged.add(a);
     }
-    for (final name in mapbox) {
-      if (seen.add(name.trim().toLowerCase())) {
+    for (final s in suggestions) {
+      if (seen.add(s.address.trim().toLowerCase())) {
         merged.add(
           ClientAddress(
             id: '',
             clientId: _loadedForClientId ?? '',
             label: '',
-            address: name,
+            address: s.address,
+            latitude: s.latitude,
+            longitude: s.longitude,
             useCount: 0,
             createdAt: _epoch,
             updatedAt: _epoch,
@@ -202,13 +243,51 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
         );
       }
     }
+
+    // Classify the suggestion whose address matches the typed text (so a partial
+    // query doesn't misreport a different top hit), else the top suggestion.
+    final match = _bestMatch(query, suggestions);
+    ReachabilityResult? result;
+    if (match != null && match.latitude != null && match.longitude != null) {
+      result = ServiceZone.classify(match.latitude, match.longitude);
+    }
+
     setState(() {
       if (isFrom) {
         _fromSuggestions = merged;
       } else {
         _toSuggestions = merged;
       }
+      if (result != null) {
+        if (isFrom) {
+          _fromReachability = result;
+          _fromCheckedAddress = query;
+        } else {
+          _toReachability = result;
+          _toCheckedAddress = query;
+        }
+      }
     });
+
+    // No suggestion carried coordinates (e.g. an empty result set): fall back to
+    // the direct geocode so an out-of-area/not-found warning still appears.
+    if (result == null) {
+      await _runCheck(query, isFrom: isFrom);
+    }
+  }
+
+  /// The suggestion whose address case-insensitively equals [query], or the
+  /// first suggestion when none matches exactly, or null when empty.
+  AddressSuggestion? _bestMatch(
+    String query,
+    List<AddressSuggestion> suggestions,
+  ) {
+    if (suggestions.isEmpty) return null;
+    final key = query.trim().toLowerCase();
+    for (final s in suggestions) {
+      if (s.address.trim().toLowerCase() == key) return s;
+    }
+    return suggestions.first;
   }
 
   Future<void> _runCheck(String address, {required bool isFrom}) async {
@@ -228,6 +307,20 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
         _toCheckedAddress = address;
       }
     });
+  }
+
+  /// The suggestion list handed to a field. Once live Mapbox suggestions exist
+  /// they already include the saved-places merge, so use them as-is. Before then
+  /// (a short/empty query the live suggester ignores, or offline) fall back to
+  /// saved places plus locally-cached recents so the dropdown is never empty.
+  List<ClientAddress> _suggestionsOrFallback(List<ClientAddress> live) {
+    if (live.isNotEmpty) return live;
+    final seen = <String>{};
+    final merged = <ClientAddress>[];
+    for (final a in [..._savedAddresses, ..._recentAddresses]) {
+      if (seen.add(a.address.trim().toLowerCase())) merged.add(a);
+    }
+    return merged;
   }
 
   /// Inline advisory message for a reachability result, or null when the address
@@ -311,9 +404,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                     hintText: 'Pick-up location',
                     prefixIconData: Icons.trip_origin,
                     initialValue: state.fromAddress,
-                    suggestions: _fromSuggestions.isEmpty
-                        ? _savedAddresses
-                        : _fromSuggestions,
+                    suggestions: _suggestionsOrFallback(_fromSuggestions),
                     excludeAddress: state.toAddress,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -381,9 +472,7 @@ class _CreateRideLocationSectionState extends State<CreateRideLocationSection> {
                     hintText: 'Drop-off location',
                     prefixIconData: Icons.location_on,
                     initialValue: state.toAddress,
-                    suggestions: _toSuggestions.isEmpty
-                        ? _savedAddresses
-                        : _toSuggestions,
+                    suggestions: _suggestionsOrFallback(_toSuggestions),
                     excludeAddress: state.fromAddress,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
