@@ -27,15 +27,26 @@ class RideAssignedDetails extends StatelessWidget {
     }
 
     final rows = <Widget>[
-      RideInfoRow(icon: Icons.person, label: 'Client', text: r.clientName),
+      RideInfoRow(
+        icon: Icons.person,
+        label: 'Client',
+        text: r.clientName,
+        copyable: true,
+      ),
       const SizedBox(height: 12),
       RideInfoRow(
         icon: Icons.location_on,
         label: 'Pickup',
         text: r.from.address,
+        copyable: true,
       ),
       const SizedBox(height: 12),
-      RideInfoRow(icon: Icons.flag, label: 'Destination', text: r.to.address),
+      RideInfoRow(
+        icon: Icons.flag,
+        label: 'Destination',
+        text: r.to.address,
+        copyable: true,
+      ),
       const SizedBox(height: 12),
       RideInfoRow(
         icon: Icons.access_time,
