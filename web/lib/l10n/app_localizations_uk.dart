@@ -1409,6 +1409,21 @@ class AppLocalizationsUk extends AppLocalizations {
   String get moreScreenTitle => 'Ще';
 
   @override
+  String get moreCategoryInsights => 'Аналітика';
+
+  @override
+  String get moreCategoryOperations => 'Операції';
+
+  @override
+  String get moreCategoryFinance => 'Фінанси';
+
+  @override
+  String get moreCategoryAdministration => 'Адміністрування';
+
+  @override
+  String get moreCategoryGovernance => 'Управління';
+
+  @override
   String get pickupSignMenuItem => 'Табличка зустрічі';
 
   @override

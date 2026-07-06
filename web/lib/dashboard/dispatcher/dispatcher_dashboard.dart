@@ -524,112 +524,105 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
 
   Widget _buildMoreScreen(bool canDrive) {
     final l10n = AppLocalizations.of(context)!;
-    final color = Theme.of(context).colorScheme.primary;
-    // Tiles are grouped by category for discoverability: Analytics → Operations
-    // → Finance → Admin → Governance. Unified corporate graphite; only genuinely
-    // destructive items stay red. canDrive-gated tiles sit inside their category.
-    final items = [
-      // ── Analytics ──
-      _MoreMenuItem(Icons.euro, l10n.earningsMenuItem, 5, color),
-      _MoreMenuItem(Icons.access_time_filled, l10n.peakHoursMenuItem, 6, color),
-      _MoreMenuItem(Icons.diamond, l10n.clientValueMenuItem, 7, color),
-      _MoreMenuItem(Icons.leaderboard, l10n.driversMenuItem, 8, color),
-      _MoreMenuItem(Icons.star, l10n.ratingsMenuItem, 9, color),
-      // Analytics is removed from nav pos 2 when canDrive, so surface it here.
-      if (canDrive)
-        _MoreMenuItem(Icons.bar_chart, l10n.analyticsMenuItem, 2, color),
-
-      // ── Operations ──
-      _MoreMenuItem(Icons.groups, l10n.ridePoolsMenuItem, 24, color),
-      _MoreMenuItem(Icons.repeat, l10n.templatesMenuItem, 16, color),
-      _MoreMenuItem(Icons.visibility, l10n.schedVisibilityMenuItem, 28, color),
-      _MoreMenuItem(
-        Icons.event_note,
-        l10n.driverSchedules,
-        _driverSchedulesScreenIndex,
-        color,
-      ),
-      _MoreMenuItem(
-        Icons.ios_share,
-        l10n.calendarSharingMenuItem,
-        _calendarSharingScreenIndex,
-        color,
-      ),
-      _MoreMenuItem(
-        Icons.people,
-        l10n.manageClientsTitle,
-        _manageClientsScreenIndex,
-        color,
-      ),
-      _MoreMenuItem(
-        Icons.flight_land,
-        l10n.arrivalsBoardTitle,
-        _arrivalsBoardScreenIndex,
-        color,
-      ),
-      // Abholschild (pickup sign) — a full-screen route, not a tab, so it carries
-      // a custom onTap instead of a screen index.
-      _MoreMenuItem(
-        Icons.airport_shuttle,
-        l10n.pickupSignMenuItem,
-        -1,
-        color,
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const AbholschildScreen()),
-        ),
-      ),
-      // DriverSchedulePanel — removed from nav when canDrive, accessible here.
-      if (canDrive)
+    // Tiles are grouped into visible sections for discoverability, each with its
+    // own accent colour on the icons (labels stay theme-neutral for contrast in
+    // both light and dark). canDrive-gated tiles sit inside their category. Only
+    // genuinely destructive items (blacklist/emergency) keep the danger red, so
+    // that red still reads as "destructive" and not merely "Governance".
+    final categories = [
+      _MoreCategory(l10n.moreCategoryInsights, AppColors.accent, [
+        _MoreMenuItem(Icons.euro, l10n.earningsMenuItem, 5),
+        _MoreMenuItem(Icons.access_time_filled, l10n.peakHoursMenuItem, 6),
+        _MoreMenuItem(Icons.diamond, l10n.clientValueMenuItem, 7),
+        _MoreMenuItem(Icons.leaderboard, l10n.driversMenuItem, 8),
+        _MoreMenuItem(Icons.star, l10n.ratingsMenuItem, 9),
+        // Analytics is removed from nav pos 2 when canDrive, so surface it here.
+        if (canDrive) _MoreMenuItem(Icons.bar_chart, l10n.analyticsMenuItem, 2),
+      ]),
+      _MoreCategory(l10n.moreCategoryOperations, AppColors.info, [
+        _MoreMenuItem(Icons.groups, l10n.ridePoolsMenuItem, 24),
+        _MoreMenuItem(Icons.repeat, l10n.templatesMenuItem, 16),
+        _MoreMenuItem(Icons.visibility, l10n.schedVisibilityMenuItem, 28),
         _MoreMenuItem(
-          Icons.calendar_view_week,
-          l10n.driverBoardMenuItem,
-          1,
-          color,
+          Icons.event_note,
+          l10n.driverSchedules,
+          _driverSchedulesScreenIndex,
         ),
-      if (canDrive)
         _MoreMenuItem(
-          Icons.map,
-          l10n.driverMapMenuItem,
-          _driverMapScreenIndex,
-          color,
+          Icons.ios_share,
+          l10n.calendarSharingMenuItem,
+          _calendarSharingScreenIndex,
         ),
-
-      // ── Finance ──
-      _MoreMenuItem(
-        Icons.request_quote_outlined,
-        l10n.billingTab,
-        _billingTabIndex,
-        color,
+        _MoreMenuItem(
+          Icons.people,
+          l10n.manageClientsTitle,
+          _manageClientsScreenIndex,
+        ),
+        _MoreMenuItem(
+          Icons.flight_land,
+          l10n.arrivalsBoardTitle,
+          _arrivalsBoardScreenIndex,
+        ),
+        // Abholschild (pickup sign) — a full-screen route, not a tab, so it
+        // carries a custom onTap instead of a screen index.
+        _MoreMenuItem(
+          Icons.airport_shuttle,
+          l10n.pickupSignMenuItem,
+          -1,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const AbholschildScreen()),
+          ),
+        ),
+        // DriverSchedulePanel — removed from nav when canDrive, accessible here.
+        if (canDrive)
+          _MoreMenuItem(Icons.calendar_view_week, l10n.driverBoardMenuItem, 1),
+        if (canDrive)
+          _MoreMenuItem(
+            Icons.map,
+            l10n.driverMapMenuItem,
+            _driverMapScreenIndex,
+          ),
+      ]),
+      _MoreCategory(l10n.moreCategoryFinance, AppColors.success, [
+        _MoreMenuItem(
+          Icons.request_quote_outlined,
+          l10n.billingTab,
+          _billingTabIndex,
+        ),
+        _MoreMenuItem(Icons.payment, l10n.paymentsMenuItem, 17),
+        _MoreMenuItem(Icons.account_balance_wallet, l10n.payrollMenuItem, 18),
+        _MoreMenuItem(Icons.receipt_long, l10n.expensesMenuItem, 13),
+        _MoreMenuItem(Icons.download, l10n.exportMenuItem, 14),
+        _MoreMenuItem(Icons.account_balance, l10n.datevMenuItem, 21),
+      ]),
+      _MoreCategory(
+        l10n.moreCategoryAdministration,
+        Theme.of(context).colorScheme.primary,
+        [
+          _MoreMenuItem(Icons.admin_panel_settings, l10n.adminMenuItem, 11),
+          _MoreMenuItem(Icons.business, l10n.companyMenuItem, 12),
+          _MoreMenuItem(Icons.history, l10n.auditLogMenuItem, 10),
+          _MoreMenuItem(Icons.share_location, l10n.geofencesMenuItem, 20),
+          _MoreMenuItem(Icons.devices, l10n.sessionsMenuItem, 27),
+          _MoreMenuItem(Icons.notifications, l10n.notificationsMenuItem, 25),
+        ],
       ),
-      _MoreMenuItem(Icons.payment, l10n.paymentsMenuItem, 17, color),
-      _MoreMenuItem(
-        Icons.account_balance_wallet,
-        l10n.payrollMenuItem,
-        18,
-        color,
-      ),
-      _MoreMenuItem(Icons.receipt_long, l10n.expensesMenuItem, 13, color),
-      _MoreMenuItem(Icons.download, l10n.exportMenuItem, 14, color),
-      _MoreMenuItem(Icons.account_balance, l10n.datevMenuItem, 21, color),
-
-      // ── Admin ──
-      _MoreMenuItem(Icons.admin_panel_settings, l10n.adminMenuItem, 11, color),
-      _MoreMenuItem(Icons.business, l10n.companyMenuItem, 12, color),
-      _MoreMenuItem(Icons.history, l10n.auditLogMenuItem, 10, color),
-      _MoreMenuItem(Icons.share_location, l10n.geofencesMenuItem, 20, color),
-      _MoreMenuItem(Icons.devices, l10n.sessionsMenuItem, 27, color),
-      _MoreMenuItem(Icons.notifications, l10n.notificationsMenuItem, 25, color),
-
-      // ── Governance ──
-      _MoreMenuItem(Icons.privacy_tip, l10n.gdprMenuItem, 26, color),
-      _MoreMenuItem(Icons.block, l10n.blacklistMenuItem, 22, AppColors.error),
-      _MoreMenuItem(
-        Icons.emergency,
-        l10n.emergencyMenuItem,
-        23,
-        AppColors.error,
-      ),
-
+      _MoreCategory(l10n.moreCategoryGovernance, AppColors.warning, [
+        _MoreMenuItem(Icons.privacy_tip, l10n.gdprMenuItem, 26),
+        // Destructive actions override the category colour with the danger red.
+        _MoreMenuItem(
+          Icons.block,
+          l10n.blacklistMenuItem,
+          22,
+          iconColor: AppColors.error,
+        ),
+        _MoreMenuItem(
+          Icons.emergency,
+          l10n.emergencyMenuItem,
+          23,
+          iconColor: AppColors.error,
+        ),
+      ]),
       // Settings (screen 19) is the last bottom-nav tab, so it is omitted here.
       // My Rides (screen 31) is already the third bottom-nav tab when canDrive,
       // so it is not duplicated in the More grid.
@@ -659,59 +652,129 @@ class _DispatcherDashboardState extends State<DispatcherDashboard> {
           ),
         ),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1,
-            ),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return InkWell(
-                onTap:
-                    item.onTap ??
-                    () => setState(() => _mobileTabIndex = item.screenIndex),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: item.color.withAlpha(15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: item.color.withAlpha(60)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(item.icon, color: item.color, size: 28),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: item.color,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+          child: ListView(
+            key: const Key('more-menu-list'),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              for (final category in categories) ...[
+                _buildMoreCategoryHeader(category),
+                _buildMoreCategoryGrid(category),
+                const SizedBox(height: 20),
+              ],
+            ],
           ),
         ),
       ],
     );
   }
+
+  /// Section header: a small coloured dot + the category label in the category's
+  /// accent colour, above its grid of tiles.
+  Widget _buildMoreCategoryHeader(_MoreCategory category) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, left: 2),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: category.color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            category.title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: category.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A non-scrolling grid of the category's tiles (the outer ListView scrolls).
+  Widget _buildMoreCategoryGrid(_MoreCategory category) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 3,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1,
+      children: [
+        for (final item in category.items) _buildMoreTile(item, category.color),
+      ],
+    );
+  }
+
+  /// A single More-menu tile. The icon takes the item's own [iconColor] when set
+  /// (destructive red), otherwise the category accent; the background is a subtle
+  /// tint of that colour. The label stays theme-neutral (onSurfaceVariant) so it
+  /// keeps good contrast in both light and dark mode.
+  Widget _buildMoreTile(_MoreMenuItem item, Color categoryColor) {
+    final accent = item.iconColor ?? categoryColor;
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap:
+          item.onTap ??
+          () => setState(() => _mobileTabIndex = item.screenIndex),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: accent.withAlpha(20),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: accent.withAlpha(70)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(item.icon, color: accent, size: 28),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A titled, colour-accented section of the More menu.
+class _MoreCategory {
+  final String title;
+  final Color color;
+  final List<_MoreMenuItem> items;
+
+  const _MoreCategory(this.title, this.color, this.items);
 }
 
 class _MoreMenuItem {
   final IconData icon;
   final String label;
   final int screenIndex;
-  final Color color;
+
+  /// Overrides the category accent for this tile's icon — used for destructive
+  /// actions (blacklist/emergency) that must stay danger-red regardless of their
+  /// section colour. Null means "use the category colour".
+  final Color? iconColor;
 
   /// Optional custom tap handler. When set (e.g. to push a full-screen route),
   /// it runs instead of switching to [screenIndex]. Items that just switch tabs
@@ -721,8 +784,8 @@ class _MoreMenuItem {
   const _MoreMenuItem(
     this.icon,
     this.label,
-    this.screenIndex,
-    this.color, {
+    this.screenIndex, {
+    this.iconColor,
     this.onTap,
   });
 }

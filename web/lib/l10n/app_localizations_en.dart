@@ -1410,6 +1410,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreScreenTitle => 'More';
 
   @override
+  String get moreCategoryInsights => 'Insights';
+
+  @override
+  String get moreCategoryOperations => 'Operations';
+
+  @override
+  String get moreCategoryFinance => 'Finance';
+
+  @override
+  String get moreCategoryAdministration => 'Administration';
+
+  @override
+  String get moreCategoryGovernance => 'Governance';
+
+  @override
   String get pickupSignMenuItem => 'Pickup Sign';
 
   @override
