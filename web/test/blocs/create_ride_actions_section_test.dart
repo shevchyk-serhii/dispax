@@ -32,6 +32,12 @@ void main() {
         clearManualPickupDateTime: true,
       );
 
+  // An empty FormState with EMPTY From/To addresses → the inline text-field
+  // validators fail (formKey.validate() == false) AND firstMissingRequirement ==
+  // fromAddress. This is the exact screenshot case.
+  CreateRideFormState emptyAddressesState() => CreateRideFormState.initial()
+      .copyWith(selectedClientId: 'c-1', fromAddress: '', toAddress: '');
+
   Widget mount(GlobalKey<FormState> formKey) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
@@ -41,6 +47,28 @@ void main() {
         child: Form(
           key: formKey,
           child: CreateRideActionsSection(formKey: formKey),
+        ),
+      ),
+    ),
+  );
+
+  // Like [mount] but the Form contains a real always-failing TextFormField so
+  // formKey.validate() returns false — reproducing the empty-From/To prod path
+  // where the inline validators reject the tap.
+  Widget mountWithFailingValidator(GlobalKey<FormState> formKey) => MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(
+      body: BlocProvider<CreateRideFormBloc>.value(
+        value: formBloc,
+        child: Form(
+          key: formKey,
+          child: Column(
+            children: [
+              TextFormField(validator: (_) => 'required'),
+              CreateRideActionsSection(formKey: formKey),
+            ],
+          ),
         ),
       ),
     ),
@@ -89,6 +117,32 @@ void main() {
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.selectPickupTimeError), findsNothing);
       verify(() => formBloc.add(const FormSubmitted())).called(1);
+    },
+  );
+
+  testWidgets(
+    'tapping Create with empty From/To (inline validators fail) shows an error '
+    'SnackBar and does not dispatch FormSubmitted',
+    (tester) async {
+      // Regression for the screenshot case: empty From/To made the inline
+      // validators fail, and the handler used to early-return BEFORE the
+      // SnackBar — so the user saw the red field labels but no toast.
+      whenListen(
+        formBloc,
+        Stream<CreateRideFormState>.empty(),
+        initialState: emptyAddressesState(),
+      );
+      final formKey = GlobalKey<FormState>();
+      await tester.pumpWidget(mountWithFailingValidator(formKey));
+
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.pump(); // let the SnackBar appear
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      // First missing requirement for empty addresses is the pickup address.
+      expect(find.text(l10n.enterFromAddressError), findsOneWidget);
+      // The form must NOT be submitted while required fields are empty.
+      verifyNever(() => formBloc.add(const FormSubmitted()));
     },
   );
 }
