@@ -620,6 +620,12 @@ class _CalendarScheduleScreenState extends State<CalendarScheduleScreen> {
           ridesOverride: ridesOverride,
           shifts: _shifts,
           onRideSelected: _openRideDetails,
+          // A price edit refreshes the shared RideBloc, but the colleague view
+          // renders from the local [_driverRides] override — refetch it so the
+          // selected driver's card shows the new price without a manual reload.
+          onRidesChanged: colleagueSelected && _selectedDriverId != null
+              ? () => _loadDriverRides(_selectedDriverId!)
+              : null,
         );
       case CalendarViewType.multiColumn:
         final authState = context.read<AuthBloc>().state;

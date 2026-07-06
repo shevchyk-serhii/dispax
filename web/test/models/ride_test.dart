@@ -709,6 +709,24 @@ void main() {
       );
       expect(a.hashCode, isNot(a.copyWith(gate: 'H26').hashCode));
     });
+
+    // Regression: a dispatcher setting/changing the fare enriches a ride with
+    // ONLY price. When price was missing from ==, the refetched RideState
+    // compared equal, the BLoC suppressed the emit and the card kept showing
+    // "Set price" / the stale amount (prod: price set from the day-view card
+    // but never appeared until a manual reload).
+    test('a different price means not equal', () {
+      final unpriced = TestFixtures.ride(price: null);
+      expect(unpriced, isNot(unpriced.copyWith(price: 100.0)));
+      expect(
+        unpriced.hashCode,
+        isNot(unpriced.copyWith(price: 100.0).hashCode),
+      );
+
+      final priced = TestFixtures.ride(price: 50.0);
+      expect(priced, isNot(priced.copyWith(price: 100.0)));
+      expect(priced.hashCode, isNot(priced.copyWith(price: 100.0).hashCode));
+    });
   });
 
   // Mirrors the backend RidePolicy past-ride guard: reassign affordances are

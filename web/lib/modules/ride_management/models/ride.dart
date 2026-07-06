@@ -483,6 +483,10 @@ class Ride {
         other.pickupDateTime == pickupDateTime &&
         other.from == from &&
         other.to == to &&
+        // Included so a dispatcher setting/changing the fare yields a != Ride and
+        // the Equatable RideState re-emits — otherwise a price-only change is
+        // swallowed and the card keeps showing "Set price" / the stale amount.
+        other.price == price &&
         // Included so a live WebSocket checkpoint update yields a != Ride and the
         // BLoC actually re-emits (otherwise the row never refreshes on the card).
         other.airportCheckpoint == airportCheckpoint &&
@@ -509,6 +513,7 @@ class Ride {
       pickupDateTime,
       from,
       to,
+      price,
       airportCheckpoint,
       flightNumber,
       gate,

@@ -72,6 +72,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeRideEvent());
     registerFallbackValue(_FakeScheduleEvent());
+    registerFallbackValue(<String, dynamic>{});
   });
 
   late _MockAuthBloc authBloc;
@@ -285,6 +286,69 @@ void main() {
             'the selected colleague\'s ride must show, sourced from '
             '/rides/driver/{id}, not the empty shared RideBloc',
       );
+    },
+  );
+
+  // Regression (defect #2): setting a price on a SELECTED COLLEAGUE's ride only
+  // refreshed the shared RideBloc, never the parent-owned _driverRides override
+  // the colleague view actually renders — so their card kept the stale price.
+  // After the fix, a successful price edit must re-fetch /rides/driver/{id}.
+  testWidgets(
+    'editing a colleague ride price re-loads their rides (override refresh)',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // The colleague's ride has no price yet, so the card shows "Set price".
+      // The price PUT succeeds and returns the same ride enriched with a price.
+      when(() => apiClient.put('/rides/col-ride-1/price', any())).thenAnswer((
+        _,
+      ) async {
+        return http.Response(
+          '{"id":"col-ride-1","clientId":"client-1","creatorId":"creator-1",'
+          '"companyId":"company-1","driverId":"colleague-1",'
+          '"pickupDateTime":"2026-03-15T10:00:00.000",'
+          '"from":{"address":"Pickup St","latitude":48.1,"longitude":11.5},'
+          '"to":{"address":"Dropoff St","latitude":48.2,"longitude":11.6},'
+          '"status":"Assigned","clientName":"Colleague Client","price":75.0,'
+          '"isAirportTransfer":false,"isArrival":false,'
+          '"driverApproaching":false}',
+          200,
+        );
+      });
+
+      await tester.pumpWidget(buildApp(_selfDriver()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      CalendarScheduleScreen.viewTypeNotifierForTest.value =
+          CalendarViewType.day;
+      await tester.pump();
+
+      // Pick the colleague — first /rides/driver/colleague-1 load.
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hans Weber').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      verify(() => apiClient.get('/rides/driver/colleague-1')).called(1);
+
+      // Open the price dialog on the colleague's card and confirm a new price.
+      await tester.tap(find.text('Set price'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '75.00');
+      await tester.tap(find.text('Confirm'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      // The price was submitted...
+      verify(() => apiClient.put('/rides/col-ride-1/price', any())).called(1);
+      // ...and the override was refetched so the new price can surface.
+      verify(() => apiClient.get('/rides/driver/colleague-1')).called(1);
     },
   );
 
