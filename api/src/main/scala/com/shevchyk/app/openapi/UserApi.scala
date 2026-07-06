@@ -129,6 +129,33 @@ object UserApi:
     } yield ()
 
   /**
+   * Authorize mutating another person's profile photo (upload/delete). A caller may set a photo when:
+   *   - they are the owner (self — keeps the settings screen working), OR
+   *   - they are a DISPATCHER/ADMIN (broad management rights over any company member), OR
+   *   - they are a DRIVER/SECRETARY AND the target is a client (incl. provisional walk-in clients).
+   *
+   * The last branch is what lets a driver photograph a client without also being able to alter another driver's /
+   * dispatcher's / admin's photo. The target Person is loaded tenant-scoped (`findByIdAndCompany`), so a cross-company
+   * target yields 404 (existence not leaked). Returns the caller's `CompanyId` for the subsequent tenant-scoped write.
+   */
+  private def requireClientPhotoAccess(
+      user: AuthenticatedUser,
+      targetId: UUID
+  ): ZIO[PersonRepositoryDep, Err, com.shevchyk.core.domain.CompanyId] =
+    for {
+      companyId     <- requireCompanyId(user)
+      repo          <- ZIO.service[PersonRepositoryDep]
+      target        <- repo
+                         .findByIdAndCompany(PersonId(targetId), companyId)
+                         .mapError(internal)
+                         .someOrFail(notFound)
+      isSelf         = user.userId == targetId
+      isManager      = user.hasAnyRole("DISPATCHER", "ADMIN")
+      canPhotoClient = user.hasAnyRole("DRIVER", "SECRETARY") && target.hasRole(PersonRole.Client)
+      _             <- ZIO.fail(accessDenied).unless(isSelf || isManager || canPhotoClient)
+    } yield companyId
+
+  /**
    * Reproduce `UserRoutes.checkRateLimit`: 429 if the per-IP rate limit is exceeded.
    */
   private def checkRateLimit(ip: Option[String]): ZIO[RateLimiter, Err, Unit] =
@@ -409,9 +436,7 @@ object UserApi:
     { case (userId, parts) =>
       for {
         uid        <- parseUuid(userId)
-        _          <- requireSameCompany(user, uid)
-        companyId  <- requireCompanyId(user)
-        _          <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        companyId  <- requireClientPhotoAccess(user, uid)
         filePart   <- ZIO
                         .fromOption(parts.find(_.name == "file"))
                         .orElseFail((StatusCode.BadRequest, ApiError("Missing 'file' part in multipart body")))
@@ -440,9 +465,7 @@ object UserApi:
     user => userId =>
       (for {
         uid       <- parseUuid(userId)
-        _         <- requireSameCompany(user, uid)
-        companyId <- requireCompanyId(user)
-        _         <- checkRoleOrOwner(user, uid, "DISPATCHER", "ADMIN")
+        companyId <- requireClientPhotoAccess(user, uid)
         _         <- ZIO.serviceWithZIO[AvatarService](_.deleteAvatar(PersonId(uid), companyId)).mapError(internal)
       } yield ()).unit
   }

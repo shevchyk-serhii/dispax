@@ -727,6 +727,17 @@ void main() {
       expect(priced, isNot(priced.copyWith(price: 100.0)));
       expect(priced.hashCode, isNot(priced.copyWith(price: 100.0).hashCode));
     });
+
+    // Regression: attaching a client photo flips ONLY clientHasAvatar. When it
+    // was missing from ==, RideRefreshRequested returned the new flag but the
+    // refetched RideState compared equal, the BLoC suppressed the emit and the
+    // ride list kept showing the initials fallback until a manual reload.
+    test('a different clientHasAvatar means not equal', () {
+      final noPhoto = TestFixtures.ride(clientHasAvatar: false);
+      final withPhoto = noPhoto.copyWith(clientHasAvatar: true);
+      expect(noPhoto, isNot(withPhoto));
+      expect(noPhoto.hashCode, isNot(withPhoto.hashCode));
+    });
   });
 
   // Mirrors the backend RidePolicy past-ride guard: reassign affordances are

@@ -19,35 +19,36 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
-  testWidgets('renders the person via AvatarCircle (no ambient AuthBloc needed)', (
-    tester,
-  ) async {
-    // A bare ApiClient with a stub HTTP client — no BlocProvider anywhere, mirroring
-    // the pushed-route scope where context.read<AuthBloc>() would throw.
-    final apiClient = ApiClient(
-      client: MockClient((_) async => http.Response('', 404)),
-      baseUrl: 'http://localhost:8080/api',
-    );
+  testWidgets(
+    'renders the person via AvatarCircle (no ambient AuthBloc needed)',
+    (tester) async {
+      // A bare ApiClient with a stub HTTP client — no BlocProvider anywhere, mirroring
+      // the pushed-route scope where context.read<AuthBloc>() would throw.
+      final apiClient = ApiClient(
+        client: MockClient((_) async => http.Response('', 404)),
+        baseUrl: 'http://localhost:8080/api',
+      );
 
-    await tester.pumpWidget(
-      _wrap(
-        RidePersonCard(
-          person: Person(
-            id: 'client-1',
-            name: 'Frau Meier',
-            email: '',
-            role: PersonRole.client,
+      await tester.pumpWidget(
+        _wrap(
+          RidePersonCard(
+            person: Person(
+              id: 'client-1',
+              name: 'Frau Meier',
+              email: '',
+              role: PersonRole.client,
+            ),
+            apiClient: apiClient,
           ),
-          apiClient: apiClient,
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    expect(find.byType(AvatarCircle), findsOneWidget);
-    // No ProviderNotFoundException (or any framework error) leaked.
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byType(AvatarCircle), findsOneWidget);
+      // No ProviderNotFoundException (or any framework error) leaked.
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('fetches the photo bytes when the person has an avatar', (
     tester,
@@ -86,5 +87,61 @@ void main() {
     expect(find.byType(AvatarCircle), findsOneWidget);
     expect(avatarRequested, isTrue);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'shows a camera badge and forwards the tap when onAvatarTap is set',
+    (tester) async {
+      final apiClient = ApiClient(
+        client: MockClient((_) async => http.Response('', 404)),
+        baseUrl: 'http://localhost:8080/api',
+      );
+      var tapped = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          RidePersonCard(
+            person: Person(
+              id: 'client-1',
+              name: 'Frau Meier',
+              email: '',
+              role: PersonRole.client,
+            ),
+            apiClient: apiClient,
+            onAvatarTap: () => tapped = true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Camera badge is the visible affordance to attach a photo.
+      expect(find.byIcon(Icons.photo_camera), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.photo_camera));
+      expect(tapped, isTrue);
+    },
+  );
+
+  testWidgets('no camera badge when onAvatarTap is null', (tester) async {
+    final apiClient = ApiClient(
+      client: MockClient((_) async => http.Response('', 404)),
+      baseUrl: 'http://localhost:8080/api',
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        RidePersonCard(
+          person: Person(
+            id: 'client-1',
+            name: 'Frau Meier',
+            email: '',
+            role: PersonRole.client,
+          ),
+          apiClient: apiClient,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byIcon(Icons.photo_camera), findsNothing);
   });
 }

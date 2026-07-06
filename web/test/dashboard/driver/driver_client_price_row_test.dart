@@ -1,15 +1,33 @@
+import 'package:bloc_test/bloc_test.dart';
+import 'package:dispax/blocs/auth/auth_bloc.dart';
+import 'package:dispax/blocs/auth/auth_event.dart';
+import 'package:dispax/blocs/auth/auth_state.dart';
 import 'package:dispax/dashboard/driver/today_rides_screen.dart';
 import 'package:dispax/l10n/app_localizations.dart';
+import 'package:dispax/modules/core/models/person.dart';
 import 'package:dispax/modules/core/services/api_client.dart';
 import 'package:dispax/modules/core/widgets/avatar_circle.dart';
 import 'package:dispax/modules/ride_management/models/ride.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/test_fixtures.dart';
 
 class _MockApiClient extends Mock implements ApiClient {}
+
+class _MockAuthBloc extends MockBloc<AuthEvent, AuthState>
+    implements AuthBloc {}
+
+Person _person(PersonRole role) => Person(
+  id: 'user-1',
+  name: 'Test User',
+  email: 'user@example.com',
+  role: role,
+  companyId: 'company-1',
+  roles: {role},
+);
 
 /// Pumps the driver ride card's client-name + fare row in isolation.
 Future<void> pumpRow(
@@ -100,6 +118,90 @@ void main() {
       await pumpRow(tester, clientName: 'Anna Schmidt', clientHasAvatar: true);
       expect(find.byType(AvatarCircle), findsOneWidget);
       expect(find.text('Anna Schmidt'), findsOneWidget);
+    });
+
+    // Without an ambient AuthBloc (the isolation pump above) the row must not
+    // crash and must not offer the photo affordance.
+    testWidgets('no camera badge when there is no AuthBloc', (tester) async {
+      await pumpRow(tester, clientName: 'Anna Schmidt');
+      expect(find.byIcon(Icons.photo_camera), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('DriverClientPriceRow — client-photo affordance', () {
+    late _MockAuthBloc authBloc;
+    late _MockApiClient apiClient;
+
+    setUp(() {
+      authBloc = _MockAuthBloc();
+      apiClient = _MockApiClient();
+      when(() => apiClient.getBytes(any())).thenAnswer((_) async => null);
+    });
+
+    Future<void> pumpWithRole(
+      WidgetTester tester,
+      PersonRole role, {
+      bool provisional = false,
+    }) async {
+      when(
+        () => authBloc.state,
+      ).thenReturn(AuthState.authenticated(_person(role)));
+      final ride = TestFixtures.ride(
+        driverId: 'driver-1',
+        status: RideStatus.assigned,
+        clientName: 'Anna Schmidt',
+        clientProvisional: provisional,
+      );
+      await tester.pumpWidget(
+        BlocProvider<AuthBloc>.value(
+          value: authBloc,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 360,
+                  child: DriverClientPriceRow(
+                    ride: ride,
+                    isDark: false,
+                    apiClient: apiClient,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('driver sees a camera badge to attach a client photo', (
+      tester,
+    ) async {
+      await pumpWithRole(tester, PersonRole.driver);
+      expect(find.byIcon(Icons.photo_camera), findsOneWidget);
+    });
+
+    testWidgets('dispatcher sees a camera badge', (tester) async {
+      await pumpWithRole(tester, PersonRole.dispatcher);
+      expect(find.byIcon(Icons.photo_camera), findsOneWidget);
+    });
+
+    // A logged-in client viewing the row must NOT be able to edit a photo.
+    testWidgets('client role sees no camera badge', (tester) async {
+      await pumpWithRole(tester, PersonRole.client);
+      expect(find.byIcon(Icons.photo_camera), findsNothing);
+    });
+
+    // Provisional (walk-in) rides render a different label and must not offer
+    // photo editing here.
+    testWidgets('no camera badge on a provisional ride even for a driver', (
+      tester,
+    ) async {
+      await pumpWithRole(tester, PersonRole.driver, provisional: true);
+      expect(find.byIcon(Icons.photo_camera), findsNothing);
     });
   });
 }

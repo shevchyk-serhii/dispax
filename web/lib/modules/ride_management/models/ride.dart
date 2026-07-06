@@ -487,6 +487,11 @@ class Ride {
         // the Equatable RideState re-emits — otherwise a price-only change is
         // swallowed and the card keeps showing "Set price" / the stale amount.
         other.price == price &&
+        // Included so attaching/removing a client photo yields a != Ride and the
+        // Equatable RideState re-emits — otherwise the ride list keeps showing the
+        // initials fallback after an upload (RideRefreshRequested returns the new
+        // clientHasAvatar but the swallowed emit never repaints the card).
+        other.clientHasAvatar == clientHasAvatar &&
         // Included so a live WebSocket checkpoint update yields a != Ride and the
         // BLoC actually re-emits (otherwise the row never refreshes on the card).
         other.airportCheckpoint == airportCheckpoint &&
@@ -514,6 +519,7 @@ class Ride {
       from,
       to,
       price,
+      clientHasAvatar,
       airportCheckpoint,
       flightNumber,
       gate,

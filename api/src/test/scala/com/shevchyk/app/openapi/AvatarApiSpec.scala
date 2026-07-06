@@ -42,6 +42,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
 
   private val userAId: PersonId       = PersonId(UUID.fromString("000000AA-0000-0000-0000-000000000001"))
   private val dispatcherAId: PersonId = PersonId(UUID.fromString("0000AADD-0000-0000-0000-000000000001"))
+  private val driverAId: PersonId     = PersonId(UUID.fromString("0000AAD5-0000-0000-0000-000000000001"))
   private val userBId: PersonId       = PersonId(UUID.fromString("000000BB-0000-0000-0000-000000000002"))
 
   private val userA: Person = Person(
@@ -57,6 +58,14 @@ object AvatarApiSpec extends ZIOSpecDefault:
     name = "Dispatcher A",
     email = "dispatch@companya.de",
     role = PersonRole.Dispatcher,
+    companyId = Some(companyAId)
+  )
+
+  private val driverA: Person = Person(
+    id = driverAId,
+    name = "Driver A",
+    email = "driver@companya.de",
+    role = PersonRole.Driver,
     companyId = Some(companyAId)
   )
 
@@ -99,6 +108,7 @@ object AvatarApiSpec extends ZIOSpecDefault:
                       Map[PersonId, Person](
                         userAId       -> userA,
                         dispatcherAId -> dispatcherA,
+                        driverAId     -> driverA,
                         userBId       -> userB
                       )
                     )
@@ -408,6 +418,47 @@ object AvatarApiSpec extends ZIOSpecDefault:
                        .addHeader(Header.Authorization.Bearer(token))
             resp  <- run(req)
           } yield assertTrue(resp.status == Status.Ok)
+        },
+
+        // A driver may photograph a CLIENT of their own company.
+        test("driver in same company can upload a photo for a client → 200") {
+          for {
+            token <- generateToken(driverA)
+            bytes  = Array.fill(256)(0x37.toByte)
+            body   = multipartBody("file", bytes, "image/jpeg")
+            req    = Request
+                       .post(URL.decode(s"/api/users/${userAId.value}/avatar").toOption.get, body)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.Ok)
+        },
+
+        // CRITICAL — a driver must NOT be able to change a non-client's (here: dispatcher's)
+        // photo, even within the same company. Guards the privilege hole from broadening the
+        // role whitelist without a target-role check.
+        test("[CRITICAL] driver cannot upload a photo for a non-client (dispatcher) → 403") {
+          for {
+            token <- generateToken(driverA)
+            bytes  = Array.fill(256)(0x37.toByte)
+            body   = multipartBody("file", bytes, "image/jpeg")
+            req    = Request
+                       .post(URL.decode(s"/api/users/${dispatcherAId.value}/avatar").toOption.get, body)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.Forbidden)
+        },
+
+        // CRITICAL — tenant isolation for a driver targeting a client in another company.
+        test("[CRITICAL] driver cannot upload a photo for a client in another company → 404") {
+          for {
+            token <- generateToken(driverA)
+            bytes  = Array.fill(256)(0x37.toByte)
+            body   = multipartBody("file", bytes, "image/jpeg")
+            req    = Request
+                       .post(URL.decode(s"/api/users/${userBId.value}/avatar").toOption.get, body)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.NotFound)
         }
       ),
 
@@ -489,6 +540,28 @@ object AvatarApiSpec extends ZIOSpecDefault:
                           .addHeader(Header.Authorization.Bearer(token))
             getResp  <- run(getReq)
           } yield assertTrue(getResp.status == Status.NotFound)
+        },
+
+        // A driver may remove a CLIENT's photo in their own company.
+        test("driver in same company can delete a client's avatar → 204") {
+          for {
+            token <- generateToken(driverA)
+            req    = Request
+                       .delete(URL.decode(s"/api/users/${userAId.value}/avatar").toOption.get)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.NoContent)
+        },
+
+        // CRITICAL — a driver must NOT be able to delete a non-client's (dispatcher's) photo.
+        test("[CRITICAL] driver cannot delete a non-client's (dispatcher) avatar → 403") {
+          for {
+            token <- generateToken(driverA)
+            req    = Request
+                       .delete(URL.decode(s"/api/users/${dispatcherAId.value}/avatar").toOption.get)
+                       .addHeader(Header.Authorization.Bearer(token))
+            resp  <- run(req)
+          } yield assertTrue(resp.status == Status.Forbidden)
         },
 
         // CRITICAL negative test — tenant isolation on DELETE
