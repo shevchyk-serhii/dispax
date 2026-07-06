@@ -993,6 +993,11 @@
   "authenticationRequiredError": "Authentifizierung erforderlich",
   "selectOrCreateClientError": "Bitte wählen oder erstellen Sie einen Kunden",
   "enterClientNameError": "Bitte geben Sie den Kundennamen ein",
+  "enterFromAddressError": "Bitte geben Sie die Abholadresse ein",
+  "enterToAddressError": "Bitte geben Sie die Zieladresse ein",
+  "addressesMustDifferError": "Abhol- und Zieladresse müssen unterschiedlich sein",
+  "selectPickupTimeError": "Bitte wählen Sie eine Abholzeit",
+  "selectFlightDepartureError": "Bitte wählen Sie die Abflugzeit",
 
   "editRideDialogTitle": "Fahrt bearbeiten",
   "pickupDateTimeLabel": "Abholdatum/-uhrzeit",

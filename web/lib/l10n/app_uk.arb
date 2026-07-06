@@ -993,6 +993,11 @@
   "authenticationRequiredError": "Необхідна автентифікація",
   "selectOrCreateClientError": "Будь ласка, виберіть або створіть клієнта",
   "enterClientNameError": "Будь ласка, введіть ім'я клієнта",
+  "enterFromAddressError": "Будь ласка, введіть адресу подачі",
+  "enterToAddressError": "Будь ласка, введіть адресу призначення",
+  "addressesMustDifferError": "Адреси подачі та призначення мають відрізнятися",
+  "selectPickupTimeError": "Будь ласка, виберіть час подачі",
+  "selectFlightDepartureError": "Будь ласка, виберіть час вильоту рейсу",
 
   "editRideDialogTitle": "Редагувати поїздку",
   "pickupDateTimeLabel": "Дата/час подачі",

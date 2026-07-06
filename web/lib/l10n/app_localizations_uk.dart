@@ -2260,6 +2260,23 @@ class AppLocalizationsUk extends AppLocalizations {
   String get enterClientNameError => 'Будь ласка, введіть ім\'я клієнта';
 
   @override
+  String get enterFromAddressError => 'Будь ласка, введіть адресу подачі';
+
+  @override
+  String get enterToAddressError => 'Будь ласка, введіть адресу призначення';
+
+  @override
+  String get addressesMustDifferError =>
+      'Адреси подачі та призначення мають відрізнятися';
+
+  @override
+  String get selectPickupTimeError => 'Будь ласка, виберіть час подачі';
+
+  @override
+  String get selectFlightDepartureError =>
+      'Будь ласка, виберіть час вильоту рейсу';
+
+  @override
   String get editRideDialogTitle => 'Редагувати поїздку';
 
   @override

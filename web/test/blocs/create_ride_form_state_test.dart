@@ -365,4 +365,89 @@ void main() {
       expect(s.selectedPaymentMethod, PaymentMethod.invoice);
     });
   });
+
+  group('CreateRideFormState.firstMissingRequirement', () {
+    // A fully valid, non-airport ride: selected client, distinct addresses,
+    // manual pickup time set. firstMissingRequirement must be null and isValid
+    // true — the two must stay in lockstep.
+    CreateRideFormState validState() => CreateRideFormState.initial().copyWith(
+      selectedClientId: 'c-1',
+      fromAddress: 'Munich Airport',
+      toAddress: 'City Center',
+      manualPickupDateTime: DateTime(2090, 1, 1, 10),
+    );
+
+    test('a fully valid form has no missing requirement and isValid', () {
+      final s = validState();
+      expect(s.firstMissingRequirement, isNull);
+      expect(s.isValid, isTrue);
+    });
+
+    test('no client selected → client', () {
+      final s = validState().copyWith(clearClientId: true);
+      expect(s.firstMissingRequirement, CreateRideRequirement.client);
+      expect(s.isValid, isFalse);
+    });
+
+    test('new-client mode with blank name → client', () {
+      final s = validState().copyWith(
+        clearClientId: true,
+        isNewClient: true,
+        clientName: '   ',
+      );
+      expect(s.firstMissingRequirement, CreateRideRequirement.client);
+    });
+
+    test('empty from address → fromAddress', () {
+      final s = validState().copyWith(fromAddress: '  ');
+      expect(s.firstMissingRequirement, CreateRideRequirement.fromAddress);
+    });
+
+    test('empty to address → toAddress', () {
+      final s = validState().copyWith(toAddress: '');
+      expect(s.firstMissingRequirement, CreateRideRequirement.toAddress);
+    });
+
+    test('airport transfer without flight number → flightNumber', () {
+      final s = validState().copyWith(
+        isAirportTransfer: true,
+        isArrival: true, // arrival: pickup time still comes from manual field
+        flightNumber: '',
+      );
+      expect(s.firstMissingRequirement, CreateRideRequirement.flightNumber);
+    });
+
+    test('identical from/to addresses → addressesEqual', () {
+      final s = validState().copyWith(
+        fromAddress: 'Same Place',
+        toAddress: 'same place', // case-insensitive match
+      );
+      expect(s.firstMissingRequirement, CreateRideRequirement.addressesEqual);
+    });
+
+    test('no manual pickup time on a regular ride → pickupTime', () {
+      final s = validState().copyWith(clearManualPickupDateTime: true);
+      expect(s.firstMissingRequirement, CreateRideRequirement.pickupTime);
+    });
+
+    test('departure airport ride without flight departure time → '
+        'flightDepartureTime', () {
+      final s = validState().copyWith(
+        isAirportTransfer: true,
+        isArrival: false, // departure → auto-compute needs flightDepartureTime
+        flightNumber: 'LH123',
+        clearManualPickupDateTime: true,
+      );
+      expect(
+        s.firstMissingRequirement,
+        CreateRideRequirement.flightDepartureTime,
+      );
+    });
+
+    test('client is reported before address (ordering matches isValid)', () {
+      // Both client and from-address missing → client wins (checked first).
+      final s = validState().copyWith(clearClientId: true, fromAddress: '');
+      expect(s.firstMissingRequirement, CreateRideRequirement.client);
+    });
+  });
 }
