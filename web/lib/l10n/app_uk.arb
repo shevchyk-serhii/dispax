@@ -534,6 +534,8 @@
   "copySummaryCsvTooltip": "Копіювати підсумок",
   "summaryCsvLabel": "Підсумок",
   "copiedToClipboard": "{label} скопійовано в буфер обміну",
+  "copyTooltip": "Копіювати",
+  "licensePlate": "Номерний знак",
   "@copiedToClipboard": {
     "placeholders": {
       "label": {"type": "String"}

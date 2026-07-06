@@ -4,6 +4,7 @@ import '../../ride_management/models/ride.dart';
 import '../helpers/flight_status_l10n.dart';
 import '../../../constants/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../core/widgets/copy_icon_button.dart';
 
 class RideFlightCard extends StatelessWidget {
   final Ride ride;
@@ -68,6 +69,7 @@ class RideFlightCard extends StatelessWidget {
               icon: Icons.schedule,
               label: flight.isArrival ? l10n.arrivalTime : l10n.departureTime,
               value: DateFormat('HH:mm, MMM dd').format(flight.flightTime),
+              copyable: false,
             ),
 
             if (flight.terminal case final terminal?) ...[
@@ -199,29 +201,36 @@ class RideFlightCard extends StatelessWidget {
     required IconData icon,
     required String label,
     required String value,
+    // Whether to offer a copy icon. On for paste-worthy identifiers (flight
+    // number, terminal, gate); off for a formatted time, which reads oddly on
+    // the clipboard.
+    bool copyable = true,
   }) {
     return Row(
       children: [
         Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            Text(
-              value,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
+              Text(
+                value,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
+        if (copyable) CopyIconButton(value: value, label: label),
       ],
     );
   }

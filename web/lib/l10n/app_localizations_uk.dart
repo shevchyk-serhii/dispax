@@ -1154,6 +1154,12 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get copyTooltip => 'Копіювати';
+
+  @override
+  String get licensePlate => 'Номерний знак';
+
+  @override
   String get copyAllRevenueHeader => '=== Доходи ===';
 
   @override

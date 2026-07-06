@@ -566,6 +566,8 @@
       "label": {"type": "String"}
     }
   },
+  "copyTooltip": "Copy",
+  "licensePlate": "License plate",
   "copyAllRevenueHeader": "=== Revenue ===",
   "copyAllExpensesHeader": "=== Expenses ===",
   "copyAllSummaryHeader": "=== Summary ===",

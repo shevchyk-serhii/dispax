@@ -3,6 +3,7 @@ import 'package:dispax/l10n/app_localizations.dart';
 import '../../core/models/person.dart';
 import '../../core/services/api_client.dart';
 import '../../core/widgets/avatar_circle.dart';
+import '../../core/widgets/copy_icon_button.dart';
 import '../../../constants/app_colors.dart';
 
 class RidePersonCard extends StatelessWidget {
@@ -56,14 +57,24 @@ class RidePersonCard extends StatelessWidget {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       if (person.phone?.isNotEmpty == true)
-                        Text(
-                          person.phone ?? '',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                person.phone ?? '',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                               ),
+                            ),
+                            CopyIconButton(
+                              value: person.phone ?? '',
+                              label: l10n.phone,
+                            ),
+                          ],
                         ),
                     ],
                   ),
@@ -201,6 +212,10 @@ class RidePersonCard extends StatelessWidget {
                     fontFamily: 'monospace',
                   ),
                 ),
+              ),
+              CopyIconButton(
+                value: vehicle.licensePlate ?? '',
+                label: l10n.licensePlate,
               ),
             ],
           ),

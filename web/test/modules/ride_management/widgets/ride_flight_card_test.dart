@@ -125,7 +125,14 @@ void main() {
       expect(find.byIcon(Icons.refresh), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      await tester.tap(find.byType(IconButton));
+      // Target the refresh button specifically (the one wrapping the spinner) —
+      // the card now also renders copy IconButtons next to the flight fields.
+      final refreshButton = find.ancestor(
+        of: find.byType(CircularProgressIndicator),
+        matching: find.byType(IconButton),
+      );
+      expect(refreshButton, findsOneWidget);
+      await tester.tap(refreshButton);
       await tester.pump();
       expect(tapped, 0); // disabled → no callback
     });

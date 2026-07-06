@@ -534,6 +534,8 @@
   "copySummaryCsvTooltip": "Zusammenfassung kopieren",
   "summaryCsvLabel": "Zusammenfassung",
   "copiedToClipboard": "{label} in die Zwischenablage kopiert",
+  "copyTooltip": "Kopieren",
+  "licensePlate": "Kennzeichen",
   "@copiedToClipboard": {
     "placeholders": {
       "label": {"type": "String"}

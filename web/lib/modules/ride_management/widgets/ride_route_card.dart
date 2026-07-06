@@ -4,6 +4,7 @@ import 'package:dispax/l10n/app_localizations.dart';
 import '../../ride_management/models/ride.dart';
 import '../../../constants/app_colors.dart';
 import '../../core/navigation_utils.dart';
+import '../../core/widgets/copy_icon_button.dart';
 
 class RideRouteCard extends StatelessWidget {
   final Ride ride;
@@ -237,6 +238,12 @@ class RideRouteCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        // Long addresses wrap; keep the copy icon pinned to the first line.
+        CopyIconButton(
+          value: location,
+          label: label,
+          padding: const EdgeInsets.only(top: 12),
         ),
       ],
     );
