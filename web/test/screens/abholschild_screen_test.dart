@@ -51,12 +51,15 @@ void main() {
     wakelockPlusPlatformInstance = fakeWakelock;
   });
 
-  Widget wrap({List<NavigatorObserver> observers = const []}) => MaterialApp(
+  Widget wrap({
+    List<NavigatorObserver> observers = const [],
+    String? initialText,
+  }) => MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('en'),
     navigatorObservers: observers,
-    home: const AbholschildScreen(),
+    home: AbholschildScreen(initialText: initialText),
   );
 
   // Enters text and taps "Show" to push the sign board. Leaves the board shown.
@@ -79,6 +82,27 @@ void main() {
     // The TextField is seeded with the persisted value.
     expect(find.widgetWithText(TextField, 'Herr Müller'), findsOneWidget);
   });
+
+  testWidgets(
+    'initialText pre-fills the editor and overrides the persisted value',
+    (tester) async {
+      // A last-shown value exists, but opening from a ride card must seed the
+      // field with that ride's client name instead — one tap from Show.
+      SharedPreferences.setMockInitialValues({
+        AbholschildScreen.prefsKey: 'Herr Müller',
+      });
+
+      await tester.pumpWidget(wrap(initialText: 'Allianz - Herr Klein'));
+      await tester.pumpAndSettle();
+
+      // The passed-in client name wins; the persisted text is not shown.
+      expect(
+        find.widgetWithText(TextField, 'Allianz - Herr Klein'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TextField, 'Herr Müller'), findsNothing);
+    },
+  );
 
   testWidgets('empty text does not open the board and persists nothing', (
     tester,

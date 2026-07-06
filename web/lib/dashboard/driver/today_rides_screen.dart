@@ -22,6 +22,7 @@ import '../../modules/core/services/websocket_service.dart';
 import '../../modules/core/services/location_service.dart';
 import '../../screens/ride_map_screen.dart';
 import '../../screens/chat_screen.dart';
+import '../../screens/abholschild_screen.dart';
 import '../../widgets/common/notification_bell.dart';
 import '../../constants/app_colors.dart';
 import '../../l10n/app_localizations.dart';
@@ -1219,6 +1220,14 @@ class DriverRideCard extends StatelessWidget {
                 // only while it is still editable (Requested/Assigned). The
                 // client-picker inside the edit dialog stays dispatcher-only.
                 onEditRide: _canDriverEdit(context, ride) ? onEditRide : null,
+                // Straight to the pickup sign, pre-filled with the client name
+                // (editor mode so it can still be tweaked before showing).
+                onPickupSign: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        AbholschildScreen(initialText: ride.clientName),
+                  ),
+                ),
                 onCallClient: onCallClient,
                 onConfirmRide: onConfirmRide,
                 onRejectRide: onRejectRide,
@@ -2170,6 +2179,7 @@ class DriverRideActionsRow extends StatelessWidget {
   final VoidCallback? onViewDetails;
   final VoidCallback? onChat;
   final VoidCallback? onEditRide;
+  final VoidCallback? onPickupSign;
   final VoidCallback? onCallClient;
   final VoidCallback? onConfirmRide;
   final VoidCallback? onRejectRide;
@@ -2187,6 +2197,7 @@ class DriverRideActionsRow extends StatelessWidget {
     this.onViewDetails,
     this.onChat,
     this.onEditRide,
+    this.onPickupSign,
     this.onCallClient,
     this.onConfirmRide,
     this.onRejectRide,
@@ -2391,6 +2402,12 @@ class DriverRideActionsRow extends StatelessWidget {
           icon: Icons.edit_outlined,
           tooltip: l10n.editRideDialogTitle,
           onPressed: onEditRide,
+        ),
+      if (onPickupSign != null)
+        _iconAction(
+          icon: Icons.badge_outlined,
+          tooltip: l10n.pickupSignAction,
+          onPressed: onPickupSign,
         ),
     ];
 

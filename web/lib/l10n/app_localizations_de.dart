@@ -1455,6 +1455,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tippen oder nach unten wischen zum Schließen';
 
   @override
+  String get pickupSignAction => 'Abholschild';
+
+  @override
   String get dispatchBoardTitle => 'Dispositionsbrett';
 
   @override

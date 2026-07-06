@@ -1446,6 +1446,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pickupSignCloseHint => 'Tap or swipe down to close';
 
   @override
+  String get pickupSignAction => 'Pickup sign';
+
+  @override
   String get dispatchBoardTitle => 'Dispatch board';
 
   @override

@@ -16,6 +16,7 @@ Future<void> pumpActionsRow(
   double width = 360,
   VoidCallback? onShareRide,
   VoidCallback? onDuplicate,
+  VoidCallback? onPickupSign,
   Locale? locale,
 }) async {
   final ride = TestFixtures.ride(driverId: 'driver-1', status: status);
@@ -36,6 +37,7 @@ Future<void> pumpActionsRow(
               onNavigate: () {},
               onShareRide: onShareRide,
               onDuplicate: onDuplicate,
+              onPickupSign: onPickupSign,
               onCallClient: () {},
               onConfirmRide: () {},
               onRejectRide: () {},
@@ -205,6 +207,31 @@ void main() {
     ) async {
       await pumpActionsRow(tester, status: RideStatus.confirmed);
       expect(find.byIcon(Icons.copy_outlined), findsNothing);
+    });
+
+    testWidgets('shows a Pickup-sign button that invokes onPickupSign', (
+      tester,
+    ) async {
+      var opened = false;
+      await pumpActionsRow(
+        tester,
+        status: RideStatus.confirmed,
+        onPickupSign: () => opened = true,
+      );
+
+      final signButton = find.byIcon(Icons.badge_outlined);
+      expect(signButton, findsOneWidget);
+
+      await tester.tap(signButton);
+      await tester.pump();
+      expect(opened, isTrue);
+    });
+
+    testWidgets('hides the Pickup-sign button when onPickupSign is null', (
+      tester,
+    ) async {
+      await pumpActionsRow(tester, status: RideStatus.confirmed);
+      expect(find.byIcon(Icons.badge_outlined), findsNothing);
     });
 
     testWidgets(

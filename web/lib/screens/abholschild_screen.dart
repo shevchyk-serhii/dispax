@@ -18,8 +18,15 @@ import '../l10n/app_localizations.dart';
 ///
 /// The last text is persisted in SharedPreferences so re-opening the screen
 /// restores it.
+///
+/// [initialText] pre-fills the editor with a specific value (e.g. a ride's
+/// client name when opened straight from a ride card) instead of the last
+/// persisted text — so the dispatcher/driver can show the sign in one tap.
 class AbholschildScreen extends StatefulWidget {
-  const AbholschildScreen({super.key});
+  const AbholschildScreen({super.key, this.initialText});
+
+  /// When set, seeds the editor with this text (overrides the persisted value).
+  final String? initialText;
 
   /// Persistence key for the last shown sign text.
   static const String prefsKey = 'abholschild_last_text';
@@ -34,7 +41,14 @@ class _AbholschildScreenState extends State<AbholschildScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLastText();
+    // An explicit initial text (from a ride card) wins over the persisted one;
+    // otherwise fall back to the last shown text.
+    final initial = widget.initialText?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _controller.text = initial;
+    } else {
+      _loadLastText();
+    }
   }
 
   Future<void> _loadLastText() async {

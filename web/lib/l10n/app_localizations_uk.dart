@@ -1446,6 +1446,9 @@ class AppLocalizationsUk extends AppLocalizations {
       'Торкніться або проведіть униз, щоб закрити';
 
   @override
+  String get pickupSignAction => 'Табличка зустрічі';
+
+  @override
   String get dispatchBoardTitle => 'Дошка диспетчера';
 
   @override
