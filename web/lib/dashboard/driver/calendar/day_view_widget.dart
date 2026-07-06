@@ -35,6 +35,12 @@ class DayViewWidget extends StatelessWidget {
   /// be filtered out by the caller.
   final List<ScheduleDay> shifts;
 
+  /// Invoked after an in-card mutation (e.g. a price edit) that the RideBloc
+  /// refresh alone can't surface. When the calendar is driven by [ridesOverride]
+  /// (a selected colleague's rides), that list is owned by the parent and is not
+  /// refetched by the RideBloc reload, so the parent must re-load it here.
+  final VoidCallback? onRidesChanged;
+
   const DayViewWidget({
     super.key,
     required this.selectedDay,
@@ -42,6 +48,7 @@ class DayViewWidget extends StatelessWidget {
     this.driverIdFilter,
     this.ridesOverride,
     this.shifts = const [],
+    this.onRidesChanged,
   });
 
   @override
@@ -357,6 +364,10 @@ class DayViewWidget extends StatelessWidget {
             if (user != null) {
               context.read<RideBloc>().add(RideLoadRequested(user: user));
             }
+            // When a colleague's schedule is shown, the card renders from the
+            // parent-owned [ridesOverride], which the RideBloc reload above does
+            // not touch — ask the parent to refetch it so the new price shows.
+            onRidesChanged?.call();
           }
         })
         .catchError((Object e) {

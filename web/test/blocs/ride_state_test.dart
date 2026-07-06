@@ -231,5 +231,16 @@ void main() {
       final b = RideState.loaded([TestFixtures.ride()]);
       expect(a, b);
     });
+
+    // Regression: after a dispatcher sets a ride's price, the RideBloc reloads
+    // and emits RideState.loaded with a list whose ONLY difference is that
+    // ride's price. If price is absent from Ride.==, the two lists compare
+    // equal, this Equatable RideState compares equal, the emit is suppressed
+    // and the day-view card keeps showing "Set price". The states MUST differ.
+    test('a price-only change in a ride yields a different RideState', () {
+      final before = RideState.loaded([TestFixtures.ride(price: null)]);
+      final after = RideState.loaded([TestFixtures.ride(price: 100.0)]);
+      expect(after, isNot(before));
+    });
   });
 }
