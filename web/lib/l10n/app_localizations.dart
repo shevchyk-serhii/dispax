@@ -2212,6 +2212,18 @@ abstract class AppLocalizations {
   /// **'{label} copied to clipboard'**
   String copiedToClipboard(String label);
 
+  /// No description provided for @copyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyTooltip;
+
+  /// No description provided for @licensePlate.
+  ///
+  /// In en, this message translates to:
+  /// **'License plate'**
+  String get licensePlate;
+
   /// No description provided for @copyAllRevenueHeader.
   ///
   /// In en, this message translates to:

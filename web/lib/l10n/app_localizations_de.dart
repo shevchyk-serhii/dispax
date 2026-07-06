@@ -1161,6 +1161,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get copyTooltip => 'Kopieren';
+
+  @override
+  String get licensePlate => 'Kennzeichen';
+
+  @override
   String get copyAllRevenueHeader => '=== Erlöse ===';
 
   @override

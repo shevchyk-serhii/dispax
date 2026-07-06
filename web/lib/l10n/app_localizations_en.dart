@@ -1154,6 +1154,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get copyTooltip => 'Copy';
+
+  @override
+  String get licensePlate => 'License plate';
+
+  @override
   String get copyAllRevenueHeader => '=== Revenue ===';
 
   @override
