@@ -128,55 +128,95 @@ class _SignBoardState extends State<_SignBoard> {
     super.dispose();
   }
 
+  // Pop this board back to the editor. `pop()` (not `maybePop()`) because we
+  // pushed this route ourselves and there is no PopScope in the tree — pop is
+  // strictly more reliable and leaves no doubt the exit fires.
+  void _close() => Navigator.of(context).pop();
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       // White background → dark status-bar icons (the app's usual `.light` is for
       // its dark headers, which would be invisible here).
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              // Tap anywhere to go back to the editor.
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).maybePop(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    // SizedBox.expand gives the FittedBox TIGHT constraints so it
-                    // scales the text UP to fill the area. A plain Center would
-                    // pass loose constraints, leaving the text at its natural
-                    // (~14px) size — the "tiny text" bug. FittedBox centers its
-                    // own scaled child, so no extra Center is needed.
-                    child: SizedBox.expand(
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: Text(
-                          widget.text,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w700,
+        // Swipe down anywhere to dismiss — the exit gesture the user expects.
+        // A VERTICAL drag is deliberate: `onHorizontalDragEnd` would compete
+        // with (and disable) the native iOS edge-swipe-back on this
+        // MaterialPageRoute, whereas a downward fling does not.
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragEnd: (details) {
+            if ((details.primaryVelocity ?? 0) > 200) _close();
+          },
+          child: SafeArea(
+            child: Stack(
+              children: [
+                // Tap anywhere to go back to the editor (secondary affordance).
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _close,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      // SizedBox.expand gives the FittedBox TIGHT constraints so
+                      // it scales the text UP to fill the area. A plain Center
+                      // would pass loose constraints, leaving the text at its
+                      // natural (~14px) size — the "tiny text" bug. FittedBox
+                      // centers its own scaled child, so no extra Center needed.
+                      child: SizedBox.expand(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: Text(
+                            widget.text,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              // Subtle close affordance (also dark, for the white background).
-              Positioned(
-                top: 4,
-                left: 4,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.black54),
-                  onPressed: () => Navigator.of(context).maybePop(),
+                // Prominent, always-visible close button — the guaranteed exit
+                // that does not depend on tap-anywhere firing. A faint circular
+                // scrim makes the dark icon read on the white board, and the
+                // 48px IconButton is a comfortable touch target.
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: Colors.black12,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      iconSize: 28,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonLabel,
+                      icon: const Icon(Icons.close, color: Colors.black87),
+                      onPressed: _close,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                // Discoverability hint: tell the user how to leave the board.
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Text(
+                    l10n.pickupSignCloseHint,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.black38, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

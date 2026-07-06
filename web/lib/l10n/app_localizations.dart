@@ -2710,6 +2710,12 @@ abstract class AppLocalizations {
   /// **'Show'**
   String get pickupSignShowButton;
 
+  /// No description provided for @pickupSignCloseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap or swipe down to close'**
+  String get pickupSignCloseHint;
+
   /// No description provided for @dispatchBoardTitle.
   ///
   /// In en, this message translates to:

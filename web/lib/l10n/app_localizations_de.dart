@@ -1430,6 +1430,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pickupSignShowButton => 'Anzeigen';
 
   @override
+  String get pickupSignCloseHint =>
+      'Tippen oder nach unten wischen zum Schließen';
+
+  @override
   String get dispatchBoardTitle => 'Dispositionsbrett';
 
   @override

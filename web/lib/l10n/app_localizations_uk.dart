@@ -1421,6 +1421,10 @@ class AppLocalizationsUk extends AppLocalizations {
   String get pickupSignShowButton => 'Показати';
 
   @override
+  String get pickupSignCloseHint =>
+      'Торкніться або проведіть униз, щоб закрити';
+
+  @override
   String get dispatchBoardTitle => 'Дошка диспетчера';
 
   @override
