@@ -6,6 +6,20 @@ import '../../modules/ride_management/models/ride.dart';
 
 enum CreateRideFormStatus { initial, submitting, success, failure }
 
+/// A single unmet requirement that blocks ride creation, so the UI can tell the
+/// user exactly WHAT is missing instead of the submit silently no-op'ing. The
+/// order mirrors [CreateRideFormState.isValid]; [CreateRideFormState.firstMissingRequirement]
+/// returns the first one that fails.
+enum CreateRideRequirement {
+  client,
+  fromAddress,
+  toAddress,
+  flightNumber,
+  addressesEqual,
+  pickupTime,
+  flightDepartureTime,
+}
+
 class CreateRideFormState extends Equatable {
   final String clientName;
   final String? selectedClientId;
@@ -298,6 +312,37 @@ class CreateRideFormState extends Equatable {
         (!isAirportTransfer || flightNumber.trim().isNotEmpty) &&
         fromAddress.trim().toLowerCase() != toAddress.trim().toLowerCase() &&
         pickupOk;
+  }
+
+  /// The first unmet requirement blocking submission, or null when the form is
+  /// valid. Checks the SAME conditions as [isValid] in the same order — the two
+  /// must stay in lockstep (isValid == null-ness of this). The Create button
+  /// stays tappable even when the form is incomplete, so on tap the UI reads
+  /// this to show a specific "what's missing" message instead of silently
+  /// doing nothing (the submit handler no-ops when !isValid).
+  CreateRideRequirement? get firstMissingRequirement {
+    final clientOk = isProvisionalClient
+        ? true
+        : isNewClient
+        ? clientName.trim().isNotEmpty
+        : selectedClientId != null;
+    if (!clientOk) return CreateRideRequirement.client;
+    if (fromAddress.trim().isEmpty) return CreateRideRequirement.fromAddress;
+    if (toAddress.trim().isEmpty) return CreateRideRequirement.toAddress;
+    if (isAirportTransfer && flightNumber.trim().isEmpty) {
+      return CreateRideRequirement.flightNumber;
+    }
+    if (fromAddress.trim().toLowerCase() == toAddress.trim().toLowerCase()) {
+      return CreateRideRequirement.addressesEqual;
+    }
+    if (isDepartureAutoCompute) {
+      if (flightDepartureTime == null) {
+        return CreateRideRequirement.flightDepartureTime;
+      }
+    } else if (manualPickupDateTime == null) {
+      return CreateRideRequirement.pickupTime;
+    }
+    return null;
   }
 
   /// The form is "modified" only when it differs from the baseline snapshot.

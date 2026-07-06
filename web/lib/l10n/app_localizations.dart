@@ -4294,6 +4294,36 @@ abstract class AppLocalizations {
   /// **'Please enter client name'**
   String get enterClientNameError;
 
+  /// No description provided for @enterFromAddressError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the pickup address'**
+  String get enterFromAddressError;
+
+  /// No description provided for @enterToAddressError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the destination address'**
+  String get enterToAddressError;
+
+  /// No description provided for @addressesMustDifferError.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup and destination must be different'**
+  String get addressesMustDifferError;
+
+  /// No description provided for @selectPickupTimeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a pickup time'**
+  String get selectPickupTimeError;
+
+  /// No description provided for @selectFlightDepartureError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the flight departure time'**
+  String get selectFlightDepartureError;
+
   /// No description provided for @editRideDialogTitle.
   ///
   /// In en, this message translates to:

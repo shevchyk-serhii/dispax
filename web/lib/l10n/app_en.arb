@@ -1096,6 +1096,11 @@
   "authenticationRequiredError": "Authentication required",
   "selectOrCreateClientError": "Please select or create a client",
   "enterClientNameError": "Please enter client name",
+  "enterFromAddressError": "Please enter the pickup address",
+  "enterToAddressError": "Please enter the destination address",
+  "addressesMustDifferError": "Pickup and destination must be different",
+  "selectPickupTimeError": "Please select a pickup time",
+  "selectFlightDepartureError": "Please select the flight departure time",
 
   "editRideDialogTitle": "Edit Ride",
   "pickupDateTimeLabel": "Pickup date/time",

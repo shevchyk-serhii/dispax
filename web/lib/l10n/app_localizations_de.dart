@@ -2275,6 +2275,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get enterClientNameError => 'Bitte geben Sie den Kundennamen ein';
 
   @override
+  String get enterFromAddressError => 'Bitte geben Sie die Abholadresse ein';
+
+  @override
+  String get enterToAddressError => 'Bitte geben Sie die Zieladresse ein';
+
+  @override
+  String get addressesMustDifferError =>
+      'Abhol- und Zieladresse müssen unterschiedlich sein';
+
+  @override
+  String get selectPickupTimeError => 'Bitte wählen Sie eine Abholzeit';
+
+  @override
+  String get selectFlightDepartureError => 'Bitte wählen Sie die Abflugzeit';
+
+  @override
   String get editRideDialogTitle => 'Fahrt bearbeiten';
 
   @override

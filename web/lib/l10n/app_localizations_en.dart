@@ -2258,6 +2258,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterClientNameError => 'Please enter client name';
 
   @override
+  String get enterFromAddressError => 'Please enter the pickup address';
+
+  @override
+  String get enterToAddressError => 'Please enter the destination address';
+
+  @override
+  String get addressesMustDifferError =>
+      'Pickup and destination must be different';
+
+  @override
+  String get selectPickupTimeError => 'Please select a pickup time';
+
+  @override
+  String get selectFlightDepartureError =>
+      'Please select the flight departure time';
+
+  @override
   String get editRideDialogTitle => 'Edit Ride';
 
   @override
